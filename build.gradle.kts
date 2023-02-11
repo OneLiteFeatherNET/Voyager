@@ -68,7 +68,7 @@ tasks {
     }
 }
 bukkit {
-    main = "builders.volans.Volans"
+    main = "net.elytrarace.Voyager"
     apiVersion = "1.19"
     authors = listOf("TheMeinerLP")
     depend = listOf("FastAsyncWorldEdit")
