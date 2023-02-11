@@ -1,9 +1,19 @@
 plugins {
-    id("java")
+    kotlin("jvm") version "1.8.0"
+    kotlin("plugin.serialization") version "1.8.0"
+    // Shadow
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    // Bukkit
+    id("xyz.jpenilla.run-paper") version "2.0.1"
+    id("org.sonarqube") version "3.5.0.2730"
+    id("net.minecrell.plugin-yml.bukkit") version "0.5.2"
+    // Changelog
+    id("org.jetbrains.changelog") version "2.0.0"
+    jacoco
 }
 
-group = "net.onelitefeather"
-version = "0.0.1-SNAPSHOT"
+group = "net.elytrarace"
+val baseVersion = "0.0.1"
 
 repositories {
     mavenCentral()
@@ -12,17 +22,81 @@ repositories {
 
 dependencies {
     // Paper
-    compileOnly(libs.paper)
+    compileOnly("io.papermc.paper:paper-api:1.19.3-R0.1-SNAPSHOT")
 }
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+tasks {
+    compileKotlin {
+        kotlinOptions {
+            jvmTarget = "17"
+        }
+    }
+    jacocoTestReport {
+        dependsOn(rootProject.tasks.test)
+        reports {
+            xml.required.set(true)
+        }
+    }
+    test {
+        finalizedBy(rootProject.tasks.jacocoTestReport)
+        useJUnitPlatform()
+        testLogging {
+            events("passed", "skipped", "failed")
+        }
+        maxHeapSize = "512m"
+        maxParallelForks = if (System.getenv().containsKey("CI")) {
+            8
+        } else {
+            Runtime.getRuntime().availableProcessors() / 2
+        }
+    }
+    runServer {
+        minecraftVersion("1.19.3")
+    }
+    shadowJar {
+        archiveFileName.set("${rootProject.name}.${archiveExtension.getOrElse("jar")}")
+        // https://github.com/johnrengelman/shadow/issues/107
+        isZip64 = true
+        // relocate("org.bstats", "builders.volans.bstats")
+    }
+    getByName<org.sonarqube.gradle.SonarTask>("sonarqube") {
+        dependsOn(rootProject.tasks.test)
+    }
+}
+bukkit {
+    main = "builders.volans.Volans"
+    apiVersion = "1.19"
+    authors = listOf("TheMeinerLP")
+    depend = listOf("FastAsyncWorldEdit")
+}
+changelog {
+    path.set("${project.projectDir}/CHANGELOG.md")
+    header.set(provider { "[${version.get()}] - ${org.jetbrains.changelog.date()}" })
+    itemPrefix.set("-")
+    keepUnreleasedSection.set(true)
+    unreleasedTerm.set("[Unreleased]")
+    groups.set(listOf("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"))
 }
 
-tasks {
-    compileJava {
-        options.release.set(17)
-        options.encoding = "UTF-8"
+sonarqube {
+    properties {
+        property("sonar.projectKey", "onelitefeather_projects_voyager_AYZCnikbR8gy89ya5Hi9")
     }
 }
 
+version = if (System.getenv().containsKey("CI")) {
+    val releaseOrSnapshot = if (System.getenv("CI_COMMIT_BRANCH").equals("main", true)) {
+        ""
+    } else if(System.getenv("CI_COMMIT_BRANCH").equals("test", true)) {
+        "-PREVIEW"
+    } else {
+        "-SNAPSHOT"
+    }
+    "$baseVersion$releaseOrSnapshot+${System.getenv("CI_COMMIT_SHORT_SHA")}"
+} else {
+    "$baseVersion-SNAPSHOT"
+}
