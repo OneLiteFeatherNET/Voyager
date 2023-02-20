@@ -24,18 +24,21 @@ repositories {
 dependencies {
     // Paper
     compileOnly("io.papermc.paper:paper-api:1.19.3-R0.1-SNAPSHOT")
+    // Config
+    api("org.jetbrains.kotlinx:kotlinx-serialization-hocon:1.4.1")
     // Database
     implementation("org.jetbrains.exposed", "exposed-core", "0.40.1")
     implementation("org.jetbrains.exposed", "exposed-dao", "0.40.1")
     implementation("org.jetbrains.exposed", "exposed-jdbc", "0.40.1")
+    api("com.zaxxer:HikariCP:5.0.1")
     // Driver
     implementation("org.mariadb.jdbc:mariadb-java-client:3.1.2")
+    bukkitLibrary("com.h2database:h2:2.1.214")
     // Commands
-    implementation("cloud.commandframework:cloud-core:1.7.1")
-    implementation("cloud.commandframework:cloud-annotations:1.7.1")
-    implementation("cloud.commandframework:cloud-minecraft-extras:1.7.1")
-    implementation("cloud.commandframework:cloud-paper:1.7.1")
-    annotationProcessor("cloud.commandframework:cloud-annotations:1.7.1")
+    implementation("cloud.commandframework:cloud-annotations:1.8.0")
+    implementation("cloud.commandframework:cloud-minecraft-extras:1.8.0")
+    implementation("cloud.commandframework:cloud-paper:1.8.0")
+    annotationProcessor("cloud.commandframework:cloud-annotations:1.8.0")
     implementation("me.lucko:commodore:2.2")
     // FAWE
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core:2.5.0")
@@ -91,7 +94,7 @@ bukkit {
     main = "net.elytrarace.Voyager"
     apiVersion = "1.19"
     authors = listOf("TheMeinerLP")
-    depend = listOf("FastAsyncWorldEdit")
+    depend = listOf("FastAsyncWorldEdit", "VoidGen")
 }
 changelog {
     path.set("${project.projectDir}/CHANGELOG.md")
