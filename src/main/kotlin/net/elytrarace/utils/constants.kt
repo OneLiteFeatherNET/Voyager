@@ -17,7 +17,7 @@ const val MINIMUM_POINT = 3
 
 // World
 const val VOID_GEN_STRING = "VoidGen"
-const val DEFAULT_WORLD = "world"
+const val LOBBY_WORLD_FILE_NAME = "lobby.json"
 
 // Scheduler
 const val SHOW_LINE_DELAY = 0L
@@ -26,3 +26,7 @@ const val SHOW_LINE_OFFSET = 0.0
 const val SHOW_LINE_COUNT = 1
 const val SHOW_LINE_EXTRA = .0
 val SHOW_LINE_PARTICLE = Particle.FLAME
+// Inventory
+const val MAP_SELECTOR_SLOT = 4
+const val MAP_SELECTOR_ITEM_NAME = "<gradient:#347deb:#eb346b>Map Selector</gradient>"
+const val MAP_SELECTOR_INVENTORY_TITLE = "<gradient:#347deb:#eb346b>Map Selector</gradient>"
