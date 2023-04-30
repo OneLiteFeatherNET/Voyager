@@ -1,3 +1,5 @@
+import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.PluginLoadOrder
+
 plugins {
     kotlin("jvm") version "1.8.0"
     kotlin("plugin.serialization") version "1.8.0"
@@ -23,9 +25,12 @@ repositories {
 
 dependencies {
     // Paper
-    compileOnly("io.papermc.paper:paper-api:1.19.3-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
     // Config
     api("org.jetbrains.kotlinx:kotlinx-serialization-hocon:1.4.1")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0-RC")
+    // Caching
+    implementation("com.google.guava:guava:31.1-jre")
     // Database
     implementation("org.jetbrains.exposed", "exposed-core", "0.40.1")
     implementation("org.jetbrains.exposed", "exposed-dao", "0.40.1")
@@ -78,7 +83,7 @@ tasks {
         }
     }
     runServer {
-        minecraftVersion("1.19.3")
+        minecraftVersion("1.19.4")
     }
     shadowJar {
         archiveFileName.set("${rootProject.name}.${archiveExtension.getOrElse("jar")}")
@@ -91,6 +96,7 @@ tasks {
     }
 }
 bukkit {
+    load = PluginLoadOrder.POSTWORLD
     main = "net.elytrarace.Voyager"
     apiVersion = "1.19"
     authors = listOf("TheMeinerLP")
