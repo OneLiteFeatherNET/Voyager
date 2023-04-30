@@ -28,8 +28,6 @@ class MapService(voyager: Voyager) {
                     interpolate(locations, 0, 300) + interpolate(locations, 2, 300)
                 }
                 linePoints[map] = locs.reduce { acc, lists -> acc + lists }
-                println(linePoints[map]?.firstOrNull())
-                println(linePoints[map]?.lastOrNull())
             }
         }
         voyager.server.scheduler.runTaskTimerAsynchronously(voyager, showMapLines(), SHOW_LINE_DELAY, SHOW_LINE_TIMER)
