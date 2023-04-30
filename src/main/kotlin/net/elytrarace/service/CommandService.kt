@@ -10,6 +10,8 @@ import cloud.commandframework.paper.PaperCommandManager
 import net.elytrarace.Voyager
 import net.elytrarace.commands.MapCommands
 import net.elytrarace.commands.RingCommands
+import net.elytrarace.commands.VoyagerCommands
+import net.elytrarace.config.LobbyWorld
 import org.bukkit.command.CommandSender
 import java.util.function.Function
 
@@ -47,6 +49,7 @@ class CommandService(private val voyager: Voyager) {
     private fun registerCommands() {
         this.annotationParser.parse(MapCommands())
         this.annotationParser.parse(RingCommands())
+        this.annotationParser.parse(VoyagerCommands())
     }
 
 }
