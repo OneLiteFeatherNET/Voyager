@@ -8,7 +8,6 @@ import net.elytrarace.config.LobbyWorld
 import net.elytrarace.utils.LOBBY_WORLD_FILE_NAME
 import net.elytrarace.utils.PREFIX
 import net.elytrarace.utils.extensions.sendFormattedMiniMessage
-import net.elytrarace.utils.extensions.sendMiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.transactions.transaction
