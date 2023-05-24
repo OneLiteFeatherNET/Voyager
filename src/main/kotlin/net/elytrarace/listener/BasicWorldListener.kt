@@ -7,17 +7,18 @@ import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.LeavesDecayEvent
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent
-import org.bukkit.event.world.WorldLoadEvent
 
 class BasicWorldListener : Listener {
 
     @EventHandler
     fun leafDecay(event: LeavesDecayEvent) = cancelling(event)
+
     @EventHandler
     fun armorStandManipulateEvent(event: PlayerArmorStandManipulateEvent) = cancelling(event)
 
     @EventHandler
     fun blockBreak(event: BlockBreakEvent) = cancelling(event)
+
     @EventHandler
     fun blockPlace(event: BlockPlaceEvent) = cancelling(event)
 
