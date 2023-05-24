@@ -8,7 +8,6 @@ import com.fastasyncworldedit.core.regions.PolyhedralRegion
 import com.sk89q.worldedit.IncompleteRegionException
 import com.sk89q.worldedit.bukkit.BukkitAdapter
 import com.sk89q.worldedit.math.BlockVector3
-import com.typesafe.config.ConfigException.Null
 import net.elytrarace.models.ElytraMap
 import net.elytrarace.models.ElytraMaps
 import net.elytrarace.models.Ring
