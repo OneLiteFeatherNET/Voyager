@@ -19,9 +19,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 class DatabaseService(private val voyager: Voyager) {
     init {
         val db = Database.connect(
-            HikariDataSource(voyager.configService.config.toHikariConfig()),
+            HikariDataSource(voyager.configService.config.sqlConfig.toHikariConfig()),
             databaseConfig = DatabaseConfig {
-                sqlLogger = Voyager2SQLLogger(voyager.logger)
+                sqlLogger = Voyager2SQLLogger(voyager.getLogger())
             }
         )
         TransactionManager.defaultDatabase = db
@@ -31,11 +31,6 @@ class DatabaseService(private val voyager: Voyager) {
                 Rings,
                 RingLocations
             )
-        }
-        transaction {
-            ElytraMap.all().forEach {
-                Bukkit.createWorld(WorldCreator.name(it.world).generator(VOID_GEN_STRING))
-            }
         }
     }
 }
