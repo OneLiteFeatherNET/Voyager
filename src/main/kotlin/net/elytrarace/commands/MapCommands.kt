@@ -5,6 +5,7 @@ import cloud.commandframework.annotations.CommandMethod
 import cloud.commandframework.annotations.specifier.Quoted
 import com.sk89q.worldedit.bukkit.BukkitAdapter
 import com.sk89q.worldedit.regions.selector.RegionSelectorType
+import net.elytrarace.Voyager
 import net.elytrarace.models.ElytraMap
 import net.elytrarace.models.ElytraMaps
 import net.elytrarace.utils.PREFIX
@@ -18,8 +19,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
 import java.nio.file.Path
 
-class MapCommands {
-
+class MapCommands(
+    val voyager: Voyager
+) {
     @CommandMethod("voyager map create <name> <world>")
     fun createMap(player: Player, @Argument("name") name: String, @Argument("world") world: String) = transaction {
         if (Files.exists(Path.of(world))) {
@@ -40,13 +42,31 @@ class MapCommands {
     @CommandMethod("voyager map display <world> <display>")
     fun displayName(player: Player,
                     @Argument("world") world: World,
-                    @Argument("display") @Quoted display: String) = transaction {
-        val map = ElytraMap.find { ElytraMaps.world eq world.name }.firstOrNull() ?: run {
-            player.sendFormattedMiniMessage("%s<red>Map not found", PREFIX)
-            return@transaction
+                    @Argument("display") @Quoted display: String)  {
+        transaction {
+            val map = ElytraMap.find { ElytraMaps.world eq world.name }.firstOrNull() ?: run {
+                player.sendFormattedMiniMessage("%s<red>Map not found", PREFIX)
+                return@transaction
+            }
+            map.displayName = display
         }
-        map.displayName = display
         player.sendFormattedMiniMessage("%s<green>Map display successfully updated", PREFIX)
+        this.voyager.mapService.reloadActiveMaps()
+    }
+
+    @CommandMethod("voyager map author <world> <author>")
+    fun author(player: Player,
+                    @Argument("world") world: World,
+                    @Argument("author") @Quoted author: String)  {
+        transaction {
+            val map = ElytraMap.find { ElytraMaps.world eq world.name }.firstOrNull() ?: run {
+                player.sendFormattedMiniMessage("%s<red>Map not found", PREFIX)
+                return@transaction
+            }
+            map.author = author
+        }
+        player.sendFormattedMiniMessage("%s<green>Map author successfully updated", PREFIX)
+        this.voyager.mapService.reloadActiveMaps()
     }
 
     @CommandMethod("voyager map setup start <world>")
