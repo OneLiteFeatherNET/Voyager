@@ -18,7 +18,7 @@ class ElytraMap(id: EntityID<Int>): IntEntity(id) {
     var name by ElytraMaps.name
     var world by ElytraMaps.world
     var displayName by ElytraMaps.displayName
-    val author by ElytraMaps.author
+    var author by ElytraMaps.author
     var setup by ElytraMaps.setup
     val rings by Ring referrersOn Rings.map
 }
