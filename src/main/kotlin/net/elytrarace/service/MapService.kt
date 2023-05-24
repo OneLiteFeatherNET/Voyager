@@ -2,43 +2,51 @@ package net.elytrarace.service
 
 import net.elytrarace.Voyager
 import net.elytrarace.models.ElytraMap
-import net.elytrarace.models.Rings
-import net.elytrarace.utils.SHOW_LINE_COUNT
-import net.elytrarace.utils.SHOW_LINE_DELAY
-import net.elytrarace.utils.SHOW_LINE_EXTRA
-import net.elytrarace.utils.SHOW_LINE_OFFSET
-import net.elytrarace.utils.SHOW_LINE_PARTICLE
-import net.elytrarace.utils.SHOW_LINE_TIMER
-import net.elytrarace.utils.extensions.interpolate
-import org.bukkit.Location
-import org.jetbrains.exposed.sql.SortOrder
+import net.elytrarace.placeholder.GameMapSession
+import net.elytrarace.placeholder.LobbyMapSession
+import net.elytrarace.utils.*
+import org.bukkit.Bukkit
+import org.bukkit.WorldCreator
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class MapService(voyager: Voyager) {
-    private val linePoints = mutableMapOf<ElytraMap, List<Location>>()
+    val mapSessions = mutableListOf<GameMapSession>()
+    val lobbyMapSession: LobbyMapSession
 
     init {
-        transaction {
-            val maps = ElytraMap.all()
-            maps.forEach { map ->
-                val ringLocations = map.rings.orderBy(Rings.index to SortOrder.DESC)
-                    .mapNotNull { it.locations.firstOrNull { center -> center.center }?.bukkitLocation }.windowed(6)
-                // val spawnPoint = Bukkit.getWorld(map.world)?.spawnLocation ?: return@forEach
-                val locs =ringLocations.map { locations ->
-                    interpolate(locations, 0, 300) + interpolate(locations, 2, 300)
-                }
-                linePoints[map] = locs.reduce { acc, lists -> acc + lists }
-            }
+        val lobbyWorld = voyager.configService.lobbyWorld
+        if (lobbyWorld?.world != null) {
+            lobbyMapSession = LobbyMapSession(lobbyWorld.world, lobbyWorld)
+            loadMaps()
+        } else {
+            lobbyMapSession = TODO()
         }
         voyager.server.scheduler.runTaskTimerAsynchronously(voyager, showMapLines(), SHOW_LINE_DELAY, SHOW_LINE_TIMER)
     }
 
+    fun reloadActiveMaps() {
+        mapSessions.clear()
+        loadMaps()
+    }
+
+    private fun loadMaps() = transaction {
+        val maps = ElytraMap.all()
+        maps.forEach {
+            val world = Bukkit.createWorld(WorldCreator.name(it.world).generator(VOID_GEN_STRING))
+            if (world != null) {
+                mapSessions.add(
+                    GameMapSession(world, it)
+                )
+            }
+        }
+    }
+
     private fun showMapLines() = Runnable {
-        linePoints.values.forEach { mapBased ->
-            mapBased.forEach {
-                it.world.spawnParticle(
+        this.mapSessions.forEach { session ->
+            session.splineLocations.forEach { location ->
+                location.world.spawnParticle(
                     SHOW_LINE_PARTICLE,
-                    it,
+                    location,
                     SHOW_LINE_COUNT,
                     SHOW_LINE_OFFSET,
                     SHOW_LINE_OFFSET,
