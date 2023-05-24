@@ -1,12 +1,14 @@
 package net.elytrarace.utils
 
-import org.bukkit.Color
+import net.kyori.adventure.key.Key
 import org.bukkit.Particle
 
 // Chat
 const val PREFIX = "<dark_gray>[</dark_gray><gradient:#fcba03:#03fc8c>ElytraRace</gradient><dark_gray>]</dark_gray> "
 const val COLOR_YELLOW_STRING = "#fcba03"
 const val COLOR_GREEN_STRING = "#03fc8c"
+
+val NAMESPACED_KEY: Key = Key.key("voyager", "i18n")
 
 
 // Config
@@ -26,7 +28,10 @@ const val SHOW_LINE_OFFSET = 0.0
 const val SHOW_LINE_COUNT = 1
 const val SHOW_LINE_EXTRA = .0
 val SHOW_LINE_PARTICLE = Particle.FLAME
+
 // Inventory
 const val MAP_SELECTOR_SLOT = 4
 const val MAP_SELECTOR_ITEM_NAME = "<gradient:#347deb:#eb346b>Map Selector</gradient>"
+const val ELYTRA_ITEM_NAME = "<gradient:#347deb:#eb346b>Elytra</gradient>"
+const val BOOST_ITEM_NAME = "<gradient:#347deb:#eb346b>BOOST</gradient>"
 const val MAP_SELECTOR_INVENTORY_TITLE = "<gradient:#347deb:#eb346b>Map Selector</gradient>"
