@@ -24,8 +24,11 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     // Paper
     compileOnly("io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
+    // Math
+    implementation("org.apache.commons:commons-geometry-euclidean:1.0")
     // Config
     api("org.jetbrains.kotlinx:kotlinx-serialization-hocon:1.4.1")
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0-RC")
