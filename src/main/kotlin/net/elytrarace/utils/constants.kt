@@ -35,3 +35,6 @@ const val MAP_SELECTOR_ITEM_NAME = "<gradient:#347deb:#eb346b>Map Selector</grad
 const val ELYTRA_ITEM_NAME = "<gradient:#347deb:#eb346b>Elytra</gradient>"
 const val BOOST_ITEM_NAME = "<gradient:#347deb:#eb346b>BOOST</gradient>"
 const val MAP_SELECTOR_INVENTORY_TITLE = "<gradient:#347deb:#eb346b>Map Selector</gradient>"
+
+// Scoreboard
+const val OBJECTIVES_NAME = "timings"
