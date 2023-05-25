@@ -52,9 +52,9 @@ fun interpolate(points: List<Location>, index: Int = 0, pointsPerSegment: Int): 
     val z = DoubleArray(4)
     val time = DoubleArray(4)
     for (i in 0 until 4) {
-        x[i] = points[index + i].x
-        y[i] = points[index + i].y
-        z[i] = points[index + i].z
+        x[i] = points[index + i].x + 0.5
+        y[i] = points[index + i].y + 0.5
+        z[i] = points[index + i].z + 0.5
         time[i] = i.toDouble()
     }
     var tStart = 1.0
