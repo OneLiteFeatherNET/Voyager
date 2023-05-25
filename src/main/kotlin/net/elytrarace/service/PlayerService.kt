@@ -77,6 +77,7 @@ class PlayerService(
     }
 
     fun finishMap(playerSession: PlayerSession) {
+        playerSession.player.inventory.clear()
         val sb = playerSession.player.scoreboard
         sb.getObjective(OBJECTIVES_NAME)?.unregister()
         playerSession.player.scoreboard = sb
