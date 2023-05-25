@@ -6,6 +6,7 @@ import net.elytrarace.placeholder.LobbyMapSession
 import net.elytrarace.placeholder.PlayerSession
 import net.elytrarace.utils.MAP_SELECTOR_INVENTORY_TITLE
 import net.elytrarace.utils.MAP_SELECTOR_SLOT
+import net.elytrarace.utils.OBJECTIVES_NAME
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -73,6 +74,17 @@ class PlayerService(
         playerSession.player.inventory.chestplate = voyager.inventoryService.elytraItem
         playerSession.player.inventory.setItemInOffHand(voyager.inventoryService.boostItem)
         playerSessions[playerSession.player] = playerSession.copy(mapSession = gameMapSession)
+    }
+
+    fun finishMap(playerSession: PlayerSession) {
+        val sb = playerSession.player.scoreboard
+        sb.getObjective(OBJECTIVES_NAME)?.unregister()
+        playerSession.player.scoreboard = sb
+        playerSession.player.teleportAsync(voyager.mapService.lobbyMapSession.world.spawnLocation)
+        playerSession.player.inventory.setItem(MAP_SELECTOR_SLOT, voyager.inventoryService.mapSelectorItem)
+        playerSession.player.inventory.heldItemSlot = MAP_SELECTOR_SLOT
+        playerSessions[playerSession.player] = playerSession.copy(mapSession = voyager.mapService.lobbyMapSession, startTime = null)
+
     }
 
     private fun createMapSelectorInventory(player: Player): Inventory {
