@@ -92,7 +92,7 @@ class RingCommands {
     fun deleteRing(player: Player, @Argument("index", parserName = "ringIndex") ring: Ring) = transaction {
         val locations = RingLocation.wrapRows(RingLocations.select { RingLocations.ring eq ring.id })
         locations.forEach { it.delete() }
-        ring.delete()
+        Ring[ring.id].delete()
         player.sendFormattedMiniMessage("%s<green>This ring is now deleted", PREFIX)
     }
 
@@ -108,10 +108,12 @@ class RingCommands {
     }
 
     @Parser(name = "ringIndex")
-    fun ringIndex(sender: CommandContext<Player>, input: Queue<String>):Ring {
+    fun ringIndex(sender: CommandContext<Player>, input: Queue<String>): Ring = transaction {
         val rawInput = input.remove()
         val parsedIndex = rawInput.toIntOrNull() ?: throw IllegalArgumentException("Input is not a number")
-        return Ring.wrapRow(Rings.select { Rings.index eq parsedIndex }.firstOrNull() ?: throw NullPointerException("No ring found"))
+        return@transaction Ring.wrapRow(
+            Rings.select { Rings.index eq parsedIndex }.firstOrNull() ?: throw NullPointerException("No ring found")
+        )
     }
 
 }
