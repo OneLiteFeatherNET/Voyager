@@ -9,6 +9,7 @@ import net.elytrarace.utils.MAP_SELECTOR_SLOT
 import net.elytrarace.utils.OBJECTIVES_NAME
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
 import java.time.Duration
@@ -18,6 +19,7 @@ class PlayerService(
     val voyager: Voyager
 ) {
     val playerSessions = mutableMapOf<Player, PlayerSession>()
+    val lastPlayerPosition = mutableMapOf<Player, Location>()
 
     init {
         voyager.server.scheduler.runTaskTimerAsynchronously(voyager, showCurrentTime(), 0, 1)
@@ -31,7 +33,16 @@ class PlayerService(
                     val minutes = diff.toMinutesPart().toString().padStart(2, '0')
                     val seconds = diff.toSecondsPart().toString().padStart(2, '0')
                     val millis = diff.toMillisPart().toString().dropLast(1).padStart(3, '0')
-                    it.player.sendActionBar(MiniMessage.miniMessage().deserialize("<green>$minutes:$seconds:$millis"))
+
+                    val currentLoc = it.player.location
+                    val lastLoc = lastPlayerPosition.getOrPut(it.player) { currentLoc }
+                    val distance = currentLoc.distance(lastLoc)
+                    val blocksPerSeconds = (distance / 0.05).toInt()
+                    it.player.sendActionBar(
+                        MiniMessage.miniMessage()
+                            .deserialize("<green>$minutes:$seconds:$millis - ${blocksPerSeconds}B/s")
+                    )
+                    lastPlayerPosition[it.player] = currentLoc
                 }
             }
         }
@@ -84,7 +95,8 @@ class PlayerService(
         playerSession.player.teleportAsync(voyager.mapService.lobbyMapSession.world.spawnLocation)
         playerSession.player.inventory.setItem(MAP_SELECTOR_SLOT, voyager.inventoryService.mapSelectorItem)
         playerSession.player.inventory.heldItemSlot = MAP_SELECTOR_SLOT
-        playerSessions[playerSession.player] = playerSession.copy(mapSession = voyager.mapService.lobbyMapSession, startTime = null)
+        playerSessions[playerSession.player] =
+            playerSession.copy(mapSession = voyager.mapService.lobbyMapSession, startTime = null)
 
     }
 
