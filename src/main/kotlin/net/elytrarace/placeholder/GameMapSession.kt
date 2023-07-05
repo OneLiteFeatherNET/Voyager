@@ -31,10 +31,10 @@ private fun buildSorted(elytraMap: ElytraMap): TreeSet<Ring> = transaction {
 }
 
 private fun calculateSpline(elytraMap: ElytraMap, world: World): List<Location> = transaction {
-    val ringLocations = elytraMap.rings.orderBy(Rings.index to SortOrder.DESC)
-        .mapNotNull { it.locations.firstOrNull { center -> center.center }?.bukkitLocation }.windowed(6)
+    val bukkitLocs = elytraMap.rings.orderBy(Rings.index to SortOrder.DESC)
+            .mapNotNull { it.locations.firstOrNull { center -> center.center }?.bukkitLocation }
+    val ringLocations = (arrayListOf(world.spawnLocation) + bukkitLocs + arrayOf(world.spawnLocation)).windowed(6)
     val firstSix = (ringLocations.last() + ringLocations.take(4).reduce { acc, locations -> acc + locations }) .toMutableList()
-    firstSix.add(world.spawnLocation)
     val first = (interpolate(firstSix, 0, 300) + interpolate(firstSix, 2, 300))
     val locs = ringLocations.map { locations ->
         interpolate(locations, 0, 300) + interpolate(locations, 2, 300)
