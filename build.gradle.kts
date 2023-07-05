@@ -1,21 +1,43 @@
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.PluginLoadOrder
+import org.ajoberstar.grgit.Grgit
+import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.8.0"
-    kotlin("plugin.serialization") version "1.8.0"
+    kotlin("jvm") version "1.8.20"
+    kotlin("plugin.serialization") version "1.8.20"
     // Shadow
     id("com.github.johnrengelman.shadow") version "7.1.2"
     // Bukkit
-    id("xyz.jpenilla.run-paper") version "2.0.1"
-    id("org.sonarqube") version "3.5.0.2730"
-    id("net.minecrell.plugin-yml.bukkit") version "0.5.2"
-    // Changelog
-    id("org.jetbrains.changelog") version "2.0.0"
+    id("xyz.jpenilla.run-paper") version "2.1.0"
+    id("net.minecrell.plugin-yml.bukkit") version "0.5.3"
+    id("org.ajoberstar.grgit") version "5.2.0"
     jacoco
 }
 
 group = "net.elytrarace"
-val baseVersion = "0.0.1"
+if (!File("$rootDir/.git").exists()) {
+    logger.lifecycle(
+            """
+    **************************************************************************************
+    You need to fork and clone this repository! Don't download a .zip file.
+    If you need assistance, consult the GitHub docs: https://docs.github.com/get-started/quickstart/fork-a-repo
+    **************************************************************************************
+    """.trimIndent()
+    ).also { System.exit(1) }
+}
+var baseVersion by extra("1.0.0")
+var extension by extra("")
+var snapshot by extra("-SNAPSHOT")
+
+ext {
+    val git: Grgit = Grgit.open {
+        dir = File("$rootDir/.git")
+    }
+    val revision = git.head().abbreviatedId
+    extension = "%s+%s".format(Locale.ROOT, snapshot, revision)
+}
+
+version = "%s%s".format(Locale.ROOT, baseVersion, extension)
 
 repositories {
     mavenCentral()
@@ -94,9 +116,6 @@ tasks {
         isZip64 = true
         // relocate("org.bstats", "builders.volans.bstats")
     }
-    getByName<org.sonarqube.gradle.SonarTask>("sonarqube") {
-        dependsOn(rootProject.tasks.test)
-    }
 }
 bukkit {
     load = PluginLoadOrder.POSTWORLD
@@ -104,31 +123,4 @@ bukkit {
     apiVersion = "1.19"
     authors = listOf("TheMeinerLP")
     depend = listOf("FastAsyncWorldEdit", "VoidGen")
-}
-changelog {
-    path.set("${project.projectDir}/CHANGELOG.md")
-    header.set(provider { "[${version.get()}] - ${org.jetbrains.changelog.date()}" })
-    itemPrefix.set("-")
-    keepUnreleasedSection.set(true)
-    unreleasedTerm.set("[Unreleased]")
-    groups.set(listOf("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"))
-}
-
-sonarqube {
-    properties {
-        property("sonar.projectKey", "onelitefeather_projects_voyager_AYZCnikbR8gy89ya5Hi9")
-    }
-}
-
-version = if (System.getenv().containsKey("CI")) {
-    val releaseOrSnapshot = if (System.getenv("CI_COMMIT_BRANCH").equals("main", true)) {
-        ""
-    } else if(System.getenv("CI_COMMIT_BRANCH").equals("test", true)) {
-        "-PREVIEW"
-    } else {
-        "-SNAPSHOT"
-    }
-    "$baseVersion$releaseOrSnapshot+${System.getenv("CI_COMMIT_SHORT_SHA")}"
-} else {
-    "$baseVersion-SNAPSHOT"
 }
