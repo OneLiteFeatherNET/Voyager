@@ -37,17 +37,22 @@ class RaceBasicListener(
     @EventHandler
     fun checkPortal(event: PlayerMoveEvent) {
         val player = event.player
+        // Gets the player session
         val session = voyager.playerService.playerSessions[player] ?: return
+        // Checks if the player on the lobby
         if (session.mapSession is LobbyMapSession) {
             return
         }
+        // Get the game map session
         val gameMapSession = session.mapSession as GameMapSession
+        // Check if last ring null - Checks if the first ring/portal
         if (session.lastRing == null) {
+            // Gets the first ring
             val firstRing = transaction {
                 return@transaction gameMapSession.sortedRings.first()
             }
+            // Map the locations to bukkit locations
             val bukkitLocations = transaction {
-
                 return@transaction firstRing.locations.map { it.bukkitLocation }
             }
             val to = event.to
