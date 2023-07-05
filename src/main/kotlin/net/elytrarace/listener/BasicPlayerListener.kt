@@ -3,6 +3,7 @@ package net.elytrarace.listener
 import net.elytrarace.Voyager
 import net.elytrarace.utils.OBJECTIVES_NAME
 import net.elytrarace.utils.cancelling
+import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageEvent
@@ -31,9 +32,7 @@ class BasicPlayerListener(
     @EventHandler
     fun joinEvent(event: PlayerJoinEvent) {
         event.joinMessage(null)
-        val sb = event.player.scoreboard
-        sb.getObjective(OBJECTIVES_NAME)?.unregister()
-        event.player.scoreboard = sb
+        event.player.scoreboard = Bukkit.getScoreboardManager().newScoreboard
         voyager.playerService.joinPlayer(event.player)
 
     }
