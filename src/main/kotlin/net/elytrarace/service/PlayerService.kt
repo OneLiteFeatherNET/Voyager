@@ -9,6 +9,7 @@ import net.elytrarace.utils.MAP_SELECTOR_SLOT
 import net.elytrarace.utils.OBJECTIVES_NAME
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
@@ -49,6 +50,7 @@ class PlayerService(
     }
 
     fun joinPlayer(player: Player) {
+        player.gameMode = GameMode.CREATIVE
         // Clear inventory
         player.inventory.clear()
         // Set map selector
