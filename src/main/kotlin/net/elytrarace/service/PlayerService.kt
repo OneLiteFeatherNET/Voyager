@@ -1,6 +1,7 @@
 package net.elytrarace.service
 
 import net.elytrarace.Voyager
+import net.elytrarace.config.PluginMode
 import net.elytrarace.placeholder.GameMapSession
 import net.elytrarace.placeholder.LobbyMapSession
 import net.elytrarace.placeholder.PlayerSession
@@ -94,11 +95,18 @@ class PlayerService(
         val sb = playerSession.player.scoreboard
         sb.getObjective(OBJECTIVES_NAME)?.unregister()
         playerSession.player.scoreboard = sb
-        playerSession.player.teleportAsync(voyager.mapService.lobbyMapSession.world.spawnLocation)
-        playerSession.player.inventory.setItem(MAP_SELECTOR_SLOT, voyager.inventoryService.mapSelectorItem)
-        playerSession.player.inventory.heldItemSlot = MAP_SELECTOR_SLOT
-        playerSessions[playerSession.player] =
-            playerSession.copy(mapSession = voyager.mapService.lobbyMapSession, startTime = null)
+        if (voyager.configService.config.pluginMode == PluginMode.TESTING) {
+            playerSession.player.teleportAsync(playerSession.mapSession.world.spawnLocation)
+            playerSessions[playerSession.player] =
+                    playerSession.copy(startTime = null)
+        } else {
+            playerSession.player.teleportAsync(voyager.mapService.lobbyMapSession.world.spawnLocation)
+            playerSession.player.inventory.setItem(MAP_SELECTOR_SLOT, voyager.inventoryService.mapSelectorItem)
+            playerSession.player.inventory.heldItemSlot = MAP_SELECTOR_SLOT
+            playerSessions[playerSession.player] =
+                    playerSession.copy(mapSession = voyager.mapService.lobbyMapSession, startTime = null)
+        }
+
 
     }
 

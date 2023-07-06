@@ -35,9 +35,9 @@ private fun calculateSpline(elytraMap: ElytraMap, world: World): List<Location> 
             .mapNotNull { it.locations.firstOrNull { center -> center.center }?.bukkitLocation }
     val ringLocations = (arrayListOf(world.spawnLocation) + bukkitLocs + arrayOf(world.spawnLocation)).windowed(6)
     val firstSix = (ringLocations.last() + ringLocations.take(4).reduce { acc, locations -> acc + locations }) .toMutableList()
-    val first = (interpolate(firstSix, 0, 300) + interpolate(firstSix, 2, 300))
+    val first = (interpolate(firstSix, 0, 150) + interpolate(firstSix, 2, 150))
     val locs = ringLocations.map { locations ->
-        interpolate(locations, 0, 300) + interpolate(locations, 2, 300)
+        interpolate(locations, 0, 150) + interpolate(locations, 2, 150)
     }
     return@transaction first + (locs.reduce { acc, lists -> acc + lists })
 }
