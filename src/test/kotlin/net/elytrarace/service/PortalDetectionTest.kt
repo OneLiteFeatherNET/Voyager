@@ -1,7 +1,7 @@
 package net.elytrarace.service
 
-import net.elytrarace.model.ElytraPlayer
-import net.elytrarace.model.Portal
+import net.elytrarace.model.dto.ElytraPlayer
+import net.elytrarace.model.dto.Portal
 import org.apache.commons.geometry.euclidean.threed.Vector3D
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

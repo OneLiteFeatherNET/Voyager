@@ -1,4 +1,4 @@
-package net.elytrarace.model
+package net.elytrarace.model.dto
 
 import org.apache.commons.geometry.euclidean.threed.Vector3D
 import java.util.concurrent.ArrayBlockingQueue

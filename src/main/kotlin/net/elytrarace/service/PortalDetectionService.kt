@@ -1,7 +1,7 @@
 package net.elytrarace.service
 
-import net.elytrarace.model.ElytraPlayer
-import net.elytrarace.model.Portal
+import net.elytrarace.model.dto.ElytraPlayer
+import net.elytrarace.model.dto.Portal
 import org.apache.commons.geometry.euclidean.threed.Bounds3D
 import org.apache.commons.geometry.euclidean.threed.Planes
 import org.apache.commons.geometry.euclidean.threed.line.Lines3D
