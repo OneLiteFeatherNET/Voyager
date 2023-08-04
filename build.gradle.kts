@@ -76,7 +76,9 @@ dependencies {
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.5.0") {
         isTransitive = false
     }
-
+    // Testing
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
 kotlin {
     jvmToolchain {
