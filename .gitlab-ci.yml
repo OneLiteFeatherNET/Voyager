@@ -1,139 +1,17 @@
-image: repo.htl-md.schule:5003/gradle:jdk17-alpine
+include:
+  - project: onelitefeather/ci-template
+    ref: Better-Pipelines
+    file: s3-upload.yaml
+  - project: onelitefeather/ci-template
+    ref: Better-Pipelines
+    file: sonarqube.yaml
 
-.k8s-resources: &k8s-resources
-  KUBERNETES_CPU_REQUEST: "32"
-  KUBERNETES_CPU_LIMIT: "64"
-  KUBERNETES_MEMORY_REQUEST: "4Gi"
-  KUBERNETES_MEMORY_LIMIT: "8Gi"
-  KUBERNETES_EPHEMERAL_STORAGE_REQUEST: "2Gi"
-  KUBERNETES_EPHEMERAL_STORAGE_LIMIT: "5Gi"
 
-  KUBERNETES_HELPER_CPU_REQUEST: "32"
-  KUBERNETES_HELPER_CPU_LIMIT: "10´´64"
-  KUBERNETES_HELPER_MEMORY_REQUEST: "4Gi"
-  KUBERNETES_HELPER_MEMORY_LIMIT: "8Gi"
-  KUBERNETES_HELPER_EPHEMERAL_STORAGE_REQUEST: "2Gi"
-  KUBERNETES_HELPER_EPHEMERAL_STORAGE_LIMIT: "5Gi"
-
-  KUBERNETES_SERVICE_CPU_REQUEST: "3"
-  KUBERNETES_SERVICE_CPU_LIMIT: "5"
-  KUBERNETES_SERVICE_MEMORY_REQUEST: "2Gi"
-  KUBERNETES_SERVICE_MEMORY_LIMIT: "4Gi"
-  KUBERNETES_SERVICE_EPHEMERAL_STORAGE_REQUEST: "512Mi"
-  KUBERNETES_SERVICE_EPHEMERAL_STORAGE_LIMIT: "1Gi"
-
-# Default variables
 variables:
-  GRADLE_OPTS: "-Dorg.gradle.internal.launcher.welcomeMessageEnabled=false"
   JAR_FILE: "Voyager.jar"
   BUCKET: "olf-dev"
-  TEMPLATE: "voyager"
-  CACHE_COMPRESSION_LEVEL: "fastest"
-  <<: *k8s-resources
-
-# Cache Section
-.gradle-cache: &gradle-cache
-  key: $CI_COMMIT_REF_SLUG
-  paths:
-    - "$CI_PROJECT_DIR/.gradle"
-    - "$CI_PROJECT_DIR/.sonar"
-    - build
-  policy: pull-push
-
-before_script:
-  - export GRADLE_USER_HOME=$CI_PROJECT_DIR/.gradle
-#  - mkdir -p $CI_PROJECT_DIR/.gradle
-#  - echo "org.gradle.daemon=false" >> $CI_PROJECT_DIR/.gradle/gradle.properties
-
-# Stages
-build:
-  stage: build
-  script:
-    - gradle classes
-  cache:
-    - <<: *gradle-cache
-
-test:
-  stage: test
-  variables:
-    SONAR_USER_HOME: "$CI_PROJECT_DIR/.sonar"
-    GIT_DEPTH: "0"
-  needs: ["build"]
-  dependencies: []
-  cache:
-    - <<: *gradle-cache
-  script: gradle sonarqube -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.gitlab.project_id=$CI_PROJECT_ID -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHA -Dsonar.gitlab.ref_name=$CI_COMMIT_REF_NAME -Dsonar.branch.name=$CI_COMMIT_REF_NAME -Dsonar.qualitygate.wait=true
-  allow_failure: true
-  only:
-    - master
-    - develop
-    - main
-    - test
-# PR Feedback
-sonarqube-check-mr:
-  image: repo.htl-md.schule:5003/gradle:jdk17-alpine
-  stage: test
-  variables:
-    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
-    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
-  needs: []
-  dependencies: []
-  cache:
-    - <<: *gradle-cache
-  script:
-    - gradle sonarqube -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.gitlab.project_id=$CI_PROJECT_ID -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHA -Dsonar.gitlab.ref_name=$CI_COMMIT_REF_NAME -Dsonar.qualitygate.wait=true -Dsonar.gitlab.merge_request_discussion=true -Dsonar.gitlab.ci_merge_request_iid=$CI_MERGE_REQUEST_IID -Dsonar.pullrequest.branch=$CI_COMMIT_REF_NAME -Dsonar.pullrequest.key=$CI_MERGE_REQUEST_IID -Dsonar.pullrequest.base=$CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
-  allow_failure: true
-  only:
-    - merge_requests
-
+  TEMPLATE: "default"
 
 deploy:
-  stage: deploy
-  needs: ["test"]
   script:
     - gradle shadowJar
-  artifacts:
-    expire_in: 1 week
-    name: "jar-files-$CI_COMMIT_REF_SLUG"
-    paths:
-      - build/libs/$JAR_FILE
-  cache:
-    - <<: *gradle-cache
-  only:
-    - main
-    - master
-    - test
-    - develop
-    - tags
-
-.s3_base: &s3_base
-  image:
-    name: repo.htl-md.schule:5003/bitnami/minio-client
-    entrypoint: [""]
-  stage: deploy
-  cache:
-    - <<: *gradle-cache
-  needs: ["deploy"]
-  dependencies:
-    - deploy
-  before_script:
-    - mc alias set minio $MINIO_HOST $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
-  script:
-    - mc cp build/libs/$JAR_FILE minio/$BUCKET/$CI_COMMIT_BRANCH/$TEMPLATE/plugins/
-
-deployToDevelop:
-  <<: *s3_base
-  only:
-    - develop
-
-deployToTest:
-  <<: *s3_base
-  only:
-    - test
-
-deployToLive:
-  <<: *s3_base
-  only:
-    - main
-    - master
-
