@@ -3,8 +3,8 @@ import org.ajoberstar.grgit.Grgit
 import java.util.*
 
 plugins {
-    kotlin("jvm") version "1.8.20"
-    kotlin("plugin.serialization") version "1.8.20"
+    kotlin("jvm") version "1.8.22"
+    kotlin("plugin.serialization") version "1.8.22"
     // Shadow
     id("com.github.johnrengelman.shadow") version "7.1.2"
     // Bukkit
@@ -12,6 +12,7 @@ plugins {
     id("net.minecrell.plugin-yml.bukkit") version "0.5.3"
     id("org.ajoberstar.grgit") version "5.2.0"
     jacoco
+    id ("org.sonarqube") version "4.2.1.3168"
 }
 
 group = "net.elytrarace"
@@ -100,12 +101,6 @@ tasks {
         testLogging {
             events("passed", "skipped", "failed")
         }
-        maxHeapSize = "512m"
-        maxParallelForks = if (System.getenv().containsKey("CI")) {
-            8
-        } else {
-            Runtime.getRuntime().availableProcessors() / 2
-        }
     }
     runServer {
         minecraftVersion("1.19.4")
@@ -123,4 +118,12 @@ bukkit {
     apiVersion = "1.19"
     authors = listOf("TheMeinerLP")
     depend = listOf("FastAsyncWorldEdit", "VoidGen")
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "onelitefeather_projects_voyager_AYnB2SgBq35l90nqW9Re")
+        property("sonar.projectName", "Voyager")
+        property("sonar.qualitygate.wait", true)
+    }
 }
