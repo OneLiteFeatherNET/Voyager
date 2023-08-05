@@ -9,6 +9,7 @@ import net.elytrarace.phase.LinearPhaseSeries
 import net.elytrarace.phase.Phase
 import net.elytrarace.phases.GamePhase
 import net.elytrarace.phases.LobbyPhase
+import net.elytrarace.service.CommandService
 import net.elytrarace.service.ConfigService
 import net.elytrarace.service.DatabaseService
 import net.elytrarace.utils.LynxWrapper
@@ -37,6 +38,8 @@ class Voyager : JavaPlugin() {
     val cup: Cup? by lazy {
         getCup(configService.config.cupConfiguration)
     }
+
+    val commandService: CommandService by lazy { CommandService(this) }
 
     val elytraPhase = LinearPhaseSeries<Phase>()
     val playableMaps: MutableList<GameMapSession> = mutableListOf()
@@ -71,6 +74,8 @@ class Voyager : JavaPlugin() {
 
             }
             elytraPhase.start()
+        } else {
+            this.commandService.registerCommands()
         }
 
 
