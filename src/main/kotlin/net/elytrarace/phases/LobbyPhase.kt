@@ -1,0 +1,41 @@
+package net.elytrarace.phases
+
+import net.elytrarace.model.config.CupConfiguration
+import net.elytrarace.phase.TickDirection
+import net.elytrarace.phase.TimedPhase
+import net.elytrarace.util.Strings
+import net.elytrarace.util.TimeFormat
+import net.kyori.adventure.text.minimessage.MiniMessage
+import org.bukkit.Bukkit
+import org.bukkit.plugin.java.JavaPlugin
+
+class LobbyPhase(game: JavaPlugin, private val cupConfiguration: CupConfiguration) :
+    TimedPhase("Lobby", game, 20, true) {
+
+    init {
+        endTicks = 0
+        tickDirection = TickDirection.DOWN
+        // isPaused = true
+    }
+
+    override fun onUpdate() {
+        val players = Bukkit.getOnlinePlayers()
+        val time = Strings.getTimeString(TimeFormat.MM_SS, currentTicks)
+        players.forEach {
+            it.sendActionBar(
+                MiniMessage.miniMessage().deserialize("<lang:plugin.phase.lobby.current:'$time'>")
+            )
+        }
+        if (players.size < this.cupConfiguration.minPlayerSize) currentTicks = 121
+
+    }
+
+    override fun onStart() {
+        currentTicks = 121
+        super.onStart()
+    }
+
+    override fun onFinish() {
+
+    }
+}
