@@ -16,5 +16,5 @@ class Cup(id: EntityID<Int>): IntEntity(id) {
     companion object : IntEntityClass<Cup>(Cups)
     var name by Cups.name
     var displayName by Cups.displayName
-    val maps by Portal optionalReferrersOn  Portals.cup
+    val maps by ElytraMap optionalReferrersOn  ElytraMaps.cup
 }

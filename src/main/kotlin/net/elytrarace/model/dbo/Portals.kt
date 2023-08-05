@@ -8,14 +8,12 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 object Portals : IntIdTable() {
     val index = integer("index")
     val map = reference("map", ElytraMaps)
-    val cup = reference("cup", Cups).nullable()
 }
 class Portal(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<Portal>(Portals)
 
     var index by Portals.index
     var map by ElytraMap referencedOn Portals.map
-    var cup by Cup optionalReferencedOn Portals.cup
     val locations by PortalLocation referrersOn PortalLocations.portal
 
 
