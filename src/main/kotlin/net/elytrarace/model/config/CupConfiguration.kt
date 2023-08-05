@@ -1,0 +1,11 @@
+package net.elytrarace.model.config
+
+import com.zaxxer.hikari.HikariConfig
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class CupConfiguration(
+    val cupName: String,
+    val playerSize: Int,
+    val minPlayerSize: Int,
+)
