@@ -3,6 +3,7 @@ package net.elytrarace.service
 import com.zaxxer.hikari.HikariDataSource
 import net.elytrarace.Voyager
 import net.elytrarace.logger.Voyager2SQLLogger
+import net.elytrarace.model.dbo.Cups
 import net.elytrarace.model.dbo.ElytraMaps
 import net.elytrarace.model.dbo.PortalLocations
 import net.elytrarace.model.dbo.Portals
@@ -23,6 +24,7 @@ class DatabaseService(private val voyager: Voyager) {
         TransactionManager.defaultDatabase = db
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
+                Cups,
                 ElytraMaps,
                 Portals,
                 PortalLocations
