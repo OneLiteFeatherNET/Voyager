@@ -1,5 +1,7 @@
 package net.elytrarace.utils
 
+import org.bukkit.Particle
+
 // Chat
 const val PREFIX = "<dark_gray>[</dark_gray><gradient:#fcba03:#03fc8c>ElytraRace</gradient><dark_gray>]</dark_gray> "
 const val COLOR_YELLOW_STRING = "#fcba03"
@@ -13,3 +15,7 @@ const val VOID_GEN_STRING = "VoidGen"
 const val LOBBY_WORLD_FILE_NAME = "lobby.json"
 
 const val POINTS_PER_SEGMENT = 50
+val SHOW_LINE_PARTICLE = Particle.FLAME
+const val SHOW_LINE_OFFSET = 0.0
+const val SHOW_LINE_COUNT = 1
+const val SHOW_LINE_EXTRA = .0
