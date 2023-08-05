@@ -1,6 +1,9 @@
 package net.elytrarace
 
 import net.elytrarace.listener.BasicWorldListener
+import net.elytrarace.phase.LinearPhaseSeries
+import net.elytrarace.phase.Phase
+import net.elytrarace.phases.LobbyPhase
 import net.elytrarace.service.ConfigService
 import net.elytrarace.service.DatabaseService
 import net.elytrarace.utils.LynxWrapper
@@ -32,6 +35,9 @@ class Voyager : JavaPlugin() {
         GlobalTranslator.translator().addSource(LynxWrapper(registry))
 
         server.pluginManager.registerEvents(BasicWorldListener(), this)
+        val linearPhase = LinearPhaseSeries<Phase>()
+        linearPhase.add(LobbyPhase(this, cupConfiguration = configService.config.cupConfiguration))
+        linearPhase.start()
     }
 
 }
