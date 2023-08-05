@@ -12,7 +12,7 @@ object PortalLocations : IntIdTable() {
     val y = integer("y")
     val z = integer("z")
     val center = bool("center").default(false)
-    val portal = reference("portal", Portals)
+    val portal = reference("portal", Portals).index()
 
 }
 

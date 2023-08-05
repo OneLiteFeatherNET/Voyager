@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 
 object Portals : IntIdTable() {
     val index = integer("index")
-    val map = reference("map", ElytraMaps)
+    val map = reference("map", ElytraMaps).index()
 }
 class Portal(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<Portal>(Portals)

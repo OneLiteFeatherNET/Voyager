@@ -12,7 +12,7 @@ object ElytraMaps : IntIdTable() {
     val world = varchar("world", 32)
     val displayName = varchar("displayName",32).nullable()
     val author = varchar("author",32).nullable()
-    val cup = reference("cup", Cups).nullable()
+    val cup = reference("cup", Cups).nullable().index()
 }
 class ElytraMap(id: EntityID<Int>): IntEntity(id) {
     companion object : IntEntityClass<ElytraMap>(ElytraMaps)
