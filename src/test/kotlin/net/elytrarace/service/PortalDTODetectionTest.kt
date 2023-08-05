@@ -1,10 +1,12 @@
 package net.elytrarace.service
 
+import io.mockk.mockk
 import net.elytrarace.model.dto.ElytraPlayer
 import net.elytrarace.model.dto.PortalDTO
 import org.apache.commons.geometry.euclidean.threed.Vector3D
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class PortalDTODetectionTest {
 
@@ -19,7 +21,7 @@ class PortalDTODetectionTest {
                 Vector3D.of(0.0,10.0,0.0)
             )
         )
-        val fakePlayer = ElytraPlayer()
+        val fakePlayer = ElytraPlayer(lastPortal = mockk(), player = mockk(), mapSession = mockk(), startTime = Instant.now(), timeStampForRings = mutableMapOf())
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,5.0,-5.0))
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,5.0,0.0))
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,5.0,5.0))
@@ -37,7 +39,7 @@ class PortalDTODetectionTest {
                 Vector3D.of(0.0,0.0,10.0)
             )
         )
-        val fakePlayer = ElytraPlayer()
+        val fakePlayer = ElytraPlayer(lastPortal = mockk(), player = mockk(), mapSession = mockk(), startTime = Instant.now(), timeStampForRings = mutableMapOf())
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,-5.0,5.0))
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,0.0,5.0))
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,5.0,5.0))
@@ -55,7 +57,7 @@ class PortalDTODetectionTest {
                 Vector3D.of(0.0,10.0,10.0)
             )
         )
-        val fakePlayer = ElytraPlayer()
+        val fakePlayer = ElytraPlayer(lastPortal = mockk(), player = mockk(), mapSession = mockk(), startTime = Instant.now(), timeStampForRings = mutableMapOf())
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,-5.0,5.0))
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,0.0,5.0))
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,5.0,5.0))
