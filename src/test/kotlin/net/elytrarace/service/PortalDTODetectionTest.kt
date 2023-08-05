@@ -19,7 +19,9 @@ class PortalDTODetectionTest {
                 Vector3D.of(20.0,0.0,0.0),
                 Vector3D.of(20.0,10.0,0.0),
                 Vector3D.of(0.0,10.0,0.0)
-            )
+            ),
+            mockk(),
+            mockk()
         )
         val fakePlayer = ElytraPlayer(lastPortal = mockk(), player = mockk(), mapSession = mockk(), startTime = Instant.now(), timeStampForRings = mutableMapOf())
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,5.0,-5.0))
@@ -37,7 +39,9 @@ class PortalDTODetectionTest {
                 Vector3D.of(20.0,0.0,0.0),
                 Vector3D.of(20.0,0.0,10.0),
                 Vector3D.of(0.0,0.0,10.0)
-            )
+            ),
+            mockk(),
+            mockk()
         )
         val fakePlayer = ElytraPlayer(lastPortal = mockk(), player = mockk(), mapSession = mockk(), startTime = Instant.now(), timeStampForRings = mutableMapOf())
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,-5.0,5.0))
@@ -55,7 +59,9 @@ class PortalDTODetectionTest {
                 Vector3D.of(20.0,0.0,0.0),
                 Vector3D.of(20.0,10.0,10.0),
                 Vector3D.of(0.0,10.0,10.0)
-            )
+            ),
+            mockk(),
+            mockk()
         )
         val fakePlayer = ElytraPlayer(lastPortal = mockk(), player = mockk(), mapSession = mockk(), startTime = Instant.now(), timeStampForRings = mutableMapOf())
         fakePlayer.positionQueue.add(0,Vector3D.of(15.0,-5.0,5.0))
