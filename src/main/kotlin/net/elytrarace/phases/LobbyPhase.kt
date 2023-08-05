@@ -1,5 +1,6 @@
 package net.elytrarace.phases
 
+import net.elytrarace.Voyager
 import net.elytrarace.model.config.CupConfiguration
 import net.elytrarace.phase.TickDirection
 import net.elytrarace.phase.TimedPhase
@@ -7,10 +8,9 @@ import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
-import org.bukkit.plugin.java.JavaPlugin
 
-class LobbyPhase(game: JavaPlugin, private val cupConfiguration: CupConfiguration) :
-    TimedPhase("Lobby", game, 20, true) {
+class LobbyPhase(val voyager: Voyager, private val cupConfiguration: CupConfiguration) :
+    TimedPhase("Lobby", voyager, 20, true) {
 
     init {
         endTicks = 0
@@ -36,6 +36,9 @@ class LobbyPhase(game: JavaPlugin, private val cupConfiguration: CupConfiguratio
     }
 
     override fun onFinish() {
-
+        val world = this.voyager.playableMaps.first().world
+        Bukkit.getOnlinePlayers().forEach {
+            it.teleportAsync(world.spawnLocation)
+        }
     }
 }
