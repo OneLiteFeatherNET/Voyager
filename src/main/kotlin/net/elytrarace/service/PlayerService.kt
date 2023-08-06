@@ -36,7 +36,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
 
     fun handlePlayerQuit(player: Player) {
         player.scoreboard = Bukkit.getScoreboardManager().mainScoreboard
-        playerSessions.remove(Integer.valueOf(player.entityId), playerSessions.get(Integer.valueOf(player.entityId)) as Any)
+        playerSessions.remove(Integer.valueOf(player.entityId))
     }
 
     fun handlePlayerMove(event: PlayerMoveEvent) {
@@ -69,6 +69,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
                 playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal)
                 updateScoreboard(elytraPlayer)
                 if (nextPortal == lastPortal) {
+                    playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal, lastTime = Instant.now())
                     elytraPlayer.player.gameMode = GameMode.SPECTATOR
                     val spectatorCheck = Bukkit.getOnlinePlayers().none { it.gameMode == GameMode.SURVIVAL }
                     if (spectatorCheck) {
@@ -80,22 +81,23 @@ class PlayerService(val voyager: Voyager) : VectorApi {
     }
 
     fun updateScoreboard(elytraPlayer: ElytraPlayer) {
-        val sb = elytraPlayer.player.scoreboard
-        val objective = sb.getObjective(OBJECTIVES_NAME) ?: sb.registerNewObjective(
-            OBJECTIVES_NAME,
-            Criteria.DUMMY,
-            Component.empty()
-        )
-        objective.displaySlot = DisplaySlot.SIDEBAR
-        elytraPlayer.timeStampForPortals.onEachIndexed { index, entry ->
-            val time = entry.value
-            val startTime = elytraPlayer.startTime ?: return@onEachIndexed
-            val diff = Duration.ofMillis(time.minusMillis(startTime.toEpochMilli()).toEpochMilli())
-            val score = objective.getScore(Strings.getTimeString(TimeFormat.MM_SS, diff.toSeconds().toInt()) + ":${String.format("%03d", diff.toMillisPart())}")
-            score.score = index
-        }
-        elytraPlayer.player.scoreboard = sb
-
+        Bukkit.getScheduler().runTask(voyager, Runnable {
+            val sb = elytraPlayer.player.scoreboard
+            val objective = sb.getObjective(OBJECTIVES_NAME) ?: sb.registerNewObjective(
+                OBJECTIVES_NAME,
+                Criteria.DUMMY,
+                Component.translatable("scoreboard.timings")
+            )
+            objective.displaySlot = DisplaySlot.SIDEBAR
+            elytraPlayer.timeStampForPortals.onEachIndexed { index, entry ->
+                val time = entry.value
+                val startTime = elytraPlayer.startTime ?: return@onEachIndexed
+                val diff = Duration.ofMillis(time.minusMillis(startTime.toEpochMilli()).toEpochMilli())
+                val score = objective.getScore(Strings.getTimeString(TimeFormat.MM_SS, diff.toSeconds().toInt()) + ":${String.format("%03d", diff.toMillisPart())}")
+                score.score = index
+            }
+            elytraPlayer.player.scoreboard = sb
+        })
     }
 
 }
