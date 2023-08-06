@@ -57,7 +57,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
             }
             val detected = this.voyager.detectionService.checkPlayer(elytraPlayer, firstPortal)
             if (detected) {
-                elytraPlayer.player.playSound(Sound.sound { it.type(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP) })
+                elytraPlayer.player.playSound(Sound.sound { it.type(org.bukkit.Sound.BLOCK_BEACON_ACTIVATE).volume(15.0f) })
                 elytraPlayer.timeStampForPortals[firstPortal] = Instant.now()
                 playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = Instant.now(), lastPortal = firstPortal))
                 updateScoreboard(elytraPlayer)
@@ -81,13 +81,15 @@ class PlayerService(val voyager: Voyager) : VectorApi {
                     val spectatorCheck = Bukkit.getOnlinePlayers().none { it.gameMode == GameMode.SURVIVAL }
                     if (spectatorCheck) {
                         this.voyager.elytraPhase.currentPhase.finish()
+                        return
                     }
+
                 }
             }
         }
     }
 
-    fun updateScoreboard(elytraPlayer: ElytraPlayer) {
+    private fun updateScoreboard(elytraPlayer: ElytraPlayer) {
         Bukkit.getScheduler().runTask(voyager, Runnable {
             val sb = elytraPlayer.player.scoreboard
             val objective = sb.getObjective(OBJECTIVES_NAME) ?: sb.registerNewObjective(
@@ -101,7 +103,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
                 val startTime = elytraPlayer.startTime ?: return@onEachIndexed
                 val diff = Duration.ofMillis(time.minusMillis(startTime.toEpochMilli()).toEpochMilli())
                 val score = objective.getScore(Strings.getTimeString(TimeFormat.MM_SS, diff.toSeconds().toInt()) + ":${String.format("%03d", diff.toMillisPart())}")
-                score.score = index
+                score.score = index + 1
             }
             elytraPlayer.player.scoreboard = sb
         })
