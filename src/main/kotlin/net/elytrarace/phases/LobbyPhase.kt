@@ -31,15 +31,13 @@ class LobbyPhase(val voyager: Voyager, private val cupConfiguration: CupConfigur
 
     }
 
+    override fun onFinish() {
+
+    }
+
     override fun onStart() {
         currentTicks = 121
         super.onStart()
     }
 
-    override fun onFinish() {
-        val world = this.voyager.playableMaps.first().world
-        Bukkit.getOnlinePlayers().forEach {
-            it.teleportAsync(world.spawnLocation)
-        }
-    }
 }
