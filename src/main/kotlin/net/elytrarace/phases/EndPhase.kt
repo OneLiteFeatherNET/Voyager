@@ -1,15 +1,14 @@
 package net.elytrarace.phases
 
 import net.elytrarace.Voyager
-import net.elytrarace.model.config.CupConfiguration
 import net.elytrarace.phase.TickDirection
 import net.elytrarace.phase.TimedPhase
 import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
 import net.kyori.adventure.sound.Sound
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 
 class EndPhase(val voyager: Voyager) :
     TimedPhase("End", voyager, 20, true) {
@@ -55,6 +54,7 @@ class EndPhase(val voyager: Voyager) :
     override fun onStart() {
         currentTicks = 60
         Bukkit.getOnlinePlayers().forEach {
+            it.gameMode = GameMode.SURVIVAL
             it.teleportAsync(this.voyager.configService.config.lobbyConfiguration.bukkitLocation)
         }
         super.onStart()
