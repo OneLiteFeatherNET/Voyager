@@ -28,6 +28,9 @@ class GameMapSession(world: World, val elytraMap: ElytraMap) : MapSession(world)
     private fun calculateSpline(elytraMap: ElytraMap): List<Vector3D> = transaction {
         val centerLocations = elytraMap.portals.orderBy(Portals.index to SortOrder.DESC)
             .mapNotNull { it.locations.firstOrNull { center -> center.center }?.vector } // Center Location of ech Portal
+        if (centerLocations.isEmpty()) {
+            return@transaction emptyList()
+        }
         return@transaction centerLocations.windowed(6)
             .map { interpolate(it, 0, POINTS_PER_SEGMENT) + interpolate(it, 2, POINTS_PER_SEGMENT) }
             .reduce { acc, vector3DS -> acc + vector3DS }
