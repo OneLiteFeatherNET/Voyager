@@ -32,12 +32,19 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
             val lastLoc = lastPlayerPosition.getOrPut(it) { currentLoc }
             val distance = currentLoc.distance(lastLoc)
             val blocksPerSeconds = (distance / 0.05).toInt()
-            val elytraPlayer = this.javaPlugin.playerService.playerSessions.get(Integer.valueOf(it.entityId)) ?: return@forEach
+            val elytraPlayer =
+                this.javaPlugin.playerService.playerSessions.get(Integer.valueOf(it.entityId)) ?: return@forEach
             if (elytraPlayer.startTime != null) {
-                val seconds = Duration.ofMillis(Instant.now().minusMillis(elytraPlayer.startTime.toEpochMilli()).toEpochMilli()).toSeconds()
+                val duration = Duration.ofMillis(Instant.now().minusMillis(elytraPlayer.startTime.toEpochMilli()).toEpochMilli())
+
                 it.sendActionBar(
-                    Component.translatable("actionbar.speedAndTime").args(Component.text(blocksPerSeconds), Component.text(
-                        Strings.getTimeString(TimeFormat.MM_SS, seconds.toInt())))
+                    Component.translatable("actionbar.speedAndTime").args(
+                        Component.text(blocksPerSeconds), Component.text(
+                            Strings.getTimeString(TimeFormat.MM_SS, duration.toSeconds().toInt())
+                        ), Component.text(
+                            String.format("%03d", duration.toMillisPart())
+                        )
+                    )
                 )
             } else {
                 it.sendActionBar(
