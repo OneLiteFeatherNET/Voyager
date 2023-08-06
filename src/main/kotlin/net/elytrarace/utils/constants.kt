@@ -26,3 +26,5 @@ const val SHOW_LINE_EXTRA = .0
 // Items
 const val ELYTRA_ITEM_NAME = "<gradient:#347deb:#eb346b>Elytra</gradient>"
 const val BOOST_ITEM_NAME = "<gradient:#347deb:#eb346b>BOOST</gradient>"
+// Scoreboard
+const val OBJECTIVES_NAME = "timings"
