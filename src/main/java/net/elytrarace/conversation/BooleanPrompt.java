@@ -1,9 +1,6 @@
 package net.elytrarace.conversation;
 
 import com.google.common.collect.ImmutableSet;
-import org.bukkit.conversations.ConversationContext;
-import org.bukkit.conversations.Prompt;
-import org.bukkit.conversations.ValidatingPrompt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +28,7 @@ public abstract class BooleanPrompt extends ValidatingPrompt {
 
     @Nullable
     @Override
-    protected org.bukkit.conversations.Prompt acceptValidatedInput(@NotNull ConversationContext context, @NotNull String input) {
+    protected Prompt acceptValidatedInput(@NotNull ConversationContext context, @NotNull String input) {
         return acceptValidatedInput(context, TRUE_INPUTS.contains(input.toLowerCase(Locale.ROOT)));
     }
 
@@ -41,7 +38,7 @@ public abstract class BooleanPrompt extends ValidatingPrompt {
      *
      * @param context Context information about the conversation.
      * @param input The user's boolean response.
-     * @return The next {@link org.bukkit.conversations.Prompt} in the prompt graph.
+     * @return The next {@link Prompt} in the prompt graph.
      */
     @Nullable
     protected abstract Prompt acceptValidatedInput(@NotNull ConversationContext context, boolean input);

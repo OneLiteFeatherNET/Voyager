@@ -1,5 +1,6 @@
 package net.elytrarace.conversation;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +29,7 @@ public class ConversationFactory {
     protected ConversationPrefix prefix;
     protected Prompt firstPrompt;
     protected Map<Object, Object> initialSessionData;
-    protected String playerOnlyMessage;
+    protected Component playerOnlyMessage;
     protected List<ConversationCanceller> cancellers;
     protected List<ConversationAbandonedListener> abandonedListeners;
 
@@ -169,7 +170,7 @@ public class ConversationFactory {
      * @return This object.
      */
     @NotNull
-    public ConversationFactory thatExcludesNonPlayersWithMessage(@Nullable String playerOnlyMessage) {
+    public ConversationFactory thatExcludesNonPlayersWithMessage(@Nullable Component playerOnlyMessage) {
         this.playerOnlyMessage = playerOnlyMessage;
         return this;
     }
@@ -228,7 +229,7 @@ public class ConversationFactory {
 
         @Override
         @NotNull
-        public String getPromptText(@NotNull ConversationContext context) {
+        public Component getPromptText(@NotNull ConversationContext context) {
             return playerOnlyMessage;
         }
 

@@ -1,5 +1,6 @@
 package net.elytrarace.conversation;
 
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,7 @@ public interface Prompt extends Cloneable {
      * @return The text to display.
      */
     @NotNull
-    String getPromptText(@NotNull ConversationContext context);
+    Component getPromptText(@NotNull ConversationContext context);
 
     /**
      * Checks to see if this prompt implementation should wait for user input

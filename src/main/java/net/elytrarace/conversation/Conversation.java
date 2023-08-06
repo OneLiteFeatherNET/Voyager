@@ -221,7 +221,7 @@ public class Conversation {
 
             // Echo the user's input
             if (localEchoEnabled) {
-                context.getForWhom().sendMessage(prefix.getPrefix(context).append(Component.text(input)));
+                context.getForWhom().sendMessage(Component.textOfChildren(prefix.getPrefix(context),Component.text(input)));
             }
 
             // Test for conversation abandonment based on input
@@ -289,7 +289,8 @@ public class Conversation {
         if (currentPrompt == null) {
             abandon(new ConversationAbandonedEvent(this));
         } else {
-            context.getForWhom().sendMessage(prefix.getPrefix(context).append(Component.text(currentPrompt.getPromptText(context))));
+
+            context.getForWhom().sendMessage(Component.textOfChildren(prefix.getPrefix(context), currentPrompt.getPromptText(context)));
             if (!currentPrompt.blocksForInput(context)) {
                 currentPrompt = currentPrompt.acceptInput(context, null);
                 outputNextPrompt();
