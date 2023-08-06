@@ -1,6 +1,7 @@
 package net.elytrarace.conversation;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -221,7 +222,7 @@ public class Conversation {
 
             // Echo the user's input
             if (localEchoEnabled) {
-                context.getForWhom().sendMessage(Component.textOfChildren(prefix.getPrefix(context),Component.text(input)));
+                context.getForWhom().sendMessage(Component.textOfChildren(prefix.getPrefix(context), MiniMessage.miniMessage().deserialize(input)));
             }
 
             // Test for conversation abandonment based on input
@@ -234,7 +235,7 @@ public class Conversation {
 
             // Not abandoned, output the next prompt
             currentPrompt = currentPrompt.acceptInput(context, input);
-            context.getForWhom().setCustomSuggestionToPlayer(currentPrompt.suggestions());
+            if (this.currentPrompt != null) context.getForWhom().setCustomSuggestionToPlayer(currentPrompt.suggestions());
             outputNextPrompt();
         }
     }
