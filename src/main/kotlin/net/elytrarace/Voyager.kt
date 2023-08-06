@@ -1,8 +1,6 @@
 package net.elytrarace
 
-import net.elytrarace.conversation.Conversation
-import net.elytrarace.conversation.ConversationFactory
-import net.elytrarace.listener.BasicWorldListener
+import net.elytrarace.listener.BasicListener
 import net.elytrarace.listener.SetupListener
 import net.elytrarace.model.config.CupConfiguration
 import net.elytrarace.model.dbo.Cup
@@ -70,7 +68,7 @@ class Voyager : JavaPlugin() {
         GlobalTranslator.translator().addSource(LynxWrapper(registry))
         databaseService
 
-        server.pluginManager.registerEvents(BasicWorldListener(), this)
+        server.pluginManager.registerEvents(BasicListener(this), this)
         server.pluginManager.registerEvents(SetupListener(this), this)
         this.cup
         if (this.cup != null) {
