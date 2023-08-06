@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.elytrarace.Voyager
 import net.elytrarace.model.dto.ElytraPlayer
 import net.elytrarace.model.dto.GameMapSession
+import net.elytrarace.phase.GamePhase
 import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
 import net.elytrarace.utils.OBJECTIVES_NAME
@@ -44,7 +45,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
         val elytraPlayer = this.playerSessions.get(Integer.valueOf(event.player.entityId)) ?: return
         val map = elytraPlayer.mapSession as GameMapSession
         val to = toVector3D(event.to)
-        if (to.y <= map.world.minHeight ) {
+        if (to.y <= map.world.minHeight && this.voyager.elytraPhase.currentPhase is GamePhase && elytraPlayer.lastTime == null) {
             elytraPlayer.player.teleportAsync(map.world.spawnLocation)
             playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null))
             elytraPlayer.player.scoreboard.resetScoresFor(elytraPlayer.player)
@@ -111,7 +112,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
 
     fun handlePlayerGlide(event: EntityToggleGlideEvent) {
         val elytraPlayer = this.playerSessions.get(Integer.valueOf(event.entity.entityId)) ?: return
-        if (!event.isGliding && event.entity.isOnGround) {
+        if (!event.isGliding && event.entity.isOnGround && this.voyager.elytraPhase.currentPhase is GamePhase && elytraPlayer.lastTime == null) {
             elytraPlayer.player.teleportAsync(elytraPlayer.mapSession.world.spawnLocation)
             playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null))
             elytraPlayer.player.scoreboard.resetScoresFor(elytraPlayer.player)
