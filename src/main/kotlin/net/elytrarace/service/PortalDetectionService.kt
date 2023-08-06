@@ -15,6 +15,7 @@ class PortalDetectionService {
         val position = player.positionQueue[index]
         val positionSecond = player.positionQueue[index+1]
         val positionThird = player.positionQueue[index+2]
+
         if (position.isZero(precision)) return false
         if (positionSecond.isZero(precision)) return false
         if (positionThird.isZero(precision)) return false
@@ -30,7 +31,10 @@ class PortalDetectionService {
         val firstLineIntersection = plane.intersection(firstLine)
         val secondLineIntersection = plane.intersection(secondLine)
         val thirdLineIntersection = plane.intersection(thirdLine)
-        return (firstLineIntersection != null && bounds.contains(firstLineIntersection)) || (secondLineIntersection != null && bounds.contains(secondLineIntersection)) || (thirdLineIntersection!= null && bounds.contains(thirdLineIntersection))
+        if (firstLineIntersection != null && bounds.contains(firstLineIntersection, precision)) return true
+        if (secondLineIntersection != null && bounds.contains(secondLineIntersection, precision)) return true
+        if (thirdLineIntersection != null && bounds.contains(thirdLineIntersection, precision)) return true
+        return false
     }
 
 }
