@@ -17,8 +17,12 @@ const val MINIMUM_POINT = 3
 const val VOID_GEN_STRING = "VoidGen"
 const val LOBBY_WORLD_FILE_NAME = "lobby.json"
 
-const val POINTS_PER_SEGMENT = 50
+const val POINTS_PER_SEGMENT = 75
 val SHOW_LINE_PARTICLE = Particle.FLAME
 const val SHOW_LINE_OFFSET = 0.0
 const val SHOW_LINE_COUNT = 1
 const val SHOW_LINE_EXTRA = .0
+
+// Items
+const val ELYTRA_ITEM_NAME = "<gradient:#347deb:#eb346b>Elytra</gradient>"
+const val BOOST_ITEM_NAME = "<gradient:#347deb:#eb346b>BOOST</gradient>"
