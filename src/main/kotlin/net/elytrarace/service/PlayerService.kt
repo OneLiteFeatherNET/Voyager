@@ -1,7 +1,6 @@
 package net.elytrarace.service
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap
-import it.unimi.dsi.fastutil.ints.Int2ObjectMaps
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.elytrarace.Voyager
 import net.elytrarace.model.dto.ElytraPlayer
@@ -10,6 +9,7 @@ import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
 import net.elytrarace.utils.OBJECTIVES_NAME
 import net.elytrarace.utils.api.VectorApi
+import net.kyori.adventure.sound.Sound
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -29,9 +29,13 @@ class PlayerService(val voyager: Voyager) : VectorApi {
          playerSessions.putIfAbsent(Integer.valueOf(player.entityId), elytraPlayer)
          mapSession.teleport(player)
          this.voyager.inventoryService.handlePlayerStart(elytraPlayer)
+         Bukkit.getScheduler().runTask(voyager, Runnable {
+             player.scoreboard = Bukkit.getScoreboardManager().newScoreboard
+         })
      }
 
     fun handlePlayerQuit(player: Player) {
+        player.scoreboard = Bukkit.getScoreboardManager().mainScoreboard
         playerSessions.remove(Integer.valueOf(player.entityId), playerSessions.get(Integer.valueOf(player.entityId)) as Any)
     }
 
@@ -46,6 +50,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
             }
             val detected = this.voyager.detectionService.checkPlayer(elytraPlayer, firstPortal)
             if (detected) {
+                elytraPlayer.player.playSound(Sound.sound { it.type(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP) })
                 elytraPlayer.timeStampForPortals[firstPortal] = Instant.now()
                 playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = Instant.now(), lastPortal = firstPortal))
                 updateScoreboard(elytraPlayer)
@@ -59,6 +64,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
             }
             val detected = this.voyager.detectionService.checkPlayer(elytraPlayer, nextPortal)
             if (detected) {
+                elytraPlayer.player.playSound(Sound.sound { it.type(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP) })
                 elytraPlayer.timeStampForPortals[nextPortal] = Instant.now()
                 playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal)
                 updateScoreboard(elytraPlayer)
