@@ -6,6 +6,9 @@ import net.elytrarace.utils.ELYTRA_ITEM_NAME
 import net.elytrarace.utils.builder.itemBuilder
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Material
+import org.bukkit.event.block.Action
+import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
 
 class InventoryService {
@@ -33,6 +36,21 @@ class InventoryService {
             event.isCancelled = true
         }
         if (event.item == boostItem) {
+            event.isCancelled = true
+            event.player.boostElytra(boostItem.clone())
+        }
+    }
+
+    fun handleItemConsume(event: PlayerItemConsumeEvent) {
+        if (event.item == boostItem) {
+            event.isCancelled = true
+            event.player.boostElytra(boostItem.clone())
+        }
+    }
+
+    fun handlePlayerInteract(event: PlayerInteractEvent) {
+        val item = event.item ?: return
+        if (item == boostItem && event.action == Action.RIGHT_CLICK_AIR && event.player.isGliding) {
             event.isCancelled = true
             event.player.boostElytra(boostItem.clone())
         }
