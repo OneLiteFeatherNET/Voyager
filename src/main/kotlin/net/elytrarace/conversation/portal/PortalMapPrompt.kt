@@ -1,10 +1,12 @@
-package net.elytrarace.conversation
+package net.elytrarace.conversation.portal
 
+import net.elytrarace.conversation.ConversationContext
+import net.elytrarace.conversation.Prompt
+import net.elytrarace.conversation.StringPrompt
 import net.elytrarace.model.dbo.ElytraMap
 import net.elytrarace.model.dbo.ElytraMaps
 import net.elytrarace.model.dto.SetupPlayer
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.WorldCreator
 import org.bukkit.WorldType
@@ -13,7 +15,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 class PortalMapPrompt : StringPrompt() {
     override fun getPromptText(context: ConversationContext): Component {
-        return MiniMessage.miniMessage().deserialize("<lang:prompt.portal.map>")
+        return Component.translatable("prompt.portal.map")
     }
 
     override fun acceptInput(context: ConversationContext, input: String?): Prompt? = transaction {

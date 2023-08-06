@@ -1,23 +1,24 @@
-package net.elytrarace.conversation
+package net.elytrarace.conversation.portal
 
 import com.fastasyncworldedit.core.regions.PolyhedralRegion
 import com.sk89q.worldedit.IncompleteRegionException
 import com.sk89q.worldedit.bukkit.BukkitAdapter
+import net.elytrarace.conversation.BooleanPrompt
+import net.elytrarace.conversation.ConversationContext
+import net.elytrarace.conversation.FinishPrompt
+import net.elytrarace.conversation.Prompt
 import net.elytrarace.model.dbo.ElytraMap
-import net.elytrarace.model.dbo.ElytraMaps
 import net.elytrarace.model.dbo.Portal
 import net.elytrarace.model.dbo.PortalLocation
 import net.elytrarace.model.dto.SetupPlayer
 import net.elytrarace.utils.MINIMUM_POINT
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
-import org.bukkit.Bukkit
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class PortalSetupPrompt : BooleanPrompt() {
     override fun getPromptText(context: ConversationContext): Component {
         val index = context.getSessionData("index") as Int
-        return MiniMessage.miniMessage().deserialize("<lang:prompt.portal.setup:$index>")
+        return Component.translatable("prompt.portal.setup").args(Component.text(index))
     }
 
     override fun acceptValidatedInput(context: ConversationContext, input: Boolean): Prompt? {

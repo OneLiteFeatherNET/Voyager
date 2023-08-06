@@ -5,7 +5,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage
 
 class FinishPrompt : MessagePrompt() {
     override fun getPromptText(context: ConversationContext): Component {
-        return MiniMessage.miniMessage().deserialize("<lang:prompt.finish>")
+        return Component.translatable("prompt.finish")
     }
 
     override fun getNextPrompt(context: ConversationContext): Prompt? {

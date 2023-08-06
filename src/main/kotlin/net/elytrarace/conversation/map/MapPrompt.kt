@@ -1,12 +1,14 @@
-package net.elytrarace.conversation
+package net.elytrarace.conversation.map
 
+import net.elytrarace.conversation.BooleanPrompt
+import net.elytrarace.conversation.ConversationContext
+import net.elytrarace.conversation.Prompt
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
 
 
 class MapPrompt : BooleanPrompt() {
     override fun getPromptText(context: ConversationContext): Component {
-        return MiniMessage.miniMessage().deserialize("<lang:prompt.world>")
+        return Component.translatable("prompt.world")
     }
 
     override fun acceptValidatedInput(context: ConversationContext, input: Boolean): Prompt? {

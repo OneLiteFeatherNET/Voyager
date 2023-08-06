@@ -1,11 +1,13 @@
-package net.elytrarace.conversation
+package net.elytrarace.conversation.map
 
+import net.elytrarace.conversation.ConversationContext
+import net.elytrarace.conversation.Prompt
+import net.elytrarace.conversation.StringPrompt
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
 
 class MapNamePrompt : StringPrompt() {
     override fun getPromptText(context: ConversationContext): Component {
-        return MiniMessage.miniMessage().deserialize("<lang:prompt.map.name>")
+        return Component.translatable("prompt.map.name")
     }
 
     override fun acceptInput(context: ConversationContext, input: String?): Prompt? {

@@ -1,11 +1,13 @@
-package net.elytrarace.conversation
+package net.elytrarace.conversation.portal
 
+import net.elytrarace.conversation.BooleanPrompt
+import net.elytrarace.conversation.ConversationContext
+import net.elytrarace.conversation.Prompt
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
 
 class PortalPrompt : BooleanPrompt() {
     override fun getPromptText(context: ConversationContext): Component {
-        return MiniMessage.miniMessage().deserialize("<lang:prompt.portal>")
+        return Component.translatable("prompt.portal")
     }
 
     override fun acceptValidatedInput(context: ConversationContext, input: Boolean): Prompt? {
