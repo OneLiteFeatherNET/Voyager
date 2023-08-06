@@ -14,6 +14,7 @@ import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.entity.Player
+import org.bukkit.event.entity.EntityToggleGlideEvent
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.scoreboard.Criteria
 import org.bukkit.scoreboard.DisplaySlot
@@ -43,6 +44,12 @@ class PlayerService(val voyager: Voyager) : VectorApi {
         val elytraPlayer = this.playerSessions.get(Integer.valueOf(event.player.entityId)) ?: return
         val map = elytraPlayer.mapSession as GameMapSession
         val to = toVector3D(event.to)
+        if (to.y <= map.world.minHeight ) {
+            elytraPlayer.player.teleportAsync(map.world.spawnLocation)
+            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null))
+            elytraPlayer.player.scoreboard.resetScoresFor(elytraPlayer.player)
+            return
+        }
         elytraPlayer.positionQueue.add(0, to)
         if (elytraPlayer.lastPortal == null) {
             val firstPortal = transaction {
@@ -98,6 +105,15 @@ class PlayerService(val voyager: Voyager) : VectorApi {
             }
             elytraPlayer.player.scoreboard = sb
         })
+    }
+
+    fun handlePlayerGlide(event: EntityToggleGlideEvent) {
+        val elytraPlayer = this.playerSessions.get(Integer.valueOf(event.entity.entityId)) ?: return
+        if (!event.isGliding && event.entity.isOnGround) {
+            elytraPlayer.player.teleportAsync(elytraPlayer.mapSession.world.spawnLocation)
+            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null))
+            elytraPlayer.player.scoreboard.resetScoresFor(elytraPlayer.player)
+        }
     }
 
 }
