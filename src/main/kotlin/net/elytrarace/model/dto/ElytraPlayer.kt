@@ -9,6 +9,7 @@ data class ElytraPlayer(
     val positionQueue: ArrayList<Vector3D> = ArrayList(),
     val lastPortal: PortalDTO? = null,
     val startTime: Instant? = null,
+    val lastTime: Instant? = null,
     val timeStampForPortals: MutableMap<PortalDTO, Instant> = mutableMapOf(),
     val player: Player,
     val mapSession: MapSession,
