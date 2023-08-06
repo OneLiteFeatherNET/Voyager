@@ -5,7 +5,7 @@ import net.elytrarace.conversation.ConversationAbandonedEvent
 import net.elytrarace.conversation.ConversationFactory
 import net.elytrarace.conversation.Prompt
 import net.elytrarace.model.dto.SetupPlayer
-import net.kyori.adventure.text.minimessage.MiniMessage
+import net.kyori.adventure.text.Component
 import org.bukkit.entity.Player
 
 class SetupService(val voyager: Voyager) {
@@ -14,7 +14,7 @@ class SetupService(val voyager: Voyager) {
 
     fun startSetup(player: Player, prompt: Prompt) {
         val setupPlayer = SetupPlayer(player)
-        ConversationFactory(voyager).withFirstPrompt(prompt).withPrefix { MiniMessage.miniMessage().deserialize("<lang:plugin.prefix>") }.addConversationAbandonedListener(this::remove).buildConversation(setupPlayer).begin()
+        ConversationFactory(voyager).withFirstPrompt(prompt).withPrefix { Component.translatable("plugin.prefix") }.addConversationAbandonedListener(this::remove).buildConversation(setupPlayer).begin()
         setupPlayers.add(setupPlayer)
     }
 
