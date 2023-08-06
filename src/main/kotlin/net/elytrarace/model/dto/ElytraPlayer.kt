@@ -7,9 +7,9 @@ import java.time.Instant
 
 data class ElytraPlayer(
     val positionQueue: ArrayList<Vector3D> = ArrayList(),
-    val lastPortal: Portal? = null,
-    val startTime: Instant?,
-    val timeStampForRings: MutableMap<Portal, Instant> = mutableMapOf(),
+    val lastPortal: PortalDTO? = null,
+    val startTime: Instant? = null,
+    val timeStampForPortals: MutableMap<PortalDTO, Instant> = mutableMapOf(),
     val player: Player,
     val mapSession: MapSession,
 )
