@@ -56,6 +56,8 @@ class EndPhase(val voyager: Voyager) :
         Bukkit.getOnlinePlayers().forEach {
             it.gameMode = GameMode.SURVIVAL
             it.teleportAsync(this.voyager.configService.config.lobbyConfiguration.bukkitLocation)
+            it.inventory.clear()
+
         }
         super.onStart()
     }
