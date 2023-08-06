@@ -6,6 +6,7 @@ import net.elytrarace.phase.TickDirection
 import net.elytrarace.phase.TimedPhase
 import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 
@@ -23,7 +24,7 @@ class LobbyPhase(val voyager: Voyager, private val cupConfiguration: CupConfigur
         val time = Strings.getTimeString(TimeFormat.MM_SS, currentTicks)
         players.forEach {
             it.sendActionBar(
-                MiniMessage.miniMessage().deserialize("<lang:plugin.phase.lobby.current:'$time'>")
+                Component.translatable("plugin.phase.lobby.current").args(Component.text(time))
             )
         }
         if (players.size < this.cupConfiguration.minPlayerSize) currentTicks = 121
