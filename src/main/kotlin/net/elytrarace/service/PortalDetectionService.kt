@@ -15,6 +15,9 @@ class PortalDetectionService {
         val position = player.positionQueue[index]
         val positionSecond = player.positionQueue[index+1]
         val positionThird = player.positionQueue[index+2]
+        if (position.isZero(precision)) return false
+        if (positionSecond.isZero(precision)) return false
+        if (positionThird.isZero(precision)) return false
 
         val plane = Planes.fromPoints(portalDTO.corners, precision)
 
