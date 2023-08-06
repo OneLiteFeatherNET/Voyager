@@ -10,7 +10,6 @@ class MapPrompt : BooleanPrompt() {
     }
 
     override fun acceptValidatedInput(context: ConversationContext, input: Boolean): Prompt? {
-        context.setSessionData("map", input)
-        return END_OF_CONVERSATION
+        return MapCupNamePrompt()
     }
 }

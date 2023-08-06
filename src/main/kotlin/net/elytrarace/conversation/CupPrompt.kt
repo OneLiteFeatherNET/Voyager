@@ -10,7 +10,6 @@ class CupPrompt : BooleanPrompt() {
     }
 
     override fun acceptValidatedInput(context: ConversationContext, input: Boolean): Prompt? {
-        context.setSessionData("cup", input)
         if (input) {
             return CupNamePrompt()
         }
