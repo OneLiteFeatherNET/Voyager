@@ -50,7 +50,7 @@ class InventoryService {
 
     fun handlePlayerInteract(event: PlayerInteractEvent) {
         val item = event.item ?: return
-        if (item == boostItem && event.action == Action.RIGHT_CLICK_AIR && event.player.isGliding) {
+        if (item == boostItem && event.player.isGliding) {
             event.isCancelled = true
             event.player.boostElytra(boostItem.clone())
         }
