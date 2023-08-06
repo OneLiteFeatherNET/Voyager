@@ -14,6 +14,6 @@ class PortalPrompt : BooleanPrompt() {
 
     override fun acceptValidatedInput(context: ConversationContext, input: Boolean): Prompt? {
         if (input) return PortalMapPrompt()
-        return PortalEditPrompt()
+        return END_OF_CONVERSATION
     }
 }

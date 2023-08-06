@@ -11,6 +11,7 @@ class PortalEditPrompt : NumericPrompt() {
     }
 
     override fun acceptValidatedInput(context: ConversationContext, input: Number): Prompt? {
+        context.setSessionData("edit", input)
         val prompt = when(input) {
             1 -> PortalSelectMapPrompt()
             2 -> PortalSelectMapPrompt()
