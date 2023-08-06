@@ -10,9 +10,10 @@ import org.apache.commons.numbers.core.Precision
 
 class PortalDetectionService {
     private val precision: Precision.DoubleEquivalence = Precision.doubleEquivalenceOfEpsilon(1e-6)
+    private val index = 0
     fun checkPlayer(player: ElytraPlayer, portalDTO: PortalDTO): Boolean {
         if (player.positionQueue.size < 3) return false
-        val index = 0
+
         val position = player.positionQueue[index]
         val positionSecond = player.positionQueue[index+1]
         val positionThird = player.positionQueue[index+2]
@@ -20,6 +21,7 @@ class PortalDetectionService {
         if (position.isZero(precision)) return false
         if (positionSecond.isZero(precision)) return false
         if (positionThird.isZero(precision)) return false
+
         if (position.vectorTo(positionSecond).isZero(precision)) return false
         if (positionSecond.vectorTo(positionThird).isZero(precision)) return false
         if (position.vectorTo(positionThird).isZero(precision)) return false
@@ -33,8 +35,8 @@ class PortalDetectionService {
         val thirdLine = Lines3D.fromPoints(position, positionThird, precision)
 
         val firstSeg = Lines3D.segmentFromPoints(position, positionSecond, precision)
-        val secondSeg = Lines3D.segmentFromPoints(position, positionSecond, precision)
-        val thirdSeg = Lines3D.segmentFromPoints(position, positionSecond, precision)
+        val secondSeg = Lines3D.segmentFromPoints(positionSecond, positionThird, precision)
+        val thirdSeg = Lines3D.segmentFromPoints(position, positionThird, precision)
 
         val regionBSPTree3D = Parallelepiped.fromBounds(plane).toTree()
 
