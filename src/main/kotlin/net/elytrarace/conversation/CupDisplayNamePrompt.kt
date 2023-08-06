@@ -7,7 +7,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 class CupDisplayNamePrompt : StringPrompt() {
     override fun getPromptText(context: ConversationContext): Component {
-        return MiniMessage.miniMessage().deserialize("<lang:prompt.cup.name.display>")
+        val name = context.getSessionData("cup_name") as String
+        return MiniMessage.miniMessage().deserialize("<lang:prompt.cup.name.display:$name>")
     }
 
     override fun acceptInput(context: ConversationContext, input: String?): Prompt? {

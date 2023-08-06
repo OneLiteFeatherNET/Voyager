@@ -72,18 +72,22 @@ class Voyager : JavaPlugin() {
 
         server.pluginManager.registerEvents(BasicWorldListener(), this)
         server.pluginManager.registerEvents(SetupListener(this), this)
+        this.cup
         if (this.cup != null) {
             elytraPhase.add(LobbyPhase(this, cupConfiguration = configService.config.cupConfiguration))
-            cup?.maps?.forEach {
-                val world = Bukkit.createWorld(WorldCreator.name(it.world).generator("VoidGen").type(WorldType.NORMAL))
-                if (world != null) {
-                    val gameMapSession = GameMapSession(world, it)
-                    playableMaps.add(gameMapSession)
-                    elytraPhase.add(GamePhase(this, gameMapSession))
+            transaction {
+                cup?.maps?.forEach {
+                    val world = Bukkit.createWorld(WorldCreator.name(it.world).generator("VoidGen").type(WorldType.NORMAL))
+                    if (world != null) {
+                        val gameMapSession = GameMapSession(world, it)
+                        playableMaps.add(gameMapSession)
+                        elytraPhase.add(GamePhase(this@Voyager, gameMapSession))
+                    }
+
+
                 }
-
-
             }
+
             elytraPhase.start()
         }
         this.commandService.registerCommands()
