@@ -8,6 +8,7 @@ import cloud.commandframework.execution.CommandExecutionCoordinator
 import cloud.commandframework.meta.CommandMeta
 import cloud.commandframework.paper.PaperCommandManager
 import net.elytrarace.Voyager
+import net.elytrarace.commands.LobbyCommand
 import net.elytrarace.commands.SetupCommand
 import org.bukkit.command.CommandSender
 import java.util.function.Function
@@ -45,5 +46,6 @@ class CommandService(private val voyager: Voyager) {
 
      fun registerCommands() {
         this.annotationParser.parse(SetupCommand(voyager))
+        this.annotationParser.parse(LobbyCommand(voyager))
     }
 }
