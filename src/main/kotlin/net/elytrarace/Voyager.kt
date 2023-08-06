@@ -75,7 +75,7 @@ class Voyager : JavaPlugin() {
         if (this.cup != null) {
             elytraPhase.add(LobbyPhase(this, cupConfiguration = configService.config.cupConfiguration))
             cup?.maps?.forEach {
-                val world = Bukkit.createWorld(WorldCreator.name(it.name).generator("VoidGen").type(WorldType.NORMAL))
+                val world = Bukkit.createWorld(WorldCreator.name(it.world).generator("VoidGen").type(WorldType.NORMAL))
                 if (world != null) {
                     val gameMapSession = GameMapSession(world, it)
                     playableMaps.add(gameMapSession)
