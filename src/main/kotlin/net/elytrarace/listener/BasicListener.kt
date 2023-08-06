@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.LeavesDecayEvent
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent
 import org.bukkit.event.player.PlayerBedEnterEvent
+import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.server.ServerListPingEvent
 
 class BasicListener(
@@ -35,5 +36,10 @@ class BasicListener(
         voyager.cup ?: return
         event.motd(MiniMessage.miniMessage().deserialize("<green>CUP: ${voyager.cup?.displayName}"))
         event.maxPlayers = voyager.configService.config.cupConfiguration.playerSize
+    }
+
+    @EventHandler
+    fun handlePlayerJoinEvent(event: PlayerJoinEvent) {
+        event.player.teleportAsync(this.voyager.configService.config.lobbyConfiguration.bukkitLocation)
     }
 }
