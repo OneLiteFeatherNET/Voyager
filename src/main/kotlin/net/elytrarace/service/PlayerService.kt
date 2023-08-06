@@ -47,8 +47,8 @@ class PlayerService(val voyager: Voyager) : VectorApi {
         val to = toVector3D(event.to)
         if (to.y <= map.world.minHeight && this.voyager.elytraPhase.currentPhase is GamePhase && elytraPlayer.lastTime == null) {
             elytraPlayer.player.teleportAsync(map.world.spawnLocation)
-            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null))
-            elytraPlayer.player.scoreboard.resetScoresFor(elytraPlayer.player)
+            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null, timeStampForPortals = mutableMapOf(), positionQueue =  ArrayList()))
+            elytraPlayer.player.scoreboard.clearSlot(DisplaySlot.SIDEBAR)
             return
         }
         elytraPlayer.positionQueue.add(0, to)
@@ -114,8 +114,8 @@ class PlayerService(val voyager: Voyager) : VectorApi {
         val elytraPlayer = this.playerSessions.get(Integer.valueOf(event.entity.entityId)) ?: return
         if (!event.isGliding && event.entity.isOnGround && this.voyager.elytraPhase.currentPhase is GamePhase && elytraPlayer.lastTime == null) {
             elytraPlayer.player.teleportAsync(elytraPlayer.mapSession.world.spawnLocation)
-            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null))
-            elytraPlayer.player.scoreboard.resetScoresFor(elytraPlayer.player)
+            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null, timeStampForPortals = mutableMapOf(), positionQueue =  ArrayList()))
+            elytraPlayer.player.scoreboard.clearSlot(DisplaySlot.SIDEBAR)
         }
     }
 
