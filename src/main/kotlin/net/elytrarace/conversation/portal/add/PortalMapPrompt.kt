@@ -1,4 +1,4 @@
-package net.elytrarace.conversation.portal
+package net.elytrarace.conversation.portal.add
 
 import net.elytrarace.conversation.ConversationContext
 import net.elytrarace.conversation.Prompt

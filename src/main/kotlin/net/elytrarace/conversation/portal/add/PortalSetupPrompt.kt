@@ -1,4 +1,4 @@
-package net.elytrarace.conversation.portal
+package net.elytrarace.conversation.portal.add
 
 import com.fastasyncworldedit.core.regions.PolyhedralRegion
 import com.sk89q.worldedit.IncompleteRegionException
