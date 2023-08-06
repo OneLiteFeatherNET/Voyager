@@ -1,6 +1,7 @@
 package net.elytrarace
 
 import net.elytrarace.listener.BasicListener
+import net.elytrarace.listener.RaceListener
 import net.elytrarace.listener.SetupListener
 import net.elytrarace.model.config.CupConfiguration
 import net.elytrarace.model.dbo.Cup
@@ -10,10 +11,7 @@ import net.elytrarace.phase.LinearPhaseSeries
 import net.elytrarace.phase.Phase
 import net.elytrarace.phases.GamePhase
 import net.elytrarace.phases.LobbyPhase
-import net.elytrarace.service.CommandService
-import net.elytrarace.service.ConfigService
-import net.elytrarace.service.DatabaseService
-import net.elytrarace.service.SetupService
+import net.elytrarace.service.*
 import net.elytrarace.utils.LynxWrapper
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.translation.GlobalTranslator
@@ -49,6 +47,18 @@ class Voyager : JavaPlugin() {
         SetupService(this)
     }
 
+    val playerService: PlayerService by lazy {
+        PlayerService(this)
+    }
+
+    val detectionService: PortalDetectionService by lazy {
+        PortalDetectionService()
+    }
+
+    val inventoryService: InventoryService by lazy {
+        InventoryService()
+    }
+
     val elytraPhase = LinearPhaseSeries<Phase>()
     val playableMaps: MutableList<GameMapSession> = mutableListOf()
 
@@ -70,6 +80,7 @@ class Voyager : JavaPlugin() {
 
         server.pluginManager.registerEvents(BasicListener(this), this)
         server.pluginManager.registerEvents(SetupListener(this), this)
+        server.pluginManager.registerEvents(RaceListener(this), this)
         this.cup
         if (this.cup != null) {
             elytraPhase.add(LobbyPhase(this, cupConfiguration = configService.config.cupConfiguration))
