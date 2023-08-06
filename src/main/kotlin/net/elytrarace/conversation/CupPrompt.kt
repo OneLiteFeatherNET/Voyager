@@ -13,6 +13,6 @@ class CupPrompt : BooleanPrompt() {
         if (input) {
             return CupNamePrompt()
         }
-        return MapPrompt()
+        return Prompt.END_OF_CONVERSATION
     }
 }

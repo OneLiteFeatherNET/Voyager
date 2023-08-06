@@ -1,0 +1,37 @@
+package net.elytrarace.conversation
+
+import net.elytrarace.model.dbo.ElytraMap
+import net.elytrarace.model.dbo.ElytraMaps
+import net.elytrarace.model.dto.SetupPlayer
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.minimessage.MiniMessage
+import org.bukkit.Bukkit
+import org.bukkit.WorldCreator
+import org.bukkit.WorldType
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
+
+class PortalMapPrompt : StringPrompt() {
+    override fun getPromptText(context: ConversationContext): Component {
+        return MiniMessage.miniMessage().deserialize("<lang:prompt.portal.map>")
+    }
+
+    override fun acceptInput(context: ConversationContext, input: String?): Prompt? = transaction {
+        input ?: return@transaction END_OF_CONVERSATION
+        val maps = ElytraMap.wrapRows(ElytraMaps.select { ElytraMaps.name eq input })
+        if (maps.empty()) {
+            return@transaction END_OF_CONVERSATION
+        }
+        val map = maps.firstOrNull() ?: return@transaction END_OF_CONVERSATION
+        context.setSessionData("map", map)
+        context.setSessionData("map_name", map.displayName)
+        val world = Bukkit.getScheduler().callSyncMethod(context.plugin!!) {Bukkit.createWorld(WorldCreator.name(map.world).generator("VoidGen").type(WorldType.NORMAL))}.get()  ?: return@transaction END_OF_CONVERSATION
+        val player = (context.forWhom as SetupPlayer).player
+        player.teleportAsync(world.spawnLocation)
+        return@transaction PortalCountPrompt()
+    }
+
+    override fun suggestions(): Collection<String> = transaction {
+        return@transaction ElytraMap.all().map { it.name }.toCollection(mutableListOf())
+    }
+}
