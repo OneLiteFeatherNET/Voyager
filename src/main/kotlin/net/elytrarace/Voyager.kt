@@ -1,6 +1,9 @@
 package net.elytrarace
 
+import net.elytrarace.conversation.Conversation
+import net.elytrarace.conversation.ConversationFactory
 import net.elytrarace.listener.BasicWorldListener
+import net.elytrarace.listener.SetupListener
 import net.elytrarace.model.config.CupConfiguration
 import net.elytrarace.model.dbo.Cup
 import net.elytrarace.model.dbo.Cups
@@ -12,6 +15,7 @@ import net.elytrarace.phases.LobbyPhase
 import net.elytrarace.service.CommandService
 import net.elytrarace.service.ConfigService
 import net.elytrarace.service.DatabaseService
+import net.elytrarace.service.SetupService
 import net.elytrarace.utils.LynxWrapper
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.translation.GlobalTranslator
@@ -39,7 +43,13 @@ class Voyager : JavaPlugin() {
         getCup(configService.config.cupConfiguration)
     }
 
-    val commandService: CommandService by lazy { CommandService(this) }
+    val commandService: CommandService by lazy {
+        CommandService(this)
+    }
+
+    val setupService: SetupService by lazy {
+        SetupService(this)
+    }
 
     val elytraPhase = LinearPhaseSeries<Phase>()
     val playableMaps: MutableList<GameMapSession> = mutableListOf()
@@ -61,6 +71,7 @@ class Voyager : JavaPlugin() {
         databaseService
 
         server.pluginManager.registerEvents(BasicWorldListener(), this)
+        server.pluginManager.registerEvents(SetupListener(this), this)
         if (this.cup != null) {
             elytraPhase.add(LobbyPhase(this, cupConfiguration = configService.config.cupConfiguration))
             cup?.maps?.forEach {
@@ -74,9 +85,8 @@ class Voyager : JavaPlugin() {
 
             }
             elytraPhase.start()
-        } else {
-            this.commandService.registerCommands()
         }
+        this.commandService.registerCommands()
 
 
     }
