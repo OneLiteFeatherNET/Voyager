@@ -9,6 +9,7 @@ import net.elytrarace.model.dbo.Cups
 import net.elytrarace.model.dto.GameMapSession
 import net.elytrarace.phase.LinearPhaseSeries
 import net.elytrarace.phase.Phase
+import net.elytrarace.phases.EndPhase
 import net.elytrarace.phases.GamePhase
 import net.elytrarace.phases.LobbyPhase
 import net.elytrarace.service.*
@@ -96,6 +97,7 @@ class Voyager : JavaPlugin() {
 
                 }
             }
+            elytraPhase.add(EndPhase(this))
 
             elytraPhase.start()
         }
