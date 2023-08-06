@@ -234,6 +234,7 @@ public class Conversation {
 
             // Not abandoned, output the next prompt
             currentPrompt = currentPrompt.acceptInput(context, input);
+            context.getForWhom().setCustomSuggestionToPlayer(currentPrompt.suggestions());
             outputNextPrompt();
         }
     }

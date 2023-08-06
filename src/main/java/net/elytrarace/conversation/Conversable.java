@@ -3,6 +3,7 @@ package net.elytrarace.conversation;
 import net.kyori.adventure.audience.Audience;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -50,5 +51,10 @@ public interface Conversable extends Audience {
      * @param details Details about why the conversation was abandoned
      */
     public void abandonConversation(@NotNull Conversation conversation, @NotNull ConversationAbandonedEvent details);
+
+    /**
+     * Send custom tab completions to the client
+     */
+    public void setCustomSuggestionToPlayer(Collection<String> completions);
 
 }

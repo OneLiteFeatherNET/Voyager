@@ -4,6 +4,9 @@ import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Collections;
+
 /**
  * A Prompt is the main constituent of a {@link Conversation}. Each prompt
  * displays text to the user and optionally waits for a user's response.
@@ -48,4 +51,12 @@ public interface Prompt extends Cloneable {
      */
     @Nullable
     Prompt acceptInput(@NotNull ConversationContext context, @Nullable String input);
+
+    /**
+     * Suggestions some string to the client by typing.
+     * @return a list of string for the suggestion
+     */
+    default Collection<String> suggestions() {
+        return Collections.emptyList();
+    }
 }
