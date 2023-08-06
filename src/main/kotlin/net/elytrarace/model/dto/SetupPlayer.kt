@@ -37,4 +37,8 @@ class SetupPlayer(val player: Player) : Conversable {
     override fun abandonConversation(conversation: Conversation, details: ConversationAbandonedEvent) {
         this.conversationTracker.abandonConversation(conversation, details)
     }
+
+    override fun setCustomSuggestionToPlayer(completions: MutableCollection<String>) {
+        this.player.setCustomChatCompletions(completions)
+    }
 }
