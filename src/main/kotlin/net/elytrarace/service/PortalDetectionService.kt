@@ -5,6 +5,7 @@ import net.elytrarace.model.dto.PortalDTO
 import org.apache.commons.geometry.euclidean.threed.Bounds3D
 import org.apache.commons.geometry.euclidean.threed.Planes
 import org.apache.commons.geometry.euclidean.threed.line.Lines3D
+import org.apache.commons.geometry.euclidean.threed.shape.Parallelepiped
 import org.apache.commons.numbers.core.Precision
 
 class PortalDetectionService {
@@ -19,6 +20,9 @@ class PortalDetectionService {
         if (position.isZero(precision)) return false
         if (positionSecond.isZero(precision)) return false
         if (positionThird.isZero(precision)) return false
+        if (position.vectorTo(positionSecond).isZero(precision)) return false
+        if (positionSecond.vectorTo(positionThird).isZero(precision)) return false
+        if (position.vectorTo(positionThird).isZero(precision)) return false
 
         val plane = Planes.fromPoints(portalDTO.corners, precision)
 
@@ -28,12 +32,19 @@ class PortalDetectionService {
         val secondLine = Lines3D.fromPoints(positionSecond, positionThird, precision)
         val thirdLine = Lines3D.fromPoints(position, positionThird, precision)
 
+        val firstSeg = Lines3D.segmentFromPoints(position, positionSecond, precision)
+        val secondSeg = Lines3D.segmentFromPoints(position, positionSecond, precision)
+        val thirdSeg = Lines3D.segmentFromPoints(position, positionSecond, precision)
+
+        val regionBSPTree3D = Parallelepiped.fromBounds(plane).toTree()
+
         val firstLineIntersection = plane.intersection(firstLine)
         val secondLineIntersection = plane.intersection(secondLine)
         val thirdLineIntersection = plane.intersection(thirdLine)
-        if (firstLineIntersection != null && bounds.contains(firstLineIntersection, precision)) return true
-        if (secondLineIntersection != null && bounds.contains(secondLineIntersection, precision)) return true
-        if (thirdLineIntersection != null && bounds.contains(thirdLineIntersection, precision)) return true
+
+        if (firstLineIntersection != null && bounds.contains(firstLineIntersection, precision) && firstSeg.contains(firstLineIntersection) && regionBSPTree3D.contains(firstLineIntersection)) return true
+        if (secondLineIntersection != null && bounds.contains(secondLineIntersection, precision) && secondSeg.contains(secondLineIntersection) && regionBSPTree3D.contains(secondLineIntersection)) return true
+        if (thirdLineIntersection != null && bounds.contains(thirdLineIntersection, precision) && thirdSeg.contains(thirdLineIntersection) && regionBSPTree3D.contains(thirdLineIntersection)) return true
         return false
     }
 
