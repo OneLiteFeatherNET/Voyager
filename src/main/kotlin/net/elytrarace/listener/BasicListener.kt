@@ -3,6 +3,7 @@ package net.elytrarace.listener
 import net.elytrarace.Voyager
 import net.elytrarace.utils.api.CancellableListener
 import net.kyori.adventure.text.minimessage.MiniMessage
+import org.bukkit.GameMode
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
@@ -57,5 +58,6 @@ class BasicListener(
         event.player.inventory.clear()
         event.player.foodLevel = 20
         event.player.health = 20.0
+        event.player.gameMode = GameMode.SURVIVAL
     }
 }
