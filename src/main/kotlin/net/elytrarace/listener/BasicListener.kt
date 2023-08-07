@@ -2,6 +2,7 @@ package net.elytrarace.listener
 
 import net.elytrarace.Voyager
 import net.elytrarace.utils.api.CancellableListener
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
@@ -38,7 +39,7 @@ class BasicListener(
     @EventHandler
     fun handlePing(event: ServerListPingEvent) {
         voyager.cup ?: return
-        event.motd(MiniMessage.miniMessage().deserialize("<green>CUP: ${voyager.cup?.displayName}"))
+        event.motd(Component.translatable("motd.cup").args(MiniMessage.miniMessage().deserialize(voyager.cup?.displayName ?: "")))
         event.maxPlayers = voyager.configService.config.cupConfiguration.playerSize
     }
 
