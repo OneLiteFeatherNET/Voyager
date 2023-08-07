@@ -9,9 +9,9 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 
 object ElytraMaps : IntIdTable() {
     val name = varchar("name", 32)
-    val world = varchar("world", 32)
-    val displayName = varchar("displayName",32).nullable()
-    val author = varchar("author",32).nullable()
+    val world = varchar("world", 255)
+    val displayName = varchar("displayName",255).nullable()
+    val author = varchar("author",255).nullable()
     val cup = reference("cup", Cups).nullable().index()
 }
 class ElytraMap(id: EntityID<Int>): IntEntity(id) {
