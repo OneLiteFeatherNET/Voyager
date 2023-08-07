@@ -14,11 +14,14 @@ import net.elytrarace.phases.GamePhase
 import net.elytrarace.phases.LobbyPhase
 import net.elytrarace.service.*
 import net.elytrarace.utils.LynxWrapper
+import net.elytrarace.utils.OBJECTIVES_NAME
+import net.elytrarace.utils.TOP_THREE_OBJECTIVES_NAME
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.translation.GlobalTranslator
 import net.kyori.adventure.translation.TranslationRegistry
 import net.kyori.adventure.util.UTF8ResourceBundleControl
 import org.bukkit.Bukkit
+import org.bukkit.GameRule
 import org.bukkit.WorldCreator
 import org.bukkit.WorldType
 import org.bukkit.plugin.java.JavaPlugin
@@ -75,6 +78,8 @@ class Voyager : JavaPlugin() {
             val bundle = ResourceBundle.getBundle("voyager", locale, UTF8ResourceBundleControl.get())
             registry.registerAll(locale, bundle, false)
         }
+        Bukkit.getScoreboardManager().mainScoreboard.getObjective(OBJECTIVES_NAME)?.unregister()
+        Bukkit.getScoreboardManager().mainScoreboard.getObjective(TOP_THREE_OBJECTIVES_NAME)?.unregister()
         registry.defaultLocale(supportedLocals.first())
         GlobalTranslator.translator().addSource(LynxWrapper(registry))
         databaseService
@@ -89,6 +94,7 @@ class Voyager : JavaPlugin() {
                 cup?.maps?.forEach {
                     val world = Bukkit.createWorld(WorldCreator.name(it.world).generator("VoidGen").type(WorldType.NORMAL))
                     if (world != null) {
+                        world.setGameRule(GameRule.DO_INSOMNIA, false)
                         val gameMapSession = GameMapSession(world, it)
                         playableMaps.add(gameMapSession)
                         elytraPhase.add(GamePhase(this@Voyager, gameMapSession))
