@@ -42,7 +42,10 @@ class GameMapSession(world: World, val elytraMap: ElytraMap) : MapSession(world)
         }
         val extendLocations = (listOf(toVector3D(world.spawnLocation)) + centerLocations + listOf(toVector3D(world.spawnLocation)))
         return@transaction extendLocations.windowed(6)
-            .map { interpolate(it, 0, POINTS_PER_SEGMENT) + interpolate(it, 2, POINTS_PER_SEGMENT) }
+            .map {
+                val distance = it.first().distanceSq(it[2]) * 0.0001
+                interpolate(it, 0, (POINTS_PER_SEGMENT * distance).toInt()) + interpolate(it, 2, (POINTS_PER_SEGMENT * distance).toInt())
+            }
             .reduce { acc, vector3DS -> acc + vector3DS }
     }
 }
