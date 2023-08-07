@@ -113,7 +113,7 @@ class BasicListener(
     @EventHandler
     fun handlePlayerLogin(event: PlayerLoginEvent) {
         if (this.voyager.elytraPhase.currentPhase is GamePhase || this.voyager.elytraPhase.currentPhase is EndPhase) {
-            event.kickMessage()
+            event.disallow(PlayerLoginEvent.Result.KICK_OTHER, Component.empty())
         }
     }
 
