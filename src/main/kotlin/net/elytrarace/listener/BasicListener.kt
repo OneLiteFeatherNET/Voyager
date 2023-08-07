@@ -6,8 +6,13 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.Material
+import org.bukkit.block.data.type.Chest
+import org.bukkit.block.data.type.Farmland
+import org.bukkit.block.data.type.Sign
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.block.Action
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.LeavesDecayEvent
@@ -15,6 +20,7 @@ import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent
 import org.bukkit.event.player.PlayerBedEnterEvent
+import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.server.ServerListPingEvent
 
@@ -35,6 +41,54 @@ class BasicListener(
 
     @EventHandler
     fun blockPlace(event: BlockPlaceEvent) = cancelling(event)
+
+    @EventHandler
+    fun playerInteractEvent(event: PlayerInteractEvent) {
+        if (event.action == Action.PHYSICAL && event.clickedBlock != null && event.clickedBlock?.blockData is Farmland) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.blockData is Sign) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.blockData is Chest) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.CRAFTING_TABLE) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.FURNACE) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.ENCHANTING_TABLE) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.SMOKER) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.BLAST_FURNACE) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.CARTOGRAPHY_TABLE) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.ENDER_CHEST) {
+            cancelling(event)
+            return
+        }
+        if (event.action == Action.RIGHT_CLICK_BLOCK && event.clickedBlock != null && event.clickedBlock?.type == Material.GLOW_BERRIES) {
+            cancelling(event)
+            return
+        }
+    }
 
     @EventHandler
     fun handlePing(event: ServerListPingEvent) {
@@ -61,6 +115,9 @@ class BasicListener(
         event.player.foodLevel = 20
         event.player.health = 20.0
         event.player.gameMode = GameMode.SURVIVAL
-        event.player.scoreboard = Bukkit.getScoreboardManager().mainScoreboard
+        if (event.player.scoreboard == Bukkit.getScoreboardManager().mainScoreboard) {
+            event.player.scoreboard = Bukkit.getScoreboardManager().newScoreboard
+        }
+        this.voyager.playerService.handlePlayerJoinLobbyPhase(player = event.player)
     }
 }
