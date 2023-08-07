@@ -53,7 +53,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
     fun handlePlayerQuit(player: Player) {
         player.scoreboard = Bukkit.getScoreboardManager().mainScoreboard
         val phase = this.voyager.elytraPhase.currentPhase
-        if (phase !is GamePhase) return
+        if (phase is LobbyPhase || phase is EndPhase) return
         val gamePhase = phase as net.elytrarace.phases.GamePhase
         gamePhase.mapSession.playerSessions.remove(Integer.valueOf(player.entityId))
     }
@@ -74,7 +74,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
     }
 
     fun handlePlayerMove(event: PlayerMoveEvent) {
-        val phase = this.voyager.elytraPhase.currentPhase
+        val phase = this.voyager.elytraPhase.currentPhase ?: return
         if (phase is LobbyPhase || phase is EndPhase) return
         val gamePhase = phase as net.elytrarace.phases.GamePhase
         val elytraPlayer = gamePhase.mapSession.playerSessions.get(Integer.valueOf(event.player.entityId)) ?: return
