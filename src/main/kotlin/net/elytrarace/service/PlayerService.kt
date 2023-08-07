@@ -8,10 +8,12 @@ import net.elytrarace.model.dto.GameMapSession
 import net.elytrarace.phase.GamePhase
 import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
+import net.elytrarace.utils.CUP_OBJECTIVES_NAME
 import net.elytrarace.utils.OBJECTIVES_NAME
 import net.elytrarace.utils.api.VectorApi
 import net.kyori.adventure.sound.Sound
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
 import org.bukkit.entity.Player
@@ -37,6 +39,7 @@ class PlayerService(val voyager: Voyager) : VectorApi {
             } else {
                 player.scoreboard
             }
+            sb.clearSlot(DisplaySlot.SIDEBAR)
             val objective = sb.getObjective(OBJECTIVES_NAME) ?: sb.registerNewObjective(
                     OBJECTIVES_NAME,
                     Criteria.DUMMY,
@@ -50,6 +53,20 @@ class PlayerService(val voyager: Voyager) : VectorApi {
     fun handlePlayerQuit(player: Player) {
         player.scoreboard = Bukkit.getScoreboardManager().mainScoreboard
         playerSessions.remove(Integer.valueOf(player.entityId))
+    }
+
+    fun handlePlayerJoinLobbyPhase(player: Player) {
+        val scoreboard = player.scoreboard
+        scoreboard.clearSlot(DisplaySlot.SIDEBAR)
+        voyager.cup ?: return
+        val objective = scoreboard.getObjective(CUP_OBJECTIVES_NAME) ?: scoreboard.registerNewObjective(
+                CUP_OBJECTIVES_NAME,
+                Criteria.DUMMY,
+                Component.translatable("scoreboard.cup").args(MiniMessage.miniMessage().deserialize(voyager.cup?.displayName ?: ""))
+        )
+        objective.displaySlot = DisplaySlot.SIDEBAR
+        val score = objective.getScore("Maps")
+        score.score = voyager.playableMaps.size
     }
 
     fun handlePlayerMove(event: PlayerMoveEvent) {

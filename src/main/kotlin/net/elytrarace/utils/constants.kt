@@ -28,4 +28,5 @@ const val ELYTRA_ITEM_NAME = "<gradient:#347deb:#eb346b>Elytra</gradient>"
 const val BOOST_ITEM_NAME = "<gradient:#347deb:#eb346b>BOOST</gradient>"
 // Scoreboard
 const val OBJECTIVES_NAME = "timings"
+const val CUP_OBJECTIVES_NAME = "cup"
 const val TOP_THREE_OBJECTIVES_NAME = "topThree"
