@@ -1,5 +1,6 @@
 package net.elytrarace.utils
 
+import org.apache.commons.numbers.core.Precision
 import org.bukkit.Particle
 
 // Chat
@@ -12,6 +13,7 @@ const val CONFIG_FILE_NAME = "config.conf"
 
 // Portal
 const val MINIMUM_POINT = 3
+val precision: Precision.DoubleEquivalence = Precision.doubleEquivalenceOfEpsilon(1e-6)
 
 // World
 const val VOID_GEN_STRING = "VoidGen"
