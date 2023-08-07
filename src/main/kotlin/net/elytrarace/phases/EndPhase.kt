@@ -60,13 +60,13 @@ class EndPhase(val voyager: Voyager) :
     override fun onStart() {
         currentTicks = 60
         Bukkit.getScheduler().runTask(voyager, Runnable {
-            val topThree = this.voyager.playerService.playerSessions.values.filter { it.lastTime != null }.sortedByDescending { it.lastTime!! }.take(3)
+            // val topThree = this.voyager.playerService.playerSessions.values.filter { it.lastTime != null }.sortedByDescending { it.lastTime!! }.take(3)
             Bukkit.getOnlinePlayers().forEach {
                 it.gameMode = GameMode.SURVIVAL
                 it.teleportAsync(this.voyager.configService.config.lobbyConfiguration.bukkitLocation)
                 it.inventory.clear()
                 val sb = Bukkit.getScoreboardManager().mainScoreboard
-                showTopThreePlayers(sb, topThree)
+                // showTopThreePlayers(sb, topThree)
                 it.scoreboard = sb
             }
         })

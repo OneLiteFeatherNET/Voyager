@@ -32,7 +32,7 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
     }
 
     override fun onUpdate() {
-        val topThree = this.javaPlugin.playerService.playerSessions.values.asSequence().filter { it.lastPortal != null && it.startTime != null }.sortedByDescending { Duration.ofMillis(Instant.now().minusMillis(it.startTime?.toEpochMilli()!!).toEpochMilli()) }.sortedByDescending { it.lastPortal?.index }.take(3).map { it.player.displayName() }.toList()
+        val topThree = this.mapSession.playerSessions.values.asSequence().filter { it.lastPortal != null && it.startTime != null }.sortedByDescending { Duration.ofMillis(Instant.now().minusMillis(it.startTime?.toEpochMilli()!!).toEpochMilli()) }.sortedByDescending { it.lastPortal?.index }.take(3).map { it.player.displayName() }.toList()
         when (topThree.size) {
             1 -> bossBar.name(Component.translatable("bossbar.top3.1").args(topThree))
             2 -> bossBar.name(Component.translatable("bossbar.top3.2").args(topThree))
@@ -57,13 +57,13 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
 
             val currentLoc = it.location
             val lastLoc = lastPlayerPosition.getOrPut(it) { currentLoc }
-            if (currentLoc.world != lastLoc)   {
+            if (currentLoc.world != lastLoc) {
                 lastPlayerPosition.replace(it, currentLoc)
             }
             val distance = currentLoc.distance(lastLoc)
             val blocksPerSeconds = (distance / 0.05).toInt()
             val elytraPlayer =
-                    this.javaPlugin.playerService.playerSessions.get(Integer.valueOf(it.entityId)) ?: return@forEach
+                    this.mapSession.playerSessions.get(Integer.valueOf(it.entityId)) ?: return@forEach
             if (elytraPlayer.startTime != null) {
                 val duration = Duration.ofMillis(Instant.now().minusMillis(elytraPlayer.startTime.toEpochMilli()).toEpochMilli())
 

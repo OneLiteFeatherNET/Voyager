@@ -1,11 +1,11 @@
 package net.elytrarace.service
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.elytrarace.Voyager
 import net.elytrarace.model.dto.ElytraPlayer
 import net.elytrarace.model.dto.GameMapSession
 import net.elytrarace.phase.GamePhase
+import net.elytrarace.phases.EndPhase
+import net.elytrarace.phases.LobbyPhase
 import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
 import net.elytrarace.utils.CUP_OBJECTIVES_NAME
@@ -27,13 +27,13 @@ import java.time.Instant
 
 class PlayerService(val voyager: Voyager) : VectorApi {
 
-    val playerSessions: Int2ObjectMap<ElytraPlayer> = Int2ObjectOpenHashMap()
     fun beginGame(player: Player, mapSession: GameMapSession) {
         val elytraPlayer = ElytraPlayer(player = player, mapSession = mapSession)
-        playerSessions.putIfAbsent(Integer.valueOf(player.entityId), elytraPlayer)
+        mapSession.playerSessions.putIfAbsent(Integer.valueOf(player.entityId), elytraPlayer)
         mapSession.teleport(player)
         this.voyager.inventoryService.handlePlayerStart(elytraPlayer)
         Bukkit.getScheduler().runTask(voyager, Runnable {
+            player.gameMode = GameMode.SURVIVAL
             val sb = if (player.scoreboard == Bukkit.getScoreboardManager().mainScoreboard) {
                 Bukkit.getScoreboardManager().newScoreboard
             } else {
@@ -52,7 +52,10 @@ class PlayerService(val voyager: Voyager) : VectorApi {
 
     fun handlePlayerQuit(player: Player) {
         player.scoreboard = Bukkit.getScoreboardManager().mainScoreboard
-        playerSessions.remove(Integer.valueOf(player.entityId))
+        val phase = this.voyager.elytraPhase.currentPhase
+        if (phase !is GamePhase) return
+        val gamePhase = phase as net.elytrarace.phases.GamePhase
+        gamePhase.mapSession.playerSessions.remove(Integer.valueOf(player.entityId))
     }
 
     fun handlePlayerJoinLobbyPhase(player: Player) {
@@ -62,7 +65,8 @@ class PlayerService(val voyager: Voyager) : VectorApi {
         val objective = scoreboard.getObjective(CUP_OBJECTIVES_NAME) ?: scoreboard.registerNewObjective(
                 CUP_OBJECTIVES_NAME,
                 Criteria.DUMMY,
-                Component.translatable("scoreboard.cup").args(MiniMessage.miniMessage().deserialize(voyager.cup?.displayName ?: ""))
+                Component.translatable("scoreboard.cup").args(MiniMessage.miniMessage().deserialize(voyager.cup?.displayName
+                        ?: ""))
         )
         objective.displaySlot = DisplaySlot.SIDEBAR
         val score = objective.getScore("Maps")
@@ -70,12 +74,15 @@ class PlayerService(val voyager: Voyager) : VectorApi {
     }
 
     fun handlePlayerMove(event: PlayerMoveEvent) {
-        val elytraPlayer = this.playerSessions.get(Integer.valueOf(event.player.entityId)) ?: return
+        val phase = this.voyager.elytraPhase.currentPhase
+        if (phase is LobbyPhase || phase is EndPhase) return
+        val gamePhase = phase as net.elytrarace.phases.GamePhase
+        val elytraPlayer = gamePhase.mapSession.playerSessions.get(Integer.valueOf(event.player.entityId)) ?: return
         val map = elytraPlayer.mapSession as GameMapSession
         val to = toVector3D(event.to)
         if (to.y <= map.world.minHeight && this.voyager.elytraPhase.currentPhase is GamePhase && elytraPlayer.lastTime == null) {
             elytraPlayer.player.teleportAsync(map.world.spawnLocation)
-            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null, timeStampForPortals = mutableMapOf(), positionQueue = ArrayList()))
+            gamePhase.mapSession.playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null, timeStampForPortals = mutableMapOf(), positionQueue = ArrayList()))
             val objective = elytraPlayer.player.scoreboard.getObjective(OBJECTIVES_NAME) ?: return
             objective.unregister()
             return
@@ -90,8 +97,8 @@ class PlayerService(val voyager: Voyager) : VectorApi {
                 elytraPlayer.player.playSound(Sound.sound { it.type(org.bukkit.Sound.BLOCK_BEACON_ACTIVATE).volume(15.0f) })
                 elytraPlayer.timeStampForPortals[firstPortal] = Instant.now()
                 val newValue = elytraPlayer.copy(startTime = Instant.now(), lastPortal = firstPortal)
-                playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), newValue)
-                Bukkit.getScheduler().runTask(voyager,updateScoreboard(newValue))
+                gamePhase.mapSession.playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), newValue)
+                Bukkit.getScheduler().runTask(voyager, updateScoreboard(newValue))
             }
         } else {
             val nextPortal = transaction {
@@ -104,10 +111,10 @@ class PlayerService(val voyager: Voyager) : VectorApi {
             if (detected) {
                 elytraPlayer.player.playSound(Sound.sound { it.type(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP) })
                 elytraPlayer.timeStampForPortals[nextPortal] = Instant.now()
-                playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal)
-                Bukkit.getScheduler().runTask(voyager,updateScoreboard(elytraPlayer))
+                gamePhase.mapSession.playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal)
+                Bukkit.getScheduler().runTask(voyager, updateScoreboard(elytraPlayer))
                 if (nextPortal == lastPortal) {
-                    playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal, lastTime = Instant.now())
+                    gamePhase.mapSession.playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal, lastTime = Instant.now())
                     elytraPlayer.player.gameMode = GameMode.SPECTATOR
                     val spectatorCheck = Bukkit.getOnlinePlayers().none { it.gameMode == GameMode.SURVIVAL }
                     if (spectatorCheck) {
@@ -138,10 +145,13 @@ class PlayerService(val voyager: Voyager) : VectorApi {
     }
 
     fun handlePlayerGlide(event: EntityToggleGlideEvent) {
-        val elytraPlayer = this.playerSessions.get(Integer.valueOf(event.entity.entityId)) ?: return
+        val phase = this.voyager.elytraPhase.currentPhase
+        if (phase is LobbyPhase || phase is EndPhase) return
+        val gamePhase = phase as net.elytrarace.phases.GamePhase
+        val elytraPlayer = gamePhase.mapSession.playerSessions.get(Integer.valueOf(event.entity.entityId)) ?: return
         if (!event.isGliding && event.entity.isOnGround && this.voyager.elytraPhase.currentPhase is GamePhase && elytraPlayer.lastTime == null) {
             elytraPlayer.player.teleportAsync(elytraPlayer.mapSession.world.spawnLocation)
-            playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null, timeStampForPortals = mutableMapOf(), positionQueue = ArrayList()))
+            gamePhase.mapSession.playerSessions.put(Integer.valueOf(elytraPlayer.player.entityId), elytraPlayer.copy(startTime = null, lastPortal = null, timeStampForPortals = mutableMapOf(), positionQueue = ArrayList()))
             val objective = elytraPlayer.player.scoreboard.getObjective(OBJECTIVES_NAME) ?: return
             objective.unregister()
         }

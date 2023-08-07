@@ -1,5 +1,7 @@
 package net.elytrarace.model.dto
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.elytrarace.model.dbo.ElytraMap
 import net.elytrarace.model.dbo.Portal
 import net.elytrarace.model.dbo.Portals
@@ -16,6 +18,7 @@ import java.util.*
 class GameMapSession(world: World, val elytraMap: ElytraMap) : MapSession(world), SplineApi, VectorApi {
     val sortedPortals: TreeSet<PortalDTO> by lazy { buildSortedPortals(elytraMap) }
     val splineLocations: List<Vector3D> by lazy { calculateSpline(elytraMap, world) }
+    val playerSessions: Int2ObjectMap<ElytraPlayer> = Int2ObjectOpenHashMap()
 
     fun teleport(player: Player) {
         player.teleportAsync(world.spawnLocation)
