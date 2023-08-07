@@ -8,4 +8,6 @@ data class CupConfiguration(
     val cupName: String,
     val playerSize: Int,
     val minPlayerSize: Int,
+    val coolDown: Int = 10,
+    val boostLevel: Int = 2
 )

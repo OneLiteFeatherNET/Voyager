@@ -60,7 +60,7 @@ class Voyager : JavaPlugin() {
     }
 
     val inventoryService: InventoryService by lazy {
-        InventoryService()
+        InventoryService(this)
     }
 
     val elytraPhase = LinearPhaseSeries<Phase>()
