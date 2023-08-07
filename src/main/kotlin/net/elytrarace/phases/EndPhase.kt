@@ -1,14 +1,20 @@
 package net.elytrarace.phases
 
 import net.elytrarace.Voyager
+import net.elytrarace.model.dto.ElytraPlayer
 import net.elytrarace.phase.TickDirection
 import net.elytrarace.phase.TimedPhase
 import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
+import net.elytrarace.utils.OBJECTIVES_NAME
+import net.elytrarace.utils.TOP_THREE_OBJECTIVES_NAME
 import net.kyori.adventure.sound.Sound
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.GameMode
+import org.bukkit.scoreboard.Criteria
+import org.bukkit.scoreboard.DisplaySlot
+import org.bukkit.scoreboard.Scoreboard
 
 class EndPhase(val voyager: Voyager) :
     TimedPhase("End", voyager, 20, true) {
@@ -53,13 +59,26 @@ class EndPhase(val voyager: Voyager) :
 
     override fun onStart() {
         currentTicks = 60
-        Bukkit.getOnlinePlayers().forEach {
-            it.gameMode = GameMode.SURVIVAL
-            it.teleportAsync(this.voyager.configService.config.lobbyConfiguration.bukkitLocation)
-            it.inventory.clear()
-
-        }
+        Bukkit.getScheduler().runTask(voyager, Runnable {
+            val topThree = this.voyager.playerService.playerSessions.values.filter { it.lastTime != null }.sortedByDescending { it.lastTime!! }.take(3)
+            Bukkit.getOnlinePlayers().forEach {
+                it.gameMode = GameMode.SURVIVAL
+                it.teleportAsync(this.voyager.configService.config.lobbyConfiguration.bukkitLocation)
+                it.inventory.clear()
+                val sb = Bukkit.getScoreboardManager().mainScoreboard
+                showTopThreePlayers(sb, topThree)
+                it.scoreboard = sb
+            }
+        })
         super.onStart()
+    }
+
+    private fun showTopThreePlayers(scoreboard: Scoreboard, topThree: List<ElytraPlayer>) {
+        val objective = scoreboard.getObjective(TOP_THREE_OBJECTIVES_NAME) ?: scoreboard.registerNewObjective(TOP_THREE_OBJECTIVES_NAME, Criteria.DUMMY, Component.translatable("scoreboard.topThree"))
+        objective.displaySlot = DisplaySlot.SIDEBAR
+        topThree.forEachIndexed { index, elytraPlayer ->
+            objective.getScore(elytraPlayer.player.name).score = index + 1
+        }
     }
 
 }
