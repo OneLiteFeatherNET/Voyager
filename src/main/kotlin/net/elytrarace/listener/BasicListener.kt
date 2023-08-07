@@ -1,6 +1,8 @@
 package net.elytrarace.listener
 
 import net.elytrarace.Voyager
+import net.elytrarace.phases.EndPhase
+import net.elytrarace.phases.GamePhase
 import net.elytrarace.utils.api.CancellableListener
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
@@ -22,6 +24,7 @@ import org.bukkit.event.player.PlayerArmorStandManipulateEvent
 import org.bukkit.event.player.PlayerBedEnterEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerLoginEvent
 import org.bukkit.event.server.ServerListPingEvent
 
 class BasicListener(
@@ -105,6 +108,13 @@ class BasicListener(
     @EventHandler
     fun handleFood(event: FoodLevelChangeEvent) {
         event.isCancelled = true
+    }
+
+    @EventHandler
+    fun handlePlayerLogin(event: PlayerLoginEvent) {
+        if (this.voyager.elytraPhase.currentPhase is GamePhase || this.voyager.elytraPhase.currentPhase is EndPhase) {
+            event.kickMessage()
+        }
     }
 
     @EventHandler
