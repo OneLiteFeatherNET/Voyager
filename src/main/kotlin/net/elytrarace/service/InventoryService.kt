@@ -6,10 +6,10 @@ import net.elytrarace.utils.ELYTRA_ITEM_NAME
 import net.elytrarace.utils.builder.itemBuilder
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Material
-import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
+import org.bukkit.inventory.meta.FireworkMeta
 
 class InventoryService {
 
@@ -23,6 +23,12 @@ class InventoryService {
         material(Material.FIREWORK_ROCKET)
         unbreakable()
         displayName(MiniMessage.miniMessage().deserialize(BOOST_ITEM_NAME))
+    }
+    init {
+        boostItem.editMeta {
+            val fM = it as FireworkMeta
+            fM.power = 3
+        }
     }
 
     fun handlePlayerStart(elytraPlayer: ElytraPlayer) {
