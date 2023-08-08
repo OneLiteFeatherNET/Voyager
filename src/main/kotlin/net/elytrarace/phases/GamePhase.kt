@@ -19,6 +19,7 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
 
     private val lastPlayerPosition = mutableMapOf<Player, Location>()
     private val bossBar = BossBar.bossBar(Component.empty(), 1.0f, BossBar.Color.RED, BossBar.Overlay.PROGRESS)
+    var completePoints = javaPlugin.configService.config.cupConfiguration.cupPointsPerMap
 
     override fun onStart() {
         bossBar.addFlag(BossBar.Flag.PLAY_BOSS_MUSIC)
@@ -86,6 +87,7 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
 
     override fun finish() {
         super.finish()
+        this.javaPlugin.pointService.givePointsToPlayer(this)
         Bukkit.getOnlinePlayers().forEach {
             it.hideBossBar(bossBar)
             val objective = it.scoreboard.getObjective(OBJECTIVES_NAME) ?: return@forEach
