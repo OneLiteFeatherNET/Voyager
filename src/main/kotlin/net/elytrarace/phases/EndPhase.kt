@@ -85,8 +85,8 @@ class EndPhase(val voyager: Voyager) :
     private fun showTopThreePlayers(scoreboard: Scoreboard, topThree: Map<Player, Int>) {
         val objective = scoreboard.getObjective(TOP_THREE_OBJECTIVES_NAME) ?: scoreboard.registerNewObjective(TOP_THREE_OBJECTIVES_NAME, Criteria.DUMMY, Component.translatable("scoreboard.topThree"))
         objective.displaySlot = DisplaySlot.SIDEBAR
-        topThree.keys.forEachIndexed { index, elytraPlayer ->
-            objective.getScore(elytraPlayer.name).score = index + 1
+        topThree.forEach { (player, points) ->
+            objective.getScore(player.name).score = points
         }
     }
 
