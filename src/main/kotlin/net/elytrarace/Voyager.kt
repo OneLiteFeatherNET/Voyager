@@ -62,6 +62,9 @@ class Voyager : JavaPlugin() {
     val inventoryService: InventoryService by lazy {
         InventoryService(this)
     }
+    val pointService: PointService by lazy {
+        PointService()
+    }
 
     val elytraPhase = LinearPhaseSeries<Phase>()
     val playableMaps: MutableList<GameMapSession> = mutableListOf()
