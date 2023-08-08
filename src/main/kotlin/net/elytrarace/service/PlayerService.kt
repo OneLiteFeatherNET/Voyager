@@ -56,6 +56,16 @@ class PlayerService(val voyager: Voyager) : VectorApi {
         if (phase is LobbyPhase || phase is EndPhase) return
         val gamePhase = phase as net.elytrarace.phases.GamePhase
         gamePhase.mapSession.playerSessions.remove(Integer.valueOf(player.entityId))
+        if (Bukkit.getOnlinePlayers().isEmpty()) {
+            Bukkit.shutdown()
+            return
+        }
+        val spectatorCheck = Bukkit.getOnlinePlayers().none { it.gameMode == GameMode.SURVIVAL }
+        if (spectatorCheck) {
+            handleFinishOfMap()
+            return
+        }
+
     }
 
     fun handlePlayerJoinLobbyPhase(player: Player) {
@@ -114,17 +124,23 @@ class PlayerService(val voyager: Voyager) : VectorApi {
                 gamePhase.mapSession.playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal)
                 Bukkit.getScheduler().runTask(voyager, updateScoreboard(elytraPlayer))
                 if (nextPortal == lastPortal) {
-                    gamePhase.mapSession.playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal, lastTime = Instant.now())
+                    val lastTime = Instant.now()
+                    val diffTime = Duration.ofMillis(elytraPlayer.startTime?.toEpochMilli()!!).minusMillis(lastTime.toEpochMilli())
+                    gamePhase.mapSession.playerSessions[Integer.valueOf(elytraPlayer.player.entityId)] = elytraPlayer.copy(lastPortal = nextPortal, lastTime = lastTime, timeDiff = diffTime)
                     elytraPlayer.player.gameMode = GameMode.SPECTATOR
                     val spectatorCheck = Bukkit.getOnlinePlayers().none { it.gameMode == GameMode.SURVIVAL }
                     if (spectatorCheck) {
-                        this.voyager.elytraPhase.currentPhase.finish()
+                        handleFinishOfMap()
                         return
                     }
 
                 }
             }
         }
+    }
+
+    private fun handleFinishOfMap() {
+        this.voyager.elytraPhase.currentPhase.finish()
     }
 
     private fun updateScoreboard(elytraPlayer: ElytraPlayer) = Runnable {
