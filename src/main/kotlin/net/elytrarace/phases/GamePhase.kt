@@ -5,13 +5,11 @@ import net.elytrarace.model.dto.GameMapSession
 import net.elytrarace.phase.TickingPhase
 import net.elytrarace.util.Strings
 import net.elytrarace.util.TimeFormat
-import net.elytrarace.utils.SHOW_LINE_COUNT
-import net.elytrarace.utils.SHOW_LINE_EXTRA
-import net.elytrarace.utils.SHOW_LINE_OFFSET
-import net.elytrarace.utils.SHOW_LINE_PARTICLE
+import net.elytrarace.utils.*
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
+import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import java.time.Duration
@@ -54,7 +52,7 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
         }
 
         Bukkit.getOnlinePlayers().forEach {
-
+            if(it.gameMode == GameMode.SPECTATOR) return@forEach
             val currentLoc = it.location
             val lastLoc = lastPlayerPosition.getOrPut(it) { currentLoc }
             if (currentLoc.world != lastLoc) {
@@ -90,6 +88,8 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
         super.finish()
         Bukkit.getOnlinePlayers().forEach {
             it.hideBossBar(bossBar)
+            val objective = it.scoreboard.getObjective(OBJECTIVES_NAME) ?: return@forEach
+            objective.unregister()
         }
     }
 }
