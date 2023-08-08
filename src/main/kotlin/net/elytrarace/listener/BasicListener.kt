@@ -12,6 +12,7 @@ import org.bukkit.Material
 import org.bukkit.block.data.type.Chest
 import org.bukkit.block.data.type.Farmland
 import org.bukkit.block.data.type.Sign
+import org.bukkit.event.Event
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
@@ -19,12 +20,10 @@ import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.block.LeavesDecayEvent
 import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.FoodLevelChangeEvent
-import org.bukkit.event.player.PlayerArmorStandManipulateEvent
-import org.bukkit.event.player.PlayerBedEnterEvent
-import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.event.player.PlayerLoginEvent
+import org.bukkit.event.inventory.InventoryClickEvent
+import org.bukkit.event.player.*
 import org.bukkit.event.server.ServerListPingEvent
 
 class BasicListener(
@@ -96,19 +95,30 @@ class BasicListener(
     @EventHandler
     fun handlePing(event: ServerListPingEvent) {
         voyager.cup ?: return
-        event.motd(Component.translatable("motd.cup").args(MiniMessage.miniMessage().deserialize(voyager.cup?.displayName ?: "")))
+        event.motd(
+            Component.translatable("motd.cup")
+                .args(MiniMessage.miniMessage().deserialize(voyager.cup?.displayName ?: ""))
+        )
         event.maxPlayers = voyager.configService.config.cupConfiguration.playerSize
     }
 
     @EventHandler
-    fun handleDamage(event: EntityDamageEvent) {
-        event.isCancelled = true
+    fun handleDrop(event: PlayerDropItemEvent) = cancelling(event)
+
+    @EventHandler
+    fun handleInventory(event: InventoryClickEvent) {
+        cancelling(event)
+        event.result = Event.Result.DENY
     }
 
     @EventHandler
-    fun handleFood(event: FoodLevelChangeEvent) {
-        event.isCancelled = true
-    }
+    fun handlePickup(event: EntityPickupItemEvent) = cancelling(event)
+
+    @EventHandler
+    fun handleDamage(event: EntityDamageEvent) = cancelling(event)
+
+    @EventHandler
+    fun handleFood(event: FoodLevelChangeEvent) = cancelling(event)
 
     @EventHandler
     fun handlePlayerLogin(event: PlayerLoginEvent) {
