@@ -40,7 +40,7 @@ class GameMapSession(world: World, val elytraMap: ElytraMap) : MapSession(world)
         if (centerLocations.isEmpty()) {
             return@transaction emptyList()
         }
-        val extendLocations = (listOf(toVector3D(world.spawnLocation)) + centerLocations + listOf(toVector3D(world.spawnLocation)))
+        val extendLocations = (listOf(toVector3D(world.spawnLocation)) + centerLocations + listOf(toVector3D(world.spawnLocation), centerLocations.last()))
         return@transaction extendLocations.windowed(6)
             .map {
                 val distance = it.first().distanceSq(it[2]) * 0.0001
