@@ -8,9 +8,7 @@ import net.elytrarace.util.TimeFormat
 import net.elytrarace.utils.*
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
-import org.bukkit.Bukkit
-import org.bukkit.GameMode
-import org.bukkit.Location
+import org.bukkit.*
 import org.bukkit.entity.Player
 import java.time.Duration
 import java.time.Instant
@@ -48,7 +46,7 @@ class GamePhase(val javaPlugin: Voyager, val mapSession: GameMapSession) : Ticki
                     SHOW_LINE_OFFSET,
                     SHOW_LINE_OFFSET,
                     SHOW_LINE_OFFSET,
-                    SHOW_LINE_EXTRA
+                Particle.DustOptions(Color.RED,2f)
             )
         }
 

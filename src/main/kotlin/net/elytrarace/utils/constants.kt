@@ -20,7 +20,7 @@ const val VOID_GEN_STRING = "VoidGen"
 const val LOBBY_WORLD_FILE_NAME = "lobby.json"
 
 const val POINTS_PER_SEGMENT = 75
-val SHOW_LINE_PARTICLE = Particle.FLAME
+val SHOW_LINE_PARTICLE = Particle.REDSTONE
 const val SHOW_LINE_OFFSET = 0.0
 const val SHOW_LINE_COUNT = 1
 const val SHOW_LINE_EXTRA = .0
