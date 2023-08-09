@@ -1,0 +1,52 @@
+package net.elytrarace.model.dto
+
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
+import net.elytrarace.model.dbo.ElytraMap
+import net.elytrarace.model.dbo.Portal
+import net.elytrarace.model.dbo.Portals
+import net.elytrarace.utils.POINTS_PER_SEGMENT
+import net.elytrarace.utils.api.SplineApi
+import net.elytrarace.utils.api.VectorApi
+import org.apache.commons.geometry.euclidean.threed.Vector3D
+import org.bukkit.World
+import org.bukkit.entity.Player
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
+
+class GameMapSession(world: World, val elytraMap: ElytraMap) : MapSession(world), SplineApi, VectorApi {
+    val sortedPortals: TreeSet<PortalDTO> by lazy { buildSortedPortals(elytraMap) }
+    val splineLocations: List<Vector3D> by lazy { calculateSpline(elytraMap, world).toSet().toList() }
+    val playerSessions: Int2ObjectMap<ElytraPlayer> = Int2ObjectOpenHashMap()
+
+    fun teleport(player: Player) {
+        player.teleportAsync(world.spawnLocation)
+    }
+
+    private fun buildSortedPortals(elytraMap: ElytraMap): TreeSet<PortalDTO> = transaction {
+        val portalDTOS = elytraMap.portals.map { portal: Portal ->
+            PortalDTO(
+                portal.locations.map { it.vector },
+                portal.index, portal.map
+            )
+        }
+        return@transaction TreeSet(portalDTOS.toSortedSet(Comparator.comparingInt(PortalDTO::index)))
+    }
+
+    private fun calculateSpline(elytraMap: ElytraMap, world: World): List<Vector3D> = transaction {
+        val centerLocations = elytraMap.portals.orderBy(Portals.index to SortOrder.DESC)
+            .mapNotNull { it.locations.firstOrNull { center -> center.center }?.vector } // Center Location of ech Portal
+        if (centerLocations.isEmpty()) {
+            return@transaction emptyList()
+        }
+        val extendLocations = (listOf(toVector3D(world.spawnLocation)) + centerLocations + listOf(toVector3D(world.spawnLocation), centerLocations.last()))
+        return@transaction extendLocations.windowed(6)
+            .map {
+                val distance = it.first().distanceSq(it[2]) * 0.0001
+                interpolate(it, 0, (POINTS_PER_SEGMENT * distance).toInt()) + interpolate(it, 2, (POINTS_PER_SEGMENT * distance).toInt())
+            }
+            .reduce { acc, vector3DS -> acc + vector3DS }
+    }
+}
+

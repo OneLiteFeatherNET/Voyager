@@ -8,15 +8,13 @@ import cloud.commandframework.execution.CommandExecutionCoordinator
 import cloud.commandframework.meta.CommandMeta
 import cloud.commandframework.paper.PaperCommandManager
 import net.elytrarace.Voyager
-import net.elytrarace.commands.MapCommands
-import net.elytrarace.commands.RingCommands
-import net.elytrarace.commands.VoyagerCommands
-import net.elytrarace.config.LobbyWorld
-import net.elytrarace.config.PluginMode
+import net.elytrarace.commands.LobbyCommand
+import net.elytrarace.commands.MapCommand
+import net.elytrarace.commands.SetupCommand
 import org.bukkit.command.CommandSender
 import java.util.function.Function
-
 class CommandService(private val voyager: Voyager) {
+
     private val paperCommandManager: PaperCommandManager<CommandSender> = PaperCommandManager(
         voyager,
         CommandExecutionCoordinator.simpleCoordinator(),
@@ -45,15 +43,11 @@ class CommandService(private val voyager: Voyager) {
             paperCommandManager,
             CommandSender::class.java, commandMetaFunction
         )
-        registerCommands()
     }
 
-    private fun registerCommands() {
-        if (this.voyager.configService.config.pluginMode == PluginMode.TESTING) {
-            this.annotationParser.parse(MapCommands(voyager))
-            this.annotationParser.parse(RingCommands())
-            this.annotationParser.parse(VoyagerCommands())
-        }
+     fun registerCommands() {
+        this.annotationParser.parse(SetupCommand(voyager))
+        this.annotationParser.parse(MapCommand(voyager))
+        this.annotationParser.parse(LobbyCommand(voyager))
     }
-
 }

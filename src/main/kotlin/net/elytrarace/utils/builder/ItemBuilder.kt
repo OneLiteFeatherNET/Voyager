@@ -120,13 +120,11 @@ open class ItemBuilder() {
 
     /**
      * `unbreakable` is a function that takes a lambda as an argument, and the lambda returns an integer
-     *
-     * @param idAttr () -> Int
      */
-    fun unbreakable(idAttr: Int) {
+    fun unbreakable() {
         itemStack.apply {
             editMeta {
-                it.setCustomModelData(idAttr)
+                it.isUnbreakable = true
             }
         }
     }

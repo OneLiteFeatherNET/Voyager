@@ -9,7 +9,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
     // Bukkit
     id("xyz.jpenilla.run-paper") version "2.1.0"
-    id("net.minecrell.plugin-yml.bukkit") version "0.5.3"
+    id("net.minecrell.plugin-yml.paper") version "0.6.0"
     id("org.ajoberstar.grgit") version "5.2.0"
     jacoco
     id ("org.sonarqube") version "4.2.1.3168"
@@ -64,7 +64,7 @@ dependencies {
     api("com.zaxxer:HikariCP:5.0.1")
     // Driver
     implementation("org.mariadb.jdbc:mariadb-java-client:3.1.2")
-    bukkitLibrary("com.h2database:h2:2.1.214")
+    implementation("com.h2database:h2:2.1.214")
     // Commands
     implementation("cloud.commandframework:cloud-annotations:1.8.0")
     implementation("cloud.commandframework:cloud-minecraft-extras:1.8.0")
@@ -76,7 +76,11 @@ dependencies {
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit:2.5.0") {
         isTransitive = false
     }
-
+    // Testing
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
 }
 kotlin {
     jvmToolchain {
@@ -103,7 +107,7 @@ tasks {
         }
     }
     runServer {
-        minecraftVersion("1.19.4")
+        minecraftVersion("1.20.1")
     }
     shadowJar {
         archiveFileName.set("${rootProject.name}.${archiveExtension.getOrElse("jar")}")
@@ -112,12 +116,14 @@ tasks {
         // relocate("org.bstats", "builders.volans.bstats")
     }
 }
-bukkit {
-    load = PluginLoadOrder.POSTWORLD
+paper {
     main = "net.elytrarace.Voyager"
     apiVersion = "1.19"
     authors = listOf("TheMeinerLP")
-    depend = listOf("FastAsyncWorldEdit", "VoidGen")
+    serverDependencies {
+        register("FastAsyncWorldEdit")
+        register("VoidGen")
+    }
 }
 
 sonar {

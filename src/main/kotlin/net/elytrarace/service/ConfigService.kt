@@ -2,32 +2,17 @@ package net.elytrarace.service
 
 import com.typesafe.config.ConfigFactory
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.hocon.Hocon
 import kotlinx.serialization.hocon.decodeFromConfig
-import kotlinx.serialization.json.Json
 import net.elytrarace.Voyager
-import net.elytrarace.config.LobbyWorld
-import net.elytrarace.config.VoyagerConfiguration
+import net.elytrarace.model.config.VoyagerConfiguration
 import net.elytrarace.utils.CONFIG_FILE_NAME
-import net.elytrarace.utils.LOBBY_WORLD_FILE_NAME
 import java.nio.file.Files
 import kotlin.io.path.reader
 
 class ConfigService(private val voyager: Voyager) {
     val config: VoyagerConfiguration
         get() = readConfig(voyager)
-    val lobbyWorld: LobbyWorld?
-        get() = readLobbyWorld(voyager)
-
-    private fun readLobbyWorld(voyager: Voyager): LobbyWorld? {
-        val world = voyager.server.worlds.first {
-            val jsonFile = it.worldFolder.resolve(LOBBY_WORLD_FILE_NAME)
-            Files.exists(jsonFile.toPath())
-        }
-        val jsonFile = world.worldFolder.resolve(LOBBY_WORLD_FILE_NAME)
-        return Json.decodeFromString<LobbyWorld?>(jsonFile.readText())?.copy(world = world)
-    }
 
     @OptIn(ExperimentalSerializationApi::class)
     private fun readConfig(voyager: Voyager): VoyagerConfiguration {

@@ -3,13 +3,10 @@ package net.elytrarace.service
 import com.zaxxer.hikari.HikariDataSource
 import net.elytrarace.Voyager
 import net.elytrarace.logger.Voyager2SQLLogger
-import net.elytrarace.models.ElytraMap
-import net.elytrarace.models.ElytraMaps
-import net.elytrarace.models.RingLocations
-import net.elytrarace.models.Rings
-import net.elytrarace.utils.VOID_GEN_STRING
-import org.bukkit.Bukkit
-import org.bukkit.WorldCreator
+import net.elytrarace.model.dbo.Cups
+import net.elytrarace.model.dbo.ElytraMaps
+import net.elytrarace.model.dbo.PortalLocations
+import net.elytrarace.model.dbo.Portals
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.DatabaseConfig
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -27,9 +24,10 @@ class DatabaseService(private val voyager: Voyager) {
         TransactionManager.defaultDatabase = db
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
+                Cups,
                 ElytraMaps,
-                Rings,
-                RingLocations
+                Portals,
+                PortalLocations
             )
         }
     }
