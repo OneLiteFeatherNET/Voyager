@@ -59,10 +59,12 @@ class InventoryService(val voyager: Voyager) {
 
     fun handlePlayerInteract(event: PlayerInteractEvent) {
         val item = event.item ?: return
-        if (item == boostItem && event.player.isGliding && !event.player.hasCooldown(boostItem.type)) {
+        if (item == boostItem) {
             event.isCancelled = true
-            event.player.fireworkBoost(boostItem.clone())
-            event.player.setCooldown(boostItem.type, this.voyager.configService.config.cupConfiguration.coolDown )
+           if (event.player.isGliding && !event.player.hasCooldown(boostItem.type)) {
+               event.player.fireworkBoost(boostItem.clone())
+               event.player.setCooldown(boostItem.type, this.voyager.configService.config.cupConfiguration.coolDown )
+           }
         }
     }
 }
