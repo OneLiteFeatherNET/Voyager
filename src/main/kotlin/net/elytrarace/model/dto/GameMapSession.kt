@@ -17,7 +17,7 @@ import java.util.*
 
 class GameMapSession(world: World, val elytraMap: ElytraMap) : MapSession(world), SplineApi, VectorApi {
     val sortedPortals: TreeSet<PortalDTO> by lazy { buildSortedPortals(elytraMap) }
-    val splineLocations: List<Vector3D> by lazy { calculateSpline(elytraMap, world) }
+    val splineLocations: List<Vector3D> by lazy { calculateSpline(elytraMap, world).toSet().toList() }
     val playerSessions: Int2ObjectMap<ElytraPlayer> = Int2ObjectOpenHashMap()
 
     fun teleport(player: Player) {
