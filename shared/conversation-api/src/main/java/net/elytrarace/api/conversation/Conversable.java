@@ -1,4 +1,4 @@
-package net.eyltrarace.api.conversation;
+package net.elytrarace.api.conversation;
 
 import net.kyori.adventure.audience.Audience;
 import org.jetbrains.annotations.NotNull;

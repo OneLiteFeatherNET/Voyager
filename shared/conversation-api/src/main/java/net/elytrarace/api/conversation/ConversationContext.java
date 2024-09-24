@@ -1,4 +1,4 @@
-package net.eyltrarace.api.conversation;
+package net.elytrarace.api.conversation;
 
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;

@@ -1,4 +1,4 @@
-package net.eyltrarace.api.conversation;
+package net.elytrarace.api.conversation;
 
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;

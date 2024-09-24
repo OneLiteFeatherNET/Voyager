@@ -1,4 +1,4 @@
-package net.eyltrarace.api.conversation;
+package net.elytrarace.api.conversation;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.NotNull;
