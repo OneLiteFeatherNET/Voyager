@@ -3,7 +3,6 @@ package net.elytrarace.common.cup;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import it.unimi.dsi.fastutil.objects.ObjectLists;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.file.FileHandler;
 import net.elytrarace.common.file.GsonFileHandler;
@@ -38,14 +37,14 @@ public class CupProvider {
         if (!Files.exists(this.cupPath)) {
             throw new IllegalStateException("The cup folder does not exist. Please name the cup folder " + CUPS_FOLDER);
         }
-
+        loadCups();
     }
 
     public static CupProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<CupDTO>> defaultCups) {
         return new CupProvider(gson, voyagerPath, defaultCups);
     }
 
-    public void loadDoors() {
+    public void loadCups() {
         CUP_LOGGER.info("Starting to load cups of the game");
         final Path mapFile = this.cupPath.resolve(CUPS_FILE);
         if (!Files.exists(mapFile)) {

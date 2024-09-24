@@ -3,6 +3,7 @@ package net.elytrarace.common.cup;
 import net.elytrarace.common.cup.model.CupDTO;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -24,10 +25,10 @@ public interface CupService {
      * @param name The name of the cup
      * @return A {@link CompletableFuture} containing the {@link CupDTO} object.
      */
-    CompletableFuture<CupDTO> getCupByName(String name);
+    CompletableFuture<CupDTO> getCupByName(@NotNull String name);
 
     @Contract("_ -> new")
-    static CupService create(JavaPlugin plugin) {
+    static CupService create(@NotNull JavaPlugin plugin) {
         return new CupServiceImpl(plugin);
     }
 
