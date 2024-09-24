@@ -1,5 +1,4 @@
 plugins {
-    id("java")
 }
 
 group = "net.onelitefeather"
@@ -11,15 +10,11 @@ repositories {
 
 dependencies {
 }
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
 
-tasks {
-    compileJava {
-        options.release.set(17)
-        options.encoding = "UTF-8"
+subprojects {
+    repositories {
+        mavenCentral()
+        maven("https://repo.papermc.io/repository/maven-public/")
+        maven("https://maven.enginehub.org/repo/")
     }
 }
-

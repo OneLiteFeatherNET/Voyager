@@ -1,2 +1,13 @@
-rootProject.name = "ExampleProject" // Todo: Rename project name
+rootProject.name = "Voyager"
 
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            version("paper", "1.21.1-R0.1-SNAPSHOT")
+
+            library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
+        }
+    }
+}
+
+include("shared:conversation-api")
