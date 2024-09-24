@@ -5,7 +5,6 @@ import net.elytrarace.api.phase.LinearPhaseSeries;
 import net.elytrarace.api.phase.Phase;
 import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.cup.model.CupDTO;
-import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.game.listener.DefaultListener;
 import net.elytrarace.game.phase.EndPhase;
@@ -13,6 +12,9 @@ import net.elytrarace.game.phase.GamePhase;
 import net.elytrarace.game.phase.LobbyPhase;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import javax.annotation.Nullable;
+import java.util.Optional;
 
 public class ElytraRace extends JavaPlugin {
 
@@ -54,22 +56,30 @@ public class ElytraRace extends JavaPlugin {
 
     private void registerListeners() {
         // Register listeners here
-        Bukkit.getPluginManager().registerEvents(new DefaultListener(), this);
+        Bukkit.getPluginManager().registerEvents(new DefaultListener(this), this);
     }
 
+    @Nullable
     public DatabaseService getDatabaseService() {
-        return databaseService;
+        return this.databaseService;
     }
 
+    @Nullable
     public CupService getCupService() {
-        return cupService;
+        return this.cupService;
     }
 
+    @Nullable
     public MapService getMapService() {
-        return mapService;
+        return this.mapService;
     }
 
+    @Nullable
     public LinearPhaseSeries<Phase> getElytraPhase() {
-        return elytraPhase;
+        return this.elytraPhase;
+    }
+
+    public Optional<CupDTO> getCurrentCup() {
+        return Optional.ofNullable(this.currentCup);
     }
 }
