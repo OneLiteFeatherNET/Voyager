@@ -6,14 +6,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 public interface MapService {
 
     CompletableFuture<MapDTO> getMapByName(@NotNull String name);
 
-    CompletableFuture<Collection<MapDTO>> getMapByCup(@NotNull CupDTO cupDTO);
+    CompletableFuture<CupDTO> getMapByCup(@NotNull CupDTO cupDTO);
 
     @Contract("_ -> new")
     static MapService create(@NotNull JavaPlugin plugin) {

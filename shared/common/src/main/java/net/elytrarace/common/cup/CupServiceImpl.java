@@ -1,6 +1,7 @@
 package net.elytrarace.common.cup;
 
 import net.elytrarace.common.cup.model.CupDTO;
+import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.utils.GsonUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +22,7 @@ class CupServiceImpl implements CupService {
     public CompletableFuture<CupDTO> getRandomCup() {
         return CompletableFuture.supplyAsync(() -> {
             var cups = this.cupProvider.getCupsAsList();
-            var newCups = new ArrayList<CupDTO>();
+            var newCups = new ArrayList<FileCupDTO>();
             Collections.copy(cups, newCups);
             Collections.shuffle(newCups);
             return newCups.get(0);

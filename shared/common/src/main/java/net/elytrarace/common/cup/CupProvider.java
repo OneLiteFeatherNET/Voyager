@@ -3,7 +3,7 @@ package net.elytrarace.common.cup;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import net.elytrarace.common.cup.model.CupDTO;
+import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.file.FileHandler;
 import net.elytrarace.common.file.GsonFileHandler;
 import org.jetbrains.annotations.NotNull;
@@ -26,10 +26,10 @@ public class CupProvider {
 
     private final FileHandler fileHandler;
     private final Path cupPath;
-    private final Supplier<Collection<CupDTO>> defaultCups;
-    private Collection<CupDTO> cups;
+    private final Supplier<Collection<FileCupDTO>> defaultCups;
+    private Collection<FileCupDTO> cups;
 
-    CupProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<CupDTO>> defaultCups) {
+    CupProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<FileCupDTO>> defaultCups) {
         this.fileHandler = new GsonFileHandler(gson);
         this.cupPath = voyagerPath.resolve(CUPS_FOLDER);
         this.defaultCups = defaultCups;
@@ -40,7 +40,7 @@ public class CupProvider {
         loadCups();
     }
 
-    public static CupProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<CupDTO>> defaultCups) {
+    public static CupProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<FileCupDTO>> defaultCups) {
         return new CupProvider(gson, voyagerPath, defaultCups);
     }
 
@@ -54,7 +54,7 @@ public class CupProvider {
             return;
         }
 
-        final Optional<Collection<CupDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<Collection<CupDTO>>) TypeToken.getParameterized(Collection.class, CupDTO.class));
+        final Optional<Collection<FileCupDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<Collection<FileCupDTO>>) TypeToken.getParameterized(Collection.class, FileCupDTO.class));
 
         if (optionalMap.isEmpty()) {
             throw new IllegalStateException("The cups could not be loaded");
@@ -69,15 +69,15 @@ public class CupProvider {
     }
 
 
-    public void addCup(@NotNull CupDTO cup) {
+    public void addCup(@NotNull FileCupDTO cup) {
         this.cups.add(cup);
     }
 
-    public @NotNull Collection<CupDTO> getCups() {
+    public @NotNull Collection<FileCupDTO> getCups() {
         return this.cups;
     }
 
-    public @NotNull List<CupDTO> getCupsAsList() {
+    public @NotNull List<FileCupDTO> getCupsAsList() {
         return Collections.unmodifiableList(Lists.newArrayList(this.cups));
     }
 

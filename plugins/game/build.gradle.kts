@@ -3,9 +3,9 @@ plugins {
 }
 dependencies {
     compileOnly(libs.minecraft.paper)
-    implementation(project(":shared:conversation-api"))
     implementation(project(":shared:phase"))
     implementation(project(":shared:common"))
+    implementation(project(":shared:database"))
 }
 java {
     sourceCompatibility = JavaVersion.VERSION_21

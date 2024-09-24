@@ -1,11 +1,22 @@
 package net.elytrarace.common.cup.model;
 
-import java.util.List;
-import java.util.UUID;
+/**
+ * Data transfer object for a cup.
+ */
+public sealed interface CupDTO permits FileCupDTO, ResolvedCupDTO {
 
-public record CupDTO(
-        String name,
-        String displayName,
-        List<UUID> maps
-) {
+    /**
+     * Get the name of the cup.
+     *
+     * @return The name of the cup.
+     */
+    String name();
+
+    /**
+     * Get the display name of the cup.
+     *
+     * @return The display name of the cup.
+     */
+    String displayName();
+
 }

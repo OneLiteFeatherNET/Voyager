@@ -3,7 +3,6 @@ package net.elytrarace.common.map;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.file.FileHandler;
 import net.elytrarace.common.file.GsonFileHandler;
 import net.elytrarace.common.map.model.MapDTO;

@@ -1,6 +1,8 @@
 package net.elytrarace.common.map;
 
 import net.elytrarace.common.cup.model.CupDTO;
+import net.elytrarace.common.cup.model.FileCupDTO;
+import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import net.elytrarace.common.utils.GsonUtil;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,12 +29,17 @@ class MapServiceImpl implements MapService {
     }
 
     @Override
-    public CompletableFuture<Collection<MapDTO>> getMapByCup(@NotNull CupDTO cupDTO) {
-        return CompletableFuture.supplyAsync(() -> cupDTO.maps().stream()
+    public CompletableFuture<CupDTO> getMapByCup(@NotNull CupDTO cupDTO) {
+        if (!(cupDTO instanceof FileCupDTO fileCupDTO)) {
+            throw new IllegalArgumentException("CupDTO must be an instance of FileCupDTO");
+        }
+        return CompletableFuture.supplyAsync(() -> fileCupDTO.maps().stream()
                 .flatMap(uuid -> this.mapProvider.getMaps()
                         .stream()
                         .filter(mapDTO -> mapDTO.uuid().equals(uuid))
                 )
-                .toList());
+                .toList())
+                .thenApply(maps -> new ResolvedCupDTO(fileCupDTO.name(), fileCupDTO.displayName(), maps));
+
     }
 }
