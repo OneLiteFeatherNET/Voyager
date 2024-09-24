@@ -11,3 +11,4 @@ dependencyResolutionManagement {
 }
 
 include("shared:conversation-api")
+include("shared:phase")
