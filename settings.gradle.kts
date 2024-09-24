@@ -13,3 +13,4 @@ dependencyResolutionManagement {
 include("shared:conversation-api")
 include("shared:phase")
 include("shared:common")
+include("plugins:game")
