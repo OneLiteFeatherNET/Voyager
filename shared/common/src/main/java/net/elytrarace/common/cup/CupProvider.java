@@ -40,10 +40,6 @@ public class CupProvider {
         loadCups();
     }
 
-    public static CupProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<FileCupDTO>> defaultCups) {
-        return new CupProvider(gson, voyagerPath, defaultCups);
-    }
-
     public void loadCups() {
         CUP_LOGGER.info("Starting to load cups of the game");
         final Path mapFile = this.cupPath.resolve(CUPS_FILE);
@@ -54,13 +50,14 @@ public class CupProvider {
             return;
         }
 
-        final Optional<Collection<FileCupDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<Collection<FileCupDTO>>) TypeToken.getParameterized(Collection.class, FileCupDTO.class));
+        final Optional<Collection<FileCupDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<Collection<FileCupDTO>>)
+                TypeToken.getParameterized(Collection.class, FileCupDTO.class));
 
         if (optionalMap.isEmpty()) {
             throw new IllegalStateException("The cups could not be loaded");
         }
 
-        this.cups = optionalMap.get();
+        this.cups = optionalMap.orElse(this.defaultCups.get());
     }
 
 

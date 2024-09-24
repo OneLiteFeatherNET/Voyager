@@ -64,7 +64,7 @@ public class GsonFileHandler implements FileHandler {
      */
     @Override
     public <T> Optional<T> load(@NotNull Path path, @NotNull TypeToken<T> clazz) {
-        Preconditions.checkArgument(Files.isDirectory(path), "Unable to load a directory. Please check the used path");
+        Preconditions.checkArgument(!Files.isDirectory(path), "Unable to load a directory. Please check the used path");
         if (!Files.exists(path)) {
             return Optional.empty();
         }

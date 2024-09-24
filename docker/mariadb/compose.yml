@@ -1,0 +1,15 @@
+# docker compose up -d
+services:
+  mariadb_db_voyager:
+    image: mariadb:latest
+    container_name: 'voyager-mariadb'
+    ports:
+      - "3306:3306"
+    shm_size: 128mb
+    volumes:
+      - ./mariadb/data/:/var/lib/mysql:Z
+    environment:
+      MARIADB_ROOT_PASSWORD: voyager-project
+      MARIADB_USER: voyager-project
+      MARIADB_PASSWORD: voyager-project
+      MARIADB_DATABASE: voyager-project

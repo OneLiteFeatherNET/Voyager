@@ -2,14 +2,7 @@ plugins {
 }
 
 group = "net.onelitefeather"
-version = "0.0.1-SNAPSHOT" // Change
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-}
+version = "0.0.1-SNAPSHOT"
 
 subprojects {
     repositories {

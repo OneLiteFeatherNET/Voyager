@@ -1,6 +1,9 @@
 package net.elytrarace.common.utils;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.util.UUID;
 
 /**
  * Utility class for Gson
@@ -14,7 +17,9 @@ public final class GsonUtil {
 
     static {
         // Add custom Gson configuration here
-        GSON = new Gson();
+        GSON = new GsonBuilder()
+                .registerTypeAdapter(UUID.class, new UUIDGsonAdapter())
+                .create();
     }
 
     private GsonUtil() {
