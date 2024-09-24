@@ -1,7 +1,9 @@
 package net.elytrarace.common.cup;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.file.FileHandler;
 import net.elytrarace.common.file.GsonFileHandler;
@@ -12,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -72,6 +76,10 @@ public class CupProvider {
 
     public @NotNull Collection<CupDTO> getCups() {
         return this.cups;
+    }
+
+    public @NotNull List<CupDTO> getCupsAsList() {
+        return Collections.unmodifiableList(Lists.newArrayList(this.cups));
     }
 
     public @NotNull Path getCupPath() {
