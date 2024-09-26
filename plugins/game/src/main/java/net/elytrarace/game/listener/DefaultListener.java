@@ -104,10 +104,12 @@ public class DefaultListener implements Listener, CancellableListener {
         databaseService.getElytraPlayerRepository()
                 .ifPresent(elytraPlayerRepository -> elytraPlayerRepository
                         .getElytraPlayerById(event.getPlayer().getUniqueId())
-                        .thenApplyAsync(databaseElytraPlayer -> Objects
-                                .requireNonNullElseGet(databaseElytraPlayer, () -> new DatabaseElytraPlayer(event.getPlayer().getUniqueId()))
-                        )
-                        .thenAcceptAsync(elytraPlayerRepository::saveElytraPlayer));
+                        .thenComposeAsync(databaseElytraPlayer -> {
+                            if (databaseElytraPlayer == null) {
+                                return elytraPlayerRepository.saveElytraPlayer(new DatabaseElytraPlayer(event.getPlayer().getUniqueId()));
+                            }
+                            return null;
+                        }));
     }
 
     @EventHandler
@@ -127,9 +129,7 @@ public class DefaultListener implements Listener, CancellableListener {
                     }
                     if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && RIGHT_CLICK_DENIED_INTERACTABLES.stream().anyMatch(clazz -> clazz.isInstance(blockData))) {
                         cancelEvent(event);
-                        return;
                     }
-
                 });
     }
 
