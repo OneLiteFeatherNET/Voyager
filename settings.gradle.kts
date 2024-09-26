@@ -9,6 +9,7 @@ dependencyResolutionManagement {
             version("jetbrains-annotations", "24.1.0")
 
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
+            library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0-beta.10")
             library("hibernate.core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")
             library("hibernate.hikaricp", "org.hibernate.orm", "hibernate-hikaricp").versionRef("hibernate")
             library("mariadb", "org.mariadb.jdbc", "mariadb-java-client").versionRef("mariadb-client")
@@ -24,3 +25,4 @@ include("shared:phase")
 include("shared:database")
 include("shared:common")
 include("plugins:game")
+include("plugins:setup")
