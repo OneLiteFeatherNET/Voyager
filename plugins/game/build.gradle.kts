@@ -8,6 +8,7 @@ plugins {
 }
 dependencies {
     compileOnly(libs.minecraft.paper)
+    implementation(libs.minecraft.cloud.paper)
     implementation(project(":shared:phase"))
     implementation(project(":shared:common"))
     implementation(project(":shared:database"))
