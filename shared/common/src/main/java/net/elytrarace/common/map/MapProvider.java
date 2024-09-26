@@ -26,10 +26,10 @@ public class MapProvider {
 
     private final FileHandler fileHandler;
     private final Path mapPath;
-    private final Supplier<Collection<MapDTO>> defaultMaps;
-    private Collection<MapDTO> maps;
+    private final Supplier<List<MapDTO>> defaultMaps;
+    private List<MapDTO> maps;
 
-    MapProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<MapDTO>> defaultMaps) {
+    MapProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<List<MapDTO>> defaultMaps) {
         this.fileHandler = new GsonFileHandler(gson);
         this.mapPath = voyagerPath.resolve(MAPS_FOLDER);
         this.defaultMaps = defaultMaps;
@@ -40,7 +40,7 @@ public class MapProvider {
         loadMaps();
     }
 
-    public static MapProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<MapDTO>> defaultMaps) {
+    public static MapProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<List<MapDTO>> defaultMaps) {
         return new MapProvider(gson, voyagerPath, defaultMaps);
     }
 
@@ -54,7 +54,7 @@ public class MapProvider {
             return;
         }
 
-        final Optional<Collection<MapDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<Collection<MapDTO>>) TypeToken.getParameterized(Collection.class, MapDTO.class));
+        final Optional<List<MapDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<List<MapDTO>>) TypeToken.getParameterized(List.class, MapDTO.class));
 
         if (optionalMap.isEmpty()) {
             throw new IllegalStateException("The cups could not be loaded");
@@ -65,7 +65,7 @@ public class MapProvider {
 
 
     public void saveMaps() {
-        this.fileHandler.save(this.mapPath.resolve(MAPS_FILE), maps);
+        this.fileHandler.save(this.mapPath.resolve(MAPS_FILE), maps, (TypeToken<List<MapDTO>>) TypeToken.getParameterized(List.class, MapDTO.class));
     }
 
 
