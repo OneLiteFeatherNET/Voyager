@@ -9,6 +9,16 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Service for managing {@link CupDTO} objects.
+ * <p>
+ *     The service is used to get {@link CupDTO} objects by their name or to get a random {@link CupDTO} object.
+ *     The service is created by calling the {@link #create(JavaPlugin)} method.
+ *     The service is implemented by the {@link CupServiceImpl} class.
+ * </p>
+ * @since 1.0.0
+ * @version 1.0.0
+ * @see CupDTO
+ * @see CupServiceImpl
+ * @author TheMeinerLP
  */
 public interface CupService {
 
@@ -27,6 +37,27 @@ public interface CupService {
      */
     CompletableFuture<CupDTO> getCupByName(@NotNull String name);
 
+    /**
+     * Add a new {@link CupDTO} object.
+     *
+     * @param cupDTO The cup to add
+     * @return A {@link CompletableFuture} containing a boolean value indicating whether the cup was added successfully.
+     */
+    CompletableFuture<Boolean> addCup(@NotNull CupDTO cupDTO);
+
+    /**
+     * Save the cups to the storage.
+     *
+     * @return A {@link CompletableFuture} indicating the completion of the operation.
+     */
+    CompletableFuture<Void> saveCups();
+
+    /**
+     * Creates a new instance of the cup service.
+     *
+     * @param plugin The plugin to create the service for
+     * @return The cup service
+     */
     @Contract("_ -> new")
     static CupService create(@NotNull JavaPlugin plugin) {
         return new CupServiceImpl(plugin);

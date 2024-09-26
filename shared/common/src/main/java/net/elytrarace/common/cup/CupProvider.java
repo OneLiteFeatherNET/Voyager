@@ -26,10 +26,10 @@ public class CupProvider {
 
     private final FileHandler fileHandler;
     private final Path cupPath;
-    private final Supplier<Collection<FileCupDTO>> defaultCups;
-    private Collection<FileCupDTO> cups;
+    private final Supplier<List<FileCupDTO>> defaultCups;
+    private List<FileCupDTO> cups;
 
-    CupProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<Collection<FileCupDTO>> defaultCups) {
+    CupProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<List<FileCupDTO>> defaultCups) {
         this.fileHandler = new GsonFileHandler(gson);
         this.cupPath = voyagerPath.resolve(CUPS_FOLDER);
         this.defaultCups = defaultCups;
@@ -50,8 +50,8 @@ public class CupProvider {
             return;
         }
 
-        final Optional<Collection<FileCupDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<Collection<FileCupDTO>>)
-                TypeToken.getParameterized(Collection.class, FileCupDTO.class));
+        final Optional<List<FileCupDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<List<FileCupDTO>>)
+                TypeToken.getParameterized(List.class, FileCupDTO.class));
 
         if (optionalMap.isEmpty()) {
             throw new IllegalStateException("The cups could not be loaded");
@@ -62,7 +62,8 @@ public class CupProvider {
 
 
     public void saveCups() {
-        this.fileHandler.save(this.cupPath.resolve(CUPS_FILE), cups);
+        System.out.println("Test");
+        this.fileHandler.save(this.cupPath.resolve(CUPS_FILE), cups, (TypeToken<List<FileCupDTO>>) TypeToken.getParameterized(List.class, FileCupDTO.class));
     }
 
 
