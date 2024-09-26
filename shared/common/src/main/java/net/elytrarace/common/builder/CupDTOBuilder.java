@@ -1,0 +1,143 @@
+package net.elytrarace.common.builder;
+
+import net.elytrarace.common.cup.model.CupDTO;
+import net.elytrarace.common.cup.model.FileCupDTO;
+import net.elytrarace.common.map.model.MapDTO;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+/**
+ * Builder for a cup DTO.
+ * <p>
+ *     The builder is used to create a cup DTO with the desired properties.
+ *     The builder is created by calling the {@link #create()} method.
+ * </p>
+ * @since 1.0.0
+ * @version 1.0.0
+ * @see CupDTO
+ * @author TheMeinerLP
+ */
+public sealed interface CupDTOBuilder {
+
+    /**
+     * Set the name of the cup.
+     *
+     * @param name The name of the cup.
+     * @return The builder.
+     */
+    CupDTOBuilder name(@NotNull String name);
+
+    /**
+     * Set the display name of the cup.
+     *
+     * @param displayName The display name of the cup.
+     * @return The builder.
+     */
+    CupDTOBuilder displayName(@NotNull String displayName);
+
+    /**
+     * Set the maps of the cup by their UUIDs.
+     *
+     * @param maps The UUIDs of the maps.
+     * @return The builder.
+     */
+    CupDTOBuilder mapsByUUIDs(@NotNull List<@NotNull UUID> maps);
+
+    /**
+     * Set the maps of the cup.
+     *
+     * @param maps The maps of the cup.
+     * @return The builder.
+     */
+    CupDTOBuilder maps(@NotNull List<@NotNull MapDTO> maps);
+
+    /**
+     * Set the maps of the cup by their UUIDs.
+     *
+     * @param maps The UUIDs of the maps.
+     * @return The builder.
+     */
+    CupDTOBuilder mapsByUUIDs(@NotNull UUID... maps);
+
+    /**
+     * Set the maps of the cup.
+     *
+     * @param maps The maps of the cup.
+     * @return The builder.
+     */
+    CupDTOBuilder maps(@NotNull MapDTO... maps);
+
+
+    /**
+     * Build the cup DTO.
+     *
+     * @return The cup DTO.
+     */
+    @Contract(" -> new")
+    @NotNull
+    CupDTO build();
+
+    /**
+     * Create a new instance of the builder.
+     *
+     * @return The builder.
+     */
+    @Contract(value = " -> new", pure = true)
+    @NotNull
+    static CupDTOBuilder create() {
+        return new CupDTOBuilderImpl();
+    }
+
+    final class CupDTOBuilderImpl implements CupDTOBuilder {
+
+        private String name;
+        private String displayName;
+        private List<UUID> maps = List.of();
+
+        @Override
+        public CupDTOBuilder name(@NotNull String name) {
+            this.name = name;
+            return this;
+        }
+
+        @Override
+        public CupDTOBuilder displayName(@NotNull String displayName) {
+            this.displayName = displayName;
+            return this;
+        }
+
+        @Override
+        public CupDTOBuilder mapsByUUIDs(@NotNull List<UUID> maps) {
+            this.maps = maps;
+            return this;
+        }
+
+        @Override
+        public CupDTOBuilder maps(@NotNull List<MapDTO> maps) {
+            this.maps = maps.stream().map(MapDTO::uuid).toList();
+            return this;
+        }
+
+        @Override
+        public CupDTOBuilder mapsByUUIDs(UUID... maps) {
+            this.maps = List.of(maps);
+            return this;
+        }
+
+        @Override
+        public CupDTOBuilder maps(MapDTO... maps) {
+            this.maps = Stream.of(maps).map(MapDTO::uuid).toList();
+            return this;
+        }
+
+        @Override
+        public @NotNull CupDTO build() {
+            return new FileCupDTO(name, displayName, maps);
+        }
+
+    }
+}
