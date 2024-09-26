@@ -26,9 +26,10 @@ public interface FileHandler {
      * Saves a given object into a file.
      * @param path The path where the file is located
      * @param object The object to save
+     * @param clazz Represents the class which should be loaded
      * @param <T> A generic type for the object value
      */
-    <T> void save(@NotNull Path path, @NotNull T object);
+    <T> void save(@NotNull Path path, @NotNull T object, @NotNull TypeToken<T> clazz);
 
     /**
      * Load a given file and parse to the give class.

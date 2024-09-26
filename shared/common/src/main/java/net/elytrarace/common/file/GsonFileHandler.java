@@ -38,17 +38,18 @@ public class GsonFileHandler implements FileHandler {
      * Saves a given object into a file.
      * @param path The path where the file is located
      * @param object The object to save
+     * @param clazz Represents the class which should be loaded
      * @param <T> A generic type for the object value
      */
     @Override
-    public <T> void save(@NotNull Path path, @NotNull T object) {
-        Preconditions.checkArgument(Files.isDirectory(path), "Unable to save a directory. Please check the used path");
+    public <T> void save(@NotNull Path path, @NotNull T object, @NotNull TypeToken<T> clazz) {
+        Preconditions.checkArgument(!Files.isDirectory(path), "Unable to save a directory. Please check the used path");
         try (var outputStream = Files.newBufferedWriter(path, UTF_8)) {
             if (!Files.exists(path)) {
                 var file = Files.createFile(path).getFileName();
                 LOGGER.info("Created new file: {}", file);
             }
-            gson.toJson(object, TypeToken.get(object.getClass()).getType(), outputStream);
+            gson.toJson(object, clazz.getType(), outputStream);
         } catch (IOException exception) {
             LOGGER.warn("Unable to save file", exception);
         }
