@@ -6,6 +6,8 @@ import net.elytrarace.common.map.model.MapDTO;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -96,7 +98,7 @@ public sealed interface CupDTOBuilder {
 
         private String name;
         private String displayName;
-        private List<UUID> maps = List.of();
+        private List<UUID> maps = new ArrayList<>();
 
         @Override
         public CupDTOBuilder name(@NotNull String name) {
@@ -124,7 +126,7 @@ public sealed interface CupDTOBuilder {
 
         @Override
         public CupDTOBuilder mapsByUUIDs(UUID... maps) {
-            this.maps = List.of(maps);
+            this.maps = Arrays.asList(maps);
             return this;
         }
 
