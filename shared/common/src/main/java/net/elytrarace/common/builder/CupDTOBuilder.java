@@ -26,6 +26,17 @@ import java.util.stream.Stream;
 public sealed interface CupDTOBuilder {
 
     /**
+     * Create a new instance of the builder.
+     *
+     * @return The builder.
+     */
+    @Contract(value = " -> new", pure = true)
+    @NotNull
+    static CupDTOBuilder create() {
+        return new CupDTOBuilderImpl();
+    }
+
+    /**
      * Set the name of the cup.
      *
      * @param name The name of the cup.
@@ -83,16 +94,7 @@ public sealed interface CupDTOBuilder {
     @NotNull
     CupDTO build();
 
-    /**
-     * Create a new instance of the builder.
-     *
-     * @return The builder.
-     */
-    @Contract(value = " -> new", pure = true)
-    @NotNull
-    static CupDTOBuilder create() {
-        return new CupDTOBuilderImpl();
-    }
+
 
     final class CupDTOBuilderImpl implements CupDTOBuilder {
 

@@ -10,7 +10,26 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
 
+/**
+ * Builder for a map DTO.
+ * <p>
+ *     The builder is used to create a map DTO with the desired properties.
+ *     The builder is created by calling the {@link #create()} method.
+ *</p>
+ * @since 1.0.0
+ * @version 1.0.0
+ * @see MapDTO
+ */
 public sealed interface MapDTOBuilder {
+
+    /**
+     * Creates a new instance of the map builder
+     * @return the map builder
+     */
+    @Contract(value = " -> new", pure = true)
+    static MapDTOBuilder create() {
+        return new MapDTOBuilderImpl();
+    }
 
     /**
      * Sets the name of the map
@@ -74,15 +93,6 @@ public sealed interface MapDTOBuilder {
     @Contract(" -> new")
     @NotNull
     MapDTO build();
-
-    /**
-     * Creates a new instance of the map builder
-     * @return the map builder
-     */
-    @Contract(value = " -> new", pure = true)
-    static MapDTOBuilder create() {
-        return new MapDTOBuilderImpl();
-    }
 
 
     final class MapDTOBuilderImpl implements MapDTOBuilder {

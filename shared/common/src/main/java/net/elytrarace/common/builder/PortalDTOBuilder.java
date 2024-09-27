@@ -7,7 +7,27 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * Builder for a portal DTO.
+ * <p>
+ *     The builder is used to create a portal DTO with the desired properties.
+ *     The builder is created by calling the {@link #create()} method.
+ * </p>
+ * @since 1.0.0
+ * @version 1.0.0
+ * @see PortalDTO
+ */
 public sealed interface PortalDTOBuilder {
+
+    /**
+     * Creates a new instance of the portal builder
+     * @return the portal builder
+     */
+    @Contract(value = " -> new", pure = true)
+    static PortalDTOBuilder create() {
+        return new PortalDTOBuilderImpl();
+    }
+
 
     /**
      * Sets the index of the portal
@@ -38,14 +58,6 @@ public sealed interface PortalDTOBuilder {
     @NotNull
     PortalDTO build();
 
-    /**
-     * Creates a new instance of the portal builder
-     * @return the portal builder
-     */
-    @Contract(value = " -> new", pure = true)
-    static PortalDTOBuilder create() {
-        return new PortalDTOBuilderImpl();
-    }
 
     final class PortalDTOBuilderImpl implements PortalDTOBuilder {
         private int index;

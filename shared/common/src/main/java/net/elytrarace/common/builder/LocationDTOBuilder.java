@@ -18,6 +18,15 @@ import org.jetbrains.annotations.NotNull;
 public sealed interface LocationDTOBuilder {
 
     /**
+     * Creates a new instance of the location builder
+     * @return the location builder
+     */
+    @Contract(value = " -> new", pure = true)
+    static LocationDTOBuilder create() {
+        return new LocationDTOBuilderImpl();
+    }
+
+    /**
      * Sets the x coordinate of the location
      * @param x the x coordinate of the location
      * @return the builder
@@ -53,14 +62,7 @@ public sealed interface LocationDTOBuilder {
     @NotNull
     LocationDTO build();
 
-    /**
-     * Creates a new instance of the location builder
-     * @return the location builder
-     */
-    @Contract(value = " -> new", pure = true)
-    static LocationDTOBuilder create() {
-        return new LocationDTOBuilderImpl();
-    }
+
 
     final class LocationDTOBuilderImpl implements LocationDTOBuilder {
         private int x;
