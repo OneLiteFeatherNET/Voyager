@@ -1,10 +1,14 @@
 package net.elytrarace.setup.conversation.map;
 
+import net.elytrarace.api.conversation.Conversable;
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
 import net.elytrarace.api.conversation.StringPrompt;
+import net.elytrarace.setup.ElytraRace;
+import net.elytrarace.setup.model.SetupHolder;
 import net.kyori.adventure.text.Component;
 import org.bukkit.generator.WorldInfo;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,10 +33,16 @@ public class MapWorldPrompt extends StringPrompt {
             return this;
         }
         var world = context.getPlugin().getServer().getWorld(input);
+        Conversable forWhom = context.getForWhom();
         if (world == null) {
-            context.getForWhom().sendMessage(Component.translatable("error.map.world.not_found"));
+            forWhom.sendMessage(Component.translatable("error.map.world.not_found"));
             return this;
         }
+        if (world.hasMetadata(ElytraRace.WORLD_SETUP.asString())) {
+            forWhom.sendMessage(Component.translatable("error.map.world.in_use"));
+            return this;
+        }
+        world.setMetadata(ElytraRace.WORLD_SETUP.asString(), new FixedMetadataValue(plugin, true));
         context.setSessionData("world", world);
         return new MapSetupFinish();
     }

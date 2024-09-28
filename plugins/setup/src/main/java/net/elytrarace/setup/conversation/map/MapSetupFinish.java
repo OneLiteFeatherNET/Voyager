@@ -56,6 +56,7 @@ public class MapSetupFinish extends MessagePrompt {
                             context.getForWhom().sendActionBar(Component.translatable("setup.map.added").arguments(displayName));
                             return mapService.saveMaps();
                         } else {
+                            world.removeMetadata(ElytraRace.WORLD_SETUP.asString(), plugin);
                             context.getForWhom().sendActionBar(Component.translatable("setup.map.failed").arguments(displayName));
                         }
                         return null;
@@ -66,11 +67,13 @@ public class MapSetupFinish extends MessagePrompt {
                             context.getForWhom().sendActionBar(Component.translatable("setup.cup.updated").arguments(cup.displayName()));
                             return cupService.saveCups();
                         } else {
+                            world.removeMetadata(ElytraRace.WORLD_SETUP.asString(), plugin);
                             context.getForWhom().sendActionBar(Component.translatable("setup.cup.failed").arguments(cup.displayName()));
                         }
                         return null;
                     })
                     .thenAccept(v -> {
+                        world.removeMetadata(ElytraRace.WORLD_SETUP.asString(), plugin);
                         context.getForWhom().sendActionBar(Component.translatable("setup.map.saved").arguments(displayName));
                     });
         }
