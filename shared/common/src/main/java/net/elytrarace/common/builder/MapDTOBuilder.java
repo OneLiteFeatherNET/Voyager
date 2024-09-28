@@ -89,6 +89,13 @@ public sealed interface MapDTOBuilder {
     MapDTOBuilder author(@NotNull Component author);
 
     /**
+     * Copies the properties of the given map to the builder
+     * @param map the map to copy the properties from
+     * @return the builder
+     */
+    MapDTOBuilder from(@NotNull MapDTO map);
+
+    /**
      * Builds the map
      * @return the map
      */
@@ -142,6 +149,17 @@ public sealed interface MapDTOBuilder {
 
         public MapDTOBuilder author(@NotNull Component author) {
             this.author = author;
+            return this;
+        }
+
+        @Override
+        public MapDTOBuilder from(@NotNull MapDTO map) {
+            this.name = map.name();
+            this.portals = map.portals();
+            this.uuid = map.uuid();
+            this.world = map.world();
+            this.displayName = map.displayName();
+            this.author = map.author();
             return this;
         }
 

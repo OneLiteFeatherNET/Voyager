@@ -6,6 +6,7 @@ import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.utils.PluginTranslationRegistry;
 import net.elytrarace.setup.conversation.cup.CupPrompt;
 import net.elytrarace.setup.conversation.map.MapPrompt;
+import net.elytrarace.setup.conversation.portal.PortalPrompt;
 import net.elytrarace.setup.listener.SetupListener;
 import net.elytrarace.setup.model.SetupHolder;
 import net.kyori.adventure.key.Key;
@@ -168,6 +169,29 @@ public class ElytraRace extends JavaPlugin {
                                 .ifPresent(setupHolder -> {
                                     new ConversationFactory(this)
                                             .withFirstPrompt(new MapPrompt())
+                                            .withPrefix(context1 -> Component.translatable("plugin.prefix"))
+                                            .buildConversation(setupHolder)
+                                            .begin();
+                                });
+
+                    }
+                })
+        );
+        this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
+                .literal("portal")
+                .literal("create")
+                .senderType(PlayerSource.class)
+                .handler(context -> {
+                    var player = context.sender().source();
+                    if (player.hasMetadata(SETUP_METADATA)) {
+                        var metadata = player.getMetadata(SETUP_METADATA).getFirst();
+                        Optional.ofNullable(metadata)
+                                .map(MetadataValue::value)
+                                .filter(SetupHolder.class::isInstance)
+                                .map(SetupHolder.class::cast)
+                                .ifPresent(setupHolder -> {
+                                    new ConversationFactory(this)
+                                            .withFirstPrompt(new PortalPrompt())
                                             .withPrefix(context1 -> Component.translatable("plugin.prefix"))
                                             .buildConversation(setupHolder)
                                             .begin();

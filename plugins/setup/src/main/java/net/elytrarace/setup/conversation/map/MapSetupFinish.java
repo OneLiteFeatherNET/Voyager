@@ -10,6 +10,7 @@ import net.elytrarace.setup.ElytraRace;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.bukkit.World;
+import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,6 +75,7 @@ public class MapSetupFinish extends MessagePrompt {
                     })
                     .thenAccept(v -> {
                         world.removeMetadata(ElytraRace.WORLD_SETUP.asString(), plugin);
+                        world.getPersistentDataContainer().set(ElytraRace.WORLD_SETUP, PersistentDataType.BOOLEAN, true);
                         context.getForWhom().sendActionBar(Component.translatable("setup.map.saved").arguments(displayName));
                     });
         }

@@ -7,6 +7,8 @@ dependencyResolutionManagement {
             version("hibernate", "6.5.2.Final")
             version("mariadb-client", "3.4.1")
             version("jetbrains-annotations", "24.1.0")
+            version("fawe-bom", "1.49")
+            version("commons-geometry-euclidean", "1.0")
 
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
             library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0-beta.10")
@@ -14,8 +16,13 @@ dependencyResolutionManagement {
             library("hibernate.hikaricp", "org.hibernate.orm", "hibernate-hikaricp").versionRef("hibernate")
             library("mariadb", "org.mariadb.jdbc", "mariadb-java-client").versionRef("mariadb-client")
             library("jetbrains.annotations", "org.jetbrains", "annotations").versionRef("jetbrains-annotations")
+            library("fawe.bom", "com.intellectualsites.bom","bom-newest").versionRef("fawe-bom")
+            library("fawe.core", "com.fastasyncworldedit", "FastAsyncWorldEdit-Core").withoutVersion()
+            library("fawe.bukkit", "com.fastasyncworldedit", "FastAsyncWorldEdit-Bukkit").withoutVersion()
+            library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
 
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
+            bundle("fawe", listOf("fawe.core", "fawe.bukkit"))
         }
     }
 }

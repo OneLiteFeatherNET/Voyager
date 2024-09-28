@@ -11,6 +11,9 @@ dependencies {
     implementation(libs.minecraft.cloud.paper)
     implementation(project(":shared:common"))
     implementation(project(":shared:conversation-api"))
+    // FAWE
+    implementation(platform(libs.fawe.bom))
+    compileOnly(libs.bundles.fawe)
 }
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -47,6 +50,8 @@ paper {
     apiVersion = "1.21"
     authors = listOf("TheMeinerLP")
     serverDependencies {
+        register("FastAsyncWorldEdit")
+        register("VoidGen")
     }
 }
 
