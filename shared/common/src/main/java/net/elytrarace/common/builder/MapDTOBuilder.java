@@ -2,6 +2,8 @@ package net.elytrarace.common.builder;
 
 import net.elytrarace.common.map.model.MapDTO;
 import net.elytrarace.common.map.model.PortalDTO;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,7 +38,7 @@ public sealed interface MapDTOBuilder {
      * @param name the name of the map
      * @return the builder
      */
-    MapDTOBuilder name(@NotNull String name);
+    MapDTOBuilder name(@NotNull Key name);
 
     /**
      * Sets the portals of the map
@@ -77,14 +79,14 @@ public sealed interface MapDTOBuilder {
      * @param displayName the display name of the map
      * @return the builder
      */
-    MapDTOBuilder displayName(@NotNull String displayName);
+    MapDTOBuilder displayName(@NotNull Component displayName);
 
     /**
      * Sets the author of the map
      * @param author the author of the map
      * @return the builder
      */
-    MapDTOBuilder author(@NotNull String author);
+    MapDTOBuilder author(@NotNull Component author);
 
     /**
      * Builds the map
@@ -96,14 +98,14 @@ public sealed interface MapDTOBuilder {
 
 
     final class MapDTOBuilderImpl implements MapDTOBuilder {
-        private String name;
+        private Key name;
         private SortedSet<PortalDTO> portals = new TreeSet<>();
         private UUID uuid;
         private String world;
-        private String displayName;
-        private String author;
+        private Component displayName;
+        private Component author;
 
-        public MapDTOBuilder name(@NotNull String name) {
+        public MapDTOBuilder name(@NotNull Key name) {
             this.name = name;
             return this;
         }
@@ -133,12 +135,12 @@ public sealed interface MapDTOBuilder {
             return this;
         }
 
-        public MapDTOBuilder displayName(@NotNull String displayName) {
+        public MapDTOBuilder displayName(@NotNull Component displayName) {
             this.displayName = displayName;
             return this;
         }
 
-        public MapDTOBuilder author(@NotNull String author) {
+        public MapDTOBuilder author(@NotNull Component author) {
             this.author = author;
             return this;
         }

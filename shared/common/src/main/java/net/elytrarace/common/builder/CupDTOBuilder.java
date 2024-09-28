@@ -3,6 +3,8 @@ package net.elytrarace.common.builder;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.map.model.MapDTO;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,7 +44,7 @@ public sealed interface CupDTOBuilder {
      * @param name The name of the cup.
      * @return The builder.
      */
-    CupDTOBuilder name(@NotNull String name);
+    CupDTOBuilder name(@NotNull Key name);
 
     /**
      * Set the display name of the cup.
@@ -50,7 +52,7 @@ public sealed interface CupDTOBuilder {
      * @param displayName The display name of the cup.
      * @return The builder.
      */
-    CupDTOBuilder displayName(@NotNull String displayName);
+    CupDTOBuilder displayName(@NotNull Component displayName);
 
     /**
      * Set the maps of the cup by their UUIDs.
@@ -98,18 +100,18 @@ public sealed interface CupDTOBuilder {
 
     final class CupDTOBuilderImpl implements CupDTOBuilder {
 
-        private String name;
-        private String displayName;
+        private Key name;
+        private Component displayName;
         private List<UUID> maps = new ArrayList<>();
 
         @Override
-        public CupDTOBuilder name(@NotNull String name) {
+        public CupDTOBuilder name(@NotNull Key name) {
             this.name = name;
             return this;
         }
 
         @Override
-        public CupDTOBuilder displayName(@NotNull String displayName) {
+        public CupDTOBuilder displayName(@NotNull Component displayName) {
             this.displayName = displayName;
             return this;
         }

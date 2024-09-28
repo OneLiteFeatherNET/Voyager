@@ -86,5 +86,7 @@ public class MapProvider {
     }
 
 
-
+    public void removeMap(@NotNull MapDTO mapDTO) {
+        this.maps.removeIf(map -> map.uuid().equals(mapDTO.uuid()));
+    }
 }

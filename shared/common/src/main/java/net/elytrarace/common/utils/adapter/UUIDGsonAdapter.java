@@ -1,4 +1,4 @@
-package net.elytrarace.common.utils;
+package net.elytrarace.common.utils.adapter;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;

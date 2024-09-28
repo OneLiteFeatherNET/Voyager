@@ -62,13 +62,16 @@ public class CupProvider {
 
 
     public void saveCups() {
-        System.out.println("Test");
         this.fileHandler.save(this.cupPath.resolve(CUPS_FILE), cups, (TypeToken<List<FileCupDTO>>) TypeToken.getParameterized(List.class, FileCupDTO.class));
     }
 
 
     public void addCup(@NotNull FileCupDTO cup) {
         this.cups.add(cup);
+    }
+
+    public void removeCup(FileCupDTO fileCupDTO) {
+        this.cups.removeIf(cup -> cup.name().equals(fileCupDTO.name()));
     }
 
     public @NotNull Collection<FileCupDTO> getCups() {

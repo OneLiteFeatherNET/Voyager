@@ -1,14 +1,17 @@
 package net.elytrarace.common.map.model;
 
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
+
 import java.util.SortedSet;
 import java.util.UUID;
 
 public record MapDTO(
         UUID uuid,
-        String name,
+        Key name,
         String world,
-        String displayName,
-        String author,
+        Component displayName,
+        Component author,
         SortedSet<PortalDTO> portals
 ) {
 }

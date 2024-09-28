@@ -1,10 +1,12 @@
 package net.elytrarace.common.cup;
 
 import net.elytrarace.common.cup.model.CupDTO;
+import net.elytrarace.common.cup.model.FileCupDTO;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -44,6 +46,36 @@ public interface CupService {
      * @return A {@link CompletableFuture} containing a boolean value indicating whether the cup was added successfully.
      */
     CompletableFuture<Boolean> addCup(@NotNull CupDTO cupDTO);
+
+    /**
+     * Remove a {@link CupDTO} object.
+     *
+     * @param cupDTO The cup to remove
+     * @return A {@link CompletableFuture} containing a boolean value indicating whether the cup was removed successfully.
+     */
+    CompletableFuture<Boolean> removeCup(@NotNull CupDTO cupDTO);
+
+    /**
+     * Update a {@link CupDTO} object.
+     *
+     * @param cupDTO The cup to update
+     * @return A {@link CompletableFuture} containing a boolean value indicating whether the cup was updated successfully.
+     */
+    CompletableFuture<Boolean> updateCup(@NotNull CupDTO cupDTO);
+
+    /**
+     * Get all cups.
+     *
+     * @return A list of all cups.
+     */
+    List<FileCupDTO> getCups();
+
+    /**
+     * Get all cups asynchronously.
+     *
+     * @return A {@link CompletableFuture} containing a list of all cups.
+     */
+    CompletableFuture<List<FileCupDTO>> getCupsAsync();
 
     /**
      * Save the cups to the storage.

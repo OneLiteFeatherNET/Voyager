@@ -2,6 +2,11 @@ package net.elytrarace.common.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.elytrarace.common.utils.adapter.ComponentGsonAdapter;
+import net.elytrarace.common.utils.adapter.KeyGsonAdapter;
+import net.elytrarace.common.utils.adapter.UUIDGsonAdapter;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
 
 import java.util.UUID;
 
@@ -19,6 +24,8 @@ public final class GsonUtil {
         // Add custom Gson configuration here
         GSON = new GsonBuilder()
                 .registerTypeAdapter(UUID.class, new UUIDGsonAdapter())
+                .registerTypeAdapter(Key.class, new KeyGsonAdapter())
+                .registerTypeAdapter(Component.class, new ComponentGsonAdapter())
                 .create();
     }
 
