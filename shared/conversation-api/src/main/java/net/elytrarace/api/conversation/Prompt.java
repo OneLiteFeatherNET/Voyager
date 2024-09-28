@@ -56,7 +56,7 @@ public interface Prompt extends Cloneable {
      * Suggestions some string to the client by typing.
      * @return a list of string for the suggestion
      */
-    default Collection<String> suggestions() {
+    default Collection<String> suggestions(@NotNull ConversationContext context) {
         return Collections.emptyList();
     }
 }
