@@ -2,8 +2,10 @@ package net.elytrarace.setup;
 
 import net.elytrarace.api.conversation.ConversationFactory;
 import net.elytrarace.common.cup.CupService;
+import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.utils.PluginTranslationRegistry;
 import net.elytrarace.setup.conversation.cup.CupPrompt;
+import net.elytrarace.setup.conversation.map.MapPrompt;
 import net.elytrarace.setup.listener.SetupListener;
 import net.elytrarace.setup.model.SetupHolder;
 import net.kyori.adventure.key.Key;
@@ -40,6 +42,7 @@ public class ElytraRace extends JavaPlugin {
     public static final String SETUP_METADATA = "setup";
 
     private CupService cupService;
+    private MapService mapService;
     private @NonNull PaperCommandManager<Source> commandManager;
 
     @Override
@@ -57,6 +60,7 @@ public class ElytraRace extends JavaPlugin {
         CompletableFuture.runAsync(this::registerListeners);
         this.registerCommands();
         this.cupService = CupService.create(this);
+        this.mapService = MapService.create(this);
         getLogger().info("ElytraRace has been enabled!");
     }
 
@@ -100,7 +104,7 @@ public class ElytraRace extends JavaPlugin {
                 .senderType(PlayerSource.class)
                 .handler(context -> {
                     var player = context.sender().source();
-                    player.sendMessage(Component.translatable("setup.start"));
+                    player.sendActionBar(Component.translatable("setup.start"));
                     if (player.hasMetadata(SETUP_METADATA)) {
                         player.removeMetadata(SETUP_METADATA, this);
                     }
@@ -122,7 +126,7 @@ public class ElytraRace extends JavaPlugin {
                                             setupHolder.getConversationTracker().abandonAllConversations();
                                         });
                         player.removeMetadata(SETUP_METADATA, this);
-                        player.sendMessage(Component.translatable("setup.cancel"));
+                        player.sendActionBar(Component.translatable("setup.cancel"));
                     }
                 })
         );
@@ -149,9 +153,36 @@ public class ElytraRace extends JavaPlugin {
                     }
                 })
         );
+        this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
+                .literal("map")
+                .literal("create")
+                .senderType(PlayerSource.class)
+                .handler(context -> {
+                    var player = context.sender().source();
+                    if (player.hasMetadata(SETUP_METADATA)) {
+                        var metadata = player.getMetadata(SETUP_METADATA).getFirst();
+                        Optional.ofNullable(metadata)
+                                .map(MetadataValue::value)
+                                .filter(SetupHolder.class::isInstance)
+                                .map(SetupHolder.class::cast)
+                                .ifPresent(setupHolder -> {
+                                    new ConversationFactory(this)
+                                            .withFirstPrompt(new MapPrompt())
+                                            .withPrefix(context1 -> Component.translatable("plugin.prefix"))
+                                            .buildConversation(setupHolder)
+                                            .begin();
+                                });
+
+                    }
+                })
+        );
     }
 
     public CupService getCupService() {
         return this.cupService;
+    }
+
+    public MapService getMapService() {
+        return mapService;
     }
 }

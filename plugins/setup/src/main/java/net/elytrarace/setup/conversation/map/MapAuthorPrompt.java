@@ -1,30 +1,35 @@
-package net.elytrarace.setup.conversation.cup;
+package net.elytrarace.setup.conversation.map;
 
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
 import net.elytrarace.api.conversation.StringPrompt;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
+import java.util.stream.Stream;
 
-public class CupDisplayNamePrompt extends StringPrompt {
+public class MapAuthorPrompt extends StringPrompt {
     @Override
     public @NotNull Component getPromptText(@NotNull ConversationContext context) {
-        String name = Optional.ofNullable((Key) context.getSessionData("name")).map(Key::value).orElse("No name");
-        return Component.translatable("prompt.cup.displayname").arguments(Component.text(name));
+        return Component.translatable("prompt.map.author");
     }
 
     @Override
     public @Nullable Prompt acceptInput(@NotNull ConversationContext context, @Nullable String input) {
-        if (input == null || input.isEmpty()) {
+        if (input == null) {
+            return this;
+        }
+        if (input.isEmpty()) {
             return this;
         }
         var trimmedInput = input.trim();
-        context.setSessionData("displayname", MiniMessage.miniMessage().deserialize(trimmedInput));
-        return new CupSetupFinish();
+        var authorList = Stream.of(trimmedInput.split(","))
+                .map(String::trim)
+                .map(MiniMessage.miniMessage()::deserialize).toList();
+        context.setSessionData("author", Component.join(JoinConfiguration.commas(false), authorList));
+        return new MapWorldPrompt();
     }
 }

@@ -5,6 +5,7 @@ import net.elytrarace.api.conversation.MessagePrompt;
 import net.elytrarace.api.conversation.Prompt;
 import net.elytrarace.common.builder.CupDTOBuilder;
 import net.elytrarace.setup.ElytraRace;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
@@ -21,8 +22,8 @@ public class CupSetupFinish extends MessagePrompt {
 
     @Override
     protected @Nullable Prompt getNextPrompt(@NotNull ConversationContext context) {
-        var name = (String) context.getSessionData("name");
-        var displayname = (String) context.getSessionData("displayname");
+        var name = (Key) context.getSessionData("name");
+        var displayname = (Component) context.getSessionData("displayname");
         if (name == null || displayname == null) {
             return END_OF_CONVERSATION;
         }
@@ -34,14 +35,14 @@ public class CupSetupFinish extends MessagePrompt {
                     .build()
             ).thenCompose(success -> {
                 if (success) {
-                    context.getForWhom().sendActionBar(Component.translatable("setup.cup.added").arguments(MiniMessage.miniMessage().deserialize(displayname)));
+                    context.getForWhom().sendActionBar(Component.translatable("setup.cup.added").arguments(displayname));
                     return elytraRace.getCupService().saveCups();
                 } else {
-                    context.getForWhom().sendActionBar(Component.translatable("setup.cup.failed"));
+                    context.getForWhom().sendActionBar(Component.translatable("setup.cup.failed").arguments(displayname));
                 }
                 return null;
             }).thenAccept(v -> {
-                context.getForWhom().sendActionBar(Component.translatable("setup.cup.saved"));
+                context.getForWhom().sendActionBar(Component.translatable("setup.cup.saved").arguments(displayname));
             });
         }
         return END_OF_CONVERSATION;

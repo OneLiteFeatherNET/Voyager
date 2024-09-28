@@ -1,4 +1,4 @@
-package net.elytrarace.setup.conversation.cup;
+package net.elytrarace.setup.conversation.map;
 
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
@@ -11,20 +11,23 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-public class CupDisplayNamePrompt extends StringPrompt {
+public class MapDisplayNamePrompt extends StringPrompt {
     @Override
     public @NotNull Component getPromptText(@NotNull ConversationContext context) {
         String name = Optional.ofNullable((Key) context.getSessionData("name")).map(Key::value).orElse("No name");
-        return Component.translatable("prompt.cup.displayname").arguments(Component.text(name));
+        return Component.translatable("prompt.map.displayname").arguments(Component.text(name));
     }
 
     @Override
     public @Nullable Prompt acceptInput(@NotNull ConversationContext context, @Nullable String input) {
-        if (input == null || input.isEmpty()) {
+        if (input == null) {
+            return this;
+        }
+        if (input.isEmpty()) {
             return this;
         }
         var trimmedInput = input.trim();
-        context.setSessionData("displayname", MiniMessage.miniMessage().deserialize(trimmedInput));
-        return new CupSetupFinish();
+        context.setSessionData("displayName", MiniMessage.miniMessage().deserialize(trimmedInput));
+        return new MapAuthorPrompt();
     }
 }
