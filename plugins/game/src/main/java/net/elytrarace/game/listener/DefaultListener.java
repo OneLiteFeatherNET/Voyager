@@ -6,12 +6,13 @@ import net.elytrarace.api.phase.LinearPhaseSeries;
 import net.elytrarace.api.phase.Phase;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.listener.CancellableListener;
-import net.elytrarace.game.ElytraRace;
 import net.elytrarace.game.phase.EndPhase;
 import net.elytrarace.game.phase.GamePhase;
+import net.elytrarace.game.phase.LobbyPhase;
 import net.elytrarace.game.phase.PreparationPhase;
 import net.elytrarace.game.service.GameService;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
@@ -90,6 +91,18 @@ public class DefaultListener implements Listener, CancellableListener {
     }
 
     @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        LinearPhaseSeries<Phase> elytraPhase = this.gameService.getElytraPhase();
+        if (elytraPhase == null) return;
+        var currentPhase = elytraPhase.getCurrentPhase();
+        if (currentPhase == null) return;
+        if (currentPhase.isRunning() && currentPhase instanceof LobbyPhase lobbyPhase) {
+            event.getPlayer().teleportAsync(lobbyPhase.getLobbyLocation());
+            event.joinMessage(Component.translatable("phase.lobby.player.join", Component.translatable("plugin.prefix"), event.getPlayer().displayName(), Component.text(1)));
+        }
+    }
+
+    @EventHandler
     public void onPlayerLogin(PlayerLoginEvent event) {
         LinearPhaseSeries<Phase> elytraPhase = this.gameService.getElytraPhase();
         if (elytraPhase == null) return;
@@ -97,6 +110,10 @@ public class DefaultListener implements Listener, CancellableListener {
         if (currentPhase == null) return;
         if (currentPhase.isRunning() && (currentPhase instanceof GamePhase || currentPhase instanceof EndPhase || currentPhase instanceof PreparationPhase)){
             event.disallow(PlayerLoginEvent.Result.KICK_OTHER, Component.empty());
+            return;
+        }
+        if (currentPhase.isRunning() && currentPhase instanceof LobbyPhase lobbyPhase) {
+            event.getPlayer().teleportAsync(lobbyPhase.getLobbyLocation());
         }
         DatabaseService databaseService = this.gameService.getDatabaseService();
         if (databaseService == null) return;
@@ -113,9 +130,19 @@ public class DefaultListener implements Listener, CancellableListener {
 
     @EventHandler
     public void onServerListPing(ServerListPingEvent event) {
+        var elytraPhase = this.gameService.getElytraPhase();
+        if (elytraPhase == null) return;
+        var currentPhase = elytraPhase.getCurrentPhase();
+        if (currentPhase == null) return;
         var cup = this.gameService.getCurrentCup().filter(ResolvedCupDTO.class::isInstance).orElse(null);
         if (cup == null) return;
-        event.motd(Component.text("CUP: ").append(cup.displayName()));
+        if (currentPhase instanceof LobbyPhase) {
+            event.motd(Component.text("CUP: ").append(cup.displayName()));
+            return;
+        }
+        if (currentPhase instanceof GamePhase) {
+            event.motd(Component.text("IN-GAME").color(NamedTextColor.RED));
+        }
     }
 
     @EventHandler

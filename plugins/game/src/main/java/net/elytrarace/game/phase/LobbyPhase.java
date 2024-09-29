@@ -4,21 +4,30 @@ import net.elytrarace.api.phase.TickDirection;
 import net.elytrarace.api.phase.TimedPhase;
 import net.elytrarace.common.utils.Strings;
 import net.elytrarace.common.utils.TimeFormat;
+import net.elytrarace.game.model.GameMapDTO;
+import net.elytrarace.game.model.GameSession;
 import net.elytrarace.game.service.GameService;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
 public class LobbyPhase extends TimedPhase {
 
+    private static final ComponentLogger LOGGER = ComponentLogger.logger(LobbyPhase.class);
     private static final int LOBBY_TIME = 120;
     private final GameService gameService;
+    private final World lobbyWorld;
 
     public LobbyPhase(GameService gameService) {
         super("Lobby", gameService.getPlugin(), 20, true);
         this.gameService = gameService;
+        this.lobbyWorld = Bukkit.getWorlds().getFirst();
         setEndTicks(0);
         setTickDirection(TickDirection.DOWN);
     }
@@ -53,22 +62,26 @@ public class LobbyPhase extends TimedPhase {
 
     @Override
     protected void onFinish() {
-        this.gameService.switchMap().thenRunAsync(() -> {
-            this.gameService.getCurrentMap().ifPresent(gameMapDTO -> {
-                Bukkit.getOnlinePlayers().forEach(player -> {
-                    System.out.println("Teleporting player " + player.getName());
-                    System.out.println("World: " + gameMapDTO.bukkitWorld().getName());
-                    player.teleportAsync(gameMapDTO.bukkitWorld().getSpawnLocation())
-                            .exceptionally(throwable -> {
-                                throwable.printStackTrace();
-                                return null;
-                            });
-                });
-            });
-        }, Bukkit.getScheduler().getMainThreadExecutor(getPlugin()))
+        this.gameService.switchMap()
+                .thenApply(GameSession::currentMap)
+                .thenCompose(this::teleportPlayers)
                 .exceptionally(throwable -> {
-                    throwable.printStackTrace();
+                    LOGGER.error("Failed to switch map", throwable);
                     return null;
                 });
+    }
+
+    private CompletableFuture<Void> teleportPlayers(GameMapDTO gameMapDTO) {
+        var completableFutures = Bukkit.getOnlinePlayers().stream().map(player ->
+                player.teleportAsync(gameMapDTO.bukkitWorld().getSpawnLocation())
+                        .exceptionally(throwable -> {
+                            LOGGER.error("Failed to teleport player to map", throwable);
+                            return null;
+                        })).toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(completableFutures);
+    }
+
+    public @NotNull Location getLobbyLocation() {
+        return this.lobbyWorld.getSpawnLocation();
     }
 }

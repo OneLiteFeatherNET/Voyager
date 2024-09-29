@@ -26,7 +26,7 @@ public interface GameService {
      */
     CompletableFuture<Void> init();
 
-    CompletableFuture<Void> switchMap();
+    CompletableFuture<GameSession> switchMap();
 
     Optional<CupDTO> getCurrentCup();
 
