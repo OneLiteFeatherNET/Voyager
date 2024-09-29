@@ -52,5 +52,5 @@ public interface MapDTO {
      * Returns the portals of the map.
      * @return the portals of the map
      */
-    SortedSet<PortalDTO> portals();
+    SortedSet<? extends PortalDTO> portals();
 }

@@ -2,7 +2,6 @@ package net.elytrarace.common.builder;
 
 import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
-import net.elytrarace.common.map.model.FilePortalDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Builder for a map DTO.
@@ -157,7 +157,7 @@ public sealed interface MapDTOBuilder {
         @Override
         public MapDTOBuilder from(@NotNull MapDTO map) {
             this.name = map.name();
-            this.portals = map.portals();
+            this.portals = map.portals().stream().map(PortalDTO.class::cast).collect(Collectors.toCollection(TreeSet::new));
             this.uuid = map.uuid();
             this.world = map.world();
             this.displayName = map.displayName();

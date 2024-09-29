@@ -79,7 +79,7 @@ class GameServiceImpl implements GameService {
         CompletableFuture.runAsync(this::registerListeners);
         return this.cupService.getRandomCup().thenCompose(this.mapService::getMapByCup)
                 .thenCompose(GameCupService::startLoadingWorldAsync)
-                .thenAcceptAsync(this::setCurrentCupAsync).exceptionally((ex) -> {
+                .thenAcceptAsync(this::setCurrentCupAsync, Bukkit.getScheduler().getMainThreadExecutor(plugin)).exceptionally((ex) -> {
             LOGGER.error(ElytraMarkers.EXCEPTION, "An error occurred while initializing the game service", ex);
             return null;
         });
@@ -113,7 +113,7 @@ class GameServiceImpl implements GameService {
 
     @Override
     public CompletableFuture<GameSession> switchMap() {
-        return CompletableFuture.completedFuture(this.gameSession).thenApplyAsync(GameCupService::switchMapInternal, Bukkit.getScheduler().getMainThreadExecutor(plugin)).thenApply(this::updateGameSession);
+        return CompletableFuture.completedFuture(this.gameSession).thenApplyAsync(GameCupService::switchMapInternal).thenApply(this::updateGameSession);
     }
 
     private synchronized GameSession updateGameSession(GameSession gameSession) {

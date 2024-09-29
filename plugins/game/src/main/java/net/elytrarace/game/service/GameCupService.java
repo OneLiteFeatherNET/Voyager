@@ -63,15 +63,15 @@ public class GameCupService {
             return null;
         }
         if (gameSession.currentMap() == null) {
-            return GameSession.fromWithCurrentMap(gameSession, GameMapService.spawnTextDisplay((GameMapDTO) gameSession.currentCup().maps().getFirst()));
+            return GameSession.fromWithCurrentMap(gameSession, (GameMapDTO) gameSession.currentCup().maps().getFirst());
         }
         var currentMap = gameSession.currentMap();
-        currentMap.portals().stream().map(GamePortalDTO.class::cast).filter(Objects::nonNull).forEach(GamePortalDTO::dispawn);
+        currentMap.portals().stream().map(GamePortalDTO.class::cast).filter(Objects::nonNull).forEach(GamePortalDTO::despawn);
         var index = gameSession.currentCup().maps().indexOf(currentMap);
         var nextIndex = index + 1;
         if (nextIndex >= gameSession.currentCup().maps().size()) {
             return GameSession.fromWithCurrentMap(gameSession, null);
         }
-        return GameSession.fromWithCurrentMap(gameSession, GameMapService.spawnTextDisplay((GameMapDTO) gameSession.currentCup().maps().get(nextIndex)));
+        return GameSession.fromWithCurrentMap(gameSession, (GameMapDTO) gameSession.currentCup().maps().get(nextIndex));
     }
 }
