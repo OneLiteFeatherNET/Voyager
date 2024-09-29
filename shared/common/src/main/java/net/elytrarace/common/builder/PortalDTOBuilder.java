@@ -1,7 +1,7 @@
 package net.elytrarace.common.builder;
 
 import net.elytrarace.common.map.model.LocationDTO;
-import net.elytrarace.common.map.model.PortalDTO;
+import net.elytrarace.common.map.model.FilePortalDTO;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,7 +15,7 @@ import java.util.List;
  * </p>
  * @since 1.0.0
  * @version 1.0.0
- * @see PortalDTO
+ * @see FilePortalDTO
  */
 public sealed interface PortalDTOBuilder {
 
@@ -56,7 +56,7 @@ public sealed interface PortalDTOBuilder {
      */
     @Contract(" -> new")
     @NotNull
-    PortalDTO build();
+    FilePortalDTO build();
 
 
     final class PortalDTOBuilderImpl implements PortalDTOBuilder {
@@ -78,8 +78,8 @@ public sealed interface PortalDTOBuilder {
             return this;
         }
 
-        public @NotNull PortalDTO build() {
-            return new PortalDTO(index, locations);
+        public @NotNull FilePortalDTO build() {
+            return new FilePortalDTO(index, locations);
         }
     }
 }

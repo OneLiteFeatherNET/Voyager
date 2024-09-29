@@ -2,8 +2,10 @@ package net.elytrarace.common.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.elytrarace.common.map.model.PortalDTO;
 import net.elytrarace.common.utils.adapter.ComponentGsonAdapter;
 import net.elytrarace.common.utils.adapter.KeyGsonAdapter;
+import net.elytrarace.common.utils.adapter.PortalDelegationGsonAdapter;
 import net.elytrarace.common.utils.adapter.UUIDGsonAdapter;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -26,6 +28,7 @@ public final class GsonUtil {
                 .registerTypeAdapter(UUID.class, new UUIDGsonAdapter())
                 .registerTypeAdapter(Key.class, new KeyGsonAdapter())
                 .registerTypeAdapter(Component.class, new ComponentGsonAdapter())
+                .registerTypeAdapter(PortalDTO.class, new PortalDelegationGsonAdapter())
                 .create();
     }
 

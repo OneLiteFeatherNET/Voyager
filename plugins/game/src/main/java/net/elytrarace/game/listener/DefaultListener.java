@@ -11,8 +11,10 @@ import net.elytrarace.game.phase.GamePhase;
 import net.elytrarace.game.phase.LobbyPhase;
 import net.elytrarace.game.phase.PreparationPhase;
 import net.elytrarace.game.service.GameService;
+import net.elytrarace.game.util.ElytraMetadata;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.apache.commons.geometry.euclidean.threed.Vector3D;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
@@ -88,6 +90,32 @@ public class DefaultListener implements Listener, CancellableListener {
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         cancelEvent(event);
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        if (event.getTo().getY() < event.getTo().getWorld().getMinHeight()) {
+            event.getPlayer().teleportAsync(event.getPlayer().getWorld().getSpawnLocation());
+            return;
+        }
+        if (event.getTo().getY() > event.getTo().getWorld().getMaxHeight()) {
+            event.getPlayer().teleportAsync(event.getPlayer().getWorld().getSpawnLocation());
+            return;
+        }
+        var player = event.getPlayer();
+        var elytraPhase = this.gameService.getElytraPhase();
+        if (elytraPhase == null) return;
+        var currentPhase = elytraPhase.getCurrentPhase();
+        if (currentPhase == null) return;
+        if (currentPhase instanceof GamePhase) {
+            if (player.hasMetadata(ElytraMetadata.LAST_POSITIONS)) {
+                var metdata = player.getMetadata(ElytraMetadata.LAST_POSITIONS);
+                var lastPositions = (Vector3D[]) metdata.getFirst().value();
+                if (lastPositions == null) return;
+                System.arraycopy(lastPositions, 0, lastPositions, 1, lastPositions.length - 1);
+                lastPositions[0] = Vector3D.of(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
+            }
+        }
     }
 
     @EventHandler

@@ -25,6 +25,7 @@ public class GamePhase extends TickingPhase {
 
     @Override
     public void onUpdate() {
+        this.gameService.onUpdate();
         this.gameService.getCurrentMap().ifPresent(gameMapDTO -> {
             var splinePoints = gameMapDTO.splinePoints();
             var world = gameService.getPlugin().getServer().getWorld(gameMapDTO.world());

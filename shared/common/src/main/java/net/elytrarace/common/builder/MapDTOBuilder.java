@@ -2,6 +2,7 @@ package net.elytrarace.common.builder;
 
 import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
+import net.elytrarace.common.map.model.FilePortalDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;

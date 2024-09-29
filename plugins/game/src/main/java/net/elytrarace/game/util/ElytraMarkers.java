@@ -11,4 +11,6 @@ public final class ElytraMarkers {
     }
 
     public static final Marker EXCEPTION = MarkerFactory.getMarker("EXCEPTION");
+    public static final Marker MAP = MarkerFactory.getMarker("MAP");
+    public static final Marker CUP = MarkerFactory.getMarker("CUP");
 }

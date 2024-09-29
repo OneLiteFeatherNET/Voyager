@@ -1,14 +1,17 @@
 package net.elytrarace.common.map.model;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 
-public record PortalDTO(
-        int index,
-        List<LocationDTO> locations
-) implements Comparable<PortalDTO> {
+public interface PortalDTO extends Comparable<PortalDTO>{
+
+    int index();
+
+    List<LocationDTO> locations();
 
     @Override
-    public int compareTo(PortalDTO o) {
-        return Integer.compare(index, o.index);
+    default int compareTo(@NotNull PortalDTO o) {
+        return Integer.compare(index(), o.index());
     }
 }

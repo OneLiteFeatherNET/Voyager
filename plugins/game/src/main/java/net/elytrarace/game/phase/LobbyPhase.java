@@ -8,12 +8,15 @@ import net.elytrarace.game.model.GameMapDTO;
 import net.elytrarace.game.model.GameSession;
 import net.elytrarace.game.service.GameService;
 import net.elytrarace.game.util.ElytraMarkers;
+import net.elytrarace.game.util.ElytraMetadata;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
+import org.apache.commons.geometry.euclidean.threed.Vector3D;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
@@ -66,10 +69,20 @@ public class LobbyPhase extends TimedPhase {
         this.gameService.switchMap()
                 .thenApply(GameSession::currentMap)
                 .thenCompose(this::teleportPlayers)
+                .thenRunAsync(this::createVectorArrayInMemory)
                 .exceptionally(throwable -> {
                     LOGGER.error(ElytraMarkers.EXCEPTION, "Failed to switch map", throwable);
                     return null;
                 });
+    }
+
+    private void createVectorArrayInMemory() {
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            if (player.hasMetadata(ElytraMetadata.LAST_POSITIONS)) {
+                player.removeMetadata(ElytraMetadata.LAST_POSITIONS, gameService.getPlugin());
+            }
+            player.setMetadata(ElytraMetadata.LAST_POSITIONS, new FixedMetadataValue(gameService.getPlugin(), new Vector3D[4]));
+        });
     }
 
     private CompletableFuture<Void> teleportPlayers(GameMapDTO gameMapDTO) {

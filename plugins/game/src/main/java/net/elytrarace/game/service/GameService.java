@@ -40,6 +40,8 @@ public interface GameService {
 
     DatabaseService getDatabaseService();
 
+    void onUpdate();
+
     /**
      * Create a new instance of the service.
      *

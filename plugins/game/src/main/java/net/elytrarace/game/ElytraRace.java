@@ -3,6 +3,7 @@ package net.elytrarace.game;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.game.service.GameService;
 import net.elytrarace.game.util.ElytraMarkers;
+import net.elytrarace.game.util.PluginInstanceHolder;
 import net.elytrarace.game.world.VoidGenProvider;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
@@ -22,6 +23,7 @@ public class ElytraRace extends JavaPlugin {
         } catch (IOException e) {
             getLogger().warning("Unable to create plugin directory");
         }
+        PluginInstanceHolder.setPluginInstance(this);
         LanguageService
                 .create("elytrarace", Key.key("elytrarace", "language"), this)
                 .loadLanguage()

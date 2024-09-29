@@ -13,5 +13,5 @@ public record FileMapDTO(
         Component displayName,
         Component author,
         SortedSet<PortalDTO> portals
-) implements MapDTO{
+) implements MapDTO {
 }

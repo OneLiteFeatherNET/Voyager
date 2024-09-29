@@ -10,7 +10,7 @@ import java.util.UUID;
  * Represents a map for the game.
  * @see MapDTO
  * @see FileMapDTO
- * @see PortalDTO
+ * @see FilePortalDTO
  *
  * @since 1.0.0
  * @version 1.0.0

@@ -8,7 +8,7 @@ import net.elytrarace.common.builder.MapDTOBuilder;
 import net.elytrarace.common.builder.PortalDTOBuilder;
 import net.elytrarace.common.map.model.LocationDTO;
 import net.elytrarace.common.map.model.FileMapDTO;
-import net.elytrarace.common.map.model.PortalDTO;
+import net.elytrarace.common.map.model.FilePortalDTO;
 import net.elytrarace.setup.ElytraRace;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +37,7 @@ public class PortalSavePrompt extends MessagePrompt {
         List<LocationDTO> corners = region.getVertices().stream().map(vertx -> new LocationDTO(vertx.x(), vertx.y(), vertx.z(), false)).toList();
         var locations = new ArrayList<>(corners);
         Optional.ofNullable(region.getCenter()).map(center -> new LocationDTO(center.blockX(), center.blockY(), center.blockZ(), true)).ifPresent(locations::add);
-        PortalDTO portalDTO = PortalDTOBuilder.create().index(index).locations(locations).build();
+        FilePortalDTO portalDTO = PortalDTOBuilder.create().index(index).locations(locations).build();
         var portals = new TreeSet<>(map.portals());
         portals.add(portalDTO);
         var newMap = MapDTOBuilder.create().from(map).portals(portals).build();
