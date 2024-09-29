@@ -5,6 +5,7 @@ import net.elytrarace.api.conversation.MessagePrompt;
 import net.elytrarace.api.conversation.Prompt;
 import net.elytrarace.common.builder.MapDTOBuilder;
 import net.elytrarace.common.cup.model.FileCupDTO;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import net.elytrarace.setup.ElytraRace;
 import net.kyori.adventure.key.Key;
@@ -43,15 +44,15 @@ public class MapSetupFinish extends MessagePrompt {
             var mapService = elytraRace.getMapService();
             var cupService = elytraRace.getCupService();
 
-            MapDTO mapDTO = MapDTOBuilder.create().name(name)
+            MapDTO fileMapDTO = MapDTOBuilder.create().name(name)
                     .displayName(displayName)
                     .author(author)
                     .world(world.getName())
                     .generateUUID()
                     .build();
             var updatedCup = new FileCupDTO(cup.name(), cup.displayName(), new ArrayList<>(cup.maps()));
-            updatedCup.maps().add(mapDTO.uuid());
-            mapService.addMap(mapDTO)
+            updatedCup.maps().add(fileMapDTO.uuid());
+            mapService.addMap(fileMapDTO)
                     .thenCompose(success -> {
                         if (success) {
                             context.getForWhom().sendActionBar(Component.translatable("setup.map.added").arguments(displayName));

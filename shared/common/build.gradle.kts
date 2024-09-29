@@ -3,6 +3,8 @@ plugins {
 }
 dependencies {
     compileOnly(libs.minecraft.paper)
+    // Math
+    implementation(libs.geometry)
 }
 java {
     sourceCompatibility = JavaVersion.VERSION_21

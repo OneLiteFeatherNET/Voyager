@@ -3,6 +3,7 @@ package net.elytrarace.setup.conversation.portal;
 import net.elytrarace.api.conversation.BooleanPrompt;
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import net.elytrarace.setup.ElytraRace;
 import net.elytrarace.setup.model.SetupHolder;

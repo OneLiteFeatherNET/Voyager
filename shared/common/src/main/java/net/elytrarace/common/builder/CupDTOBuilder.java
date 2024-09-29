@@ -2,7 +2,7 @@ package net.elytrarace.common.builder;
 
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.FileCupDTO;
-import net.elytrarace.common.map.model.MapDTO;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Contract;
@@ -68,7 +68,7 @@ public sealed interface CupDTOBuilder {
      * @param maps The maps of the cup.
      * @return The builder.
      */
-    CupDTOBuilder maps(@NotNull List<@NotNull MapDTO> maps);
+    CupDTOBuilder maps(@NotNull List<@NotNull FileMapDTO> maps);
 
     /**
      * Set the maps of the cup by their UUIDs.
@@ -84,7 +84,7 @@ public sealed interface CupDTOBuilder {
      * @param maps The maps of the cup.
      * @return The builder.
      */
-    CupDTOBuilder maps(@NotNull MapDTO... maps);
+    CupDTOBuilder maps(@NotNull FileMapDTO... maps);
 
 
     /**
@@ -123,8 +123,8 @@ public sealed interface CupDTOBuilder {
         }
 
         @Override
-        public CupDTOBuilder maps(@NotNull List<MapDTO> maps) {
-            this.maps = maps.stream().map(MapDTO::uuid).toList();
+        public CupDTOBuilder maps(@NotNull List<FileMapDTO> maps) {
+            this.maps = maps.stream().map(FileMapDTO::uuid).toList();
             return this;
         }
 
@@ -135,8 +135,8 @@ public sealed interface CupDTOBuilder {
         }
 
         @Override
-        public CupDTOBuilder maps(MapDTO... maps) {
-            this.maps = Stream.of(maps).map(MapDTO::uuid).toList();
+        public CupDTOBuilder maps(FileMapDTO... maps) {
+            this.maps = Stream.of(maps).map(FileMapDTO::uuid).toList();
             return this;
         }
 

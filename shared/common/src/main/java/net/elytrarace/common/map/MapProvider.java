@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.elytrarace.common.file.FileHandler;
 import net.elytrarace.common.file.GsonFileHandler;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -26,10 +27,10 @@ public class MapProvider {
 
     private final FileHandler fileHandler;
     private final Path mapPath;
-    private final Supplier<List<MapDTO>> defaultMaps;
-    private List<MapDTO> maps;
+    private final Supplier<List<FileMapDTO>> defaultMaps;
+    private List<FileMapDTO> maps;
 
-    MapProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<List<MapDTO>> defaultMaps) {
+    MapProvider(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<List<FileMapDTO>> defaultMaps) {
         this.fileHandler = new GsonFileHandler(gson);
         this.mapPath = voyagerPath.resolve(MAPS_FOLDER);
         this.defaultMaps = defaultMaps;
@@ -40,7 +41,7 @@ public class MapProvider {
         loadMaps();
     }
 
-    public static MapProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<List<MapDTO>> defaultMaps) {
+    public static MapProvider create(@NotNull Gson gson, @NotNull Path voyagerPath, @NotNull Supplier<List<FileMapDTO>> defaultMaps) {
         return new MapProvider(gson, voyagerPath, defaultMaps);
     }
 
@@ -54,7 +55,7 @@ public class MapProvider {
             return;
         }
 
-        final Optional<List<MapDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<List<MapDTO>>) TypeToken.getParameterized(List.class, MapDTO.class));
+        final Optional<List<FileMapDTO>> optionalMap = this.fileHandler.load(mapFile, (TypeToken<List<FileMapDTO>>) TypeToken.getParameterized(List.class, FileMapDTO.class));
 
         if (optionalMap.isEmpty()) {
             throw new IllegalStateException("The cups could not be loaded");
@@ -65,19 +66,19 @@ public class MapProvider {
 
 
     public void saveMaps() {
-        this.fileHandler.save(this.mapPath.resolve(MAPS_FILE), maps, (TypeToken<List<MapDTO>>) TypeToken.getParameterized(List.class, MapDTO.class));
+        this.fileHandler.save(this.mapPath.resolve(MAPS_FILE), maps, (TypeToken<List<FileMapDTO>>) TypeToken.getParameterized(List.class, FileMapDTO.class));
     }
 
 
-    public void addMap(@NotNull MapDTO mapDTO) {
-        this.maps.add(mapDTO);
+    public void addMap(@NotNull FileMapDTO fileMapDTO) {
+        this.maps.add(fileMapDTO);
     }
 
-    public @NotNull Collection<MapDTO> getMaps() {
+    public @NotNull Collection<FileMapDTO> getMaps() {
         return this.maps;
     }
 
-    public @NotNull List<MapDTO> getMapsAsList() {
+    public @NotNull List<FileMapDTO> getMapsAsList() {
         return Collections.unmodifiableList(Lists.newArrayList(this.maps));
     }
 

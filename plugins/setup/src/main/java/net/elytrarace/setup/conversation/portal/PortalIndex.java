@@ -3,7 +3,7 @@ package net.elytrarace.setup.conversation.portal;
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.NumericPrompt;
 import net.elytrarace.api.conversation.Prompt;
-import net.elytrarace.common.map.model.MapDTO;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +21,7 @@ public class PortalIndex extends NumericPrompt {
             context.getForWhom().sendMessage(Component.translatable("error.portal.index.negative"));
             return this;
         }
-        var map = (MapDTO) context.getSessionData("map");
+        var map = (FileMapDTO) context.getSessionData("map");
         if (map == null) {
             context.getForWhom().sendMessage(Component.translatable("error.portal.index.no-map"));
             return END_OF_CONVERSATION;

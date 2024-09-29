@@ -1,3 +1,5 @@
+import net.minecrell.pluginyml.paper.PaperPluginDescription
+
 plugins {
     java
     id("xyz.jpenilla.run-paper") version "2.3.1"
@@ -12,6 +14,8 @@ dependencies {
     implementation(project(":shared:phase"))
     implementation(project(":shared:common"))
     implementation(project(":shared:database"))
+    // Math
+    implementation(libs.geometry)
 }
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -47,5 +51,11 @@ paper {
     version = rootProject.version.toString()
     apiVersion = "1.21"
     authors = listOf("TheMeinerLP")
+    serverDependencies {
+        register("Multiverse-Core") {
+            required = false
+            load = PaperPluginDescription.RelativeLoadOrder.BEFORE
+        }
+    }
 }
 

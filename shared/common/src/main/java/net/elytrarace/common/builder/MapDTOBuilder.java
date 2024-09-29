@@ -1,5 +1,6 @@
 package net.elytrarace.common.builder;
 
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.kyori.adventure.key.Key;
@@ -20,7 +21,7 @@ import java.util.UUID;
  *</p>
  * @since 1.0.0
  * @version 1.0.0
- * @see MapDTO
+ * @see FileMapDTO
  */
 public sealed interface MapDTOBuilder {
 
@@ -164,7 +165,7 @@ public sealed interface MapDTOBuilder {
         }
 
         public @NotNull MapDTO build() {
-            return new MapDTO(uuid, name, world, displayName, author, portals);
+            return new FileMapDTO(uuid, name, world, displayName, author, portals);
         }
     }
 }

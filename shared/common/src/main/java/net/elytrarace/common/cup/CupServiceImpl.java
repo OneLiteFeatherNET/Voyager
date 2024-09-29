@@ -3,7 +3,7 @@ package net.elytrarace.common.cup;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
-import net.elytrarace.common.map.model.MapDTO;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.utils.GsonUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -54,7 +54,7 @@ class CupServiceImpl implements CupService {
                 return true;
             }
             if (cupDTO instanceof ResolvedCupDTO resolvedCupDTO) {
-                this.cupProvider.addCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(MapDTO::uuid).toList()));
+                this.cupProvider.addCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(FileMapDTO.class::cast).map(FileMapDTO::uuid).toList()));
                 return true;
             }
             return false;
@@ -69,7 +69,7 @@ class CupServiceImpl implements CupService {
                 return true;
             }
             if (cupDTO instanceof ResolvedCupDTO resolvedCupDTO) {
-                this.cupProvider.removeCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(MapDTO::uuid).toList()));
+                this.cupProvider.removeCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(FileMapDTO.class::cast).map(FileMapDTO::uuid).toList()));
                 return true;
             }
             return false;
@@ -85,8 +85,8 @@ class CupServiceImpl implements CupService {
                 return true;
             }
             if (cupDTO instanceof ResolvedCupDTO resolvedCupDTO) {
-                this.cupProvider.removeCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(MapDTO::uuid).toList()));
-                this.cupProvider.addCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(MapDTO::uuid).toList()));
+                this.cupProvider.removeCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(FileMapDTO.class::cast).map(FileMapDTO::uuid).toList()));
+                this.cupProvider.addCup(new FileCupDTO(resolvedCupDTO.name(), resolvedCupDTO.displayName(), resolvedCupDTO.maps().stream().map(FileMapDTO.class::cast).map(FileMapDTO::uuid).toList()));
                 return true;
             }
             return false;

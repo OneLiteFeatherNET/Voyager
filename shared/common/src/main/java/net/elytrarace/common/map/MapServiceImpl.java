@@ -3,6 +3,7 @@ package net.elytrarace.common.map;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import net.elytrarace.common.utils.GsonUtil;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -24,7 +25,7 @@ class MapServiceImpl implements MapService {
     @Override
     public CompletableFuture<MapDTO> getMapByName(@NotNull String name) {
         return CompletableFuture.supplyAsync(() -> this.mapProvider.getMapsAsList().stream()
-                .filter(mapDTO -> mapDTO.name().equals(name))
+                .filter(mapDTO -> mapDTO.name().asString().equalsIgnoreCase(name))
                 .findFirst()
                 .orElse(null));
     }
@@ -58,18 +59,21 @@ class MapServiceImpl implements MapService {
             if (this.mapProvider.getMaps().stream().anyMatch(cup -> cup.name().equals(mapDTO.name()))) {
                 return false;
             }
-            this.mapProvider.addMap(mapDTO);
+            if (!(mapDTO instanceof FileMapDTO fileMapDTO)) {
+                throw new IllegalArgumentException("MapDTO must be an instance of FileMapDTO");
+            }
+            this.mapProvider.addMap(fileMapDTO);
             return true;
         });
     }
 
     @Override
-    public CompletableFuture<Boolean> removeMap(@NotNull MapDTO mapDTO) {
+    public CompletableFuture<Boolean> removeMap(@NotNull MapDTO fileMapDTO) {
         return CompletableFuture.supplyAsync(() -> {
-            if (this.mapProvider.getMaps().stream().noneMatch(cup -> cup.name().equals(mapDTO.name()))) {
+            if (this.mapProvider.getMaps().stream().noneMatch(cup -> cup.name().equals(fileMapDTO.name()))) {
                 return false;
             }
-            this.mapProvider.removeMap(mapDTO);
+            this.mapProvider.removeMap(fileMapDTO);
             return true;
         });
     }
@@ -81,14 +85,17 @@ class MapServiceImpl implements MapService {
                 return false;
             }
             this.mapProvider.removeMap(mapDTO);
-            this.mapProvider.addMap(mapDTO);
+            if (!(mapDTO instanceof FileMapDTO fileMapDTO)) {
+                throw new IllegalArgumentException("MapDTO must be an instance of FileMapDTO");
+            }
+            this.mapProvider.addMap(fileMapDTO);
             return true;
         });
     }
 
     @Override
     public List<MapDTO> getMaps() {
-        return this.mapProvider.getMapsAsList();
+        return this.mapProvider.getMapsAsList().stream().map(MapDTO.class::cast).toList();
     }
 
     @Override

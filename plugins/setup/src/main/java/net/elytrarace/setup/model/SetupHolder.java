@@ -1,7 +1,6 @@
 package net.elytrarace.setup.model;
 
 import net.elytrarace.api.conversation.*;
-import net.elytrarace.setup.utils.SetupMode;
 import net.kyori.adventure.audience.MessageType;
 import net.kyori.adventure.identity.Identified;
 import net.kyori.adventure.identity.Identity;
@@ -18,7 +17,6 @@ public class SetupHolder implements Conversable {
 
     private final ConversationTracker conversationTracker = new ConversationTracker();
     private final UUID uuid;
-    private SetupMode setupMode;
 
     public SetupHolder(UUID uuid) {
         this.uuid = uuid;
@@ -77,14 +75,6 @@ public class SetupHolder implements Conversable {
 
     public ConversationTracker getConversationTracker() {
         return conversationTracker;
-    }
-
-    public void setSetupMode(SetupMode setupMode) {
-        this.setupMode = setupMode;
-    }
-
-    public SetupMode getSetupMode() {
-        return setupMode;
     }
 
     public Player getPlayer() {

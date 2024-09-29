@@ -2,6 +2,7 @@ package net.elytrarace.setup;
 
 import net.elytrarace.api.conversation.ConversationFactory;
 import net.elytrarace.common.cup.CupService;
+import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.utils.PluginTranslationRegistry;
 import net.elytrarace.setup.conversation.cup.CupPrompt;
@@ -57,7 +58,10 @@ public class ElytraRace extends JavaPlugin {
                 .builder(PaperSimpleSenderMapper.simpleSenderMapper())
                 .executionCoordinator(ExecutionCoordinator.asyncCoordinator())
                 .buildOnEnable(this);
-        this.registerLanguage();
+        LanguageService
+                .create("elytrarace", Key.key("elytrarace", "language"), this)
+                .loadLanguage()
+                .thenRun(() -> getLogger().info("Language has been loaded"));
         CompletableFuture.runAsync(this::registerListeners);
         this.registerCommands();
         this.cupService = CupService.create(this);
@@ -69,31 +73,6 @@ public class ElytraRace extends JavaPlugin {
     public void onDisable() {
         getLogger().info("ElytraRace has been disabled!");
     }
-
-    private void registerLanguage() {
-        final TranslationRegistry translationRegistry = new PluginTranslationRegistry(TranslationRegistry.create(Key.key("elytrarace", "translations")));
-        translationRegistry.defaultLocale(Locale.US);
-        Path langFolder = getDataFolder().toPath().resolve("lang");
-        var languages = new HashSet<String>();
-        languages.add("en-US");
-        if (Files.exists(langFolder)) {
-            try (var urlClassLoader = new URLClassLoader(new URL[]{langFolder.toUri().toURL()})) {
-                languages.stream().map(Locale::forLanguageTag).forEach(r -> {
-                    var bundle = ResourceBundle.getBundle("bettergopaint", r, urlClassLoader, UTF8ResourceBundleControl.get());
-                    translationRegistry.registerAll(r, bundle, false);
-                });
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            languages.stream().map(Locale::forLanguageTag).forEach(r -> {
-                var bundle = ResourceBundle.getBundle("elytrarace", r, UTF8ResourceBundleControl.get());
-                translationRegistry.registerAll(r, bundle, false);
-            });
-        }
-        GlobalTranslator.translator().addSource(translationRegistry);
-    }
-
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new SetupListener(this), this);
     }

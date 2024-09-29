@@ -4,14 +4,14 @@ import net.elytrarace.api.database.model.DatabaseElytraPlayer;
 import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.api.phase.LinearPhaseSeries;
 import net.elytrarace.api.phase.Phase;
-import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.listener.CancellableListener;
 import net.elytrarace.game.ElytraRace;
 import net.elytrarace.game.phase.EndPhase;
 import net.elytrarace.game.phase.GamePhase;
+import net.elytrarace.game.phase.PreparationPhase;
+import net.elytrarace.game.service.GameService;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
@@ -30,7 +30,6 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerListPingEvent;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 public class DefaultListener implements Listener, CancellableListener {
@@ -38,11 +37,11 @@ public class DefaultListener implements Listener, CancellableListener {
     private static final List<Class<?>> RIGHT_CLICK_DENIED_INTERACTABLES = List.of(Sign.class, Chest.class, Container.class);
     private static final List<Class<?>> PHYSICS_DENIED_INTERACTABLES = List.of(Farmland.class);
 
-    private final ElytraRace plugin;
+    private final GameService gameService;
 
 
-    public DefaultListener(ElytraRace plugin) {
-        this.plugin = plugin;
+    public DefaultListener(GameService gameService) {
+        this.gameService = gameService;
     }
 
     @EventHandler
@@ -92,14 +91,14 @@ public class DefaultListener implements Listener, CancellableListener {
 
     @EventHandler
     public void onPlayerLogin(PlayerLoginEvent event) {
-        LinearPhaseSeries<Phase> elytraPhase = this.plugin.getElytraPhase();
+        LinearPhaseSeries<Phase> elytraPhase = this.gameService.getElytraPhase();
         if (elytraPhase == null) return;
         var currentPhase = elytraPhase.getCurrentPhase();
         if (currentPhase == null) return;
-        if (currentPhase.isRunning() && (currentPhase instanceof GamePhase || currentPhase instanceof EndPhase)){
+        if (currentPhase.isRunning() && (currentPhase instanceof GamePhase || currentPhase instanceof EndPhase || currentPhase instanceof PreparationPhase)){
             event.disallow(PlayerLoginEvent.Result.KICK_OTHER, Component.empty());
         }
-        DatabaseService databaseService = this.plugin.getDatabaseService();
+        DatabaseService databaseService = this.gameService.getDatabaseService();
         if (databaseService == null) return;
         databaseService.getElytraPlayerRepository()
                 .ifPresent(elytraPlayerRepository -> elytraPlayerRepository
@@ -114,9 +113,9 @@ public class DefaultListener implements Listener, CancellableListener {
 
     @EventHandler
     public void onServerListPing(ServerListPingEvent event) {
-        var cup = this.plugin.getCurrentCup().filter(ResolvedCupDTO.class::isInstance).orElse(null);
+        var cup = this.gameService.getCurrentCup().filter(ResolvedCupDTO.class::isInstance).orElse(null);
         if (cup == null) return;
-        event.motd(Component.translatable("cup.motd", MiniMessage.miniMessage().deserialize(cup.displayName())));
+        event.motd(Component.text("CUP: ").append(cup.displayName()));
     }
 
     @EventHandler

@@ -7,11 +7,10 @@ import net.elytrarace.api.conversation.Prompt;
 import net.elytrarace.common.builder.MapDTOBuilder;
 import net.elytrarace.common.builder.PortalDTOBuilder;
 import net.elytrarace.common.map.model.LocationDTO;
-import net.elytrarace.common.map.model.MapDTO;
+import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.elytrarace.setup.ElytraRace;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.Style;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +27,7 @@ public class PortalSavePrompt extends MessagePrompt {
 
     @Override
     protected @Nullable Prompt getNextPrompt(@NotNull ConversationContext context) {
-        var map = (MapDTO) context.getSessionData("map");
+        var map = (FileMapDTO) context.getSessionData("map");
         var index = (Integer) context.getSessionData("index");
         var region = (PolyhedralRegion) context.getSessionData("region");
         if (map == null || index == null || region == null) {

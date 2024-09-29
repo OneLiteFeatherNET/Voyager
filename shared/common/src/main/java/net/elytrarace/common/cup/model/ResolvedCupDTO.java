@@ -8,5 +8,5 @@ import java.util.List;
 
 public record ResolvedCupDTO(Key name,
                              Component displayName,
-                             List<MapDTO> maps) implements CupDTO {
+                             List<? extends MapDTO> maps) implements CupDTO {
 }
