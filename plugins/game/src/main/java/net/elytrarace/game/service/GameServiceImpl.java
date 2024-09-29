@@ -83,7 +83,7 @@ class GameServiceImpl implements GameService {
         CompletableFuture.runAsync(this::registerCommands);
         CompletableFuture.runAsync(this::registerListeners);
         return this.cupService.getRandomCup().thenCompose(this.mapService::getMapByCup).thenAcceptAsync(this::startLoadingWorldAsync).exceptionally((ex) -> {
-            LOGGER.error("An error occurred while initializing the game service", ex);
+            LOGGER.error(ElytraMarkers.EXCEPTION, "An error occurred while initializing the game service", ex);
             return null;
         });
     }

@@ -2,6 +2,7 @@ package net.elytrarace.game;
 
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.game.service.GameService;
+import net.elytrarace.game.util.ElytraMarkers;
 import net.elytrarace.game.world.VoidGenProvider;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
@@ -27,7 +28,7 @@ public class ElytraRace extends JavaPlugin {
                 .thenRun(() -> getLogger().info("Language has been loaded"));
         GameService gameService = GameService.create(this);
         gameService.init().thenRun(() -> getLogger().info("Game service has been initialized")).exceptionally(throwable -> {
-            getComponentLogger().error("An error occurred while initializing the game service", throwable);
+            getComponentLogger().error(ElytraMarkers.EXCEPTION, "An error occurred while initializing the game service", throwable);
             Bukkit.shutdown();
             return null;
         });
