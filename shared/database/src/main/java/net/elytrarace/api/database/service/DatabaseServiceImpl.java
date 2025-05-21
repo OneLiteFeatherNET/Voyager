@@ -1,7 +1,6 @@
 package net.elytrarace.api.database.service;
 
 import net.elytrarace.api.database.repository.ElytraPlayerRepository;
-import net.elytrarace.api.database.storage.ElytraPlayerStorage;
 import net.elytrarace.common.utils.ThreadHelper;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -22,11 +21,11 @@ class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     @Override
     public void init() {
         SessionFactory sessionFactory = syncThreadForServiceLoader(this::createSessionFactory);
-        this.elytraPlayerRepository = new ElytraPlayerStorage(sessionFactory);
+        this.elytraPlayerRepository = ElytraPlayerRepository.createInstance(sessionFactory);
     }
 
     private SessionFactory createSessionFactory() {
-        return new Configuration().configure().configure(rootPath.resolve("hibernate.cfg.xml").toFile()).buildSessionFactory();
+        return new Configuration().configure().configure(rootPath.resolve(HIBERNATE_CONFIG_FILE_NAME).toFile()).buildSessionFactory();
     }
 
     @Override

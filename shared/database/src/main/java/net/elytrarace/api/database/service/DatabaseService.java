@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface DatabaseService {
 
+    String HIBERNATE_CONFIG_FILE_NAME = "hibernate.cfg.xml";
+
     /**
      * Initializes the database service
      */

@@ -1,17 +1,16 @@
-package net.elytrarace.api.database.storage;
+package net.elytrarace.api.database.repository;
 
 import net.elytrarace.api.database.model.ElytraPlayerEntity;
-import net.elytrarace.api.database.repository.ElytraPlayerRepository;
 import org.hibernate.SessionFactory;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public class ElytraPlayerStorage implements ElytraPlayerRepository  {
+final class ElytraPlayerRepositoryImpl implements ElytraPlayerRepository  {
 
     private final SessionFactory sessionFactory;
 
-    public ElytraPlayerStorage(SessionFactory sessionFactory) {
+    public ElytraPlayerRepositoryImpl(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
 

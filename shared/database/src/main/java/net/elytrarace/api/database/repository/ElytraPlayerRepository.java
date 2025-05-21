@@ -1,11 +1,12 @@
 package net.elytrarace.api.database.repository;
 
 import net.elytrarace.api.database.model.ElytraPlayerEntity;
+import org.hibernate.SessionFactory;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public interface ElytraPlayerRepository {
+public sealed interface ElytraPlayerRepository permits ElytraPlayerRepositoryImpl {
 
     /**
      * Retrieves an ElytraPlayer by its UUID
@@ -39,4 +40,7 @@ public interface ElytraPlayerRepository {
      */
     CompletableFuture<Void> updateElytraPlayer(ElytraPlayerEntity elytraPlayer);
 
+    static ElytraPlayerRepository createInstance(SessionFactory sessionFactory) {
+        return new ElytraPlayerRepositoryImpl(sessionFactory);
+    }
 }
