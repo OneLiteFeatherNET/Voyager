@@ -1,12 +1,12 @@
 import net.minecrell.pluginyml.paper.PaperPluginDescription
 
 plugins {
-    java
-    id("xyz.jpenilla.run-paper") version "2.3.1"
-    id("net.minecrell.plugin-yml.paper") version "0.6.0"
-    id("com.gradleup.shadow") version "8.3.2"
-    `maven-publish`
-    jacoco
+    id("java")
+    id("maven-publish")
+    id("jacoco")
+    alias(libs.plugins.run.paper)
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.plugin.yml)
 }
 dependencies {
     compileOnly(libs.minecraft.paper)

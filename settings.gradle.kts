@@ -9,6 +9,9 @@ dependencyResolutionManagement {
             version("jetbrains-annotations", "24.1.0")
             version("fawe-bom", "1.49")
             version("commons-geometry-euclidean", "1.0")
+            version("run-paper", "2.3.1")
+            version("shadow", "8.3.2")
+            version("plugin-yml", "0.6.0")
 
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
             library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0-beta.10")
@@ -23,6 +26,10 @@ dependencyResolutionManagement {
 
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
             bundle("fawe", listOf("fawe.core", "fawe.bukkit"))
+
+            plugin("run-paper", "xyz.jpenilla.run-paper").versionRef("run-paper")
+            plugin("shadow", "com.gradleup.shadow").versionRef("shadow")
+            plugin("plugin-yml", "net.minecrell.plugin-yml.paper").versionRef("plugin-yml")
         }
     }
 }
