@@ -18,8 +18,7 @@ dependencies {
     implementation(libs.geometry)
 }
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 tasks {
@@ -41,7 +40,7 @@ tasks {
         }
     }
     runServer {
-        minecraftVersion("1.25")
+        minecraftVersion("1.21.5")
     }
 }
 
@@ -49,7 +48,7 @@ paper {
     main = "net.elytrarace.game.ElytraRace"
     name = "ElytraRace-Game"
     version = rootProject.version.toString()
-    apiVersion = "1.25"
+    apiVersion = "1.21"
     authors = listOf("TheMeinerLP")
     serverDependencies {
         register("Multiverse-Core") {
