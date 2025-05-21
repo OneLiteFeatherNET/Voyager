@@ -1,6 +1,6 @@
 package net.elytrarace.game.listener;
 
-import net.elytrarace.api.database.model.DatabaseElytraPlayer;
+import net.elytrarace.api.database.model.ElytraPlayerEntity;
 import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.api.phase.LinearPhaseSeries;
 import net.elytrarace.api.phase.Phase;
@@ -148,9 +148,9 @@ public class DefaultListener implements Listener, CancellableListener {
         databaseService.getElytraPlayerRepository()
                 .ifPresent(elytraPlayerRepository -> elytraPlayerRepository
                         .getElytraPlayerById(event.getPlayer().getUniqueId())
-                        .thenComposeAsync(databaseElytraPlayer -> {
-                            if (databaseElytraPlayer == null) {
-                                return elytraPlayerRepository.saveElytraPlayer(new DatabaseElytraPlayer(event.getPlayer().getUniqueId()));
+                        .thenComposeAsync(elytraPlayerEntity -> {
+                            if (elytraPlayerEntity == null) {
+                                return elytraPlayerRepository.saveElytraPlayer(new ElytraPlayerEntity(event.getPlayer().getUniqueId()));
                             }
                             return null;
                         }));

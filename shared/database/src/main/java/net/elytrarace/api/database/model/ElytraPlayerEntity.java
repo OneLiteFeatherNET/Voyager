@@ -6,16 +6,16 @@ import jakarta.persistence.Id;
 import java.util.UUID;
 
 @Entity
-public class DatabaseElytraPlayer {
+public class ElytraPlayerEntity {
 
     @Id
     private UUID playerId;
 
-    public DatabaseElytraPlayer(UUID playerId) {
+    public ElytraPlayerEntity(UUID playerId) {
         this.playerId = playerId;
     }
 
-    public DatabaseElytraPlayer() {
+    public ElytraPlayerEntity() {
     }
 
     public UUID getPlayerId() {

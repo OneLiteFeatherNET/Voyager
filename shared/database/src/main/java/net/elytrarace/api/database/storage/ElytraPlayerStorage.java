@@ -1,6 +1,6 @@
 package net.elytrarace.api.database.storage;
 
-import net.elytrarace.api.database.model.DatabaseElytraPlayer;
+import net.elytrarace.api.database.model.ElytraPlayerEntity;
 import net.elytrarace.api.database.repository.ElytraPlayerRepository;
 import org.hibernate.SessionFactory;
 
@@ -16,22 +16,22 @@ public class ElytraPlayerStorage implements ElytraPlayerRepository  {
     }
 
     @Override
-    public CompletableFuture<DatabaseElytraPlayer> getElytraPlayerById(UUID playerId) {
-        return CompletableFuture.supplyAsync(() -> this.sessionFactory.fromSession(session -> session.get(DatabaseElytraPlayer.class, playerId)));
+    public CompletableFuture<ElytraPlayerEntity> getElytraPlayerById(UUID playerId) {
+        return CompletableFuture.supplyAsync(() -> this.sessionFactory.fromSession(session -> session.get(ElytraPlayerEntity.class, playerId)));
     }
 
     @Override
-    public CompletableFuture<Void> saveElytraPlayer(DatabaseElytraPlayer elytraPlayer) {
+    public CompletableFuture<Void> saveElytraPlayer(ElytraPlayerEntity elytraPlayer) {
         return CompletableFuture.runAsync(() -> this.sessionFactory.inTransaction(session -> session.persist(elytraPlayer)));
     }
 
     @Override
-    public CompletableFuture<Void> deleteElytraPlayer(DatabaseElytraPlayer elytraPlayer) {
+    public CompletableFuture<Void> deleteElytraPlayer(ElytraPlayerEntity elytraPlayer) {
         return CompletableFuture.runAsync(() -> this.sessionFactory.inTransaction(session -> session.remove(elytraPlayer)));
     }
 
     @Override
-    public CompletableFuture<Void> updateElytraPlayer(DatabaseElytraPlayer elytraPlayer) {
+    public CompletableFuture<Void> updateElytraPlayer(ElytraPlayerEntity elytraPlayer) {
         return CompletableFuture.runAsync(() -> this.sessionFactory.inTransaction(session -> session.merge(elytraPlayer)));
     }
 }
