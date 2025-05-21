@@ -41,15 +41,15 @@ tasks {
         }
     }
     runServer {
-        minecraftVersion("1.21.1")
+        minecraftVersion("1.25")
     }
 }
 
 paper {
     main = "net.elytrarace.game.ElytraRace"
-    name = "ElytraRace"
+    name = "ElytraRace-Game"
     version = rootProject.version.toString()
-    apiVersion = "1.21"
+    apiVersion = "1.25"
     authors = listOf("TheMeinerLP")
     serverDependencies {
         register("Multiverse-Core") {
