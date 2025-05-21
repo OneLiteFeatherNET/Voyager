@@ -1,4 +1,4 @@
-package net.elytrarace.api.database.model;
+package net.elytrarace.api.database.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

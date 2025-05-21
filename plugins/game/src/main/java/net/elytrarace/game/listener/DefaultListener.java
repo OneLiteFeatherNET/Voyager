@@ -1,6 +1,6 @@
 package net.elytrarace.game.listener;
 
-import net.elytrarace.api.database.model.ElytraPlayerEntity;
+import net.elytrarace.api.database.entity.ElytraPlayerEntity;
 import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.api.phase.LinearPhaseSeries;
 import net.elytrarace.api.phase.Phase;

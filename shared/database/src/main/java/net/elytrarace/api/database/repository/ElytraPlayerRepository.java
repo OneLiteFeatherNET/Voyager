@@ -1,6 +1,6 @@
 package net.elytrarace.api.database.repository;
 
-import net.elytrarace.api.database.model.ElytraPlayerEntity;
+import net.elytrarace.api.database.entity.ElytraPlayerEntity;
 import org.hibernate.SessionFactory;
 
 import java.util.UUID;
