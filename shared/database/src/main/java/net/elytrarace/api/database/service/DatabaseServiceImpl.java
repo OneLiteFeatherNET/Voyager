@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.file.Path;
 import java.util.Optional;
 
-class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
+final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
 
     private final Path rootPath;
     private ElytraPlayerRepository elytraPlayerRepository;

@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Contract;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public interface DatabaseService {
+public sealed interface DatabaseService permits DatabaseServiceImpl {
 
     String HIBERNATE_CONFIG_FILE_NAME = "hibernate.cfg.xml";
 
