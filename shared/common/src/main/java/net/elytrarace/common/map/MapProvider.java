@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public class MapProvider {
+final class MapProvider {
 
     private static final Logger MAP_LOGGER = LoggerFactory.getLogger(MapProvider.class);
     private static final String MAPS_FOLDER = System.getProperty("VOYAGER_MAPS_FOLDER", "maps");
