@@ -41,7 +41,7 @@ class MapServiceImpl implements MapService {
                         .filter(mapDTO -> mapDTO.uuid().equals(uuid))
                 )
                 .toList())
-                .thenApply(maps -> new ResolvedCupDTO(fileCupDTO.name(), fileCupDTO.displayName(), maps));
+                .thenApply(fileCupDTO::withMaps);
 
     }
 

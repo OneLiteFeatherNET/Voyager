@@ -36,7 +36,7 @@ public record GameMapDTO(UUID uuid, Key name, String world, World bukkitWorld,
     private static List<Vector3D> generateSplinePoints(SortedSet<GamePortalDTO> portals) {
         var centerLocations = portals.stream().flatMap(portal -> portal.locations().stream()).filter(LocationDTO::center).map(GameMapDTO::toVector3D).toList();
         return WindowedStreamUtils.windowed(centerLocations, 6).stream().flatMap(window -> {
-            var distance = window.get(0).distanceSq(window.get(2));
+            var distance = window.getFirst().distanceSq(window.get(2));
             var splinePoints = new ArrayList<Vector3D>();
             int pointsPerSegment = (int) ((SPLINE_POINTS_PER_SEGMENT * (distance)) * 0.001);
             splinePoints.addAll(SplineAPI.interpolate(window, 0, pointsPerSegment));
