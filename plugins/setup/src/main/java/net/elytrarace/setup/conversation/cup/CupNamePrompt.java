@@ -13,11 +13,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 public class CupNamePrompt extends StringPrompt {
 
-    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9_-]{1,64}$");
+    private static final Predicate<String> NAME_PATTERN = Pattern.compile("^[a-z0-9_-]{1,64}$").asMatchPredicate();
 
     @Override
     public @NotNull Component getPromptText(@NotNull ConversationContext context) {
@@ -29,7 +30,7 @@ public class CupNamePrompt extends StringPrompt {
         if (input == null || input.isEmpty()) {
             return this;
         }
-        if (!NAME_PATTERN.matcher(input).matches()) {
+        if (!NAME_PATTERN.test(input)) {
             context.getForWhom().sendMessage(Component.translatable("error.cup.name.invalid"));
             return this;
         }
