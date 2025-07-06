@@ -1,17 +1,27 @@
 package net.elytrarace.game.util;
 
-import net.elytrarace.game.ElytraRace;
+import net.elytrarace.common.ecs.EntityManager;
+import org.bukkit.plugin.java.JavaPlugin;
 
-public class PluginInstanceHolder {
+public enum PluginInstanceHolder {
+    ;
 
-    private volatile static ElytraRace pluginInstance;
+    private static volatile JavaPlugin pluginInstance;
+    private static volatile EntityManager entityManager;
 
-    public static synchronized ElytraRace getPluginInstance() {
+    public static synchronized JavaPlugin getPluginInstance() {
         return pluginInstance;
     }
 
-    public static synchronized void setPluginInstance(ElytraRace pluginInstance) {
+    public static synchronized void setPluginInstance(JavaPlugin pluginInstance) {
         PluginInstanceHolder.pluginInstance = pluginInstance;
     }
 
+    public static synchronized EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public static synchronized void setEntityManager(EntityManager entityManager) {
+        PluginInstanceHolder.entityManager = entityManager;
+    }
 }

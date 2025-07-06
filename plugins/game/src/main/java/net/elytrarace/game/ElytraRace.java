@@ -1,7 +1,17 @@
 package net.elytrarace.game;
 
+import net.elytrarace.common.ecs.Entity;
+import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.common.language.LanguageService;
+import net.elytrarace.game.components.GameStateComponent;
+import net.elytrarace.game.components.PhaseComponent;
 import net.elytrarace.game.service.GameService;
+import net.elytrarace.game.system.CollisionSystem;
+import net.elytrarace.game.system.CupSystem;
+import net.elytrarace.game.system.GameStateSystem;
+import net.elytrarace.game.system.PhaseSystem;
+import net.elytrarace.game.system.PlayerUpdateSystem;
+import net.elytrarace.game.system.SplineSystem;
 import net.elytrarace.game.util.ElytraMarkers;
 import net.elytrarace.game.util.PluginInstanceHolder;
 import net.elytrarace.game.world.VoidGenProvider;
@@ -16,6 +26,12 @@ import java.nio.file.Files;
 
 public class ElytraRace extends JavaPlugin {
 
+    private EntityManager entityManager;
+    private PlayerUpdateSystem playerUpdateSystem;
+    private PhaseSystem phaseSystem;
+    private CupSystem cupSystem;
+    private SplineSystem splineSystem;
+
     @Override
     public void onEnable() {
         try {
@@ -24,6 +40,46 @@ public class ElytraRace extends JavaPlugin {
             getLogger().warning("Unable to create plugin directory");
         }
         PluginInstanceHolder.setPluginInstance(this);
+
+        // Initialize EntityManager
+        entityManager = new EntityManager();
+        PluginInstanceHolder.setEntityManager(entityManager);
+
+        // Create game state entity
+        Entity gameStateEntity = new Entity();
+        gameStateEntity.addComponent(GameStateComponent.create());
+
+        // Add phase component to game state entity
+        gameStateEntity.addComponent(PhaseComponent.create(this));
+
+        // Add the entity to the entity manager
+        entityManager.addEntity(gameStateEntity);
+
+        // Register systems
+        entityManager.addSystem(new CollisionSystem());
+        entityManager.addSystem(new GameStateSystem());
+
+        playerUpdateSystem = new PlayerUpdateSystem();
+        entityManager.addSystem(playerUpdateSystem);
+
+        phaseSystem = new PhaseSystem();
+        entityManager.addSystem(phaseSystem);
+
+        cupSystem = new CupSystem();
+        entityManager.addSystem(cupSystem);
+
+        splineSystem = new SplineSystem();
+        entityManager.addSystem(splineSystem);
+
+        // Schedule entity update task
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            // Update player positions
+            playerUpdateSystem.updateAllPlayers();
+
+            // Update all systems
+            entityManager.update(1.0f / 20.0f);
+        }, 0L, 1L);
+
         LanguageService
                 .create("elytrarace", Key.key("elytrarace", "language"), this)
                 .loadLanguage()
