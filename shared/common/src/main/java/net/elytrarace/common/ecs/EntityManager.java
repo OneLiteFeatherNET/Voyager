@@ -24,15 +24,12 @@ public final class EntityManager {
     public void update(float deltaTime) {
         for (System system : systems) {
             Set<Class<? extends Component>> requiredComponents = system.getRequiredComponents();
-
-            // Nur Entities verarbeiten, die alle erforderlichen Komponenten haben
             entities.stream()
                     .filter(entity -> hasAllComponents(entity, requiredComponents))
                     .forEach(entity -> system.process(entity, deltaTime));
         }
     }
 
-    // Hilfsmethode für Entity
     private static boolean hasAllComponents(Entity entity, Set<Class<? extends Component>> componentClasses) {
         return componentClasses.stream().allMatch(entity::hasComponent);
     }
