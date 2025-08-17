@@ -4,13 +4,13 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
-            version("hibernate", "6.5.2.Final")
-            version("mariadb-client", "3.4.1")
+            version("hibernate", "7.1.0.Final")
+            version("mariadb-client", "3.5.5")
             version("jetbrains-annotations", "26.0.2")
-            version("fawe-bom", "1.49")
+            version("fawe-bom", "1.55")
             version("commons-geometry-euclidean", "1.0")
             version("run-paper", "2.3.1")
-            version("shadow", "8.3.6")
+            version("shadow", "9.0.2")
             version("plugin-yml", "0.6.0")
 
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
