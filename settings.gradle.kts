@@ -5,7 +5,7 @@ dependencyResolutionManagement {
         create("libs") {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
             version("hibernate", "7.1.0.Final")
-            version("mariadb-client", "3.5.5")
+            version("mariadb-client", "3.5.6")
             version("jetbrains-annotations", "26.0.2-1")
             version("fawe-bom", "1.55")
             version("commons-geometry-euclidean", "1.0")
