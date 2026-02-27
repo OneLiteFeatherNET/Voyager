@@ -10,7 +10,7 @@ dependencyResolutionManagement {
             version("fawe-bom", "1.55")
             version("commons-geometry-euclidean", "1.0")
             version("run-paper", "3.0.2")
-            version("shadow", "9.3.1")
+            version("shadow", "9.3.2")
             version("plugin-yml", "0.6.0")
 
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
