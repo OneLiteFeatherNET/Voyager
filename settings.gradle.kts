@@ -4,7 +4,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
-            version("hibernate", "7.2.7.Final")
+            version("hibernate", "7.3.0.Final")
             version("mariadb-client", "3.5.7")
             version("jetbrains-annotations", "26.0.2-1")
             version("fawe-bom", "1.55")
