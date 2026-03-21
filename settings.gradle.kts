@@ -7,7 +7,7 @@ dependencyResolutionManagement {
             version("hibernate", "7.3.0.Final")
             version("mariadb-client", "3.5.7")
             version("jetbrains-annotations", "26.1.0")
-            version("fawe-bom", "1.55")
+            version("fawe-bom", "1.56")
             version("commons-geometry-euclidean", "1.0")
             version("run-paper", "3.0.2")
             version("shadow", "9.4.0")
