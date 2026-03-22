@@ -59,13 +59,13 @@ public class ElytraRace extends JavaPlugin {
                 .executionCoordinator(ExecutionCoordinator.asyncCoordinator())
                 .buildOnEnable(this);
         LanguageService
-                .create("elytrarace", Key.key("elytrarace", "language"), this)
+                .create("elytrarace", Key.key("elytrarace", "language"), getDataFolder().toPath())
                 .loadLanguage()
                 .thenRun(() -> getLogger().info("Language has been loaded"));
         CompletableFuture.runAsync(this::registerListeners);
         this.registerCommands();
-        this.cupService = CupService.create(this);
-        this.mapService = MapService.create(this);
+        this.cupService = CupService.create(getDataPath());
+        this.mapService = MapService.create(getDataPath());
         getLogger().info("ElytraRace has been enabled!");
     }
 

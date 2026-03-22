@@ -1,10 +1,10 @@
 package net.elytrarace.common.language;
 
 import net.kyori.adventure.key.Key;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -24,12 +24,12 @@ public interface LanguageService {
      *
      * @param baseName The base name of the language files.
      * @param key The key of the plugin.
-     * @param plugin The plugin.
+     * @param dataPath The data path for language files.
      * @return The service.
      */
     @Contract(value = "_, _, _ -> new", pure = true)
-    static @NotNull LanguageService create(@NotNull String baseName,@NotNull Key key,@NotNull JavaPlugin plugin) {
-        return new LanguageServiceImpl(baseName, key, plugin);
+    static @NotNull LanguageService create(@NotNull String baseName, @NotNull Key key, @NotNull Path dataPath) {
+        return new LanguageServiceImpl(baseName, key, dataPath);
     }
 
 }

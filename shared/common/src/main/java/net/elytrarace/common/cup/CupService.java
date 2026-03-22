@@ -2,10 +2,10 @@ package net.elytrarace.common.cup;
 
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.FileCupDTO;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -87,12 +87,12 @@ public interface CupService {
     /**
      * Creates a new instance of the cup service.
      *
-     * @param plugin The plugin to create the service for
+     * @param dataPath The data path for storing cup files
      * @return The cup service
      */
     @Contract("_ -> new")
-    static CupService create(@NotNull JavaPlugin plugin) {
-        return new CupServiceImpl(plugin);
+    static CupService create(@NotNull Path dataPath) {
+        return new CupServiceImpl(dataPath);
     }
 
 }

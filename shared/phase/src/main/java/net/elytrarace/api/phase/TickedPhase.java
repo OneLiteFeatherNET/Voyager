@@ -1,7 +1,5 @@
 package net.elytrarace.api.phase;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
 /**
  * @author Patrick Zdarsky / Rxcki
  * @version 1.0
@@ -10,12 +8,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public abstract class TickedPhase extends GamePhase {
 
-    public TickedPhase(JavaPlugin plugin) {
-        super(plugin);
+    public TickedPhase(EventRegistrar eventRegistrar) {
+        super(eventRegistrar);
     }
 
-    public TickedPhase(String name, JavaPlugin javaPlugin) {
-        super(name, javaPlugin);
+    public TickedPhase(String name, EventRegistrar eventRegistrar) {
+        super(name, eventRegistrar);
     }
 
     public abstract void onUpdate();

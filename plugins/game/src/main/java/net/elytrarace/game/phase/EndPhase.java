@@ -1,5 +1,7 @@
 package net.elytrarace.game.phase;
 
+import net.elytrarace.api.phase.EventRegistrar;
+import net.elytrarace.api.phase.PhaseScheduler;
 import net.elytrarace.api.phase.TickDirection;
 import net.elytrarace.api.phase.TimedPhase;
 import net.elytrarace.common.utils.Strings;
@@ -7,11 +9,10 @@ import net.elytrarace.common.utils.TimeFormat;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public class EndPhase extends TimedPhase {
-    public EndPhase(JavaPlugin game) {
-        super("End", game, 20, true);
+    public EndPhase(PhaseScheduler scheduler, EventRegistrar eventRegistrar) {
+        super("End", scheduler, eventRegistrar, 20, true);
         setEndTicks(0);
         setTickDirection(TickDirection.DOWN);
     }

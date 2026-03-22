@@ -10,6 +10,7 @@ dependencies {
     compileOnly(libs.minecraft.paper)
     implementation(libs.minecraft.cloud.paper)
     implementation(project(":shared:common"))
+    implementation(project(":shared:phase"))
     implementation(project(":shared:conversation-api"))
     // FAWE
     implementation(platform(libs.fawe.bom))

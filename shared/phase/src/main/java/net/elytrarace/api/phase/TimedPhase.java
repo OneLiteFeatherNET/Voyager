@@ -1,7 +1,5 @@
 package net.elytrarace.api.phase;
 
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 
 /**
@@ -20,12 +18,12 @@ public abstract class TimedPhase extends TickingPhase {
     private int currentTicks;
     private TickDirection tickDirection = TickDirection.DOWN;
 
-    public TimedPhase(String name, JavaPlugin game, long interval, boolean async) {
-        super(name, game, interval, async);
+    public TimedPhase(String name, PhaseScheduler scheduler, EventRegistrar eventRegistrar, long interval, boolean async) {
+        super(name, scheduler, eventRegistrar, interval, async);
     }
 
-    public TimedPhase(String name, JavaPlugin game) {
-        super(name, game);
+    public TimedPhase(String name, PhaseScheduler scheduler, EventRegistrar eventRegistrar) {
+        super(name, scheduler, eventRegistrar);
     }
 
     /**
@@ -34,11 +32,11 @@ public abstract class TimedPhase extends TickingPhase {
     @Override
     @MustBeInvokedByOverriders
     public void onStart() {
-        if (isAsync()) {
-            setScheduledTask(Bukkit.getScheduler().runTaskTimerAsynchronously(getPlugin(), this::onUpdate0, 0L, getInterval()));
-        } else {
-            setScheduledTask(Bukkit.getScheduler().runTaskTimer(getPlugin(), this::onUpdate0, 0L, getInterval()));
-        }
+        scheduledTask(getScheduler().runRepeating(this::onUpdate0, getInterval(), isAsync()));
+    }
+
+    private void scheduledTask(PhaseTask task) {
+        setScheduledTask(task);
     }
 
     public void onUpdate0() {

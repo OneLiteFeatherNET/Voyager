@@ -1,9 +1,13 @@
 package net.elytrarace.game.service;
 
 import net.elytrarace.api.database.service.DatabaseService;
+import net.elytrarace.api.phase.EventRegistrar;
 import net.elytrarace.api.phase.LinearPhaseSeries;
 import net.elytrarace.api.phase.Phase;
+import net.elytrarace.api.phase.PhaseScheduler;
 import net.elytrarace.common.cup.CupService;
+import net.elytrarace.game.platform.BukkitEventRegistrar;
+import net.elytrarace.game.platform.BukkitPhaseScheduler;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.ecs.Entity;
@@ -52,16 +56,20 @@ class GameServiceImpl implements GameService {
     private volatile DatabaseService databaseService;
     private PaperCommandManager<Source> commandManager;
     private ElytraRace plugin;
+    private final PhaseScheduler phaseScheduler;
+    private final EventRegistrar eventRegistrar;
     private volatile GameSession gameSession = new GameSession(UUID.randomUUID(), null, null);
 
     public GameServiceImpl(ElytraRace plugin) {
         this.plugin = plugin;
-        this.cupService = CupService.create(plugin);
-        this.mapService = MapService.create(plugin);
+        this.phaseScheduler = new BukkitPhaseScheduler(plugin);
+        this.eventRegistrar = new BukkitEventRegistrar(plugin);
+        this.cupService = CupService.create(plugin.getDataPath());
+        this.mapService = MapService.create(plugin.getDataPath());
         this.elytraPhase.add(new PreparationPhase(this));
         this.elytraPhase.add(new LobbyPhase(this));
         this.elytraPhase.add(new GamePhase(this));
-        this.elytraPhase.add(new EndPhase(plugin));
+        this.elytraPhase.add(new EndPhase(phaseScheduler, eventRegistrar));
         this.elytraPhase.start();
         this.commandManager = PaperCommandManager.builder(PaperSimpleSenderMapper.simpleSenderMapper()).executionCoordinator(ExecutionCoordinator.asyncCoordinator()).buildOnEnable(getPlugin());
     }
@@ -340,6 +348,16 @@ class GameServiceImpl implements GameService {
     @Override
     public ElytraRace getPlugin() {
         return plugin;
+    }
+
+    @Override
+    public PhaseScheduler getPhaseScheduler() {
+        return phaseScheduler;
+    }
+
+    @Override
+    public EventRegistrar getEventRegistrar() {
+        return eventRegistrar;
     }
 
     @Override

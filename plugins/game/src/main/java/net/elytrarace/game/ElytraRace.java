@@ -5,6 +5,8 @@ import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.game.components.GameStateComponent;
 import net.elytrarace.game.components.PhaseComponent;
+import net.elytrarace.game.platform.BukkitEventRegistrar;
+import net.elytrarace.game.platform.BukkitPhaseScheduler;
 import net.elytrarace.game.service.GameService;
 import net.elytrarace.game.system.CollisionSystem;
 import net.elytrarace.game.system.CupSystem;
@@ -50,7 +52,7 @@ public class ElytraRace extends JavaPlugin {
         gameStateEntity.addComponent(GameStateComponent.create());
 
         // Add phase component to game state entity
-        gameStateEntity.addComponent(PhaseComponent.create(this));
+        gameStateEntity.addComponent(PhaseComponent.create(new BukkitPhaseScheduler(this), new BukkitEventRegistrar(this)));
 
         // Add the entity to the entity manager
         entityManager.addEntity(gameStateEntity);
@@ -81,7 +83,7 @@ public class ElytraRace extends JavaPlugin {
         }, 0L, 1L);
 
         LanguageService
-                .create("elytrarace", Key.key("elytrarace", "language"), this)
+                .create("elytrarace", Key.key("elytrarace", "language"), getDataFolder().toPath())
                 .loadLanguage()
                 .thenRun(() -> getLogger().info("Language has been loaded"));
         GameService gameService = GameService.create(this);

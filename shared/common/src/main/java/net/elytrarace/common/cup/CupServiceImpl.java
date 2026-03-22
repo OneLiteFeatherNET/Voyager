@@ -5,9 +5,9 @@ import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.utils.GsonUtil;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,8 +17,8 @@ class CupServiceImpl implements CupService {
 
     private final CupProvider cupProvider;
 
-    CupServiceImpl(@NotNull JavaPlugin plugin) {
-        this.cupProvider = new CupProvider(GsonUtil.GSON, plugin.getDataPath(), ArrayList::new);
+    CupServiceImpl(@NotNull Path dataPath) {
+        this.cupProvider = new CupProvider(GsonUtil.GSON, dataPath, ArrayList::new);
     }
 
     @Override

@@ -29,7 +29,7 @@ public class LobbyPhase extends TimedPhase {
     private final World lobbyWorld;
 
     public LobbyPhase(GameService gameService) {
-        super("Lobby", gameService.getPlugin(), 20, true);
+        super("Lobby", gameService.getPhaseScheduler(), gameService.getEventRegistrar(), 20, true);
         this.gameService = gameService;
         this.lobbyWorld = Bukkit.getWorlds().getFirst();
         setEndTicks(0);
