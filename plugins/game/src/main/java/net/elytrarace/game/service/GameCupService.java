@@ -66,7 +66,7 @@ public class GameCupService {
             return GameSession.fromWithCurrentMap(gameSession, (GameMapDTO) gameSession.currentCup().maps().getFirst());
         }
         var currentMap = gameSession.currentMap();
-        currentMap.portals().stream().map(GamePortalDTO.class::cast).filter(Objects::nonNull).forEach(GamePortalDTO::despawn);
+        currentMap.portals().stream().filter(Objects::nonNull).forEach(GamePortalDTO::despawn);
         var index = gameSession.currentCup().maps().indexOf(currentMap);
         var nextIndex = index + 1;
         if (nextIndex >= gameSession.currentCup().maps().size()) {

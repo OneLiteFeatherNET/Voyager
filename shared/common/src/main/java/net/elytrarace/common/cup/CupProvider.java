@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public class CupProvider {
+final class CupProvider {
 
     private static final Logger CUP_LOGGER = LoggerFactory.getLogger(CupProvider.class);
     private static final String CUPS_FOLDER = System.getProperty("VOYAGER_CUPS_FOLDER", "cups");

@@ -23,15 +23,16 @@ class CupServiceImpl implements CupService {
 
     @Override
     public CompletableFuture<CupDTO> getRandomCup() {
-        return CompletableFuture.supplyAsync(() -> {
-            var cups = this.cupProvider.getCupsAsList();
-            var newCups = new ArrayList<>(cups);
-            Collections.shuffle(newCups);
-            if (newCups.isEmpty()) {
-                throw new IllegalStateException("There are no cups available");
-            }
-            return newCups.getFirst();
-        });
+        return CompletableFuture.supplyAsync(this.cupProvider::getCupsAsList)
+                .thenApplyAsync(ArrayList<FileCupDTO>::new)
+                .thenApplyAsync(cups -> {
+                    Collections.shuffle(cups);
+                    if (cups.isEmpty()) {
+                        throw new IllegalStateException("There are no cups available");
+                    }
+                    return cups;
+                })
+                .thenApplyAsync(List::getFirst);
     }
 
     @Override
