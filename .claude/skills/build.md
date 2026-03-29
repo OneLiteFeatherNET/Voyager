@@ -11,7 +11,7 @@ Build the Voyager project and report results.
 
 1. Run the full build:
 ```bash
-JAVA_HOME=/home/themeinerlp/.sdkman/candidates/java/25.0.1-open PATH="/home/themeinerlp/.sdkman/candidates/java/25.0.1-open/bin:$PATH" ./gradlew clean build --no-daemon -POneLiteFeatherRepositoryUsername=reposilite-publisher "-POneLiteFeatherRepositoryPassword=SdgmIPkX/2bh2HsqVqvzVQtH2MioDapYV5NV0Vtt4Czlf0eqOt1EY5wuxW8Oj3N9"
+JAVA_HOME=/home/themeinerlp/.sdkman/candidates/java/25.0.1-open PATH="/home/themeinerlp/.sdkman/candidates/java/25.0.1-open/bin:$PATH" ./gradlew clean build --no-daemon
 ```
 
 2. If build fails, show compilation errors and suggest fixes
