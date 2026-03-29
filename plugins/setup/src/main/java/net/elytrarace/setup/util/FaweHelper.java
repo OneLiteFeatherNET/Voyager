@@ -3,6 +3,8 @@ package net.elytrarace.setup.util;
 import com.fastasyncworldedit.core.regions.PolyhedralRegion;
 import com.fastasyncworldedit.core.regions.selector.PolyhedralRegionSelector;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extension.platform.permission.ActorSelectorLimits;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.RegionSelector;
 import net.elytrarace.common.map.model.LocationDTO;
 import org.bukkit.entity.Player;
@@ -55,6 +57,31 @@ public final class FaweHelper {
                 .map(center -> new LocationDTO(center.blockX(), center.blockY(), center.blockZ(), true))
                 .ifPresent(locations::add);
         return locations;
+    }
+
+    /**
+     * Loads portal vertices into a new PolyhedralRegionSelector on the player's session.
+     * First non-center vertex becomes the primary selection, rest become secondary.
+     */
+    public static void setPolyhedralSelector(Player player, List<LocationDTO> locations) {
+        var actor = BukkitAdapter.adapt(player);
+        var localSession = actor.getSession();
+        var world = actor.getWorld();
+        var selector = new PolyhedralRegionSelector(world);
+        var limits = ActorSelectorLimits.forActor(actor);
+
+        var vertices = locations.stream().filter(loc -> !loc.center()).toList();
+        for (int i = 0; i < vertices.size(); i++) {
+            var loc = vertices.get(i);
+            var vec = BlockVector3.at(loc.x(), loc.y(), loc.z());
+            if (i == 0) {
+                selector.selectPrimary(vec, limits);
+            } else {
+                selector.selectSecondary(vec, limits);
+            }
+        }
+
+        localSession.setRegionSelector(world, selector);
     }
 
     /**

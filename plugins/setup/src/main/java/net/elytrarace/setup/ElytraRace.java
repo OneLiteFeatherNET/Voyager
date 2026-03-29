@@ -6,8 +6,11 @@ import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.utils.PluginTranslationRegistry;
+import net.elytrarace.setup.command.EditingContextManager;
 import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
+import net.elytrarace.setup.command.PortalEditCommand;
+import net.elytrarace.setup.command.PortalSaveCommand;
 import net.elytrarace.setup.command.PortalShowCommand;
 import net.elytrarace.setup.command.PortalUndoCommand;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
@@ -53,6 +56,7 @@ public class ElytraRace extends JavaPlugin {
     private CupService cupService;
     private MapService mapService;
     private UndoManager undoManager;
+    private EditingContextManager editingContextManager;
     private ParticlePreviewManager previewManager;
     private @NonNull PaperCommandManager<Source> commandManager;
 
@@ -74,6 +78,7 @@ public class ElytraRace extends JavaPlugin {
         this.cupService = CupService.create(getDataPath());
         this.mapService = MapService.create(getDataPath());
         this.undoManager = new UndoManager();
+        this.editingContextManager = new EditingContextManager();
         this.previewManager = new ParticlePreviewManager(this.mapService);
         this.previewManager.start(this);
         CompletableFuture.runAsync(this::registerListeners);
@@ -179,6 +184,10 @@ public class ElytraRace extends JavaPlugin {
         PortalUndoCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal show: /elytrarace portal show (toggle particle preview)
         PortalShowCommand.register(this.commandManager, this.previewManager);
+        // Portal edit: /elytrarace portal edit <index> (load FAWE region for editing)
+        PortalEditCommand.register(this.commandManager, this.mapService, this.editingContextManager);
+        // Portal save: /elytrarace portal save (save edited FAWE region)
+        PortalSaveCommand.register(this.commandManager, this.mapService, this.editingContextManager, this.undoManager);
 
         // Legacy conversation-based portal creation: /elytrarace portal create
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
@@ -220,5 +229,9 @@ public class ElytraRace extends JavaPlugin {
 
     public ParticlePreviewManager getPreviewManager() {
         return previewManager;
+    }
+
+    public EditingContextManager getEditingContextManager() {
+        return editingContextManager;
     }
 }
