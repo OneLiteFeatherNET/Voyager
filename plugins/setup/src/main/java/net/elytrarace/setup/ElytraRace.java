@@ -7,7 +7,9 @@ import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.setup.command.CupCreateCommand;
 import net.elytrarace.setup.command.CupListCommand;
+import net.elytrarace.setup.command.CupRenameCommand;
 import net.elytrarace.setup.command.EditingContextManager;
+import net.elytrarace.setup.command.MapDeleteCommand;
 import net.elytrarace.setup.command.GuideCommand;
 import net.elytrarace.setup.guide.GuidePointStore;
 import net.elytrarace.setup.command.MapCreateCommand;
@@ -156,6 +158,8 @@ public class ElytraRace extends JavaPlugin {
         CupListCommand.register(this.commandManager, this.cupService, this);
         // Cup create: /elytrarace cup create <name> <displayName>
         CupCreateCommand.register(this.commandManager, this.cupService);
+        // Cup rename: /elytrarace cup rename <oldName> <newName> <newDisplayName>
+        CupRenameCommand.register(this.commandManager, this.cupService);
         // Map create: /elytrarace map create <cup> <name> <displayName>
         MapCreateCommand.register(this.commandManager, this.mapService, this.cupService);
         // Map teleport: /elytrarace map tp <name>
@@ -164,6 +168,8 @@ public class ElytraRace extends JavaPlugin {
         MapLoadCommand.register(this.commandManager, this);
         // Map rename: /elytrarace map rename <oldName> <newName> <newDisplayName>
         MapRenameCommand.register(this.commandManager, this.mapService);
+        // Map delete: /elytrarace map delete <name>
+        MapDeleteCommand.register(this.commandManager, this.mapService, this.cupService);
         // Quick portal command: /elytrarace portal (auto-detects FAWE region, auto-indexes)
         PortalCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal delete: /elytrarace portal delete <index>
