@@ -127,6 +127,41 @@ Erstelle Architecture Decision Records im Format:
 5. **Testbarkeit sicherstellen**: Jedes Design muss unit-testbar sein
 6. **Context7 & WebSearch nutzen**: Aktuelle Minestom/Library-Docs einbeziehen
 
+## OneLiteFeather Organisations-Referenz
+
+Verwende diese internen Repos und Libraries als Referenz fuer Architektur-Entscheidungen:
+
+### Referenz-Projekt: ManisGame
+- Multi-Modul: `shared/{api,database,common,queue,cloud,scare,day,dialog}`, `extensions/{lobby,setup,game}`
+- BOM-basierte Dependency-Verwaltung (aonyx-bom -> manis-bom)
+- Java 25, JaCoCo, ShadowJar
+- CloudNet-Integration via cloudnet-bundle
+
+### Interne Libraries (via OneLiteFeather Maven Repo)
+- **Aves** (`net.theevilreaper:aves`) — General Minestom server API
+- **Xerus** (`net.theevilreaper:xerus`) — MiniGame API fuer Minestom
+- **Coris** (`net.onelitefeather:coris`) — Floor/Room/Shape Management
+- **Guira** (`net.onelitefeather:guira`) — UI Library
+
+### BOMs
+- **aonyx-bom** (`net.onelitefeather:aonyx-bom`) — Basis-BOM (Aves, Xerus, Guira)
+- **manis-bom** (`net.onelitefeather:manis-bom`) — Game-BOM (extends aonyx-bom + Hibernate + CloudNet + Geometry)
+
+### OneLiteFeather Maven Repository
+```kotlin
+maven {
+    name = "OneLiteFeatherRepository"
+    url = uri("https://repo.onelitefeather.dev/onelitefeather")
+}
+```
+
+### Architektur-Pattern von ManisGame uebernehmen:
+1. BOMs fuer Dependency-Management
+2. `shared/` fuer plattform-agnostischen Code
+3. `extensions/` (oder `server/`) fuer Minestom-spezifischen Code
+4. CloudNet-Bundle fuer Deployment
+5. Test-Flag: `-Dminestom.inside-test=true`
+
 ## Anti-Patterns vermeiden
 
 - Keine God-Objects oder God-Systems

@@ -181,8 +181,24 @@ instanceManager.unregisterInstance(gameInstance);
 4. **Testen**: Jede Implementierung muss testbar sein
 5. **Java 25 Features nutzen**: Records, Sealed Classes, Pattern Matching, Virtual Threads
 
+## OneLiteFeather Minestom Libraries
+
+Nutze diese internen Libraries aus der OneLiteFeather-Orga:
+
+- **Aves** (`net.theevilreaper:aves:1.13.0`) — General Minestom server API
+- **Xerus** (`net.theevilreaper:xerus:1.10.0`) — MiniGame API fuer Minestom
+- **aonyx-bom** (`net.onelitefeather:aonyx-bom:0.7.0`) — BOM mit Aves + Xerus
+- **ManisGame** — Referenz-Projekt (gleiche Modul-Struktur, CloudNet, Java 25)
+
+Maven Repository: `https://repo.onelitefeather.dev/onelitefeather`
+
+Test-Flag fuer Minestom-Tests: `-Dminestom.inside-test=true`
+
 ## Wichtige Ressourcen
 - Minestom GitHub: github.com/Minestom/Minestom
 - Minestom Javadoc: javadoc.minestom.net
 - Minestom Website: minestom.net
 - Polar (World Format): github.com/hollow-cube/polar
+- ManisGame (Referenz): github.com/OneLiteFeatherNET/ManisGame
+- Aves: github.com/OneLiteFeatherNET/Aves
+- Xerus: github.com/OneLiteFeatherNET/Xerus
