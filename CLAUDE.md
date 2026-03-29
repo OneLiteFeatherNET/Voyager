@@ -4,7 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Voyager (internally "ElytraRace") is a Minecraft Paper plugin for an elytra racing minigame. It's a multi-module Java 21 project built with Gradle 9.4, targeting Paper API 1.21.5.
+Voyager (internally "ElytraRace") is a Minecraft elytra racing minigame (Mario Kart style — fly through cups of maps, each map has rings that give points). Multi-module Java project built with Gradle 9.4.
+
+**Migration in progress:** Game plugin is being migrated from Paper to Minestom. Setup plugin stays on Paper.
+
+### Key Decisions (approved)
+- **Java**: 25 (Minestom requirement)
+- **Game Server**: Minestom 2026.x as standalone server (own main(), no extensions)
+- **Setup Server**: Paper API 1.21.5 (unchanged)
+- **World Format**: Anvil (direct loading, compatible with Paper setup)
+- **Conversation API**: Complete rewrite (platform-agnostic)
+- **Deployment**: CloudNet v4 (primary), Cloud-Native/K8s (later)
+- **Commits**: Conventional Commits, no Co-Author
 
 ## Build Commands
 
@@ -72,3 +83,84 @@ docker compose -f docker/mariadb/compose.yml up -d
 - Interface + Impl pattern for services (e.g., `GameService` / `GameServiceImpl`, `CupService` / `CupServiceImpl`)
 - Builder pattern for DTOs (e.g., `MapDTOBuilder`, `CupDTOBuilder`)
 - Components are named `*Component`, systems are named `*System`
+- Commits follow Conventional Commits (feat:, fix:, docs:, refactor:, test:, chore:, ci:) — no Co-Author line
+
+## Agent Team Workflow (MANDATORY)
+
+**Every non-trivial task MUST involve the Agent Team.** Do not work alone — delegate to specialized agents and run them in parallel where possible.
+
+### Always-Active Agents
+
+For every significant task, these three agents MUST be involved:
+
+1. **`voyager-product-manager`** — Tracks the task as a ticket, defines acceptance criteria, validates the result matches requirements. **Can request creation of new agents or skills** by delegating to `voyager-agent-architect` or `voyager-skill-creator` — but MUST ask the user for approval first before any new agent/skill is created.
+2. **`voyager-tech-writer`** — Documents every change in `docs/` (German), updates migration status, writes ADRs for decisions
+3. **`voyager-scientist`** — Records the work in `docs/research/` (English, research paper style), documents methodology, findings, and rationale
+
+### Domain Agents (use as needed)
+
+Select the right specialist(s) based on the task:
+
+| Agent | When to use |
+|---|---|
+| `voyager-architect` | Architecture decisions, system design, module boundaries |
+| `voyager-minestom-expert` | Any Minestom API code, instance management, events |
+| `voyager-minecraft-expert` | Vanilla mechanics, elytra physics, protocol, collision |
+| `voyager-paper-expert` | Setup plugin, Paper API, MockBukkit tests |
+| `voyager-database-expert` | Hibernate entities, repositories, queries, schema changes |
+| `voyager-devops-expert` | CI/CD, GitHub Actions, CloudNet v4, Docker, deployment |
+| `voyager-researcher` | Deep research before decisions (Context7, WebSearch, WebFetch) |
+| `voyager-skill-creator` | Creating reusable slash-command skills |
+| `voyager-agent-architect` | Creating or improving agents |
+
+### Workflow Pattern
+
+```
+1. PLAN    — Product Manager defines scope + Architect designs approach
+2. RESEARCH — Researcher gathers current docs/info via Context7 + WebSearch
+3. IMPLEMENT — Domain experts write code in parallel where possible
+4. DOCUMENT — Tech Writer (DE) + Scientist (EN) document in parallel
+5. VALIDATE — Tests run, Product Manager checks acceptance criteria
+```
+
+### Skill Creation (Proactive)
+
+When you notice a task or workflow that is repeated or could be reused, **proactively create a Skill** for it using the `voyager-skill-creator` agent. Skills are stored in `.claude/skills/` and callable as slash-commands.
+
+**Trigger for skill creation:**
+- A workflow was executed more than once
+- A complex multi-step process could be simplified into one command
+- The user asks for something that could become a reusable pattern
+- A common validation, build, or deployment step is needed repeatedly
+
+**Always ask the user:** "Soll ich dafuer einen Skill erstellen?" — then create it if confirmed.
+
+### Human in the Loop (ALWAYS)
+
+The user MUST be consulted at every significant decision point. Never assume — always ask.
+
+**Mandatory checkpoints (always ask before proceeding):**
+- Before starting a new milestone or epic
+- Before choosing between alternative approaches (present options with pro/contra)
+- Before making architecture decisions (ADRs must be approved)
+- Before deleting, renaming, or restructuring existing code
+- Before creating PRs or commits that affect shared modules
+- When an implementation deviates from the original plan
+- When a blocker or unexpected issue is discovered
+- When test results reveal unexpected behavior
+
+**How to ask:**
+- Use `AskUserQuestion` with clear options and descriptions
+- Present trade-offs transparently (pro/contra for each option)
+- Give a recommendation but let the user decide
+- If the user says "mach einfach" / "just do it", proceed autonomously until the next major checkpoint
+
+### Rules
+
+- **Parallel execution**: Launch independent agents simultaneously, not sequentially
+- **Human in the Loop**: Ask the user at every decision point — do not assume (see checkpoints above)
+- **Research first**: Always check current docs (Context7) before writing code
+- **Document everything**: No implementation without matching documentation
+- **Test everything**: No code change without tests
+- **Skill creation**: Proactively suggest and create skills for repeated workflows
+- **Transparency**: Always explain what agents are doing and why
