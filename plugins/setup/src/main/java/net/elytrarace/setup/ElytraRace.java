@@ -6,6 +6,7 @@ import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.utils.PluginTranslationRegistry;
+import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.conversation.cup.CupPrompt;
 import net.elytrarace.setup.conversation.map.MapPrompt;
 import net.elytrarace.setup.conversation.portal.PortalPrompt;
@@ -63,10 +64,10 @@ public class ElytraRace extends JavaPlugin {
                 .create("elytrarace", Key.key("elytrarace", "language"), getDataFolder().toPath())
                 .loadLanguage()
                 .thenRun(() -> getLogger().info("Language has been loaded"));
-        CompletableFuture.runAsync(this::registerListeners);
-        this.registerCommands();
         this.cupService = CupService.create(getDataPath());
         this.mapService = MapService.create(getDataPath());
+        CompletableFuture.runAsync(this::registerListeners);
+        this.registerCommands();
         getLogger().info("ElytraRace has been enabled!");
     }
 
@@ -157,6 +158,10 @@ public class ElytraRace extends JavaPlugin {
                     }
                 })
         );
+        // Quick portal command: /elytrarace portal (auto-detects FAWE region, auto-indexes)
+        PortalCommand.register(this.commandManager, this.mapService);
+
+        // Legacy conversation-based portal creation: /elytrarace portal create
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("create")
