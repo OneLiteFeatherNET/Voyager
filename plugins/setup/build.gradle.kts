@@ -47,6 +47,10 @@ tasks {
     }
     runServer {
         minecraftVersion("1.21.5")
+        downloadPlugins {
+            modrinth("fastasyncworldedit", "mHtmqIig")
+            modrinth("voidgen", "2hsK4Z87")
+        }
     }
 }
 
