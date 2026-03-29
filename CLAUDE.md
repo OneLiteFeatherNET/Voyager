@@ -98,11 +98,12 @@ docker compose -f docker/mariadb/compose.yml up -d
 
 ### Always-Active Agents
 
-For every significant task, these three agents MUST be involved:
+For every significant task, these four agents MUST be involved:
 
 1. **`voyager-product-manager`** — Tracks the task as a ticket, defines acceptance criteria, validates the result matches requirements. **Can request creation of new agents or skills** by delegating to `voyager-agent-architect` or `voyager-skill-creator` — but MUST ask the user for approval first before any new agent/skill is created.
-2. **`voyager-tech-writer`** — Documents every change in `docs/` (German), updates migration status, writes ADRs for decisions
-3. **`voyager-scientist`** — Records the work in `docs/research/` (English, research paper style), documents methodology, findings, and rationale
+2. **`voyager-game-psychologist`** — Reviews every gameplay and design decision for player retention, flow state, and engagement. Ensures features are psychologically optimized.
+3. **`voyager-tech-writer`** — Documents every change in `docs/` (English), updates migration status, writes ADRs for decisions
+4. **`voyager-scientist`** — Records the work in `docs/research/` (English, research paper style), documents methodology, findings, and rationale
 
 ### Domain Agents (use as needed)
 
@@ -113,10 +114,19 @@ Select the right specialist(s) based on the task:
 | `voyager-architect` | Architecture decisions, system design, module boundaries |
 | `voyager-minestom-expert` | Any Minestom API code, instance management, events |
 | `voyager-minecraft-expert` | Vanilla mechanics, elytra physics, protocol, collision |
+| `voyager-game-designer` | Gameplay loops, balancing, ring/map/cup design, feedback timing |
+| `voyager-game-developer` | Physics code, ring collision, scoring, cup system, game loop |
 | `voyager-paper-expert` | Setup plugin, Paper API, MockBukkit tests |
 | `voyager-database-expert` | Hibernate entities, repositories, queries, schema changes |
 | `voyager-devops-expert` | CI/CD, GitHub Actions, CloudNet v4, Docker, deployment |
 | `voyager-researcher` | Deep research before decisions (Context7, WebSearch, WebFetch) |
+| `voyager-senior-backend` | Services, repositories, Java patterns, adapters |
+| `voyager-senior-ecs` | ECS components/systems, EntityManager, game loop, tick budgets |
+| `voyager-senior-testing` | JUnit 5 tests, coverage, test architecture |
+| `voyager-math-physics` | 3D geometry, collision algorithms, splines, formulas |
+| `voyager-java-performance` | JVM tuning, GC, profiling, benchmarks |
+| `voyager-junior-creative` | Creative solutions, prototypes, edge cases, wild ideas |
+| `voyager-junior-frontend` | Scoreboards, BossBars, actionbar, sounds, particles |
 | `voyager-skill-creator` | Creating reusable slash-command skills |
 | `voyager-agent-architect` | Creating or improving agents |
 
@@ -126,7 +136,7 @@ Select the right specialist(s) based on the task:
 1. PLAN    — Product Manager defines scope + Architect designs approach
 2. RESEARCH — Researcher gathers current docs/info via Context7 + WebSearch
 3. IMPLEMENT — Domain experts write code in parallel where possible
-4. DOCUMENT — Tech Writer (DE) + Scientist (EN) document in parallel
+4. DOCUMENT — Tech Writer + Scientist document in parallel (both English)
 5. VALIDATE — Tests run, Product Manager checks acceptance criteria
 ```
 
