@@ -25,7 +25,7 @@ public final class SplineGenerator {
 
     private static final double ALPHA = 0.5; // centripetal
     private static final double EPSILON = 1e-10;
-    private static final double BLOCKS_PER_PARTICLE = 1.5;
+    private static final double DEFAULT_PARTICLE_SPACING = 1.0;
     private static final int ARC_LENGTH_SAMPLES = 64;
 
     private SplineGenerator() {}
@@ -78,15 +78,29 @@ public final class SplineGenerator {
 
     /**
      * Samples the spline at approximately uniform arc-length intervals.
-     * One particle every ~1.5 blocks for consistent visual density.
+     * Uses the config's particleSpacing to determine density.
      *
      * @param segments compiled spline segments
+     * @param config   spline configuration (particleSpacing controls density)
      * @return sampled points for particle rendering
      */
-    public static List<Vector3D> sampleUniform(List<SplineSegment> segments) {
+    public static List<Vector3D> sampleUniform(List<SplineSegment> segments, SplineConfig config) {
+        return sampleUniform(segments, config.particleSpacing());
+    }
+
+    /**
+     * Samples the spline at approximately uniform arc-length intervals.
+     *
+     * @param segments       compiled spline segments
+     * @param particleSpacing blocks between particles (smaller = denser)
+     * @return sampled points for particle rendering
+     */
+    public static List<Vector3D> sampleUniform(List<SplineSegment> segments, double particleSpacing) {
         if (segments.isEmpty()) return List.of();
 
-        // Estimate total arc length
+        double spacing = Math.max(0.1, particleSpacing);
+
+        // Estimate total arc length and per-segment lengths
         double totalLength = 0;
         double[] segLengths = new double[segments.size()];
         for (int i = 0; i < segments.size(); i++) {
@@ -94,7 +108,7 @@ public final class SplineGenerator {
             totalLength += segLengths[i];
         }
 
-        int totalSamples = Math.max(2, (int) (totalLength / BLOCKS_PER_PARTICLE));
+        int totalSamples = Math.max(2, (int) (totalLength / spacing));
         var result = new ArrayList<Vector3D>(totalSamples);
 
         // Distribute samples proportional to segment arc length
@@ -108,6 +122,13 @@ public final class SplineGenerator {
         }
 
         return result;
+    }
+
+    /**
+     * Samples with default spacing.
+     */
+    public static List<Vector3D> sampleUniform(List<SplineSegment> segments) {
+        return sampleUniform(segments, DEFAULT_PARTICLE_SPACING);
     }
 
     // --- Convenience methods for backward compatibility ---
@@ -129,7 +150,7 @@ public final class SplineGenerator {
 
         if (config.visibility() == SplineVisibility.HIDDEN) return List.of();
 
-        return sampleUniform(compile(pathPoints));
+        return sampleUniform(compile(pathPoints), config);
     }
 
     /**

@@ -3,6 +3,7 @@ package net.elytrarace.setup.preview;
 import net.elytrarace.common.map.model.GuidePointDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.elytrarace.spline.PathPoint;
+import net.elytrarace.spline.SplineConfig;
 import net.elytrarace.spline.SplineGenerator;
 import org.apache.commons.geometry.euclidean.threed.Vector3D;
 import org.bukkit.Color;
@@ -20,9 +21,7 @@ import java.util.List;
  */
 public final class SplineRenderer {
 
-    private static final float SPLINE_PARTICLE_SIZE = 0.5f;
-    private static final float GUIDE_PARTICLE_SIZE = 0.8f;
-    private static final Color SPLINE_COLOR = Color.fromRGB(255, 140, 0); // orange
+    private static final float GUIDE_PARTICLE_SIZE = 1.0f;
     private static final Color GUIDE_COLOR = Color.fromRGB(0, 255, 200);  // teal
 
     private SplineRenderer() {}
@@ -31,25 +30,30 @@ public final class SplineRenderer {
      * Builds a merged PathPoint list from portals and guide points, then generates the spline.
      */
     public static List<Vector3D> generateSplinePoints(Collection<? extends PortalDTO> portals,
-                                                      List<GuidePointDTO> guidePoints) {
+                                                      List<GuidePointDTO> guidePoints,
+                                                      SplineConfig config) {
         var pathPoints = buildPathPoints(portals, guidePoints);
         if (pathPoints.size() < 2) return List.of();
-        return SplineGenerator.generate(pathPoints);
+        var segments = SplineGenerator.compile(pathPoints);
+        return SplineGenerator.sampleUniform(segments, config);
     }
 
     /**
-     * Overload for portal-only (no guide points).
+     * Overload with default builder config.
      */
-    public static List<Vector3D> generateSplinePoints(Collection<? extends PortalDTO> portals) {
-        return generateSplinePoints(portals, List.of());
+    public static List<Vector3D> generateSplinePoints(Collection<? extends PortalDTO> portals,
+                                                      List<GuidePointDTO> guidePoints) {
+        return generateSplinePoints(portals, guidePoints, SplineConfig.BUILDER);
     }
 
     /**
-     * Renders the spline path as orange particles.
+     * Renders the spline path using the config's color and size.
      */
-    public static void renderSpline(Player player, List<Vector3D> splinePoints) {
+    public static void renderSpline(Player player, List<Vector3D> splinePoints, SplineConfig config) {
         if (splinePoints.isEmpty()) return;
-        var dust = new Particle.DustOptions(SPLINE_COLOR, SPLINE_PARTICLE_SIZE);
+        var dust = new Particle.DustOptions(
+                Color.fromRGB(config.colorR(), config.colorG(), config.colorB()),
+                config.particleSize());
         for (var point : splinePoints) {
             player.spawnParticle(Particle.DUST,
                     point.getX(), point.getY(), point.getZ(),
@@ -58,7 +62,7 @@ public final class SplineRenderer {
     }
 
     /**
-     * Renders guide point markers as teal particles (distinct from the spline line).
+     * Renders guide point markers as teal particles.
      */
     public static void renderGuidePoints(Player player, List<GuidePointDTO> guidePoints) {
         if (guidePoints.isEmpty()) return;
@@ -76,17 +80,12 @@ public final class SplineRenderer {
     static List<PathPoint> buildPathPoints(Collection<? extends PortalDTO> portals,
                                            List<GuidePointDTO> guidePoints) {
         var points = new ArrayList<PathPoint>();
-
-        // Add portal centers
         points.addAll(SplineGenerator.portalsToPathPoints(portals));
-
-        // Add guide points
         for (var guide : guidePoints) {
             points.add(new PathPoint.GuidePoint(
                     Vector3D.of(guide.x(), guide.y(), guide.z()),
                     guide.orderIndex()));
         }
-
         points.sort(Comparator.comparingInt(PathPoint::orderIndex));
         return points;
     }

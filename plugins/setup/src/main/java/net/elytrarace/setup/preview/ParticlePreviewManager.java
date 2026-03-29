@@ -3,19 +3,20 @@ package net.elytrarace.setup.preview;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.setup.guide.GuidePointStore;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.spline.SplineConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages per-player portal particle preview and spline path visualization.
- * Runs a repeating task that renders portal outlines, the spline ideal line,
- * and guide point markers.
+ * Each player can have their own spline config (color, size, density).
  */
 public final class ParticlePreviewManager {
 
@@ -23,6 +24,7 @@ public final class ParticlePreviewManager {
 
     private final Set<UUID> portalPreviewPlayers = ConcurrentHashMap.newKeySet();
     private final Set<UUID> splinePreviewPlayers = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, SplineConfig> playerConfigs = new ConcurrentHashMap<>();
     private final MapService mapService;
     private final GuidePointStore guideStore;
     private BukkitTask task;
@@ -43,6 +45,7 @@ public final class ParticlePreviewManager {
         }
         portalPreviewPlayers.clear();
         splinePreviewPlayers.clear();
+        playerConfigs.clear();
     }
 
     public boolean togglePortals(UUID playerId) {
@@ -57,9 +60,24 @@ public final class ParticlePreviewManager {
         return true;
     }
 
+    /**
+     * Gets the current spline config for a player (defaults to BUILDER preset).
+     */
+    public SplineConfig getConfig(UUID playerId) {
+        return playerConfigs.getOrDefault(playerId, SplineConfig.BUILDER);
+    }
+
+    /**
+     * Sets a player's spline config.
+     */
+    public void setConfig(UUID playerId, SplineConfig config) {
+        playerConfigs.put(playerId, config);
+    }
+
     public void remove(UUID playerId) {
         portalPreviewPlayers.remove(playerId);
         splinePreviewPlayers.remove(playerId);
+        playerConfigs.remove(playerId);
     }
 
     private void renderAll() {
@@ -83,18 +101,17 @@ public final class ParticlePreviewManager {
             if (mapOpt.isEmpty()) continue;
             var map = mapOpt.get();
 
-            // Render portal outlines
             if (portalPreviewPlayers.contains(playerId)) {
                 for (var portal : map.portals()) {
                     ParticleRenderer.renderPortal(player, portal.locations(), portal.index());
                 }
             }
 
-            // Render spline ideal line + guide point markers
             if (splinePreviewPlayers.contains(playerId)) {
+                var config = getConfig(playerId);
                 var guidePoints = guideStore.getGuidePoints(map.world());
-                var splinePoints = SplineRenderer.generateSplinePoints(map.portals(), guidePoints);
-                SplineRenderer.renderSpline(player, splinePoints);
+                var splinePoints = SplineRenderer.generateSplinePoints(map.portals(), guidePoints, config);
+                SplineRenderer.renderSpline(player, splinePoints, config);
                 SplineRenderer.renderGuidePoints(player, guidePoints);
             }
         }
