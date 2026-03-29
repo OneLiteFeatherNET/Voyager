@@ -1,0 +1,24 @@
+{
+  "name": "ElytraRace",
+  "runtime": "jvm",
+  "javaCommand": "java",
+  "minServiceCount": 0,
+  "maintenance": false,
+  "autoDeleteOnStop": true,
+  "startPort": 44955,
+  "processConfiguration": {
+    "environment": "MINESTOM",
+    "maxHeapMemorySize": 512,
+    "jvmOptions": [
+      "-XX:+UseZGC",
+      "-XX:+ZGenerational"
+    ]
+  },
+  "templates": [
+    {
+      "prefix": "ElytraRace",
+      "name": "default",
+      "storage": "local"
+    }
+  ]
+}

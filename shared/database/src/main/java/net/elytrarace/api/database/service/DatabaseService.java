@@ -1,6 +1,7 @@
 package net.elytrarace.api.database.service;
 
 import net.elytrarace.api.database.repository.ElytraPlayerRepository;
+import net.elytrarace.api.database.repository.GameResultRepository;
 import org.jetbrains.annotations.Contract;
 
 import java.nio.file.Path;
@@ -19,6 +20,11 @@ public sealed interface DatabaseService permits DatabaseServiceImpl {
      * @return The ElytraPlayerRepository if it was initialized
      */
     Optional<ElytraPlayerRepository> getElytraPlayerRepository();
+
+    /**
+     * @return The GameResultRepository if it was initialized
+     */
+    Optional<GameResultRepository> getGameResultRepository();
 
     @Contract("_ -> new")
     static DatabaseService create(Path rootPath) {

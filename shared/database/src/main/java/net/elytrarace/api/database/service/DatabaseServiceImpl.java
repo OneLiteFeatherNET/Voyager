@@ -1,6 +1,7 @@
 package net.elytrarace.api.database.service;
 
 import net.elytrarace.api.database.repository.ElytraPlayerRepository;
+import net.elytrarace.api.database.repository.GameResultRepository;
 import net.elytrarace.common.utils.ThreadHelper;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -13,6 +14,7 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
 
     private final Path rootPath;
     private ElytraPlayerRepository elytraPlayerRepository;
+    private GameResultRepository gameResultRepository;
 
     DatabaseServiceImpl(@NotNull Path rootPath) {
         this.rootPath = rootPath;
@@ -22,6 +24,7 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     public void init() {
         SessionFactory sessionFactory = syncThreadForServiceLoader(this::createSessionFactory);
         this.elytraPlayerRepository = ElytraPlayerRepository.createInstance(sessionFactory);
+        this.gameResultRepository = GameResultRepository.createInstance(sessionFactory);
     }
 
     private SessionFactory createSessionFactory() {
@@ -31,5 +34,10 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     @Override
     public Optional<ElytraPlayerRepository> getElytraPlayerRepository() {
         return Optional.ofNullable(this.elytraPlayerRepository);
+    }
+
+    @Override
+    public Optional<GameResultRepository> getGameResultRepository() {
+        return Optional.ofNullable(this.gameResultRepository);
     }
 }
