@@ -1,10 +1,9 @@
 package net.elytrarace.server.phase;
 
-import net.elytrarace.api.phase.EventRegistrar;
-import net.elytrarace.api.phase.PhaseScheduler;
-import net.elytrarace.api.phase.TickDirection;
-import net.elytrarace.api.phase.TimedPhase;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.utils.time.TimeUnit;
+import net.theevilreaper.xerus.api.phase.TickDirection;
+import net.theevilreaper.xerus.api.phase.TimedPhase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,14 +21,15 @@ public final class MinestomEndPhase extends TimedPhase {
 
     private final int endTicks;
 
-    public MinestomEndPhase(PhaseScheduler scheduler, EventRegistrar eventRegistrar) {
-        this(scheduler, eventRegistrar, DEFAULT_END_TICKS);
+    public MinestomEndPhase() {
+        this(DEFAULT_END_TICKS);
     }
 
-    public MinestomEndPhase(PhaseScheduler scheduler, EventRegistrar eventRegistrar, int endTicks) {
-        super("End", scheduler, eventRegistrar, 20, false);
+    public MinestomEndPhase(int endTicks) {
+        super("end", TimeUnit.SERVER_TICK, 20);
         this.endTicks = endTicks;
         setEndTicks(0);
+        setCurrentTicks(endTicks);
         setTickDirection(TickDirection.DOWN);
     }
 

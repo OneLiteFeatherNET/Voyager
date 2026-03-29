@@ -1,10 +1,8 @@
 package net.elytrarace.server.phase;
 
-import net.elytrarace.api.phase.EventRegistrar;
-import net.elytrarace.api.phase.LinearPhaseSeries;
-import net.elytrarace.api.phase.Phase;
-import net.elytrarace.api.phase.PhaseScheduler;
 import net.elytrarace.common.ecs.EntityManager;
+import net.theevilreaper.xerus.api.phase.LinearPhaseSeries;
+import net.theevilreaper.xerus.api.phase.Phase;
 
 import java.util.List;
 
@@ -25,19 +23,13 @@ public final class GamePhaseFactory {
      * Creates a linear phase series containing lobby, game, and end phases
      * with default timing configurations.
      *
-     * @param scheduler    the platform scheduler for repeating tasks
-     * @param registrar    the platform event registrar
      * @param entityManager the ECS entity manager driving the game loop
      * @return a ready-to-start phase series
      */
-    public static LinearPhaseSeries<Phase> createGamePhases(
-            PhaseScheduler scheduler,
-            EventRegistrar registrar,
-            EntityManager entityManager
-    ) {
-        var lobby = new MinestomLobbyPhase(scheduler, registrar);
-        var game = new MinestomGamePhase(scheduler, registrar, entityManager);
-        var end = new MinestomEndPhase(scheduler, registrar);
-        return new LinearPhaseSeries<>(List.of(lobby, game, end));
+    public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager) {
+        var lobby = new MinestomLobbyPhase();
+        var game = new MinestomGamePhase(entityManager);
+        var end = new MinestomEndPhase();
+        return new LinearPhaseSeries<>("game-phases", List.of(lobby, game, end));
     }
 }

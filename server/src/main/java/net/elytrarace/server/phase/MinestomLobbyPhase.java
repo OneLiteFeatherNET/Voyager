@@ -1,9 +1,8 @@
 package net.elytrarace.server.phase;
 
-import net.elytrarace.api.phase.EventRegistrar;
-import net.elytrarace.api.phase.PhaseScheduler;
-import net.elytrarace.api.phase.TickDirection;
-import net.elytrarace.api.phase.TimedPhase;
+import net.minestom.server.utils.time.TimeUnit;
+import net.theevilreaper.xerus.api.phase.TickDirection;
+import net.theevilreaper.xerus.api.phase.TimedPhase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,14 +20,15 @@ public final class MinestomLobbyPhase extends TimedPhase {
 
     private final int lobbyTicks;
 
-    public MinestomLobbyPhase(PhaseScheduler scheduler, EventRegistrar eventRegistrar) {
-        this(scheduler, eventRegistrar, DEFAULT_LOBBY_TICKS);
+    public MinestomLobbyPhase() {
+        this(DEFAULT_LOBBY_TICKS);
     }
 
-    public MinestomLobbyPhase(PhaseScheduler scheduler, EventRegistrar eventRegistrar, int lobbyTicks) {
-        super("Lobby", scheduler, eventRegistrar, 20, false);
+    public MinestomLobbyPhase(int lobbyTicks) {
+        super("lobby", TimeUnit.SERVER_TICK, 20);
         this.lobbyTicks = lobbyTicks;
         setEndTicks(0);
+        setCurrentTicks(lobbyTicks);
         setTickDirection(TickDirection.DOWN);
     }
 

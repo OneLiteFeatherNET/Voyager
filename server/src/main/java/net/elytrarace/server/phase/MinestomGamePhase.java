@@ -1,9 +1,8 @@
 package net.elytrarace.server.phase;
 
-import net.elytrarace.api.phase.EventRegistrar;
-import net.elytrarace.api.phase.PhaseScheduler;
-import net.elytrarace.api.phase.TickingPhase;
 import net.elytrarace.common.ecs.EntityManager;
+import net.minestom.server.utils.time.TimeUnit;
+import net.theevilreaper.xerus.api.phase.TickingPhase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +24,8 @@ public final class MinestomGamePhase extends TickingPhase {
 
     private final EntityManager entityManager;
 
-    public MinestomGamePhase(PhaseScheduler scheduler, EventRegistrar eventRegistrar, EntityManager entityManager) {
-        super("Game", scheduler, eventRegistrar, 1, false);
+    public MinestomGamePhase(EntityManager entityManager) {
+        super("game", TimeUnit.SERVER_TICK, 1);
         this.entityManager = entityManager;
     }
 
