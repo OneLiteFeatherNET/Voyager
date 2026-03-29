@@ -5,6 +5,7 @@ import net.elytrarace.common.map.model.GuidePointDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.elytrarace.setup.guide.GuidePointStore;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -131,6 +132,56 @@ public class GuideCommand {
     }
 
     /**
+     * Place a guide point explicitly between two specified portal indices.
+     * Usage: /elytrarace guide between <portalA> <portalB>
+     */
+    public void handlePlaceBetween(CommandContext<PlayerSource> context) {
+        var player = context.sender().source();
+
+        if (SetupGuard.getSetupHolder(player).isEmpty()) {
+            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            return;
+        }
+
+        var mapOpt = SetupGuard.getMapForWorld(mapService, player.getWorld());
+        if (mapOpt.isEmpty()) {
+            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            return;
+        }
+        var map = mapOpt.get();
+
+        int portalA = context.get("portalA");
+        int portalB = context.get("portalB");
+
+        // Validate both portals exist
+        var hasA = map.portals().stream().anyMatch(p -> p.index() == portalA);
+        var hasB = map.portals().stream().anyMatch(p -> p.index() == portalB);
+        if (!hasA || !hasB) {
+            player.sendMessage(Component.translatable("error.guide.portal_not_found")
+                    .arguments(Component.text(hasA ? portalB : portalA)));
+            return;
+        }
+
+        // Ensure A < B
+        int before = Math.min(portalA, portalB);
+        int after = Math.max(portalA, portalB);
+
+        var loc = player.getLocation();
+        var worldName = player.getWorld().getName();
+        int orderIndex = guideStore.nextOrderIndex(worldName, before, after);
+
+        var guidePoint = new GuidePointDTO(orderIndex, loc.getX(), loc.getY(), loc.getZ());
+        guideStore.addGuidePoint(worldName, guidePoint);
+
+        player.sendActionBar(Component.translatable("guide.placed")
+                .arguments(
+                        Component.text(orderIndex),
+                        Component.text(before),
+                        Component.text(after)
+                ));
+    }
+
+    /**
      * Delete a guide point by orderIndex.
      */
     public void handleDelete(CommandContext<PlayerSource> context) {
@@ -246,6 +297,16 @@ public class GuideCommand {
                 .literal("guide")
                 .senderType(PlayerSource.class)
                 .handler(cmd::handlePlace)
+        );
+
+        // /elytrarace guide between <portalA> <portalB> — place between specific portals
+        commandManager.command(commandManager.commandBuilder("elytrarace")
+                .literal("guide")
+                .literal("between")
+                .required("portalA", integerParser(1), SetupSuggestions.portalIndices(mapService))
+                .required("portalB", integerParser(1), SetupSuggestions.portalIndices(mapService))
+                .senderType(PlayerSource.class)
+                .handler(cmd::handlePlaceBetween)
         );
 
         // /elytrarace guide delete <orderIndex>
