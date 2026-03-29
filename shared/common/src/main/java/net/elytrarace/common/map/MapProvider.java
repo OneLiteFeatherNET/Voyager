@@ -36,7 +36,12 @@ final class MapProvider {
         this.defaultMaps = defaultMaps;
 
         if (!Files.exists(this.mapPath)) {
-            throw new IllegalStateException("The maps folder does not exist. Please name the cup folder " + MAPS_FOLDER);
+            try {
+                Files.createDirectories(this.mapPath);
+                MAP_LOGGER.info("Created maps folder at {}", this.mapPath);
+            } catch (java.io.IOException e) {
+                throw new IllegalStateException("Could not create maps folder at " + this.mapPath, e);
+            }
         }
         loadMaps();
     }
