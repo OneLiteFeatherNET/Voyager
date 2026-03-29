@@ -1,5 +1,7 @@
 package net.elytrarace.setup.conversation.portal;
 
+import net.elytrarace.setup.platform.BukkitConversationOwner;
+
 import net.elytrarace.api.conversation.BooleanPrompt;
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
@@ -29,7 +31,7 @@ public class PortalPrompt extends BooleanPrompt {
         if (!(who instanceof SetupHolder)) {
             return END_OF_CONVERSATION;
         }
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin == null) {
             who.sendMessage(Component.translatable("error.plugin"));
             return END_OF_CONVERSATION;

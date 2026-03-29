@@ -1,11 +1,13 @@
 package net.elytrarace.api.conversation;
 
-import org.bukkit.Bukkit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
-import java.util.logging.Level;
 
 public class ConversationTracker {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConversationTracker.class);
     private LinkedList<Conversation> conversationQueue = new LinkedList<>();
 
     public synchronized boolean beginConversation(Conversation conversation) {
@@ -35,14 +37,13 @@ public class ConversationTracker {
     }
 
     public synchronized void abandonAllConversations() {
-
         LinkedList<Conversation> oldQueue = this.conversationQueue;
-        this.conversationQueue = new LinkedList<Conversation>();
+        this.conversationQueue = new LinkedList<>();
         for (Conversation conversation : oldQueue) {
             try {
                 conversation.abandon(new ConversationAbandonedEvent(conversation, new ManuallyAbandonedConversationCanceller()));
             } catch (Throwable t) {
-                Bukkit.getLogger().log(Level.SEVERE, "Unexpected exception while abandoning a conversation", t);
+                LOGGER.error("Unexpected exception while abandoning a conversation", t);
             }
         }
     }
@@ -53,10 +54,9 @@ public class ConversationTracker {
             try {
                 conversation.acceptInput(input);
             } catch (Throwable t) {
-                conversation.getContext().getPlugin().getLogger().log(Level.WARNING,
-                        String.format("Plugin %s generated an exception whilst handling conversation input",
-                                conversation.getContext().getPlugin().getDescription().getFullName()
-                        ), t);
+                var owner = conversation.getContext().getOwner();
+                String ownerName = owner != null ? owner.getName() : "unknown";
+                LOGGER.warn("Owner {} generated an exception whilst handling conversation input", ownerName, t);
             }
         }
     }

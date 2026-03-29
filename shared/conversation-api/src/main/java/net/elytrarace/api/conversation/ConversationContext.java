@@ -1,6 +1,5 @@
 package net.elytrarace.api.conversation;
 
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,34 +8,34 @@ import java.util.Map;
 /**
  * A ConversationContext provides continuity between nodes in the prompt graph
  * by giving the developer access to the subject of the conversation and a
- * generic map for storing values that are shared between all {@link org.bukkit.conversations.Prompt}
+ * generic map for storing values that are shared between all {@link Prompt}
  * invocations.
  */
 public class ConversationContext {
     private final Conversable forWhom;
     private final Map<Object, Object> sessionData;
-    private final Plugin plugin;
+    private final ConversationOwner owner;
 
     /**
-     * @param plugin The owning plugin.
+     * @param owner The owning conversation owner.
      * @param forWhom The subject of the conversation.
      * @param initialSessionData Any initial values to put in the sessionData
      *     map.
      */
-    public ConversationContext(@Nullable Plugin plugin, @NotNull Conversable forWhom, @NotNull Map<Object, Object> initialSessionData) {
-        this.plugin = plugin;
+    public ConversationContext(@Nullable ConversationOwner owner, @NotNull Conversable forWhom, @NotNull Map<Object, Object> initialSessionData) {
+        this.owner = owner;
         this.forWhom = forWhom;
         this.sessionData = initialSessionData;
     }
 
     /**
-     * Gets the plugin that owns this conversation.
+     * Gets the owner of this conversation.
      *
-     * @return The owning plugin.
+     * @return The owning conversation owner.
      */
     @Nullable
-    public Plugin getPlugin() {
-        return plugin;
+    public ConversationOwner getOwner() {
+        return owner;
     }
 
     /**
@@ -62,7 +61,7 @@ public class ConversationContext {
     }
 
     /**
-     * Gets session data shared between all {@link org.bukkit.conversations.Prompt} invocations. Use
+     * Gets session data shared between all {@link Prompt} invocations. Use
      * this as a way to pass data through each Prompt as the conversation
      * develops.
      *

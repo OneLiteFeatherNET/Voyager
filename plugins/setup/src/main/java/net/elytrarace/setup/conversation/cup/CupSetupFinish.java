@@ -1,5 +1,7 @@
 package net.elytrarace.setup.conversation.cup;
 
+import net.elytrarace.setup.platform.BukkitConversationOwner;
+
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.MessagePrompt;
 import net.elytrarace.api.conversation.Prompt;
@@ -27,7 +29,7 @@ public class CupSetupFinish extends MessagePrompt {
         if (name == null || displayname == null) {
             return END_OF_CONVERSATION;
         }
-        Plugin plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin instanceof ElytraRace elytraRace) {
             elytraRace.getCupService().addCup(CupDTOBuilder.create()
                     .name(name)

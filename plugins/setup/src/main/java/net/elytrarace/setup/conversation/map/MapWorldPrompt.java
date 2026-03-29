@@ -1,5 +1,7 @@
 package net.elytrarace.setup.conversation.map;
 
+import net.elytrarace.setup.platform.BukkitConversationOwner;
+
 import net.elytrarace.api.conversation.Conversable;
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
@@ -28,11 +30,11 @@ public class MapWorldPrompt extends StringPrompt {
         if (input.isEmpty()) {
             return this;
         }
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin == null) {
             return this;
         }
-        var world = context.getPlugin().getServer().getWorld(input);
+        var world = plugin.getServer().getWorld(input);
         Conversable forWhom = context.getForWhom();
         if (world == null) {
             forWhom.sendMessage(Component.translatable("error.map.world.not_found"));
@@ -49,7 +51,7 @@ public class MapWorldPrompt extends StringPrompt {
 
     @Override
     public Collection<String> suggestions(@NotNull ConversationContext context) {
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin == null) {
             return super.suggestions(context);
         }

@@ -12,12 +12,19 @@ import java.util.Collection;
 public interface Conversable extends Audience {
 
     /**
+     * Returns whether this conversable represents a player.
+     *
+     * @return True if this is a player
+     */
+    boolean isPlayer();
+
+    /**
      * Tests to see of a Conversable object is actively engaged in a
      * conversation.
      *
      * @return True if a conversation is in progress
      */
-    public boolean isConversing();
+    boolean isConversing();
 
     /**
      * Accepts input into the active conversation. If no conversation is in

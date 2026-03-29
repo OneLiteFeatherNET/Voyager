@@ -1,5 +1,7 @@
 package net.elytrarace.setup.conversation.map;
 
+import net.elytrarace.setup.platform.BukkitConversationOwner;
+
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.MessagePrompt;
 import net.elytrarace.api.conversation.Prompt;
@@ -26,7 +28,7 @@ public class MapSetupFinish extends MessagePrompt {
 
     @Override
     protected @Nullable Prompt getNextPrompt(@NotNull ConversationContext context) {
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin == null) {
             return END_OF_CONVERSATION;
         }

@@ -1,6 +1,7 @@
 package net.elytrarace.setup;
 
 import net.elytrarace.api.conversation.ConversationFactory;
+import net.elytrarace.setup.platform.BukkitConversationOwner;
 import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
@@ -123,7 +124,7 @@ public class ElytraRace extends JavaPlugin {
                                 .filter(SetupHolder.class::isInstance)
                                 .map(SetupHolder.class::cast)
                                 .ifPresent(setupHolder -> {
-                                    new ConversationFactory(this)
+                                    new ConversationFactory(new BukkitConversationOwner(this))
                                             .withFirstPrompt(new CupPrompt())
                                             .withPrefix(context1 -> Component.translatable("plugin.prefix"))
                                             .buildConversation(setupHolder)
@@ -146,7 +147,7 @@ public class ElytraRace extends JavaPlugin {
                                 .filter(SetupHolder.class::isInstance)
                                 .map(SetupHolder.class::cast)
                                 .ifPresent(setupHolder -> {
-                                    new ConversationFactory(this)
+                                    new ConversationFactory(new BukkitConversationOwner(this))
                                             .withFirstPrompt(new MapPrompt())
                                             .withPrefix(context1 -> Component.translatable("plugin.prefix"))
                                             .buildConversation(setupHolder)
@@ -169,7 +170,7 @@ public class ElytraRace extends JavaPlugin {
                                 .filter(SetupHolder.class::isInstance)
                                 .map(SetupHolder.class::cast)
                                 .ifPresent(setupHolder -> {
-                                    new ConversationFactory(this)
+                                    new ConversationFactory(new BukkitConversationOwner(this))
                                             .withFirstPrompt(new PortalPrompt())
                                             .withPrefix(context1 -> Component.translatable("plugin.prefix"))
                                             .buildConversation(setupHolder)

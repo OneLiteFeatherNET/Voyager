@@ -43,6 +43,11 @@ public class SetupHolder implements Conversable {
     }
 
     @Override
+    public boolean isPlayer() {
+        return true;
+    }
+
+    @Override
     public boolean isConversing() {
         return this.conversationTracker.isConversing();
     }
