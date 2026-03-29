@@ -16,6 +16,7 @@ import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
 
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Handles {@code /elytrarace portal save} — saves the edited FAWE region back
@@ -87,9 +88,9 @@ public class PortalSaveCommand {
         portals.add(updatedPortal);
         var newMap = MapDTOBuilder.create().from(map).portals(portals).build();
 
-        // Push undo with the original portal (before edit)
+        // Push undo: removes new portal + re-adds original
         undoManager.push(player.getUniqueId(),
-                new UndoOperation.DeleteOperation(map.uuid(), editCtx.originalPortal()));
+                new UndoOperation.EditOperation(map.uuid(), editCtx.originalPortal(), updatedPortal));
 
         // Save and clear editing state
         mapService.updateMap(newMap).thenCompose(success -> {
@@ -100,7 +101,7 @@ public class PortalSaveCommand {
             }
             player.sendMessage(Component.translatable("error.portal.quick.save_failed")
                     .arguments(map.displayName(), Component.text(editCtx.portalIndex())));
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
 
         editingContextManager.clearContext(player.getUniqueId());

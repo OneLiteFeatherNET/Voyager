@@ -12,6 +12,7 @@ import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
 
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 import static org.incendo.cloud.parser.standard.StringParser.stringParser;
 
@@ -56,7 +57,7 @@ public class MapDeleteCommand {
             if (!removed) {
                 player.sendMessage(Component.translatable("error.map.delete.failed")
                         .arguments(Component.text(name)));
-                return null;
+                return CompletableFuture.completedFuture(null);
             }
             return mapService.saveMaps();
         }).thenRun(() -> {

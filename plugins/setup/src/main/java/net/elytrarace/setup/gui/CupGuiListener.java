@@ -14,6 +14,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Handles click events for CupListGui and CupEditorGui.
@@ -107,7 +108,7 @@ public class CupGuiListener implements Listener {
                         .arguments(map.displayName(), cup.displayName()));
                 return cupService.saveCups();
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
         }).thenRun(() ->
             // Refresh the GUI
             Bukkit.getScheduler().runTask(plugin, () -> {
@@ -129,7 +130,7 @@ public class CupGuiListener implements Listener {
                         .arguments(map.displayName(), cup.displayName()));
                 return cupService.saveCups();
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
         }).thenRun(() ->
             // Refresh the GUI
             Bukkit.getScheduler().runTask(plugin, () -> {

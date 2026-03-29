@@ -11,6 +11,7 @@ import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -80,7 +81,7 @@ public class CupRenameCommand {
             if (!removed) {
                 player.sendMessage(Component.translatable("error.cup.rename.failed")
                         .arguments(Component.text(oldName)));
-                return null;
+                return CompletableFuture.completedFuture(null);
             }
             return cupService.addCup(renamedCup);
         }).thenCompose(added -> {
@@ -89,7 +90,7 @@ public class CupRenameCommand {
                         .arguments(Component.text(oldName), newDisplayName));
                 return cupService.saveCups();
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
     }
 

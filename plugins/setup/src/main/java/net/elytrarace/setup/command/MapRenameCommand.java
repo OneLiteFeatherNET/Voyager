@@ -11,6 +11,7 @@ import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -86,7 +87,7 @@ public class MapRenameCommand {
             if (!removed) {
                 player.sendMessage(Component.translatable("error.map.rename.failed")
                         .arguments(Component.text(oldName)));
-                return null;
+                return CompletableFuture.completedFuture(null);
             }
             return mapService.addMap(renamedMap);
         }).thenCompose(added -> {
@@ -95,7 +96,7 @@ public class MapRenameCommand {
                         .arguments(Component.text(oldName), newDisplayName));
                 return mapService.saveMaps();
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
     }
 

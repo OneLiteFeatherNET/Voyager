@@ -12,6 +12,7 @@ import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
 
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 import static org.incendo.cloud.parser.standard.StringParser.greedyStringParser;
@@ -73,7 +74,7 @@ public class CupCreateCommand {
             }
             player.sendMessage(Component.translatable("setup.cup.failed")
                     .arguments(displayName));
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
     }
 

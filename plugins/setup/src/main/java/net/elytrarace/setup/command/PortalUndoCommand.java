@@ -12,6 +12,7 @@ import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
 
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Handles {@code /elytrarace portal undo}.
@@ -70,6 +71,13 @@ public class PortalUndoCommand {
                 player.sendActionBar(Component.translatable("success.portal.undo.restored")
                         .arguments(Component.text(delete.portal().index())));
             }
+            case UndoOperation.EditOperation edit -> {
+                // Undo an edit: remove the new version, re-add the old one
+                portals.removeIf(p -> p.index() == edit.newPortal().index());
+                portals.add(edit.oldPortal());
+                player.sendActionBar(Component.translatable("success.portal.undo.restored")
+                        .arguments(Component.text(edit.oldPortal().index())));
+            }
         }
 
         var newMap = MapDTOBuilder.create().from(map).portals(portals).build();
@@ -77,7 +85,7 @@ public class PortalUndoCommand {
             if (success) {
                 return mapService.saveMaps();
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
     }
 

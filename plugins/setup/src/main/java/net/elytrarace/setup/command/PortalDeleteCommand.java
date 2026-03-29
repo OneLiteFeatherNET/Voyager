@@ -14,6 +14,7 @@ import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
 
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 
 import static org.incendo.cloud.parser.standard.IntegerParser.integerParser;
 
@@ -76,7 +77,7 @@ public class PortalDeleteCommand {
             }
             player.sendMessage(Component.translatable("error.portal.quick.save_failed")
                     .arguments(map.displayName(), Component.text(index)));
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
     }
 

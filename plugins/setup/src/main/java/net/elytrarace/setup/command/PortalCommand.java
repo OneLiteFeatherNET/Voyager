@@ -13,8 +13,10 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Handles {@code /elytrarace portal} — saves the player's current FAWE PolyhedralRegion
@@ -108,7 +110,7 @@ public class PortalCommand {
             }
             player.sendMessage(Component.translatable("error.portal.quick.save_failed")
                     .arguments(map.displayName(), Component.text(nextIndex)));
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
 
         // 9. Clear FAWE selection for next ring

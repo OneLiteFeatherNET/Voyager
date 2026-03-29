@@ -16,6 +16,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Handles click events in the Portal Manager GUI.
@@ -99,7 +100,7 @@ public class PortalManagerListener implements Listener {
                         .arguments(Component.text(portal.index()), Component.text(portals.size())));
                 return mapService.saveMaps();
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
 
         player.closeInventory();

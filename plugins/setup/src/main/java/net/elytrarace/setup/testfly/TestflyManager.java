@@ -68,7 +68,7 @@ public final class TestflyManager {
             var player = Bukkit.getPlayer(playerId);
 
             if (player == null || !player.isOnline()) {
-                sessions.remove(playerId);
+                endFlight(playerId); // restores inventory
                 continue;
             }
 

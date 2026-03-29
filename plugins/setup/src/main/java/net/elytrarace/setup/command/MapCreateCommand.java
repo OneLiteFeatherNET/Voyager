@@ -15,6 +15,7 @@ import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
 import net.elytrarace.setup.util.SetupSuggestions;
+import java.util.concurrent.CompletableFuture;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -117,14 +118,14 @@ public class MapCreateCommand {
                     }
                     player.sendMessage(Component.translatable("setup.map.failed")
                             .arguments(displayName));
-                    return null;
+                    return CompletableFuture.completedFuture(null);
                 })
                 .thenCompose(v -> cupService.updateCup(updatedCup))
                 .thenCompose(success -> {
                     if (success) {
                         return cupService.saveCups();
                     }
-                    return null;
+                    return CompletableFuture.completedFuture(null);
                 })
                 .thenAccept(v -> {
                     // Mark world as setup
