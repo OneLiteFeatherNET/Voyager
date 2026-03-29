@@ -9,6 +9,7 @@ import net.elytrarace.setup.command.CupCreateCommand;
 import net.elytrarace.setup.command.CupListCommand;
 import net.elytrarace.setup.command.EditingContextManager;
 import net.elytrarace.setup.command.MapCreateCommand;
+import net.elytrarace.setup.command.MapTeleportCommand;
 import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
 import net.elytrarace.setup.command.PortalEditCommand;
@@ -149,6 +150,8 @@ public class ElytraRace extends JavaPlugin {
         CupCreateCommand.register(this.commandManager, this.cupService);
         // Map create: /elytrarace map create <cup> <name> <displayName>
         MapCreateCommand.register(this.commandManager, this.mapService, this.cupService);
+        // Map teleport: /elytrarace map tp <name>
+        MapTeleportCommand.register(this.commandManager, this.mapService);
         // Quick portal command: /elytrarace portal (auto-detects FAWE region, auto-indexes)
         PortalCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal delete: /elytrarace portal delete <index>
