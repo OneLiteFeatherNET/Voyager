@@ -9,6 +9,7 @@ import net.elytrarace.setup.command.CupCreateCommand;
 import net.elytrarace.setup.command.CupListCommand;
 import net.elytrarace.setup.command.CupRenameCommand;
 import net.elytrarace.setup.command.EditingContextManager;
+import net.elytrarace.setup.command.HelpCommand;
 import net.elytrarace.setup.command.MapDeleteCommand;
 import net.elytrarace.setup.command.GuideCommand;
 import net.elytrarace.common.guide.GuidePointStore;
@@ -122,6 +123,8 @@ public class ElytraRace extends JavaPlugin {
     }
 
     private void registerCommands() {
+        // Help: /elytrarace help (also bare /elytrarace)
+        HelpCommand.register(this.commandManager);
         // Register commands here
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
                 .literal("setup")
