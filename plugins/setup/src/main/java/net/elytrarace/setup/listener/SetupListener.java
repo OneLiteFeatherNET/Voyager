@@ -10,21 +10,22 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.MetadataValue;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
 
 public class SetupListener implements Listener {
-    private final JavaPlugin plugin;
+    private final ElytraRace plugin;
 
-    public SetupListener(JavaPlugin plugin) {
+    public SetupListener(ElytraRace plugin) {
         this.plugin = plugin;
     }
 
 
     @EventHandler
     public void onLeave(PlayerQuitEvent event) {
-        event.getPlayer().removeMetadata(ElytraRace.SETUP_METADATA, plugin);
+        var player = event.getPlayer();
+        player.removeMetadata(ElytraRace.SETUP_METADATA, plugin);
+        plugin.getUndoManager().removePlayer(player.getUniqueId());
     }
 
 

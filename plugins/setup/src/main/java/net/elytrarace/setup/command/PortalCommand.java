@@ -5,6 +5,8 @@ import net.elytrarace.common.builder.MapDTOBuilder;
 import net.elytrarace.common.builder.PortalDTOBuilder;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.map.model.FilePortalDTO;
+import net.elytrarace.setup.undo.UndoManager;
+import net.elytrarace.setup.undo.UndoOperation;
 import net.elytrarace.setup.util.FaweHelper;
 import net.elytrarace.setup.util.SetupGuard;
 import net.kyori.adventure.text.Component;
@@ -21,9 +23,11 @@ import java.util.TreeSet;
 public class PortalCommand {
 
     private final MapService mapService;
+    private final UndoManager undoManager;
 
-    public PortalCommand(MapService mapService) {
+    public PortalCommand(MapService mapService, UndoManager undoManager) {
         this.mapService = mapService;
+        this.undoManager = undoManager;
     }
 
     public void handle(CommandContext<PlayerSource> context) {
@@ -83,7 +87,11 @@ public class PortalCommand {
         portals.add(portal);
         var newMap = MapDTOBuilder.create().from(map).portals(portals).build();
 
-        // 7. Save
+        // 7. Push to undo stack
+        undoManager.push(player.getUniqueId(),
+                new UndoOperation.PlaceOperation(map.uuid(), portal));
+
+        // 8. Save
         mapService.updateMap(newMap).thenCompose(success -> {
             if (success) {
                 player.sendActionBar(Component.translatable("success.portal.quick")
@@ -95,7 +103,7 @@ public class PortalCommand {
             return null;
         });
 
-        // 8. Clear FAWE selection for next ring
+        // 9. Clear FAWE selection for next ring
         selector.clear();
     }
 
@@ -104,9 +112,10 @@ public class PortalCommand {
      */
     public static void register(
             org.incendo.cloud.paper.PaperCommandManager<org.incendo.cloud.paper.util.sender.Source> commandManager,
-            MapService mapService
+            MapService mapService,
+            UndoManager undoManager
     ) {
-        var cmd = new PortalCommand(mapService);
+        var cmd = new PortalCommand(mapService, undoManager);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .senderType(PlayerSource.class)

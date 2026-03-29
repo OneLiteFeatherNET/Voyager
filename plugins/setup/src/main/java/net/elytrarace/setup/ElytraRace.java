@@ -7,6 +7,9 @@ import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.utils.PluginTranslationRegistry;
 import net.elytrarace.setup.command.PortalCommand;
+import net.elytrarace.setup.command.PortalDeleteCommand;
+import net.elytrarace.setup.command.PortalUndoCommand;
+import net.elytrarace.setup.undo.UndoManager;
 import net.elytrarace.setup.conversation.cup.CupPrompt;
 import net.elytrarace.setup.conversation.map.MapPrompt;
 import net.elytrarace.setup.conversation.portal.PortalPrompt;
@@ -47,6 +50,7 @@ public class ElytraRace extends JavaPlugin {
 
     private CupService cupService;
     private MapService mapService;
+    private UndoManager undoManager;
     private @NonNull PaperCommandManager<Source> commandManager;
 
     @Override
@@ -66,6 +70,7 @@ public class ElytraRace extends JavaPlugin {
                 .thenRun(() -> getLogger().info("Language has been loaded"));
         this.cupService = CupService.create(getDataPath());
         this.mapService = MapService.create(getDataPath());
+        this.undoManager = new UndoManager();
         CompletableFuture.runAsync(this::registerListeners);
         this.registerCommands();
         getLogger().info("ElytraRace has been enabled!");
@@ -159,7 +164,11 @@ public class ElytraRace extends JavaPlugin {
                 })
         );
         // Quick portal command: /elytrarace portal (auto-detects FAWE region, auto-indexes)
-        PortalCommand.register(this.commandManager, this.mapService);
+        PortalCommand.register(this.commandManager, this.mapService, this.undoManager);
+        // Portal delete: /elytrarace portal delete <index>
+        PortalDeleteCommand.register(this.commandManager, this.mapService, this.undoManager);
+        // Portal undo: /elytrarace portal undo
+        PortalUndoCommand.register(this.commandManager, this.mapService, this.undoManager);
 
         // Legacy conversation-based portal creation: /elytrarace portal create
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
@@ -193,5 +202,9 @@ public class ElytraRace extends JavaPlugin {
 
     public MapService getMapService() {
         return mapService;
+    }
+
+    public UndoManager getUndoManager() {
+        return undoManager;
     }
 }
