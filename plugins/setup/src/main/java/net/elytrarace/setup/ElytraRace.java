@@ -8,7 +8,9 @@ import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.utils.PluginTranslationRegistry;
 import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
+import net.elytrarace.setup.command.PortalShowCommand;
 import net.elytrarace.setup.command.PortalUndoCommand;
+import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.undo.UndoManager;
 import net.elytrarace.setup.conversation.cup.CupPrompt;
 import net.elytrarace.setup.conversation.map.MapPrompt;
@@ -51,6 +53,7 @@ public class ElytraRace extends JavaPlugin {
     private CupService cupService;
     private MapService mapService;
     private UndoManager undoManager;
+    private ParticlePreviewManager previewManager;
     private @NonNull PaperCommandManager<Source> commandManager;
 
     @Override
@@ -71,6 +74,8 @@ public class ElytraRace extends JavaPlugin {
         this.cupService = CupService.create(getDataPath());
         this.mapService = MapService.create(getDataPath());
         this.undoManager = new UndoManager();
+        this.previewManager = new ParticlePreviewManager(this.mapService);
+        this.previewManager.start(this);
         CompletableFuture.runAsync(this::registerListeners);
         this.registerCommands();
         getLogger().info("ElytraRace has been enabled!");
@@ -78,6 +83,9 @@ public class ElytraRace extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (previewManager != null) {
+            previewManager.stop();
+        }
         getLogger().info("ElytraRace has been disabled!");
     }
     private void registerListeners() {
@@ -169,6 +177,8 @@ public class ElytraRace extends JavaPlugin {
         PortalDeleteCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal undo: /elytrarace portal undo
         PortalUndoCommand.register(this.commandManager, this.mapService, this.undoManager);
+        // Portal show: /elytrarace portal show (toggle particle preview)
+        PortalShowCommand.register(this.commandManager, this.previewManager);
 
         // Legacy conversation-based portal creation: /elytrarace portal create
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
@@ -206,5 +216,9 @@ public class ElytraRace extends JavaPlugin {
 
     public UndoManager getUndoManager() {
         return undoManager;
+    }
+
+    public ParticlePreviewManager getPreviewManager() {
+        return previewManager;
     }
 }

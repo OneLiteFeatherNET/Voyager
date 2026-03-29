@@ -26,6 +26,7 @@ public class SetupListener implements Listener {
         var player = event.getPlayer();
         player.removeMetadata(ElytraRace.SETUP_METADATA, plugin);
         plugin.getUndoManager().removePlayer(player.getUniqueId());
+        plugin.getPreviewManager().remove(player.getUniqueId());
     }
 
 
