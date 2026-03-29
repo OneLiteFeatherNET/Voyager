@@ -9,6 +9,7 @@ import net.elytrarace.setup.command.CupCreateCommand;
 import net.elytrarace.setup.command.CupListCommand;
 import net.elytrarace.setup.command.EditingContextManager;
 import net.elytrarace.setup.command.MapCreateCommand;
+import net.elytrarace.setup.command.MapLoadCommand;
 import net.elytrarace.setup.command.MapTeleportCommand;
 import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
@@ -152,6 +153,8 @@ public class ElytraRace extends JavaPlugin {
         MapCreateCommand.register(this.commandManager, this.mapService, this.cupService);
         // Map teleport: /elytrarace map tp <name>
         MapTeleportCommand.register(this.commandManager, this.mapService);
+        // Map load: /elytrarace map load <worldFolder> (load Anvil world with VoidGen)
+        MapLoadCommand.register(this.commandManager, this);
         // Quick portal command: /elytrarace portal (auto-detects FAWE region, auto-indexes)
         PortalCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal delete: /elytrarace portal delete <index>
