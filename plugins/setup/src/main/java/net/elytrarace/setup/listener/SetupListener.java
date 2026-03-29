@@ -28,6 +28,7 @@ public class SetupListener implements Listener {
         plugin.getUndoManager().removePlayer(player.getUniqueId());
         plugin.getPreviewManager().remove(player.getUniqueId());
         plugin.getEditingContextManager().clearContext(player.getUniqueId());
+        plugin.getTestflyManager().remove(player.getUniqueId());
     }
 
 

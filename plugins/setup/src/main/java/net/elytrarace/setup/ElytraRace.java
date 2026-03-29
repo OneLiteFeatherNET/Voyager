@@ -12,7 +12,9 @@ import net.elytrarace.setup.command.PortalDeleteCommand;
 import net.elytrarace.setup.command.PortalEditCommand;
 import net.elytrarace.setup.command.PortalSaveCommand;
 import net.elytrarace.setup.command.PortalShowCommand;
+import net.elytrarace.setup.command.PortalTestflyCommand;
 import net.elytrarace.setup.command.PortalUndoCommand;
+import net.elytrarace.setup.testfly.TestflyManager;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.undo.UndoManager;
 import net.elytrarace.setup.conversation.cup.CupPrompt;
@@ -58,6 +60,7 @@ public class ElytraRace extends JavaPlugin {
     private UndoManager undoManager;
     private EditingContextManager editingContextManager;
     private ParticlePreviewManager previewManager;
+    private TestflyManager testflyManager;
     private @NonNull PaperCommandManager<Source> commandManager;
 
     @Override
@@ -81,6 +84,8 @@ public class ElytraRace extends JavaPlugin {
         this.editingContextManager = new EditingContextManager();
         this.previewManager = new ParticlePreviewManager(this.mapService);
         this.previewManager.start(this);
+        this.testflyManager = new TestflyManager();
+        this.testflyManager.start(this);
         CompletableFuture.runAsync(this::registerListeners);
         this.registerCommands();
         getLogger().info("ElytraRace has been enabled!");
@@ -90,6 +95,9 @@ public class ElytraRace extends JavaPlugin {
     public void onDisable() {
         if (previewManager != null) {
             previewManager.stop();
+        }
+        if (testflyManager != null) {
+            testflyManager.stop();
         }
         getLogger().info("ElytraRace has been disabled!");
     }
@@ -188,6 +196,8 @@ public class ElytraRace extends JavaPlugin {
         PortalEditCommand.register(this.commandManager, this.mapService, this.editingContextManager);
         // Portal save: /elytrarace portal save (save edited FAWE region)
         PortalSaveCommand.register(this.commandManager, this.mapService, this.editingContextManager, this.undoManager);
+        // Portal testfly: /elytrarace portal testfly [stop]
+        PortalTestflyCommand.register(this.commandManager, this.mapService, this.testflyManager);
 
         // Legacy conversation-based portal creation: /elytrarace portal create
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
@@ -233,5 +243,9 @@ public class ElytraRace extends JavaPlugin {
 
     public EditingContextManager getEditingContextManager() {
         return editingContextManager;
+    }
+
+    public TestflyManager getTestflyManager() {
+        return testflyManager;
     }
 }

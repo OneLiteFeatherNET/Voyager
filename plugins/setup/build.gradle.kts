@@ -15,6 +15,8 @@ dependencies {
     // FAWE
     implementation(platform(libs.fawe.bom))
     compileOnly(libs.bundles.fawe)
+    // Geometry (for testfly collision detection via PortalCollisionHelper)
+    implementation(libs.geometry)
     // Test
     testImplementation(platform("org.junit:junit-bom:5.12.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")

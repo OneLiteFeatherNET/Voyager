@@ -1,0 +1,149 @@
+package net.elytrarace.setup.command;
+
+import net.elytrarace.common.map.MapService;
+import net.elytrarace.common.map.model.LocationDTO;
+import net.elytrarace.common.map.model.PortalDTO;
+import net.elytrarace.setup.testfly.TestflyManager;
+import net.elytrarace.setup.testfly.TestflySession;
+import net.elytrarace.setup.util.SetupGuard;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.paper.PaperCommandManager;
+import org.incendo.cloud.paper.util.sender.PlayerSource;
+import org.incendo.cloud.paper.util.sender.Source;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+
+import static org.incendo.cloud.parser.standard.IntegerParser.integerParser;
+
+/**
+ * Handles {@code /elytrarace portal testfly [startIndex]} and
+ * {@code /elytrarace portal testfly stop}.
+ */
+public class PortalTestflyCommand {
+
+    private final MapService mapService;
+    private final TestflyManager testflyManager;
+
+    public PortalTestflyCommand(MapService mapService, TestflyManager testflyManager) {
+        this.mapService = mapService;
+        this.testflyManager = testflyManager;
+    }
+
+    public void handleStart(CommandContext<PlayerSource> context) {
+        var player = context.sender().source();
+
+        if (SetupGuard.getSetupHolder(player).isEmpty()) {
+            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            return;
+        }
+
+        if (testflyManager.isFlying(player.getUniqueId())) {
+            player.sendMessage(Component.translatable("error.testfly.already_flying"));
+            return;
+        }
+
+        var mapOpt = SetupGuard.getMapForWorld(mapService, player.getWorld());
+        if (mapOpt.isEmpty()) {
+            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            return;
+        }
+        var map = mapOpt.get();
+
+        if (map.portals().isEmpty()) {
+            player.sendMessage(Component.translatable("error.testfly.no_portals"));
+            return;
+        }
+
+        // Sort portals by index
+        var sortedPortals = new ArrayList<>(map.portals().stream()
+                .sorted(Comparator.comparingInt(PortalDTO::index))
+                .toList());
+
+        // Find starting portal (default: first)
+        int startFromIndex = 0;
+        // Optional startIndex argument handled by the variant command
+
+        // Save inventory
+        var savedInventory = player.getInventory().getContents().clone();
+        var savedArmor = player.getInventory().getArmorContents().clone();
+
+        // Create session
+        var session = new TestflySession(player.getUniqueId(), sortedPortals, savedInventory, savedArmor);
+        testflyManager.addSession(session);
+
+        // Equip player
+        player.getInventory().clear();
+        player.getInventory().setChestplate(new ItemStack(Material.ELYTRA));
+        player.getInventory().setItem(0, new ItemStack(Material.FIREWORK_ROCKET, 64));
+        player.setGameMode(GameMode.ADVENTURE);
+
+        // Teleport to before first portal
+        var firstPortal = sortedPortals.getFirst();
+        var center = firstPortal.locations().stream()
+                .filter(LocationDTO::center)
+                .findFirst()
+                .orElse(firstPortal.locations().getFirst());
+
+        var spawnLoc = new Location(player.getWorld(),
+                center.x() + 0.5, center.y() + 5, center.z() + 0.5);
+        player.teleport(spawnLoc);
+
+        player.sendMessage(Component.translatable("testfly.start")
+                .arguments(Component.text(sortedPortals.size())));
+        player.sendMessage(Component.text("Jump and use firework rockets to start flying. " +
+                "Use /elytrarace portal testfly stop to end early.", NamedTextColor.GRAY));
+    }
+
+    public void handleStop(CommandContext<PlayerSource> context) {
+        var player = context.sender().source();
+
+        var sessionOpt = testflyManager.endFlight(player.getUniqueId());
+        if (sessionOpt.isEmpty()) {
+            player.sendMessage(Component.text("Not in a test flight.", NamedTextColor.RED));
+            return;
+        }
+
+        var session = sessionOpt.get();
+        player.sendMessage(Component.empty());
+        player.sendMessage(Component.text("TEST FLY ABORTED", NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("Time:    " + session.elapsedFormatted(), NamedTextColor.WHITE));
+        player.sendMessage(Component.text("Portals: " + session.hitCount() + "/" + session.totalPortals() + " hit",
+                session.hitCount() > 0 ? NamedTextColor.GREEN : NamedTextColor.RED));
+
+        var missed = session.missedPortalIndices();
+        if (!missed.isEmpty()) {
+            player.sendMessage(Component.text("Missed:  #" + String.join(", #",
+                    missed.stream().map(String::valueOf).toList()), NamedTextColor.RED));
+        }
+        player.sendMessage(Component.empty());
+    }
+
+    public static void register(PaperCommandManager<Source> commandManager, MapService mapService,
+                                TestflyManager testflyManager) {
+        var cmd = new PortalTestflyCommand(mapService, testflyManager);
+
+        // /elytrarace portal testfly (start)
+        commandManager.command(commandManager.commandBuilder("elytrarace")
+                .literal("portal")
+                .literal("testfly")
+                .senderType(PlayerSource.class)
+                .handler(cmd::handleStart)
+        );
+
+        // /elytrarace portal testfly stop
+        commandManager.command(commandManager.commandBuilder("elytrarace")
+                .literal("portal")
+                .literal("testfly")
+                .literal("stop")
+                .senderType(PlayerSource.class)
+                .handler(cmd::handleStop)
+        );
+    }
+}
