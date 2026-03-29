@@ -15,6 +15,8 @@ import net.elytrarace.setup.command.PortalSaveCommand;
 import net.elytrarace.setup.command.PortalShowCommand;
 import net.elytrarace.setup.command.PortalTestflyCommand;
 import net.elytrarace.setup.command.PortalUndoCommand;
+import net.elytrarace.setup.command.PortalsCommand;
+import net.elytrarace.setup.gui.PortalManagerListener;
 import net.elytrarace.setup.testfly.TestflyManager;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.undo.UndoManager;
@@ -102,6 +104,7 @@ public class ElytraRace extends JavaPlugin {
     }
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new SetupListener(this), this);
+        getServer().getPluginManager().registerEvents(new PortalManagerListener(this.mapService, this.undoManager), this);
     }
 
     private void registerCommands() {
@@ -155,6 +158,8 @@ public class ElytraRace extends JavaPlugin {
         PortalSaveCommand.register(this.commandManager, this.mapService, this.editingContextManager, this.undoManager);
         // Portal testfly: /elytrarace portal testfly [stop]
         PortalTestflyCommand.register(this.commandManager, this.mapService, this.testflyManager);
+        // Portals GUI: /elytrarace portals
+        PortalsCommand.register(this.commandManager, this.mapService, this);
 
         // Legacy conversation-based portal creation: /elytrarace portal create
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
