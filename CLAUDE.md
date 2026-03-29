@@ -27,17 +27,22 @@ Voyager (internally "ElytraRace") is a Minecraft elytra racing minigame (Mario K
 ./gradlew :plugins:game:shadowJar       # Build fat JAR for game plugin
 ./gradlew :plugins:game:runServer       # Run a local Paper 1.21.5 test server
 ./gradlew :plugins:game:test --tests "net.elytrarace.game.ElytraRaceTest.testPluginLoads"  # Run a single test
+./gradlew :server:build                  # Build server module
+./gradlew :server:test                   # Run server tests
+./gradlew :server:shadowJar             # Build fat JAR
+java -jar server/build/libs/*.jar        # Run standalone server
 ```
 
-Tests use JUnit 5 with MockBukkit for Bukkit API mocking. JaCoCo coverage reports are generated automatically after tests.
+Tests use JUnit 5 with MockBukkit (plugins) or Minestom Testing (server) for API mocking. JaCoCo coverage reports are generated automatically after tests.
 
 ## Module Structure
 
-- **`plugins/game`** — Main game plugin (`ElytraRace-Game`). Handles gameplay, phases, collision, and ECS systems. Entry point: `net.elytrarace.game.ElytraRace`
+- **`server`** — Standalone Minestom game server. Handles gameplay, physics, scoring, cup flow, and UI. Entry point: `net.elytrarace.server.VoyagerServer` (own `main()`). Depends on `shared/common`, `shared/phase`, `shared/database`.
+- **`plugins/game`** — Legacy Paper game plugin (`ElytraRace-Game`). Being replaced by `server`. Entry point: `net.elytrarace.game.ElytraRace`
 - **`plugins/setup`** — Setup plugin (`ElytraRace-Setup`) for map/cup/portal configuration via in-game conversations. Depends on FastAsyncWorldEdit. Entry point: `net.elytrarace.setup.ElytraRace`
-- **`shared/common`** — Shared utilities: ECS framework, map/cup services, file handling (Gson-based JSON), language/i18n, spline math, builders
-- **`shared/phase`** — Phase lifecycle framework (Phase → TimedPhase/TickedPhase, with LinearPhaseSeries/CyclicPhaseSeries collections)
-- **`shared/conversation-api`** — Player conversation/prompt system (similar to Bukkit's old Conversation API but custom)
+- **`shared/common`** — Shared utilities: ECS framework, map/cup services, file handling (Gson-based JSON), language/i18n, spline math, builders (Bukkit-frei)
+- **`shared/phase`** — Phase lifecycle framework (Phase -> TimedPhase/TickedPhase, with LinearPhaseSeries/CyclicPhaseSeries collections) (Bukkit-frei)
+- **`shared/conversation-api`** — Player conversation/prompt system, plattform-agnostisch (Bukkit-frei)
 - **`shared/database`** — Hibernate ORM + HikariCP + MariaDB persistence layer for player data
 
 ## Architecture
@@ -59,7 +64,9 @@ Map and cup definitions are stored as JSON files (via `GsonFileHandler`). The se
 
 ## Dependencies (via version catalog in settings.gradle.kts)
 
-- **Paper API** 1.21.5 — Minecraft server API
+- **Minestom** 2026.03.25-1.21.11 — Standalone Minecraft server (server module)
+- **Minestom Testing** — Test framework for Minestom (server module tests)
+- **Paper API** 1.21.5 — Minecraft server API (plugins only)
 - **Cloud** (Incendo) — Command framework
 - **Hibernate ORM** + HikariCP — Database ORM
 - **MariaDB** client — Database driver
@@ -78,7 +85,7 @@ docker compose -f docker/mariadb/compose.yml up -d
 ## Code Conventions
 
 - Base package: `net.elytrarace`
-- Java 21 with `--release 21`
+- Java 25 with `--release 25` (server module), Java 21 with `--release 21` (plugins, shared)
 - UTF-8 source encoding
 - Interface + Impl pattern for services (e.g., `GameService` / `GameServiceImpl`, `CupService` / `CupServiceImpl`)
 - Builder pattern for DTOs (e.g., `MapDTOBuilder`, `CupDTOBuilder`)

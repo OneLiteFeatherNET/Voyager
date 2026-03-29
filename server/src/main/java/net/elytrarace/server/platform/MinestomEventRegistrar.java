@@ -4,6 +4,9 @@ import net.elytrarace.api.phase.EventRegistrar;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.Event;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * that is attached to (and detached from) the parent node on register/unregister.
  */
 public final class MinestomEventRegistrar implements EventRegistrar {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MinestomEventRegistrar.class);
 
     private final EventNode<Event> parentNode;
     private final Map<Object, EventNode<? extends Event>> registeredNodes = new ConcurrentHashMap<>();
@@ -35,6 +40,9 @@ public final class MinestomEventRegistrar implements EventRegistrar {
             EventNode<? extends Event> childNode = minestomListener.eventNode();
             registeredNodes.put(listener, childNode);
             parentNode.addChild(childNode);
+        } else {
+            LOGGER.warn("Listener {} does not implement MinestomEventListener and will be ignored",
+                    listener.getClass().getName());
         }
     }
 

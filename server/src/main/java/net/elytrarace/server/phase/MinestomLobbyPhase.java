@@ -4,11 +4,6 @@ import net.elytrarace.api.phase.EventRegistrar;
 import net.elytrarace.api.phase.PhaseScheduler;
 import net.elytrarace.api.phase.TickDirection;
 import net.elytrarace.api.phase.TimedPhase;
-import net.elytrarace.common.utils.Strings;
-import net.elytrarace.common.utils.TimeFormat;
-import net.kyori.adventure.text.Component;
-import net.minestom.server.MinecraftServer;
-import net.minestom.server.entity.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,12 +41,7 @@ public final class MinestomLobbyPhase extends TimedPhase {
 
     @Override
     public void onUpdate() {
-        var formattedTime = Strings.getTimeString(TimeFormat.MM_SS, getCurrentTicks());
-        var message = Component.translatable("phase.lobby.time", Component.text(formattedTime));
-
-        for (Player player : MinecraftServer.getConnectionManager().getOnlinePlayers()) {
-            player.sendActionBar(message);
-        }
+        PhaseUiHelper.broadcastTimeActionBar("phase.lobby.time", getCurrentTicks());
     }
 
     @Override

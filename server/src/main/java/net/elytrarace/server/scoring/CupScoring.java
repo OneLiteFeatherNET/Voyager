@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * Aggregates player scores across multiple maps within a cup.
  */
-public class CupScoring {
+public final class CupScoring {
 
     private final List<List<PlayerScore>> mapResults = new ArrayList<>();
 
@@ -38,6 +38,8 @@ public class CupScoring {
         }
         return aggregated.entrySet().stream()
                 .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+                // Aggregated scores only carry totalPoints; per-map ringPoints and positionBonus
+                // are not meaningful after summation across maps, so they are set to 0.
                 .map(entry -> new PlayerScore(entry.getKey(), 0, 0, entry.getValue()))
                 .toList();
     }

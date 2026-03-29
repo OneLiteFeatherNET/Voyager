@@ -34,6 +34,9 @@ public final class AnvilMapInstanceService implements MapInstanceService {
         Objects.requireNonNull(mapName, "mapName must not be null");
         Objects.requireNonNull(worldDirectory, "worldDirectory must not be null");
 
+        // Using the default ForkJoinPool.commonPool() is acceptable here because the work
+        // is lightweight (creating an instance and setting the chunk loader). The actual
+        // chunk loading happens lazily on demand, not during this call.
         return CompletableFuture.supplyAsync(() -> {
             LOGGER.info("Loading map '{}' from {}", mapName, worldDirectory);
 

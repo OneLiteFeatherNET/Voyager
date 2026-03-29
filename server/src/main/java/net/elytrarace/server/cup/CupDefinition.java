@@ -8,4 +8,8 @@ import java.util.List;
  * @param name the display name of the cup
  * @param maps the ordered list of maps in this cup
  */
-public record CupDefinition(String name, List<MapDefinition> maps) {}
+public record CupDefinition(String name, List<MapDefinition> maps) {
+    public CupDefinition {
+        maps = List.copyOf(maps);
+    }
+}

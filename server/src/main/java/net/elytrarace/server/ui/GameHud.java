@@ -41,9 +41,11 @@ public final class GameHud {
      * @param currentPoints     the player's accumulated points
      */
     public void updateActionbar(double speedBlocksPerSec, int currentPoints) {
-        player.sendActionBar(Component.text(
-                String.format("Speed: %.1f m/s | Points: %d", speedBlocksPerSec, currentPoints),
-                NamedTextColor.WHITE));
+        player.sendActionBar(
+                Component.text("Speed: ", NamedTextColor.WHITE)
+                        .append(Component.text(String.format("%.1f", speedBlocksPerSec), NamedTextColor.WHITE))
+                        .append(Component.text(" m/s | Points: ", NamedTextColor.WHITE))
+                        .append(Component.text(currentPoints, NamedTextColor.WHITE)));
     }
 
     /**

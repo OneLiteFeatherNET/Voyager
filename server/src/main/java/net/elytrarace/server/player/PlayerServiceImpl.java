@@ -2,7 +2,6 @@ package net.elytrarace.server.player;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
-import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
 import org.slf4j.Logger;
@@ -39,7 +38,7 @@ public final class PlayerServiceImpl implements PlayerService {
     @Override
     public void onPlayerJoin(Player player) {
         LOGGER.info("Player {} ({}) joined the server", player.getUsername(), player.getUuid());
-        player.setGameMode(GameMode.ADVENTURE);
+        // GameMode is set by PlayerEventHandler.onSpawn() to avoid duplicate calls
         player.setRespawnPoint(LOBBY_SPAWN);
     }
 

@@ -15,4 +15,8 @@ import java.util.List;
  * @param rings          the ordered list of ring checkpoints players must fly through
  * @param spawnPos       the position where players spawn at the start of this map
  */
-public record MapDefinition(String name, Path worldDirectory, List<Ring> rings, Pos spawnPos) {}
+public record MapDefinition(String name, Path worldDirectory, List<Ring> rings, Pos spawnPos) {
+    public MapDefinition {
+        rings = List.copyOf(rings);
+    }
+}
