@@ -4,8 +4,10 @@ plugins {
 }
 
 dependencies {
+    implementation(platform(libs.aonyx.bom))
     implementation(libs.minecraft.minestom)
-    implementation(project(":shared:phase"))
+    implementation(libs.aves)
+    implementation(libs.xerus)
     implementation(project(":shared:common"))
     implementation(project(":shared:database"))
     implementation(libs.geometry)

@@ -19,6 +19,12 @@ dependencyResolutionManagement {
             library("minecraft.minestom.testing", "net.minestom", "testing").versionRef("minestom")
             library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0-SNAPSHOT")
             library("minecraft.cloud.minestom", "org.incendo", "cloud-minestom").version("2.0.0-SNAPSHOT")
+
+            // OneLiteFeather Libraries (via aonyx-bom)
+            version("aonyx-bom", "0.7.0")
+            library("aonyx.bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
+            library("aves", "net.theevilreaper", "aves").withoutVersion()
+            library("xerus", "net.theevilreaper", "xerus").withoutVersion()
             library("hibernate.core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")
             library("hibernate.hikaricp", "org.hibernate.orm", "hibernate-hikaricp").versionRef("hibernate")
             library("mariadb", "org.mariadb.jdbc", "mariadb-java-client").versionRef("mariadb-client")

@@ -10,5 +10,9 @@ subprojects {
         mavenCentral()
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://maven.enginehub.org/repo/")
+        maven("https://repo.onelitefeather.dev/onelitefeather") {
+            credentials(PasswordCredentials::class)
+            name = "onelitefeatherRepository"
+        }
     }
 }
