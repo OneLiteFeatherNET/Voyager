@@ -41,6 +41,7 @@ public class MapLoadCommand {
         // Check if already loaded
         World existing = Bukkit.getWorld(worldFolder);
         if (existing != null) {
+            existing.setAutoSave(false);
             player.teleport(existing.getSpawnLocation());
             player.sendActionBar(Component.translatable("map.load.already_loaded")
                     .arguments(Component.text(worldFolder)));
@@ -71,6 +72,7 @@ public class MapLoadCommand {
                 return;
             }
 
+            world.setAutoSave(false);
             player.teleport(world.getSpawnLocation());
             player.sendActionBar(Component.translatable("map.load.success")
                     .arguments(Component.text(worldFolder)));

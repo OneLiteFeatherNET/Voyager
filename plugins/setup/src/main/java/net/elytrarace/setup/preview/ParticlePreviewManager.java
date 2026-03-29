@@ -15,8 +15,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages per-player portal particle preview and spline path visualization.
- * Each player can have their own spline config (color, size, density).
+ * Manages per-player portal particle preview, TextDisplay labels,
+ * and spline path visualization.
  */
 public final class ParticlePreviewManager {
 
@@ -27,6 +27,7 @@ public final class ParticlePreviewManager {
     private final Map<UUID, SplineConfig> playerConfigs = new ConcurrentHashMap<>();
     private final MapService mapService;
     private final GuidePointStore guideStore;
+    private final PortalLabelManager labelManager = new PortalLabelManager();
     private BukkitTask task;
 
     public ParticlePreviewManager(MapService mapService, GuidePointStore guideStore) {
@@ -46,11 +47,35 @@ public final class ParticlePreviewManager {
         portalPreviewPlayers.clear();
         splinePreviewPlayers.clear();
         playerConfigs.clear();
+        labelManager.removeAll();
     }
 
+    /**
+     * Toggles portal preview (particles + TextDisplay labels).
+     * Returns true if now enabled.
+     */
     public boolean togglePortals(UUID playerId) {
-        if (portalPreviewPlayers.remove(playerId)) return false;
+        if (portalPreviewPlayers.remove(playerId)) {
+            // Disabled — remove labels if no other player has preview active in that world
+            var player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                var worldName = player.getWorld().getName();
+                boolean othersActive = portalPreviewPlayers.stream()
+                        .map(Bukkit::getPlayer)
+                        .anyMatch(p -> p != null && p.getWorld().getName().equals(worldName));
+                if (!othersActive) {
+                    labelManager.removeLabels(player.getWorld());
+                }
+            }
+            return false;
+        }
         portalPreviewPlayers.add(playerId);
+        // Spawn labels immediately
+        var player = Bukkit.getPlayer(playerId);
+        if (player != null) {
+            var mapOpt = SetupGuard.getMapForWorld(mapService, player.getWorld());
+            mapOpt.ifPresent(map -> labelManager.spawnLabels(player.getWorld(), map.portals()));
+        }
         return true;
     }
 
@@ -60,18 +85,28 @@ public final class ParticlePreviewManager {
         return true;
     }
 
-    /**
-     * Gets the current spline config for a player (defaults to BUILDER preset).
-     */
     public SplineConfig getConfig(UUID playerId) {
         return playerConfigs.getOrDefault(playerId, SplineConfig.BUILDER);
     }
 
-    /**
-     * Sets a player's spline config.
-     */
     public void setConfig(UUID playerId, SplineConfig config) {
         playerConfigs.put(playerId, config);
+    }
+
+    /**
+     * Refreshes TextDisplay labels for a world (call after portal changes).
+     */
+    public void refreshLabels(String worldName) {
+        var world = Bukkit.getWorld(worldName);
+        if (world == null) return;
+        // Only refresh if any player has portal preview active in this world
+        boolean anyActive = portalPreviewPlayers.stream()
+                .map(Bukkit::getPlayer)
+                .anyMatch(p -> p != null && p.getWorld().getName().equals(worldName));
+        if (anyActive) {
+            var mapOpt = SetupGuard.getMapForWorld(mapService, world);
+            mapOpt.ifPresent(map -> labelManager.spawnLabels(world, map.portals()));
+        }
     }
 
     public void remove(UUID playerId) {
