@@ -1,10 +1,9 @@
 package net.elytrarace.server;
 
+import net.elytrarace.server.player.PlayerEventHandler;
+import net.elytrarace.server.player.PlayerService;
+import net.elytrarace.server.player.PlayerServiceImpl;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.entity.GameMode;
-import net.minestom.server.event.GlobalEventHandler;
-import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
@@ -23,6 +22,8 @@ public final class VoyagerServer {
 
     private final MinecraftServer server;
     private final InstanceContainer lobbyInstance;
+    private final PlayerService playerService;
+    private final PlayerEventHandler playerEventHandler;
 
     public VoyagerServer() {
         this.server = MinecraftServer.init();
@@ -31,17 +32,9 @@ public final class VoyagerServer {
         this.lobbyInstance = instanceManager.createInstanceContainer();
         this.lobbyInstance.setGenerator(unit -> unit.modifier().fillHeight(0, 1, Block.STONE));
 
-        registerEvents();
-    }
-
-    private void registerEvents() {
-        GlobalEventHandler eventHandler = MinecraftServer.getGlobalEventHandler();
-
-        eventHandler.addListener(AsyncPlayerConfigurationEvent.class, event -> {
-            event.setSpawningInstance(lobbyInstance);
-            event.getPlayer().setRespawnPoint(new Pos(0, 2, 0));
-            event.getPlayer().setGameMode(GameMode.ADVENTURE);
-        });
+        this.playerService = new PlayerServiceImpl(lobbyInstance);
+        this.playerEventHandler = new PlayerEventHandler(playerService, lobbyInstance);
+        this.playerEventHandler.register();
     }
 
     public void start() {
@@ -56,6 +49,10 @@ public final class VoyagerServer {
 
     public InstanceContainer getLobbyInstance() {
         return lobbyInstance;
+    }
+
+    public PlayerService getPlayerService() {
+        return playerService;
     }
 
     public static void main(String[] args) {
