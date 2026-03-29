@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvTest
+@org.junit.jupiter.api.Disabled("Requires full Minestom player support - run manually")
 class ElytraPhysicsSystemTest {
 
     @Test

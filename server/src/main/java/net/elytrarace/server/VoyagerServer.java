@@ -1,14 +1,25 @@
 package net.elytrarace.server;
 
+import net.elytrarace.server.cup.CupDefinition;
+import net.elytrarace.server.cup.MapDefinition;
+import net.elytrarace.server.game.GameOrchestrator;
+import net.elytrarace.server.physics.Ring;
 import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerService;
 import net.elytrarace.server.player.PlayerServiceImpl;
+import net.elytrarace.server.world.AnvilMapInstanceService;
+import net.elytrarace.server.world.MapInstanceService;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Voyager standalone Minestom server entry point.
@@ -24,6 +35,8 @@ public final class VoyagerServer {
     private final InstanceContainer lobbyInstance;
     private final PlayerService playerService;
     private final PlayerEventHandler playerEventHandler;
+    private final MapInstanceService mapInstanceService;
+    private final GameOrchestrator gameOrchestrator;
 
     public VoyagerServer() {
         this.server = MinecraftServer.init();
@@ -35,6 +48,9 @@ public final class VoyagerServer {
         this.playerService = new PlayerServiceImpl(lobbyInstance);
         this.playerEventHandler = new PlayerEventHandler(playerService, lobbyInstance);
         this.playerEventHandler.register();
+
+        this.mapInstanceService = new AnvilMapInstanceService(instanceManager);
+        this.gameOrchestrator = new GameOrchestrator(playerService, mapInstanceService);
     }
 
     public void start() {
@@ -53,6 +69,38 @@ public final class VoyagerServer {
 
     public PlayerService getPlayerService() {
         return playerService;
+    }
+
+    public MapInstanceService getMapInstanceService() {
+        return mapInstanceService;
+    }
+
+    public GameOrchestrator getGameOrchestrator() {
+        return gameOrchestrator;
+    }
+
+    /**
+     * Starts a game session for the given cup definition.
+     * Delegates to the {@link GameOrchestrator} to wire up all subsystems.
+     *
+     * @param cup the cup definition to start
+     */
+    public void startGame(CupDefinition cup) {
+        gameOrchestrator.startGame(cup);
+    }
+
+    /**
+     * Creates a demo cup with three placeholder maps for testing purposes.
+     * The maps have no rings and use temporary world directories.
+     *
+     * @return a demo cup definition
+     */
+    public static CupDefinition createDemoCup() {
+        var ring = new Ring(new Vec(0, 50, 50), new Vec(0, 0, 1), 5.0, 10);
+        var map1 = new MapDefinition("Demo Map 1", Path.of("/tmp/demo-map-1"), List.of(ring), new Pos(0, 60, 0));
+        var map2 = new MapDefinition("Demo Map 2", Path.of("/tmp/demo-map-2"), List.of(ring), new Pos(0, 60, 0));
+        var map3 = new MapDefinition("Demo Map 3", Path.of("/tmp/demo-map-3"), List.of(ring), new Pos(0, 60, 0));
+        return new CupDefinition("Demo Cup", List.of(map1, map2, map3));
     }
 
     public static void main(String[] args) {

@@ -12,6 +12,7 @@ import java.util.Set;
 public class RingTrackerComponent implements Component {
 
     private final Set<Integer> passedRings = new HashSet<>();
+    private final Set<Integer> passedCheckpoints = new HashSet<>();
 
     /**
      * Returns whether the ring at the given index has already been passed.
@@ -42,9 +43,31 @@ public class RingTrackerComponent implements Component {
     }
 
     /**
+     * Marks the ring at the given index as a passed mandatory checkpoint.
+     */
+    public void markCheckpointPassed(int ringIndex) {
+        passedCheckpoints.add(ringIndex);
+    }
+
+    /**
+     * Returns whether the checkpoint at the given index has been passed.
+     */
+    public boolean hasCheckpointPassed(int ringIndex) {
+        return passedCheckpoints.contains(ringIndex);
+    }
+
+    /**
+     * Returns an unmodifiable view of the passed checkpoint indices.
+     */
+    public Set<Integer> getPassedCheckpoints() {
+        return Collections.unmodifiableSet(passedCheckpoints);
+    }
+
+    /**
      * Resets the tracker for a new map.
      */
     public void reset() {
         passedRings.clear();
+        passedCheckpoints.clear();
     }
 }

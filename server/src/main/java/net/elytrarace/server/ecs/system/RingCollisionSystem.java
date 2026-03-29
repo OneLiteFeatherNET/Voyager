@@ -7,10 +7,12 @@ import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
+import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.physics.Ring;
 import net.elytrarace.server.physics.RingCollisionDetector;
+import net.elytrarace.server.physics.RingType;
 import net.minestom.server.coordinate.Vec;
 
 import java.util.List;
@@ -58,7 +60,8 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
         }
 
         List<Ring> rings = map.rings();
-        Vec currentPos = Vec.fromPoint(playerRef.getPlayer().getPosition());
+        var pos = playerRef.getPlayer().getPosition();
+        Vec currentPos = new Vec(pos.x(), pos.y(), pos.z());
         Vec prevPos = currentPos.sub(flight.getVelocity());
 
         for (int i = 0; i < rings.size(); i++) {
@@ -70,6 +73,16 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
             if (RingCollisionDetector.checkPassthrough(ring, prevPos, currentPos)) {
                 tracker.markPassed(i);
                 score.addRingPoints(ring.points());
+
+                if (ring.type() == RingType.CHECKPOINT) {
+                    tracker.markCheckpointPassed(i);
+                }
+
+                // Queue the ring effect if the entity has a RingEffectComponent
+                if (entity.hasComponent(RingEffectComponent.class)) {
+                    var effects = entity.getComponent(RingEffectComponent.class);
+                    effects.addEffect(ring.type(), 1);
+                }
             }
         }
     }
