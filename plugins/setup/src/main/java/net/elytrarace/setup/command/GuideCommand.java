@@ -182,6 +182,61 @@ public class GuideCommand {
         }
     }
 
+    /**
+     * Move a guide point to the player's current position.
+     */
+    public void handleMove(CommandContext<PlayerSource> context) {
+        var player = context.sender().source();
+
+        if (SetupGuard.getSetupHolder(player).isEmpty()) {
+            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            return;
+        }
+
+        int orderIndex = context.get("orderIndex");
+        var loc = player.getLocation();
+        var worldName = player.getWorld().getName();
+
+        var moved = guideStore.moveGuidePoint(worldName, orderIndex, loc.getX(), loc.getY(), loc.getZ());
+        if (moved != null) {
+            player.sendActionBar(Component.translatable("guide.moved")
+                    .arguments(Component.text(orderIndex)));
+        } else {
+            player.sendMessage(Component.translatable("error.guide.not_found")
+                    .arguments(Component.text(orderIndex)));
+        }
+    }
+
+    /**
+     * Teleport to a guide point.
+     */
+    public void handleTp(CommandContext<PlayerSource> context) {
+        var player = context.sender().source();
+
+        if (SetupGuard.getSetupHolder(player).isEmpty()) {
+            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            return;
+        }
+
+        int orderIndex = context.get("orderIndex");
+        var worldName = player.getWorld().getName();
+
+        var guide = guideStore.getGuidePoints(worldName).stream()
+                .filter(g -> g.orderIndex() == orderIndex)
+                .findFirst()
+                .orElse(null);
+
+        if (guide == null) {
+            player.sendMessage(Component.translatable("error.guide.not_found")
+                    .arguments(Component.text(orderIndex)));
+            return;
+        }
+
+        player.teleport(new org.bukkit.Location(player.getWorld(), guide.x(), guide.y(), guide.z()));
+        player.sendActionBar(Component.translatable("guide.tp")
+                .arguments(Component.text(orderIndex)));
+    }
+
     public static void register(PaperCommandManager<Source> commandManager, MapService mapService,
                                 GuidePointStore guideStore) {
         var cmd = new GuideCommand(mapService, guideStore);
@@ -208,6 +263,24 @@ public class GuideCommand {
                 .literal("list")
                 .senderType(PlayerSource.class)
                 .handler(cmd::handleList)
+        );
+
+        // /elytrarace guide move <orderIndex> — move to player position
+        commandManager.command(commandManager.commandBuilder("elytrarace")
+                .literal("guide")
+                .literal("move")
+                .required("orderIndex", integerParser(1))
+                .senderType(PlayerSource.class)
+                .handler(cmd::handleMove)
+        );
+
+        // /elytrarace guide tp <orderIndex> — teleport to guide point
+        commandManager.command(commandManager.commandBuilder("elytrarace")
+                .literal("guide")
+                .literal("tp")
+                .required("orderIndex", integerParser(1))
+                .senderType(PlayerSource.class)
+                .handler(cmd::handleTp)
         );
     }
 }

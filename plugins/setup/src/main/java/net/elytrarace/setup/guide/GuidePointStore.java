@@ -69,6 +69,24 @@ public final class GuidePointStore {
     }
 
     /**
+     * Moves a guide point to a new position. Keeps the same orderIndex.
+     * Returns the updated point, or null if not found.
+     */
+    public GuidePointDTO moveGuidePoint(String worldName, int orderIndex, double x, double y, double z) {
+        var list = new ArrayList<>(getGuidePoints(worldName));
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).orderIndex() == orderIndex) {
+                var moved = new GuidePointDTO(orderIndex, x, y, z);
+                list.set(i, moved);
+                cache.put(worldName, list);
+                saveToDisk(worldName, list);
+                return moved;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Computes the next guide point orderIndex between two portal indices.
      * Portals use index*100 as orderIndex. Guide points fill gaps.
      */
