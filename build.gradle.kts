@@ -12,3 +12,11 @@ subprojects {
         maven("https://maven.enginehub.org/repo/")
     }
 }
+
+// Java 25 toolchain for the server module
+project(":server") {
+    apply(plugin = "java")
+    configure<JavaPluginExtension> {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}

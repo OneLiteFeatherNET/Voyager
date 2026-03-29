@@ -4,6 +4,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
+            version("minestom", "2026.03.25-1.21.11")
             version("hibernate", "7.3.0.Final")
             version("mariadb-client", "3.5.7")
             version("jetbrains-annotations", "26.1.0")
@@ -14,7 +15,10 @@ dependencyResolutionManagement {
             version("plugin-yml", "0.6.0")
 
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
+            library("minecraft.minestom", "net.minestom", "minestom").versionRef("minestom")
+            library("minecraft.minestom.testing", "net.minestom", "testing").versionRef("minestom")
             library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0-SNAPSHOT")
+            library("minecraft.cloud.minestom", "org.incendo", "cloud-minestom").version("2.0.0-SNAPSHOT")
             library("hibernate.core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")
             library("hibernate.hikaricp", "org.hibernate.orm", "hibernate-hikaricp").versionRef("hibernate")
             library("mariadb", "org.mariadb.jdbc", "mariadb-java-client").versionRef("mariadb-client")
@@ -40,3 +44,4 @@ include("shared:database")
 include("shared:common")
 include("plugins:game")
 include("plugins:setup")
+include("server")
