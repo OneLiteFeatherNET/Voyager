@@ -4,6 +4,7 @@ import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.map.model.FilePortalDTO;
 import net.elytrarace.setup.util.FaweHelper;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
@@ -79,7 +80,7 @@ public class PortalEditCommand {
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("edit")
-                .required("index", integerParser(1))
+                .required("index", integerParser(1), SetupSuggestions.portalIndices(mapService))
                 .senderType(PlayerSource.class)
                 .handler(cmd::handle)
         );

@@ -85,6 +85,34 @@ public final class FaweHelper {
     }
 
     /**
+     * Checks if any existing portal has its center within the given distance of the new portal's center.
+     * Returns the index of the overlapping portal, or -1 if no overlap.
+     */
+    public static int findOverlappingPortal(java.util.Collection<? extends net.elytrarace.common.map.model.PortalDTO> existingPortals,
+                                            List<LocationDTO> newLocations, double minDistance) {
+        var newCenter = newLocations.stream().filter(LocationDTO::center).findFirst().orElse(null);
+        if (newCenter == null) return -1;
+
+        for (var portal : existingPortals) {
+            var existingCenter = portal.locations().stream()
+                    .filter(LocationDTO::center)
+                    .findFirst()
+                    .orElse(null);
+            if (existingCenter == null) continue;
+
+            double dx = newCenter.x() - existingCenter.x();
+            double dy = newCenter.y() - existingCenter.y();
+            double dz = newCenter.z() - existingCenter.z();
+            double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (distance < minDistance) {
+                return portal.index();
+            }
+        }
+        return -1;
+    }
+
+    /**
      * Computes the next auto-assigned portal index for a map.
      * Returns 1 if no portals exist, otherwise max(existing indices) + 1.
      */

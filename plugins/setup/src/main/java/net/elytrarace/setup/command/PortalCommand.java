@@ -74,10 +74,18 @@ public class PortalCommand {
         var region = (PolyhedralRegion) selector.getRegion();
         var locations = FaweHelper.extractLocations(region);
 
-        // 5. Auto-assign next index
+        // 5. Check for duplicate (center within 3 blocks of existing portal)
+        int overlapping = FaweHelper.findOverlappingPortal(map.portals(), locations, 3.0);
+        if (overlapping >= 0) {
+            player.sendMessage(Component.translatable("warning.portal.duplicate")
+                    .arguments(Component.text(overlapping)));
+            return;
+        }
+
+        // 6. Auto-assign next index
         int nextIndex = FaweHelper.nextPortalIndex(map.portals());
 
-        // 6. Build portal and updated map
+        // 7. Build portal and updated map
         FilePortalDTO portal = PortalDTOBuilder.create()
                 .index(nextIndex)
                 .locations(locations)

@@ -14,7 +14,7 @@ import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
-import org.incendo.cloud.suggestion.Suggestion;
+import net.elytrarace.setup.util.SetupSuggestions;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -140,7 +140,7 @@ public class MapCreateCommand {
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("map")
                 .literal("create")
-                .required("cup", stringParser())
+                .required("cup", stringParser(), SetupSuggestions.cupNames(cupService))
                 .required("name", stringParser())
                 .required("displayName", greedyStringParser())
                 .senderType(PlayerSource.class)

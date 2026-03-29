@@ -2,9 +2,9 @@ package net.elytrarace.setup.command;
 
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
@@ -65,7 +65,7 @@ public class MapTeleportCommand {
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("map")
                 .literal("tp")
-                .required("name", stringParser())
+                .required("name", stringParser(), SetupSuggestions.mapNames(mapService))
                 .senderType(PlayerSource.class)
                 .handler(cmd::handle)
         );

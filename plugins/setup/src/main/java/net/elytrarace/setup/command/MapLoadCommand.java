@@ -1,6 +1,7 @@
 package net.elytrarace.setup.command;
 
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -81,7 +82,7 @@ public class MapLoadCommand {
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("map")
                 .literal("load")
-                .required("worldFolder", stringParser())
+                .required("worldFolder", stringParser(), SetupSuggestions.worldFolders())
                 .senderType(PlayerSource.class)
                 .handler(cmd::handle)
         );

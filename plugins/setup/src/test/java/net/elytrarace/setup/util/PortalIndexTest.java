@@ -75,4 +75,63 @@ class PortalIndexTest {
 
         assertThat(nextPortalIndex(portals)).isEqualTo(101);
     }
+
+    // --- Duplicate detection tests (mirrors FaweHelper.findOverlappingPortal) ---
+
+    private static int findOverlappingPortal(Collection<? extends PortalDTO> existing,
+                                             List<LocationDTO> newLocations, double minDistance) {
+        var newCenter = newLocations.stream().filter(LocationDTO::center).findFirst().orElse(null);
+        if (newCenter == null) return -1;
+        for (var portal : existing) {
+            var existingCenter = portal.locations().stream()
+                    .filter(LocationDTO::center).findFirst().orElse(null);
+            if (existingCenter == null) continue;
+            double dx = newCenter.x() - existingCenter.x();
+            double dy = newCenter.y() - existingCenter.y();
+            double dz = newCenter.z() - existingCenter.z();
+            if (Math.sqrt(dx * dx + dy * dy + dz * dz) < minDistance) return portal.index();
+        }
+        return -1;
+    }
+
+    @Test
+    @DisplayName("Detects overlapping portal within distance")
+    void shouldDetectOverlap() {
+        Set<PortalDTO> existing = new TreeSet<>();
+        existing.add(new FilePortalDTO(1, List.of(new LocationDTO(100, 50, 100, true))));
+
+        var newLocations = List.of(new LocationDTO(101, 50, 100, true)); // 1 block away
+
+        assertThat(findOverlappingPortal(existing, newLocations, 3.0)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("No overlap when portals are far apart")
+    void shouldNotDetectOverlapWhenFar() {
+        Set<PortalDTO> existing = new TreeSet<>();
+        existing.add(new FilePortalDTO(1, List.of(new LocationDTO(100, 50, 100, true))));
+
+        var newLocations = List.of(new LocationDTO(200, 50, 100, true)); // 100 blocks away
+
+        assertThat(findOverlappingPortal(existing, newLocations, 3.0)).isEqualTo(-1);
+    }
+
+    @Test
+    @DisplayName("No overlap with empty existing portals")
+    void shouldNotDetectOverlapWithEmpty() {
+        var newLocations = List.of(new LocationDTO(100, 50, 100, true));
+
+        assertThat(findOverlappingPortal(new TreeSet<>(), newLocations, 3.0)).isEqualTo(-1);
+    }
+
+    @Test
+    @DisplayName("No overlap when new portal has no center")
+    void shouldHandleNoCenterInNew() {
+        Set<PortalDTO> existing = new TreeSet<>();
+        existing.add(new FilePortalDTO(1, List.of(new LocationDTO(100, 50, 100, true))));
+
+        var newLocations = List.of(new LocationDTO(100, 50, 100, false)); // no center
+
+        assertThat(findOverlappingPortal(existing, newLocations, 3.0)).isEqualTo(-1);
+    }
 }

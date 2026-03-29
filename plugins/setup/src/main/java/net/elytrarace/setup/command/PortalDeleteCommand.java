@@ -7,6 +7,7 @@ import net.elytrarace.common.map.model.PortalDTO;
 import net.elytrarace.setup.undo.UndoManager;
 import net.elytrarace.setup.undo.UndoOperation;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
@@ -84,7 +85,7 @@ public class PortalDeleteCommand {
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("delete")
-                .required("index", integerParser(1))
+                .required("index", integerParser(1), SetupSuggestions.portalIndices(mapService))
                 .senderType(PlayerSource.class)
                 .handler(cmd::handle)
         );
