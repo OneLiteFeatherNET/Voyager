@@ -1,68 +1,68 @@
 # Deployment Guide
 
-## Lokale Entwicklung mit Docker
+## Local Development with Docker
 
-### Voraussetzungen
+### Prerequisites
 
-- Docker und Docker Compose installiert
-- Java 25 (oder kompatibel) fuer lokale Builds ohne Docker
+- Docker and Docker Compose installed
+- Java 25 (or compatible) for local builds without Docker
 
-### Server + Datenbank starten
+### Start Server + Database
 
-Aus dem Projektverzeichnis:
+From the project directory:
 
 ```bash
 docker compose -f docker/compose.yml up -d
 ```
 
-Dies startet:
-- **MariaDB** auf Port `3306` (Benutzer/Passwort/Datenbank: `voyager-project`)
-- **Game-Server** (Minestom) auf Port `25565`
+This starts:
+- **MariaDB** on port `3306` (user/password/database: `voyager-project`)
+- **Game Server** (Minestom) on port `25565`
 
-Der Game-Server wird automatisch per Multi-Stage Build kompiliert.
+The game server is automatically compiled via multi-stage build.
 
-### Nur Datenbank starten
+### Start Database Only
 
-Falls nur die Datenbank benoetigt wird (z.B. bei lokaler Entwicklung mit IDE):
+If only the database is needed (e.g., for local development with IDE):
 
 ```bash
 docker compose -f docker/mariadb/compose.yml up -d
 ```
 
-### Umgebungsvariablen
+### Environment Variables
 
-Der Game-Server akzeptiert folgende Umgebungsvariablen:
+The game server accepts the following environment variables:
 
-| Variable      | Beschreibung         | Standardwert      |
+| Variable      | Description         | Default Value      |
 |---------------|----------------------|--------------------|
-| `DB_HOST`     | Datenbank-Host       | `mariadb`          |
-| `DB_PORT`     | Datenbank-Port       | `3306`             |
-| `DB_NAME`     | Datenbankname        | `voyager-project`  |
-| `DB_USER`     | Datenbank-Benutzer   | `voyager-project`  |
-| `DB_PASSWORD` | Datenbank-Passwort   | `voyager-project`  |
+| `DB_HOST`     | Database host       | `mariadb`          |
+| `DB_PORT`     | Database port       | `3306`             |
+| `DB_NAME`     | Database name        | `voyager-project`  |
+| `DB_USER`     | Database user        | `voyager-project`  |
+| `DB_PASSWORD` | Database password    | `voyager-project`  |
 
 ## CloudNet v4 Deployment
 
-### Task einrichten
+### Set Up Task
 
-1. Die Datei `docs/deployment/cloudnet-task.json` als Vorlage verwenden.
-2. In CloudNet den Task anlegen:
+1. Use the file `docs/deployment/cloudnet-task.json` as a template.
+2. Create the task in CloudNet:
    ```
    tasks create task ElytraRace
    ```
-3. Die Task-Konfiguration unter `local/tasks/ElytraRace.json` entsprechend anpassen.
-4. Das Server-JAR (Shadow-JAR aus `:server:shadowJar`) in das Template `ElytraRace/default` kopieren.
+3. Adjust the task configuration under `local/tasks/ElytraRace.json` accordingly.
+4. Copy the server JAR (shadow JAR from `:server:shadowJar`) into the template `ElytraRace/default`.
 
-### Template-Struktur
+### Template Structure
 
 ```
 ElytraRace/default/
-  app.jar          # Shadow-JAR des Servers
+  app.jar          # Shadow JAR of the server
 ```
 
-## JVM Flags Empfehlung
+## JVM Flags Recommendation
 
-Fuer den Produktivbetrieb werden folgende JVM-Flags empfohlen:
+The following JVM flags are recommended for production:
 
 ```
 -XX:+UseZGC
@@ -71,9 +71,9 @@ Fuer den Produktivbetrieb werden folgende JVM-Flags empfohlen:
 -Xmx512M
 ```
 
-**ZGC** (Z Garbage Collector) mit generational Mode bietet niedrige Latenzen und ist ideal fuer Minecraft-Server. Die Heap-Groesse kann je nach Spieleranzahl angepasst werden:
+**ZGC** (Z Garbage Collector) with generational mode provides low latencies and is ideal for Minecraft servers. Heap size can be adjusted based on player count:
 
-| Spieleranzahl | Empfohlener Heap |
+| Player Count | Recommended Heap |
 |---------------|------------------|
 | 1-20          | 512M             |
 | 20-50         | 1G               |

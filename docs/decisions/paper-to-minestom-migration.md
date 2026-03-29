@@ -1,146 +1,146 @@
-# Entscheidungsdokument: Paper-zu-Minestom Migration
+# Decision Document: Paper to Minestom Migration
 
-**Datum:** 2026-03-29
-**Status:** In Bewertung
-**Betrifft:** Game-Plugin (`plugins/game`) — Migration von Paper API zu Minestom
-
----
-
-## 1. Ausgangslage (Vorher)
-
-Das Voyager-Projekt (intern "ElytraRace") ist aktuell als Paper-Plugin aufgebaut:
-
-- **Paper API 1.21.5** als Server-Plattform
-- **Java 21** mit `--release 21`
-- **Bukkit-Abhaengigkeiten in `shared/conversation-api`** — 7 Dateien mit direkten Bukkit-Imports
-- **40+ Dateien in `plugins/game`** mit Bukkit-Imports (Events, Scheduler, Player-API, etc.)
-- **Kein eigener Server** — das Game-Plugin laeuft als Plugin innerhalb eines Paper-Servers
-- **Vanilla Elytra-Physik** wird vollstaendig vom Server bereitgestellt (Glide-Mechanik, Boost, Collision)
-- **MockBukkit** als Test-Framework fuer Unit-Tests
-- **plugin.yml** wird automatisch via `plugin-yml` Gradle-Plugin generiert
-- **Cloud (Incendo)** als Command-Framework mit Paper-Integration
-- **Adventure API** ueber Paper bereitgestellt
+**Date:** 2026-03-29
+**Status:** Under Evaluation
+**Affects:** Game plugin (`plugins/game`) — Migration from Paper API to Minestom
 
 ---
 
-## 2. Vorgeschlagene Aenderung
+## 1. Current State (Before)
 
-Das Game-Plugin soll komplett auf Minestom umgeschrieben werden. Das Setup-Plugin bleibt unveraendert auf Paper.
+The Voyager project (internally "ElytraRace") is currently built as a Paper plugin:
 
-| Aspekt | Beschreibung |
+- **Paper API 1.21.5** as server platform
+- **Java 21** with `--release 21`
+- **Bukkit dependencies in `shared/conversation-api`** — 7 files with direct Bukkit imports
+- **40+ files in `plugins/game`** with Bukkit imports (events, scheduler, player API, etc.)
+- **No standalone server** — the game plugin runs as a plugin within a Paper server
+- **Vanilla elytra physics** are fully provided by the server (glide mechanics, boost, collision)
+- **MockBukkit** as test framework for unit tests
+- **plugin.yml** is auto-generated via the `plugin-yml` Gradle plugin
+- **Cloud (Incendo)** as command framework with Paper integration
+- **Adventure API** provided through Paper
+
+---
+
+## 2. Proposed Change
+
+The game plugin shall be completely rewritten for Minestom. The setup plugin remains unchanged on Paper.
+
+| Aspect | Description |
 |--------|-------------|
-| **Game-Plugin** | Kompletter Neubau auf Minestom |
-| **Setup-Plugin** | Bleibt auf Paper (benoetigt FastAsyncWorldEdit) |
-| **Java-Version** | Java 25 (Minestom-Anforderung) |
-| **Server-Modell** | Standalone-Server mit eigener `main()` |
-| **World-Format** | Anvil World Format (direktes Laden ohne Vanilla-Server) |
-| **Conversation API** | Komplett neu geschrieben, plattform-agnostisch |
-| **Elytra-Physik** | Eigenimplementierung erforderlich |
+| **Game Plugin** | Complete rebuild on Minestom |
+| **Setup Plugin** | Stays on Paper (requires FastAsyncWorldEdit) |
+| **Java Version** | Java 25 (Minestom requirement) |
+| **Server Model** | Standalone server with own `main()` |
+| **World Format** | Anvil World Format (direct loading without vanilla server) |
+| **Conversation API** | Completely rewritten, platform-agnostic |
+| **Elytra Physics** | Custom implementation required |
 
 ---
 
-## 3. Bereits getroffene Entscheidungen
+## 3. Already Made Decisions
 
-Die folgenden Punkte wurden bereits beschlossen und stehen nicht mehr zur Diskussion:
+The following points have already been decided and are not up for discussion:
 
-- **Java 25** als Ziel-Version fuer das Game-Plugin
-- **Standalone Server** — keine Minestom-Extensions, sondern eigene `main()`
-- **Anvil Format** fuer das Laden der Welten
-- **Neue Conversation API** — plattform-agnostisch, ohne Bukkit-Abhaengigkeiten
+- **Java 25** as the target version for the game plugin
+- **Standalone Server** — no Minestom extensions, but own `main()`
+- **Anvil Format** for loading worlds
+- **New Conversation API** — platform-agnostic, without Bukkit dependencies
 
 ---
 
-## 4. Pro-Argumente fuer Minestom
+## 4. Pro Arguments for Minestom
 
-### 4.1 Rechtliche Sicherheit
-Kein Vanilla-Code enthalten bedeutet keine EULA- oder Copyright-Probleme. Minestom ist eine saubere Neuimplementierung des Minecraft-Protokolls ohne Mojang-Code.
+### 4.1 Legal Safety
+No vanilla code included means no EULA or copyright issues. Minestom is a clean reimplementation of the Minecraft protocol without Mojang code.
 
-### 4.2 Leichtgewichtig
-Deutlich weniger RAM-Verbrauch und schnellerer Start als ein vollstaendiger Paper-Server. Fuer ein Minigame, das keine Vanilla-Mechaniken benoetigt, ist der volle Paper-Stack Overhead.
+### 4.2 Lightweight
+Significantly less RAM usage and faster startup than a full Paper server. For a minigame that doesn't need vanilla mechanics, the full Paper stack is overhead.
 
-### 4.3 Volle Kontrolle ueber Physik und Gameplay
-Elytra-Physik, Collision-Detection und alle Gameplay-Mechaniken koennen exakt auf die Anforderungen des Rennens zugeschnitten werden — ohne Workarounds gegen Vanilla-Verhalten.
+### 4.3 Full Control over Physics and Gameplay
+Elytra physics, collision detection, and all gameplay mechanics can be precisely tailored to the racing requirements — without workarounds against vanilla behavior.
 
 ### 4.4 Native Adventure API
-Minestom verwendet Adventure nativ. Kein Adapter oder Wrapper noetig — die gesamte Text-/Chat-API ist direkt verfuegbar.
+Minestom uses Adventure natively. No adapter or wrapper needed — the entire text/chat API is directly available.
 
-### 4.5 CloudNet v4 Unterstuetzung
-CloudNet v4 unterstuetzt Minestom als Plattform. Deployment und Skalierung ueber das bestehende CloudNet-Setup ist grundsaetzlich moeglich.
+### 4.5 CloudNet v4 Support
+CloudNet v4 supports Minestom as a platform. Deployment and scaling through the existing CloudNet setup is fundamentally possible.
 
-### 4.6 Bessere Isolation
-Minestom bietet das Konzept von Instances (vergleichbar mit separaten Welten). Jedes Rennen kann in einer eigenen Instance laufen — vollstaendig isoliert, ohne gegenseitige Beeinflussung.
+### 4.6 Better Isolation
+Minestom offers the concept of Instances (comparable to separate worlds). Each race can run in its own Instance — completely isolated, without mutual interference.
 
-### 4.7 Kein Plugin-Overhead
-Kein Plugin-Classloader, keine Plugin-Lifecycle-Verwaltung, keine Abhaengigkeits-Konflikte mit anderen Plugins. Der Server ist die Anwendung.
-
----
-
-## 5. Contra-Argumente gegen Minestom
-
-### 5.1 Alles selbst implementieren
-Elytra-Physik, Collision-Detection, Boost-Mechaniken — alles muss von Grund auf selbst gebaut werden. Das ist erheblicher Entwicklungsaufwand und eine potenzielle Fehlerquelle. Die Vanilla-Elytra-Physik ist komplex (Glide-Winkel, Feuerwerkraketen-Boost, Kollision mit Bloecken).
-
-### 5.2 Java 25 Anforderung
-Java 25 ist neuer als der bisherige Projekt-Standard (Java 21). Build-Pipelines, CI/CD und Deployment-Infrastruktur muessen aktualisiert werden. Java 25 ist moeglicherweise noch kein LTS-Release.
-
-### 5.3 Kleineres Ecosystem
-Paper hat eine grosse Community, umfangreiche Dokumentation und viele Bibliotheken. Minestom hat ein deutlich kleineres Ecosystem — bei Problemen gibt es weniger Ressourcen und Erfahrungsberichte.
-
-### 5.4 Keine Vanilla-Mechaniken out-of-the-box
-Alles, was ueber das reine Protokoll hinausgeht, muss selbst implementiert oder ueber Community-Extensions nachgeruestet werden. Das betrifft auch scheinbar triviale Dinge wie Block-Placement, Inventar-Handling oder Partikel-Effekte.
-
-### 5.5 CloudNet-Integration hat bekannte Probleme
-Die CloudNet-Minestom-Integration hat bekannte Issues, insbesondere beim Shutdown-Verhalten (siehe CloudNet Issue #1304). Das kann zu Problemen im Produktivbetrieb fuehren.
-
-### 5.6 API-Stabilitaet
-Die Minestom-API aendert sich haeufiger als die Paper-API. Breaking Changes zwischen Versionen sind moeglich und erfordern regelmaessige Anpassungen am Code.
+### 4.7 No Plugin Overhead
+No plugin classloader, no plugin lifecycle management, no dependency conflicts with other plugins. The server is the application.
 
 ---
 
-## 6. Vorher/Nachher Vergleich
+## 5. Contra Arguments against Minestom
 
-| Bereich | Vorher (Paper) | Nachher (Minestom) |
+### 5.1 Everything Must Be Implemented Manually
+Elytra physics, collision detection, boost mechanics — everything must be built from the ground up. This is significant development effort and a potential source of errors. The vanilla elytra physics are complex (glide angles, firework rocket boost, block collision).
+
+### 5.2 Java 25 Requirement
+Java 25 is newer than the previous project standard (Java 21). Build pipelines, CI/CD, and deployment infrastructure must be updated. Java 25 may not yet be an LTS release.
+
+### 5.3 Smaller Ecosystem
+Paper has a large community, extensive documentation, and many libraries. Minestom has a significantly smaller ecosystem — when problems arise, there are fewer resources and experience reports.
+
+### 5.4 No Vanilla Mechanics Out-of-the-Box
+Everything beyond the pure protocol must be implemented manually or added through community extensions. This also affects seemingly trivial things like block placement, inventory handling, or particle effects.
+
+### 5.5 CloudNet Integration Has Known Issues
+The CloudNet-Minestom integration has known issues, particularly with shutdown behavior (see CloudNet Issue #1304). This can lead to problems in production.
+
+### 5.6 API Stability
+The Minestom API changes more frequently than the Paper API. Breaking changes between versions are possible and require regular code adjustments.
+
+---
+
+## 6. Before/After Comparison
+
+| Area | Before (Paper) | After (Minestom) |
 |---------|---------------|-------------------|
-| **Server-Typ** | Paper-Server mit Plugin | Standalone-Server mit eigener `main()` |
-| **Java-Version** | Java 21 | Java 25 |
-| **World-Format** | Paper laedt Welten automatisch | Anvil-Format direkt laden via `AnvilLoader` |
-| **Physik** | Vanilla Elytra-Physik vom Server | Eigenimplementierung erforderlich |
-| **Events** | Bukkit Event-System (`@EventHandler`) | Minestom Event-Nodes (typsicheres Event-System) |
+| **Server Type** | Paper server with plugin | Standalone server with own `main()` |
+| **Java Version** | Java 21 | Java 25 |
+| **World Format** | Paper loads worlds automatically | Anvil format loaded directly via `AnvilLoader` |
+| **Physics** | Vanilla elytra physics from server | Custom implementation required |
+| **Events** | Bukkit event system (`@EventHandler`) | Minestom event nodes (type-safe event system) |
 | **Scheduler** | `BukkitScheduler` / `BukkitRunnable` | Minestom `Scheduler` / `TaskSchedule` |
-| **Commands** | Cloud mit `cloud-paper` Integration | Cloud mit `cloud-minestom` Integration |
-| **Config** | plugin.yml (auto-generiert via `plugin-yml`) | Entfaellt — Konfiguration in `main()` |
-| **Tests** | MockBukkit + JUnit 5 | Direkte Minestom-Instanz + JUnit 5 (kein MockBukkit) |
-| **Deployment** | Plugin-JAR in Paper-Server `plugins/` Ordner | Fat-JAR als eigenstaendiger Prozess |
-| **Dependencies** | Paper API, plugin-yml, MockBukkit | Minestom Core, keine Plugin-Infrastruktur |
+| **Commands** | Cloud with `cloud-paper` integration | Cloud with `cloud-minestom` integration |
+| **Config** | plugin.yml (auto-generated via `plugin-yml`) | Not needed — configuration in `main()` |
+| **Tests** | MockBukkit + JUnit 5 | Direct Minestom instance + JUnit 5 (no MockBukkit) |
+| **Deployment** | Plugin JAR in Paper server `plugins/` folder | Fat JAR as standalone process |
+| **Dependencies** | Paper API, plugin-yml, MockBukkit | Minestom Core, no plugin infrastructure |
 
 ---
 
-## 7. Migrationsumfang
+## 7. Migration Scope
 
-### Betroffene Module
+### Affected Modules
 
-| Modul | Aktion | Aufwand |
+| Module | Action | Effort |
 |-------|--------|---------|
-| `plugins/game` | Komplett neu auf Minestom | Hoch |
-| `shared/conversation-api` | Neu schreiben (plattform-agnostisch) | Mittel |
-| `shared/common` (ECS) | Bleibt unveraendert (keine Bukkit-Abhaengigkeit) | Keiner |
-| `shared/phase` | Bleibt unveraendert (keine Bukkit-Abhaengigkeit) | Keiner |
-| `shared/database` | Bleibt unveraendert | Keiner |
-| `plugins/setup` | Bleibt auf Paper | Keiner |
+| `plugins/game` | Complete rebuild on Minestom | High |
+| `shared/conversation-api` | Rewrite (platform-agnostic) | Medium |
+| `shared/common` (ECS) | Remains unchanged (no Bukkit dependency) | None |
+| `shared/phase` | Remains unchanged (no Bukkit dependency) | None |
+| `shared/database` | Remains unchanged | None |
+| `plugins/setup` | Stays on Paper | None |
 
-### Dateien mit Bukkit-Imports (zu migrieren)
+### Files with Bukkit Imports (to migrate)
 
-- **`plugins/game`**: 40+ Dateien — Events, Listener, Scheduler, Player-Handling, World-API
-- **`shared/conversation-api`**: 7 Dateien — Komplett neu zu implementieren
+- **`plugins/game`**: 40+ files — Events, listeners, scheduler, player handling, world API
+- **`shared/conversation-api`**: 7 files — Complete reimplementation needed
 
 ---
 
-## 8. Risikobewertung
+## 8. Risk Assessment
 
-| Risiko | Wahrscheinlichkeit | Auswirkung | Mitigation |
+| Risk | Probability | Impact | Mitigation |
 |--------|-------------------|------------|------------|
-| Elytra-Physik weicht von Vanilla ab | Hoch | Mittel | Referenz-Dokumentation erstellen, iteratives Tuning |
-| CloudNet-Shutdown-Problem | Mittel | Hoch | Issue #1304 verfolgen, eigenen Shutdown-Hook implementieren |
-| Minestom Breaking Changes | Mittel | Mittel | Version pinnen, Updates kontrolliert durchfuehren |
-| Java 25 Kompatibilitaet in CI/CD | Niedrig | Niedrig | Build-Pipeline fruehzeitig umstellen |
-| Laengere Entwicklungszeit als geplant | Hoch | Mittel | MVP definieren, schrittweise migrieren |
+| Elytra physics deviates from vanilla | High | Medium | Create reference documentation, iterative tuning |
+| CloudNet shutdown problem | Medium | High | Track issue #1304, implement own shutdown hook |
+| Minestom breaking changes | Medium | Medium | Pin version, perform updates in a controlled manner |
+| Java 25 compatibility in CI/CD | Low | Low | Update build pipeline early |
+| Longer development time than planned | High | Medium | Define MVP, migrate incrementally |

@@ -1,118 +1,118 @@
-# Voyager Migrationsplan: Paper zu Minestom
+# Voyager Migration Plan: Paper to Minestom
 
-> **Status:** Entwurf
-> **Erstellt:** 2026-03-29
-> **Ziel:** Migration des ElytraRace Game-Plugins von Paper nach Minestom als Standalone-Server
+> **Status:** Draft
+> **Created:** 2026-03-29
+> **Goal:** Migrate the ElytraRace game plugin from Paper to Minestom as a standalone server
 
-## Entscheidungen
+## Decisions
 
-| Entscheidung | Wert |
+| Decision | Value |
 |---|---|
-| Java-Version | 25 |
-| Server-Typ | Minestom Standalone (eigene `main()`) |
-| Welt-Format | Anvil (bestehende Maps kompatibel) |
-| Conversation API | Neu geschrieben, plattform-agnostisch |
-| Setup-Plugin | Entfaellt (wird spaeter separat geloest) |
+| Java Version | 25 |
+| Server Type | Minestom Standalone (own `main()`) |
+| World Format | Anvil (existing maps compatible) |
+| Conversation API | Rewritten, platform-agnostic |
+| Setup Plugin | Out of scope (will be solved separately later) |
 
-## Betroffene Module
+## Affected Modules
 
-| Modul | Aktion |
+| Module | Action |
 |---|---|
-| `shared/common` | Bereits Bukkit-frei -- keine Aenderung noetig |
-| `shared/phase` | Bereits Bukkit-frei -- keine Aenderung noetig |
-| `shared/conversation-api` | **Neu schreiben** -- 7 Dateien mit Bukkit-Imports |
-| `shared/database` | Unveraendert -- Hibernate/HikariCP bleibt |
-| `plugins/game` | **Komplett migrieren** auf Minestom |
-| `plugins/setup` | **Entfaellt** im MVP (FAWE-abhaengig) |
+| `shared/common` | Already Bukkit-free -- no changes needed |
+| `shared/phase` | Already Bukkit-free -- no changes needed |
+| `shared/conversation-api` | **Rewrite** -- 7 files with Bukkit imports |
+| `shared/database` | Unchanged -- Hibernate/HikariCP stays |
+| `plugins/game` | **Fully migrate** to Minestom |
+| `plugins/setup` | **Out of scope** for MVP (FAWE-dependent) |
 
 ---
 
 ## Milestones
 
-### Milestone 1: Foundation (Infrastruktur)
+### Milestone 1: Foundation (Infrastructure)
 
-Grundlegende Build- und Server-Infrastruktur aufsetzen.
+Set up basic build and server infrastructure.
 
-| ID | Titel | Beschreibung | Groesse | Abhaengigkeit | Agent |
+| ID | Title | Description | Size | Dependency | Agent |
 |---|---|---|---|---|---|
-| M1-01 | `chore: Java 25 Upgrade in Gradle konfigurieren` | `sourceCompatibility`, `targetCompatibility` und `--release`-Flag auf Java 25 setzen. Gradle Toolchain auf JDK 25 umstellen. | S | -- | voyager-build-agent |
-| M1-02 | `chore: Minestom Dependency zum Version Catalog hinzufuegen` | Minestom als Library in `settings.gradle.kts` Version Catalog aufnehmen. Paper-Dependency bleibt vorerst fuer shared-Module bestehen. | S | -- | voyager-build-agent |
-| M1-03 | `refactor: Neues Modul `server` fuer Standalone-Server anlegen` | Neues Gradle-Submodul `server` erstellen, das als Standalone-Minestom-Server fungiert. Abhaengigkeiten zu `shared/common`, `shared/phase`, `shared/database` konfigurieren. | M | M1-01, M1-02 | voyager-build-agent |
-| M1-04 | `feat: Minestom Server-Bootstrap mit main() implementieren` | `main()`-Methode, `MinecraftServer.init()`, Standard-Instance erstellen, Server auf konfigurierbarem Port starten. Grundlegende Server-Konfiguration (MOTD, Max Players) via Datei oder Umgebungsvariablen. | M | M1-03 | voyager-core-agent |
-| M1-05 | `chore: GitHub Actions CI/CD auf Java 25 und neues Modul anpassen` | Build-Matrix auf Java 25 aktualisieren. `server`-Modul in Build-Pipeline aufnehmen. Shadow-JAR-Artefakt fuer das Server-Modul erzeugen. | S | M1-03 | voyager-build-agent |
-| M1-06 | `test: Server-Bootstrap Integrationstest schreiben` | Test, der den Minestom-Server startet, auf einen Port bindet und sich wieder herunterfaehrt. Verifiziert, dass der Lifecycle funktioniert. | S | M1-04 | voyager-test-agent |
+| M1-01 | `chore: configure Java 25 upgrade in Gradle` | Set `sourceCompatibility`, `targetCompatibility` and `--release` flag to Java 25. Switch Gradle toolchain to JDK 25. | S | -- | voyager-build-agent |
+| M1-02 | `chore: add Minestom dependency to version catalog` | Add Minestom as library in `settings.gradle.kts` version catalog. Paper dependency remains for shared modules. | S | -- | voyager-build-agent |
+| M1-03 | `refactor: create new 'server' module for standalone server` | Create new Gradle submodule `server` that acts as standalone Minestom server. Configure dependencies to `shared/common`, `shared/phase`, `shared/database`. | M | M1-01, M1-02 | voyager-build-agent |
+| M1-04 | `feat: implement Minestom server bootstrap with main()` | `main()` method, `MinecraftServer.init()`, create default instance, start server on configurable port. Basic server configuration (MOTD, max players) via file or environment variables. | M | M1-03 | voyager-core-agent |
+| M1-05 | `chore: update GitHub Actions CI/CD for Java 25 and new module` | Update build matrix to Java 25. Include `server` module in build pipeline. Generate shadow JAR artifact for server module. | S | M1-03 | voyager-build-agent |
+| M1-06 | `test: write server bootstrap integration test` | Test that starts the Minestom server, binds to a port, and shuts down cleanly. Verifies lifecycle works. | S | M1-04 | voyager-test-agent |
 
 ---
 
 ### Milestone 2: Shared Module Cleanup
 
-Conversation API plattform-agnostisch neu schreiben und letzte Bukkit-Abhaengigkeiten entfernen.
+Rewrite conversation API platform-agnostic and remove last Bukkit dependencies.
 
-| ID | Titel | Beschreibung | Groesse | Abhaengigkeit | Agent |
+| ID | Title | Description | Size | Dependency | Agent |
 |---|---|---|---|---|---|
-| M2-01 | `refactor: Plattform-Abstraktionen fuer Conversation API definieren` | Interfaces fuer `ConversationPlayer`, `ConversationScheduler` und `ConversationMessenger` definieren, die keine Bukkit-Typen verwenden. Diese ersetzen die direkten Bukkit-Referenzen (`Plugin`, `Player`, `Bukkit.getScheduler()`). | M | -- | voyager-core-agent |
-| M2-02 | `refactor: Conversation API von Bukkit-Imports befreien` | Alle 7 Dateien in `shared/conversation-api` migrieren: `Conversation`, `ConversationContext`, `ConversationFactory`, `ConversationTracker`, `InactivityConversationCanceller`, `PlayerNamePrompt`, `PluginNameConversationPrefix`. Bukkit-Typen durch die neuen Abstraktionen aus M2-01 ersetzen. | L | M2-01 | voyager-core-agent |
-| M2-03 | `feat: Minestom-Adapter fuer Conversation API implementieren` | Implementierungen von `ConversationPlayer`, `ConversationScheduler` und `ConversationMessenger` fuer Minestom erstellen. Diese leben im `server`-Modul. | M | M2-02, M1-03 | voyager-core-agent |
-| M2-04 | `test: Unit-Tests fuer plattform-agnostische Conversation API` | Tests fuer `Conversation`, `ConversationFactory` und `ConversationTracker` mit Mock-Implementierungen der neuen Interfaces. Sicherstellen, dass Prompt-Ketten, Timeout und Abbruch korrekt funktionieren. | M | M2-02 | voyager-test-agent |
-| M2-05 | `refactor: Paper-Dependency aus shared/conversation-api build.gradle.kts entfernen` | Nach erfolgreicher Migration die `paper-api`-Dependency aus dem Conversation-API-Modul entfernen. Kompilierung verifizieren. | S | M2-02 | voyager-build-agent |
+| M2-01 | `refactor: define platform abstractions for conversation API` | Define interfaces for `ConversationPlayer`, `ConversationScheduler` and `ConversationMessenger` that don't use Bukkit types. These replace direct Bukkit references (`Plugin`, `Player`, `Bukkit.getScheduler()`). | M | -- | voyager-core-agent |
+| M2-02 | `refactor: free conversation API from Bukkit imports` | Migrate all 7 files in `shared/conversation-api`: `Conversation`, `ConversationContext`, `ConversationFactory`, `ConversationTracker`, `InactivityConversationCanceller`, `PlayerNamePrompt`, `PluginNameConversationPrefix`. Replace Bukkit types with new abstractions from M2-01. | L | M2-01 | voyager-core-agent |
+| M2-03 | `feat: implement Minestom adapter for conversation API` | Create implementations of `ConversationPlayer`, `ConversationScheduler` and `ConversationMessenger` for Minestom. These live in the `server` module. | M | M2-02, M1-03 | voyager-core-agent |
+| M2-04 | `test: unit tests for platform-agnostic conversation API` | Tests for `Conversation`, `ConversationFactory` and `ConversationTracker` with mock implementations of the new interfaces. Ensure prompt chains, timeout, and cancellation work correctly. | M | M2-02 | voyager-test-agent |
+| M2-05 | `refactor: remove Paper dependency from shared/conversation-api build.gradle.kts` | After successful migration, remove `paper-api` dependency from the conversation API module. Verify compilation. | S | M2-02 | voyager-build-agent |
 
 ---
 
 ### Milestone 3: Core Game (Minestom)
 
-Kern-Infrastruktur des Spiels auf Minestom portieren: Events, Scheduler, Welten, Phasen, Spieler.
+Port core game infrastructure to Minestom: events, scheduler, worlds, phases, players.
 
-| ID | Titel | Beschreibung | Groesse | Abhaengigkeit | Agent |
+| ID | Title | Description | Size | Dependency | Agent |
 |---|---|---|---|---|---|
-| M3-01 | `feat: Minestom Event-Handler Infrastruktur aufbauen` | Event-Listener-Registrierung fuer Minestom-Events (PlayerLoginEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerStartFlyingWithElytraEvent etc.) im Server-Modul aufsetzen. Modularer Aufbau analog zu `DefaultListener`. | M | M1-04 | voyager-core-agent |
-| M3-02 | `feat: Scheduler-Adapter fuer ECS EntityManager implementieren` | Minestom `SchedulerManager` nutzen, um den ECS-Game-Loop (`EntityManager.update(deltaTime)`) mit 20 TPS zu takten. Der bestehende `EntityManager` soll unveraendert bleiben. | M | M1-04 | voyager-core-agent |
-| M3-03 | `feat: Anvil World-Loading mit InstanceContainer implementieren` | `AnvilLoader` von Minestom verwenden, um bestehende Anvil-Maps in eine `InstanceContainer` zu laden. Bestehende `WorldComponent`/`SimpleWorldComponent` auf Minestom `Instance`-Referenzen umstellen. | L | M1-04 | voyager-core-agent |
-| M3-04 | `refactor: Phase-System an Minestom-Lifecycle anpassen` | `LobbyPhase`, `PreparationPhase`, `GamePhase`, `EndPhase` auf Minestom-Events und -APIs umschreiben. `LinearPhaseSeries` bleibt unveraendert (plattform-agnostisch in `shared/phase`). | L | M3-01, M3-02 | voyager-core-agent |
-| M3-05 | `feat: Spieler-Management (Join, Leave, Teleport) implementieren` | Spieler-Join-Flow: Instance zuweisen, Gamemode setzen, an Spawn teleportieren. Leave-Flow: Cleanup, Session-Update. Teleport-Logik fuer Phasenwechsel (Lobby-Spawn, Start-Position). | M | M3-01, M3-03 | voyager-core-agent |
-| M3-06 | `refactor: GameSession und Components auf Minestom-Typen umstellen` | `GameSession`, `GameStateComponent`, `SessionComponent` und weitere Components von Bukkit-Typen (`World`, `Location`, `Player`) auf Minestom-Aequivalente (`Instance`, `Pos`, `Player`) migrieren. | L | M3-03, M3-05 | voyager-core-agent |
-| M3-07 | `test: Integrationstests fuer Phase-Lifecycle und Spieler-Management` | Tests, die einen vollstaendigen Phase-Durchlauf (Lobby -> Game -> End) mit Mock-Spielern simulieren. Verifiziert korrekte Event-Ausloesung und Zustandsuebergaenge. | L | M3-04, M3-05 | voyager-test-agent |
+| M3-01 | `feat: build Minestom event handler infrastructure` | Set up event listener registration for Minestom events (PlayerLoginEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerStartFlyingWithElytraEvent etc.) in the server module. Modular setup analogous to `DefaultListener`. | M | M1-04 | voyager-core-agent |
+| M3-02 | `feat: implement scheduler adapter for ECS EntityManager` | Use Minestom `SchedulerManager` to drive the ECS game loop (`EntityManager.update(deltaTime)`) at 20 TPS. The existing `EntityManager` should remain unchanged. | M | M1-04 | voyager-core-agent |
+| M3-03 | `feat: implement Anvil world loading with InstanceContainer` | Use Minestom's `AnvilLoader` to load existing Anvil maps into an `InstanceContainer`. Adapt existing `WorldComponent`/`SimpleWorldComponent` to Minestom `Instance` references. | L | M1-04 | voyager-core-agent |
+| M3-04 | `refactor: adapt phase system to Minestom lifecycle` | Rewrite `LobbyPhase`, `PreparationPhase`, `GamePhase`, `EndPhase` to Minestom events and APIs. `LinearPhaseSeries` remains unchanged (platform-agnostic in `shared/phase`). | L | M3-01, M3-02 | voyager-core-agent |
+| M3-05 | `feat: implement player management (join, leave, teleport)` | Player join flow: assign instance, set gamemode, teleport to spawn. Leave flow: cleanup, session update. Teleport logic for phase transitions (lobby spawn, start position). | M | M3-01, M3-03 | voyager-core-agent |
+| M3-06 | `refactor: migrate GameSession and components to Minestom types` | Migrate `GameSession`, `GameStateComponent`, `SessionComponent` and other components from Bukkit types (`World`, `Location`, `Player`) to Minestom equivalents (`Instance`, `Pos`, `Player`). | L | M3-03, M3-05 | voyager-core-agent |
+| M3-07 | `test: integration tests for phase lifecycle and player management` | Tests that simulate a complete phase run (Lobby -> Game -> End) with mock players. Verify correct event triggering and state transitions. | L | M3-04, M3-05 | voyager-test-agent |
 
 ---
 
 ### Milestone 4: Gameplay
 
-Kern-Gameplay: Elytra-Physik, Kollisionserkennung, Cup-System und Spieler-Feedback.
+Core gameplay: elytra physics, collision detection, cup system, and player feedback.
 
-| ID | Titel | Beschreibung | Groesse | Abhaengigkeit | Agent |
+| ID | Title | Description | Size | Dependency | Agent |
 |---|---|---|---|---|---|
-| M4-01 | `feat: Elytra-Flugphysik implementieren` | Vanilla-nahe Elytra-Physik in Minestom implementieren. Minestom hat keine eingebaute Elytra-Physik -- Gravitation, Gleitwinkel, Geschwindigkeitsberechnung und Raketen-Boost muessen manuell ueber Velocity-Manipulation umgesetzt werden. Referenz: `docs/elytra-physics-reference.md`. | XL | M3-02, M3-05 | voyager-physics-agent |
-| M4-02 | `feat: Ring-Kollisionserkennung auf Minestom portieren` | `CollisionSystem` und Spline-basierte Ring-Erkennung (`SplineSystem`, `SimpleSplineSystem`) auf Minestom `Pos`-Typen umstellen. Bestehende `commons-geometry-euclidean`-Logik bleibt erhalten. | L | M3-06 | voyager-core-agent |
-| M4-03 | `feat: Cup-System (Map-Rotation, Scoring) migrieren` | `CupSystem`/`SimpleCupSystem` und `CupService`/`CupServiceImpl` auf Minestom portieren. Map-Wechsel ueber Instance-Management. Scoring-Logik (Punkte pro Ring, Gesamtwertung) beibehalten. | L | M3-03, M4-02 | voyager-core-agent |
-| M4-04 | `feat: Scoreboard und BossBar UI implementieren` | Minestom `Sidebar` fuer Scoreboard (aktuelle Platzierung, verbleibende Ringe) und `BossBar` fuer Timer/Fortschritt einrichten. | M | M3-05 | voyager-ui-agent |
-| M4-05 | `feat: Sound- und Partikel-Effekte hinzufuegen` | Ring-Durchflug-Sound, Countdown-Sounds, Ziel-Partikel ueber Minestom `SoundEvent` und `ParticleCreator`/`sendGroupedPacket` umsetzen. | M | M4-02 | voyager-ui-agent |
-| M4-06 | `test: Elytra-Physik Unit-Tests` | Tests fuer Geschwindigkeitsberechnung, Gleitwinkel, Gravitation und Raketen-Boost. Grenzwerte und Edge-Cases (max. Geschwindigkeit, Boden-Kollision) abdecken. | L | M4-01 | voyager-test-agent |
-| M4-07 | `test: Kollisions- und Cup-System Tests` | Tests fuer Ring-Durchflug-Erkennung (korrekt, knapp daneben, rueckwaerts), Cup-Rotation und Scoring-Berechnung. | M | M4-02, M4-03 | voyager-test-agent |
+| M4-01 | `feat: implement elytra flight physics` | Implement vanilla-like elytra physics in Minestom. Minestom has no built-in elytra physics -- gravity, glide angle, velocity calculation and rocket boost must be implemented manually via velocity manipulation. Reference: `docs/elytra-physics-reference.md`. | XL | M3-02, M3-05 | voyager-physics-agent |
+| M4-02 | `feat: port ring collision detection to Minestom` | Port `CollisionSystem` and spline-based ring detection (`SplineSystem`, `SimpleSplineSystem`) to Minestom `Pos` types. Existing `commons-geometry-euclidean` logic remains. | L | M3-06 | voyager-core-agent |
+| M4-03 | `feat: migrate cup system (map rotation, scoring)` | Port `CupSystem`/`SimpleCupSystem` and `CupService`/`CupServiceImpl` to Minestom. Map switching via instance management. Scoring logic (points per ring, overall ranking) retained. | L | M3-03, M4-02 | voyager-core-agent |
+| M4-04 | `feat: implement scoreboard and BossBar UI` | Set up Minestom `Sidebar` for scoreboard (current ranking, remaining rings) and `BossBar` for timer/progress. | M | M3-05 | voyager-ui-agent |
+| M4-05 | `feat: add sound and particle effects` | Ring passthrough sound, countdown sounds, goal particles via Minestom `SoundEvent` and `ParticleCreator`/`sendGroupedPacket`. | M | M4-02 | voyager-ui-agent |
+| M4-06 | `test: elytra physics unit tests` | Tests for velocity calculation, glide angle, gravity and rocket boost. Cover boundary values and edge cases (max speed, ground collision). | L | M4-01 | voyager-test-agent |
+| M4-07 | `test: collision and cup system tests` | Tests for ring passthrough detection (correct, barely missed, backwards), cup rotation and scoring calculation. | M | M4-02, M4-03 | voyager-test-agent |
 
 ---
 
-### Milestone 5: Polish und Deploy
+### Milestone 5: Polish and Deploy
 
-Integration, Persistenz, Performance und Deployment.
+Integration, persistence, performance, and deployment.
 
-| ID | Titel | Beschreibung | Groesse | Abhaengigkeit | Agent |
+| ID | Title | Description | Size | Dependency | Agent |
 |---|---|---|---|---|---|
-| M5-01 | `feat: CloudNet v4 Integration implementieren` | CloudNet v4 Bridge-Modul integrieren: Service-Registrierung, Spieler-Routing, Server-Status-Updates. Automatisches Herunterfahren nach Spielende. | L | M3-04 | voyager-infra-agent |
-| M5-02 | `feat: Datenbank-Schema um Scores und Statistiken erweitern` | Neue Hibernate-Entities fuer Match-Ergebnisse, Rundenzeiten und Spieler-Statistiken. Migrations-Skripte fuer das erweiterte Schema. | M | M4-03 | voyager-core-agent |
-| M5-03 | `feat: Ergebnisse und Statistiken persistieren` | Nach Spielende Match-Ergebnisse, Rundenzeiten und Spieler-Statistiken in die Datenbank schreiben. Bestehenden `shared/database`-Layer nutzen. | M | M5-02 | voyager-core-agent |
-| M5-04 | `chore: Docker-Image fuer Standalone-Server erstellen` | Multi-Stage Dockerfile: Build mit Java 25, Runtime als minimales JRE-Image. `docker-compose.yml` erweitern um Server-Service neben MariaDB. | M | M1-05 | voyager-infra-agent |
-| M5-05 | `perf: Performance-Profiling und Optimierung` | Physik-Loop, Kollisionserkennung und Instance-Management unter Last testen (20+ Spieler). Hotspots identifizieren und optimieren. | L | M4-01, M4-02 | voyager-core-agent |
-| M5-06 | `docs: Migrations-Dokumentation und Betriebshandbuch` | Dokumentation fuer Deployment, Konfiguration, Map-Format und CloudNet-Setup. Aenderungen gegenueber der Paper-Version dokumentieren. | M | M5-01, M5-04 | voyager-docs-agent |
-| M5-07 | `feat: Boost-Ringe und Power-Ups implementieren` | Spezielle Ring-Typen (Speed-Boost, Slow, Hoehenaenderung) als erweiterbare Ring-Komponenten im ECS. | L | M4-02 | voyager-core-agent |
-| M5-08 | `feat: Ghost-Replay System` | Bestzeiten als Geisterfahrer aufzeichnen und wiedergeben. Positionen seriell in Datei oder Datenbank speichern, als unsichtbare Entities replayed. | XL | M4-01, M5-03 | voyager-core-agent |
-| M5-09 | `feat: Leaderboard-System` | Globale und pro-Map Bestenlisten aus der Datenbank laden und als Hologramme oder Chat-Kommandos anzeigen. | M | M5-03 | voyager-core-agent |
+| M5-01 | `feat: implement CloudNet v4 integration` | Integrate CloudNet v4 bridge module: service registration, player routing, server status updates. Automatic shutdown after game end. | L | M3-04 | voyager-infra-agent |
+| M5-02 | `feat: extend database schema with scores and statistics` | New Hibernate entities for match results, lap times, and player statistics. Migration scripts for the extended schema. | M | M4-03 | voyager-core-agent |
+| M5-03 | `feat: persist results and statistics` | Write match results, lap times and player statistics to database after game end. Use existing `shared/database` layer. | M | M5-02 | voyager-core-agent |
+| M5-04 | `chore: create Docker image for standalone server` | Multi-stage Dockerfile: build with Java 25, runtime as minimal JRE image. Extend `docker-compose.yml` with server service alongside MariaDB. | M | M1-05 | voyager-infra-agent |
+| M5-05 | `perf: performance profiling and optimization` | Test physics loop, collision detection, and instance management under load (20+ players). Identify hotspots and optimize. | L | M4-01, M4-02 | voyager-core-agent |
+| M5-06 | `docs: migration documentation and operations manual` | Documentation for deployment, configuration, map format, and CloudNet setup. Document changes compared to the Paper version. | M | M5-01, M5-04 | voyager-docs-agent |
+| M5-07 | `feat: implement boost rings and power-ups` | Special ring types (speed boost, slow, altitude change) as extensible ring components in the ECS. | L | M4-02 | voyager-core-agent |
+| M5-08 | `feat: ghost replay system` | Record and replay best times as ghost riders. Store positions serially in file or database, replayed as invisible entities. | XL | M4-01, M5-03 | voyager-core-agent |
+| M5-09 | `feat: leaderboard system` | Load global and per-map leaderboards from database and display as holograms or chat commands. | M | M5-03 | voyager-core-agent |
 
 ---
 
-## Abhaengigkeitsgraph (vereinfacht)
+## Dependency Graph (simplified)
 
 ```
 M1-01 (Java 25) ──┐
-M1-02 (Minestom) ──┼── M1-03 (Server-Modul) ── M1-04 (Bootstrap) ── M1-06 (Test)
+M1-02 (Minestom) ──┼── M1-03 (Server Module) ── M1-04 (Bootstrap) ── M1-06 (Test)
                    │                                    │
                    │                                    ├── M3-01 (Events)
                    │                                    ├── M3-02 (Scheduler)
@@ -120,47 +120,47 @@ M1-02 (Minestom) ──┼── M1-03 (Server-Modul) ── M1-04 (Bootstrap) �
                    │
 M1-05 (CI/CD) ─────┘
 
-M2-01 (Abstraktionen) ── M2-02 (Migration) ── M2-03 (Adapter)
+M2-01 (Abstractions) ── M2-02 (Migration) ── M2-03 (Adapter)
                                 │                      │
                                 ├── M2-04 (Tests)      │
                                 └── M2-05 (Cleanup)    │
 
-M3-01 + M3-02 ── M3-04 (Phasen)
-M3-01 + M3-03 ── M3-05 (Spieler) ── M3-06 (Components)
+M3-01 + M3-02 ── M3-04 (Phases)
+M3-01 + M3-03 ── M3-05 (Players) ── M3-06 (Components)
 M3-04 + M3-05 ── M3-07 (Tests)
 
-M3-02 + M3-05 ── M4-01 (Physik) ── M4-06 (Tests)
-M3-06 ── M4-02 (Kollision) ── M4-03 (Cup) ── M4-07 (Tests)
-M4-02 ── M4-05 (Effekte)
+M3-02 + M3-05 ── M4-01 (Physics) ── M4-06 (Tests)
+M3-06 ── M4-02 (Collision) ── M4-03 (Cup) ── M4-07 (Tests)
+M4-02 ── M4-05 (Effects)
 M3-05 ── M4-04 (UI)
 
-M4-03 ── M5-02 (DB-Schema) ── M5-03 (Persistenz) ── M5-09 (Leaderboard)
-M5-03 + M4-01 ── M5-08 (Ghost-Replay)
+M4-03 ── M5-02 (DB Schema) ── M5-03 (Persistence) ── M5-09 (Leaderboard)
+M5-03 + M4-01 ── M5-08 (Ghost Replay)
 M3-04 ── M5-01 (CloudNet)
 M1-05 ── M5-04 (Docker)
 M4-01 + M4-02 ── M5-05 (Performance)
 ```
 
-## Schaetzung Gesamtaufwand
+## Total Effort Estimate
 
-| Milestone | Tickets | Geschaetzter Aufwand |
+| Milestone | Tickets | Estimated Effort |
 |---|---|---|
-| M1: Foundation | 6 | ~2 Wochen |
-| M2: Shared Cleanup | 5 | ~2 Wochen |
-| M3: Core Game | 7 | ~4 Wochen |
-| M4: Gameplay | 7 | ~5 Wochen |
-| M5: Polish & Deploy | 9 | ~5 Wochen |
-| **Gesamt** | **34** | **~18 Wochen** |
+| M1: Foundation | 6 | ~2 weeks |
+| M2: Shared Cleanup | 5 | ~2 weeks |
+| M3: Core Game | 7 | ~4 weeks |
+| M4: Gameplay | 7 | ~5 weeks |
+| M5: Polish & Deploy | 9 | ~5 weeks |
+| **Total** | **34** | **~18 weeks** |
 
-> M1 und M2 koennen teilweise parallel bearbeitet werden (unterschiedliche Module).
-> M5-07, M5-08, M5-09 sind Nice-to-Have und koennen nach dem MVP priorisiert werden.
+> M1 and M2 can partially be worked on in parallel (different modules).
+> M5-07, M5-08, M5-09 are nice-to-have and can be prioritized after the MVP.
 
-## Risiken
+## Risks
 
-| Risiko | Auswirkung | Mitigation |
+| Risk | Impact | Mitigation |
 |---|---|---|
-| Elytra-Physik weicht von Vanilla ab | Spielgefuehl leidet | Fruehes Prototyping in M4-01, Vergleichstests gegen Paper |
-| Minestom API-Aenderungen | Breaking Changes | Minestom-Version pinnen, Adapter-Pattern nutzen |
-| Java 25 Kompatibilitaet mit Dependencies | Build-Fehler | Frueh testen in M1-01, ggf. auf Java 24 fallback |
-| Anvil-Loader Limitierungen | Maps laden nicht korrekt | Bekannte Maps frueh in M3-03 testen |
-| Performance bei vielen Spielern | Lag bei Physik/Kollision | Profiling in M5-05, ggf. raeumliche Partitionierung |
+| Elytra physics deviates from vanilla | Gameplay feel suffers | Early prototyping in M4-01, comparison tests against Paper |
+| Minestom API changes | Breaking changes | Pin Minestom version, use adapter pattern |
+| Java 25 compatibility with dependencies | Build errors | Test early in M1-01, fallback to Java 24 if needed |
+| Anvil loader limitations | Maps don't load correctly | Test known maps early in M3-03 |
+| Performance with many players | Lag in physics/collision | Profiling in M5-05, spatial partitioning if needed |
