@@ -6,6 +6,7 @@ import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.setup.command.CupCreateCommand;
+import net.elytrarace.setup.command.CupListCommand;
 import net.elytrarace.setup.command.EditingContextManager;
 import net.elytrarace.setup.command.MapCreateCommand;
 import net.elytrarace.setup.command.PortalCommand;
@@ -16,6 +17,7 @@ import net.elytrarace.setup.command.PortalShowCommand;
 import net.elytrarace.setup.command.PortalTestflyCommand;
 import net.elytrarace.setup.command.PortalUndoCommand;
 import net.elytrarace.setup.command.PortalsCommand;
+import net.elytrarace.setup.gui.CupGuiListener;
 import net.elytrarace.setup.gui.PortalManagerListener;
 import net.elytrarace.setup.testfly.TestflyManager;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
@@ -105,6 +107,7 @@ public class ElytraRace extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new SetupListener(this), this);
         getServer().getPluginManager().registerEvents(new PortalManagerListener(this.mapService, this.undoManager), this);
+        getServer().getPluginManager().registerEvents(new CupGuiListener(this.cupService, this.mapService, this), this);
     }
 
     private void registerCommands() {
@@ -140,6 +143,8 @@ public class ElytraRace extends JavaPlugin {
                     }
                 })
         );
+        // Cup GUI: /elytrarace cup (opens cup manager)
+        CupListCommand.register(this.commandManager, this.cupService, this);
         // Cup create: /elytrarace cup create <name> <displayName>
         CupCreateCommand.register(this.commandManager, this.cupService);
         // Map create: /elytrarace map create <cup> <name> <displayName>
