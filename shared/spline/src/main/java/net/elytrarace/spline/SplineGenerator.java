@@ -1,9 +1,8 @@
 package net.elytrarace.spline;
 
+import net.elytrarace.common.map.model.GuidePointDTO;
 import net.elytrarace.common.map.model.LocationDTO;
 import net.elytrarace.common.map.model.PortalDTO;
-import net.elytrarace.common.utils.SplineAPI;
-import net.elytrarace.common.utils.WindowedStreamUtils;
 import org.apache.commons.geometry.euclidean.threed.Vector3D;
 
 import java.util.ArrayList;
@@ -173,6 +172,23 @@ public final class SplineGenerator {
      */
     public static List<Vector3D> generate(Collection<? extends PortalDTO> portals) {
         return generate(portals, SplineConfig.EASY);
+    }
+
+    /**
+     * Merges portals and guide points into a single sorted PathPoint list.
+     * This is the standard way to build the path for spline generation.
+     */
+    public static List<PathPoint> buildPathPoints(Collection<? extends PortalDTO> portals,
+                                                  List<GuidePointDTO> guidePoints) {
+        var points = new ArrayList<PathPoint>();
+        points.addAll(portalsToPathPoints(portals));
+        for (var guide : guidePoints) {
+            points.add(new PathPoint.GuidePoint(
+                    Vector3D.of(guide.x(), guide.y(), guide.z()),
+                    guide.orderIndex()));
+        }
+        points.sort(Comparator.comparingInt(PathPoint::orderIndex));
+        return points;
     }
 
     /**

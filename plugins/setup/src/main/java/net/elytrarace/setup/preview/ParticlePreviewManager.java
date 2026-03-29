@@ -1,7 +1,7 @@
 package net.elytrarace.setup.preview;
 
 import net.elytrarace.common.map.MapService;
-import net.elytrarace.setup.guide.GuidePointStore;
+import net.elytrarace.common.guide.GuidePointStore;
 import net.elytrarace.setup.util.SetupGuard;
 import net.elytrarace.spline.SplineConfig;
 import org.bukkit.Bukkit;

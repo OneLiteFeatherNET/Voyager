@@ -2,7 +2,6 @@ package net.elytrarace.setup.preview;
 
 import net.elytrarace.common.map.model.GuidePointDTO;
 import net.elytrarace.common.map.model.PortalDTO;
-import net.elytrarace.spline.PathPoint;
 import net.elytrarace.spline.SplineConfig;
 import net.elytrarace.spline.SplineGenerator;
 import org.apache.commons.geometry.euclidean.threed.Vector3D;
@@ -10,9 +9,7 @@ import org.bukkit.Color;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -32,7 +29,7 @@ public final class SplineRenderer {
     public static List<Vector3D> generateSplinePoints(Collection<? extends PortalDTO> portals,
                                                       List<GuidePointDTO> guidePoints,
                                                       SplineConfig config) {
-        var pathPoints = buildPathPoints(portals, guidePoints);
+        var pathPoints = SplineGenerator.buildPathPoints(portals, guidePoints);
         if (pathPoints.size() < 2) return List.of();
         var segments = SplineGenerator.compile(pathPoints);
         return SplineGenerator.sampleUniform(segments, config);
@@ -74,19 +71,4 @@ public final class SplineRenderer {
         }
     }
 
-    /**
-     * Merges portals and guide points into a single sorted PathPoint list.
-     */
-    static List<PathPoint> buildPathPoints(Collection<? extends PortalDTO> portals,
-                                           List<GuidePointDTO> guidePoints) {
-        var points = new ArrayList<PathPoint>();
-        points.addAll(SplineGenerator.portalsToPathPoints(portals));
-        for (var guide : guidePoints) {
-            points.add(new PathPoint.GuidePoint(
-                    Vector3D.of(guide.x(), guide.y(), guide.z()),
-                    guide.orderIndex()));
-        }
-        points.sort(Comparator.comparingInt(PathPoint::orderIndex));
-        return points;
-    }
 }

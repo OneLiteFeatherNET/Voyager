@@ -3,7 +3,7 @@ package net.elytrarace.setup.command;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.map.model.GuidePointDTO;
 import net.elytrarace.common.map.model.PortalDTO;
-import net.elytrarace.setup.guide.GuidePointStore;
+import net.elytrarace.common.guide.GuidePointStore;
 import net.elytrarace.setup.util.SetupGuard;
 import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;

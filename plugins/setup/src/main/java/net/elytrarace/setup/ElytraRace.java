@@ -11,7 +11,7 @@ import net.elytrarace.setup.command.CupRenameCommand;
 import net.elytrarace.setup.command.EditingContextManager;
 import net.elytrarace.setup.command.MapDeleteCommand;
 import net.elytrarace.setup.command.GuideCommand;
-import net.elytrarace.setup.guide.GuidePointStore;
+import net.elytrarace.common.guide.GuidePointStore;
 import net.elytrarace.setup.command.MapCreateCommand;
 import net.elytrarace.setup.command.MapLoadCommand;
 import net.elytrarace.setup.command.MapRenameCommand;

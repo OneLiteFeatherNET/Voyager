@@ -1,4 +1,4 @@
-package net.elytrarace.setup.guide;
+package net.elytrarace.common.guide;
 
 import com.google.gson.reflect.TypeToken;
 import net.elytrarace.common.file.GsonFileHandler;
