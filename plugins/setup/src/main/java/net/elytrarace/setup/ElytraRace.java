@@ -8,6 +8,8 @@ import net.elytrarace.common.map.MapService;
 import net.elytrarace.setup.command.CupCreateCommand;
 import net.elytrarace.setup.command.CupListCommand;
 import net.elytrarace.setup.command.EditingContextManager;
+import net.elytrarace.setup.command.GuideCommand;
+import net.elytrarace.setup.guide.GuidePointStore;
 import net.elytrarace.setup.command.MapCreateCommand;
 import net.elytrarace.setup.command.MapLoadCommand;
 import net.elytrarace.setup.command.MapRenameCommand;
@@ -66,6 +68,7 @@ public class ElytraRace extends JavaPlugin {
     private MapService mapService;
     private UndoManager undoManager;
     private EditingContextManager editingContextManager;
+    private GuidePointStore guidePointStore;
     private ParticlePreviewManager previewManager;
     private TestflyManager testflyManager;
     private @NonNull PaperCommandManager<Source> commandManager;
@@ -89,7 +92,8 @@ public class ElytraRace extends JavaPlugin {
         this.mapService = MapService.create(getDataPath());
         this.undoManager = new UndoManager();
         this.editingContextManager = new EditingContextManager();
-        this.previewManager = new ParticlePreviewManager(this.mapService);
+        this.guidePointStore = new GuidePointStore(getDataPath());
+        this.previewManager = new ParticlePreviewManager(this.mapService, this.guidePointStore);
         this.previewManager.start(this);
         this.testflyManager = new TestflyManager();
         this.testflyManager.start(this);
@@ -175,6 +179,8 @@ public class ElytraRace extends JavaPlugin {
         PortalSaveCommand.register(this.commandManager, this.mapService, this.editingContextManager, this.undoManager);
         // Portal testfly: /elytrarace portal testfly [stop]
         PortalTestflyCommand.register(this.commandManager, this.mapService, this.testflyManager);
+        // Guide point commands: /elytrarace guide [delete|list]
+        GuideCommand.register(this.commandManager, this.mapService, this.guidePointStore);
         // Portals GUI: /elytrarace portals
         PortalsCommand.register(this.commandManager, this.mapService, this);
 

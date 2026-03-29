@@ -1,6 +1,7 @@
 package net.elytrarace.setup.preview;
 
 import net.elytrarace.common.map.MapService;
+import net.elytrarace.setup.guide.GuidePointStore;
 import net.elytrarace.setup.util.SetupGuard;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
@@ -13,19 +14,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages per-player portal particle preview and spline path visualization.
- * Runs a repeating task that renders portal outlines and the spline ideal line.
+ * Runs a repeating task that renders portal outlines, the spline ideal line,
+ * and guide point markers.
  */
 public final class ParticlePreviewManager {
 
-    private static final long RENDER_INTERVAL_TICKS = 10L; // every 0.5 sec
+    private static final long RENDER_INTERVAL_TICKS = 10L;
 
     private final Set<UUID> portalPreviewPlayers = ConcurrentHashMap.newKeySet();
     private final Set<UUID> splinePreviewPlayers = ConcurrentHashMap.newKeySet();
     private final MapService mapService;
+    private final GuidePointStore guideStore;
     private BukkitTask task;
 
-    public ParticlePreviewManager(MapService mapService) {
+    public ParticlePreviewManager(MapService mapService, GuidePointStore guideStore) {
         this.mapService = mapService;
+        this.guideStore = guideStore;
     }
 
     public void start(Plugin plugin) {
@@ -41,14 +45,12 @@ public final class ParticlePreviewManager {
         splinePreviewPlayers.clear();
     }
 
-    /** Toggles portal outline preview. Returns true if now enabled. */
     public boolean togglePortals(UUID playerId) {
         if (portalPreviewPlayers.remove(playerId)) return false;
         portalPreviewPlayers.add(playerId);
         return true;
     }
 
-    /** Toggles spline path preview. Returns true if now enabled. */
     public boolean toggleSpline(UUID playerId) {
         if (splinePreviewPlayers.remove(playerId)) return false;
         splinePreviewPlayers.add(playerId);
@@ -88,10 +90,12 @@ public final class ParticlePreviewManager {
                 }
             }
 
-            // Render spline ideal line
+            // Render spline ideal line + guide point markers
             if (splinePreviewPlayers.contains(playerId)) {
-                var splinePoints = SplineRenderer.generateSplinePoints(map.portals());
+                var guidePoints = guideStore.getGuidePoints(map.world());
+                var splinePoints = SplineRenderer.generateSplinePoints(map.portals(), guidePoints);
                 SplineRenderer.renderSpline(player, splinePoints);
+                SplineRenderer.renderGuidePoints(player, guidePoints);
             }
         }
     }

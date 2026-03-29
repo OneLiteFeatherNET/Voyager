@@ -12,113 +12,173 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Generates Catmull-Rom spline curves through portal centers.
- * Platform-agnostic — used by game server (Minestom), setup plugin (Paper),
- * and any future platform.
+ * Generates centripetal Catmull-Rom splines (alpha=0.5) through ordered path points.
+ * The curve passes exactly through every point — portals, guide points, and spawn.
  *
- * <p>The spline serves as a visual ideal racing line, similar to the driving
- * line in Need for Speed Shift. It shows players the optimal flight path
- * through the portals.</p>
+ * <p>Centripetal parameterization guarantees no cusps or self-intersections
+ * (Yuksel, Wilson, Schaefer 2011).</p>
+ *
+ * <p>This is the only class that knows the spline algorithm. To swap Catmull-Rom
+ * for a different algorithm, only this class needs to change.</p>
  */
 public final class SplineGenerator {
 
-    private static final int BASE_POINTS_PER_SEGMENT = 10;
-    private static final double DISTANCE_FACTOR = 0.001;
+    private static final double ALPHA = 0.5; // centripetal
+    private static final double EPSILON = 1e-10;
+    private static final double BLOCKS_PER_PARTICLE = 1.5;
+    private static final int ARC_LENGTH_SAMPLES = 64;
 
     private SplineGenerator() {}
 
     /**
-     * Generates a full spline path through all portal centers.
+     * Compiles an ordered list of path points into spline segments.
+     * Adds phantom endpoints for smooth start/end tangents.
      *
-     * @param portals the portals (uses center locations, sorted by index)
-     * @param config  spline configuration (density affects interpolation resolution)
-     * @return all interpolated spline points, or empty list if fewer than 4 portals
+     * @param points ordered path points (spawn, guide, portal — sorted by orderIndex)
+     * @return compiled segments, empty if fewer than 2 points
      */
-    public static List<Vector3D> generate(Collection<? extends PortalDTO> portals, SplineConfig config) {
-        var centers = extractSortedCenters(portals);
-        if (centers.size() < 4) {
-            return List.of();
+    public static List<SplineSegment> compile(List<? extends PathPoint> points) {
+        if (points.size() < 2) return List.of();
+
+        var positions = points.stream().map(PathPoint::position).toList();
+
+        // Phantom endpoints: mirror first/last point across the boundary
+        var phantomStart = positions.getFirst().add(
+                positions.getFirst().subtract(positions.get(1)));
+        var phantomEnd = positions.getLast().add(
+                positions.getLast().subtract(positions.get(positions.size() - 2)));
+
+        var extended = new ArrayList<Vector3D>();
+        extended.add(phantomStart);
+        extended.addAll(positions);
+        extended.add(phantomEnd);
+
+        // Build segments: for each consecutive pair in the original points
+        var segments = new ArrayList<SplineSegment>();
+        for (int i = 1; i < extended.size() - 2; i++) {
+            var p0 = extended.get(i - 1);
+            var p1 = extended.get(i);
+            var p2 = extended.get(i + 1);
+            var p3 = extended.get(i + 2);
+
+            double d01 = safeDistance(p0, p1);
+            double d12 = safeDistance(p1, p2);
+            double d23 = safeDistance(p2, p3);
+
+            double t0 = 0.0;
+            double t1 = t0 + Math.pow(d01, ALPHA);
+            double t2 = t1 + Math.pow(d12, ALPHA);
+            double t3 = t2 + Math.pow(d23, ALPHA);
+
+            segments.add(new SplineSegment(p0, p1, p2, p3, t0, t1, t2, t3));
         }
-        return interpolateAll(centers, config.density());
+
+        return segments;
     }
 
     /**
-     * Generates a partial spline path — only the segment around the current portal.
-     * Used for {@link SplineVisibility#PARTIAL} mode.
+     * Samples the spline at approximately uniform arc-length intervals.
+     * One particle every ~1.5 blocks for consistent visual density.
      *
-     * @param portals        all portals in the map
-     * @param currentPortal  index of the portal the player is approaching (0-based)
-     * @param config         spline configuration (lookAhead determines range)
-     * @return spline points for the visible segment, or empty list
+     * @param segments compiled spline segments
+     * @return sampled points for particle rendering
      */
-    public static List<Vector3D> generatePartial(Collection<? extends PortalDTO> portals,
-                                                  int currentPortal, SplineConfig config) {
-        var sorted = portals.stream()
-                .sorted(Comparator.comparingInt(PortalDTO::index))
-                .toList();
+    public static List<Vector3D> sampleUniform(List<SplineSegment> segments) {
+        if (segments.isEmpty()) return List.of();
 
-        // Range: from 1 portal behind to lookAhead portals ahead
-        int start = Math.max(0, currentPortal - 1);
-        int end = Math.min(sorted.size(), currentPortal + config.lookAhead() + 1);
-        if (end - start < 4) {
-            // Not enough portals in range — expand to minimum 4
-            start = Math.max(0, end - 4);
-            end = Math.min(sorted.size(), start + 4);
+        // Estimate total arc length
+        double totalLength = 0;
+        double[] segLengths = new double[segments.size()];
+        for (int i = 0; i < segments.size(); i++) {
+            segLengths[i] = segments.get(i).estimateLength(ARC_LENGTH_SAMPLES);
+            totalLength += segLengths[i];
         }
-        if (end - start < 4) return List.of();
 
-        var subset = sorted.subList(start, end);
-        var centers = subset.stream()
-                .map(portal -> portal.locations().stream()
-                        .filter(LocationDTO::center)
-                        .findFirst()
-                        .orElse(null))
-                .filter(loc -> loc != null)
-                .map(loc -> Vector3D.of(loc.x() + 0.5, loc.y() + 0.5, loc.z() + 0.5))
-                .toList();
+        int totalSamples = Math.max(2, (int) (totalLength / BLOCKS_PER_PARTICLE));
+        var result = new ArrayList<Vector3D>(totalSamples);
 
-        if (centers.size() < 4) return List.of();
-        return interpolateAll(centers, config.density());
-    }
-
-    /**
-     * Generates a full spline with default config. Convenience method.
-     */
-    public static List<Vector3D> generate(Collection<? extends PortalDTO> portals) {
-        return generate(portals, SplineConfig.EASY);
-    }
-
-    private static List<Vector3D> interpolateAll(List<Vector3D> centers, double densityMultiplier) {
-        int windowSize = Math.min(6, centers.size());
-        var windows = WindowedStreamUtils.windowed(centers, windowSize);
-        var result = new ArrayList<Vector3D>();
-
-        for (var window : windows) {
-            if (window.size() < 4) continue;
-
-            double distance = window.getFirst().distanceSq(window.get(Math.min(2, window.size() - 1)));
-            int pointsPerSegment = Math.max(3,
-                    (int) ((BASE_POINTS_PER_SEGMENT * distance) * DISTANCE_FACTOR * densityMultiplier));
-
-            result.addAll(SplineAPI.interpolate(window, 0, pointsPerSegment));
-
-            if (window.size() >= 6) {
-                result.addAll(SplineAPI.interpolate(window, 2, pointsPerSegment));
+        // Distribute samples proportional to segment arc length
+        for (int i = 0; i < segments.size(); i++) {
+            int segSamples = Math.max(2,
+                    (int) Math.round(totalSamples * segLengths[i] / totalLength));
+            for (int j = 0; j < segSamples; j++) {
+                double t = (double) j / (segSamples - 1);
+                result.add(segments.get(i).evaluate(t));
             }
         }
 
         return result;
     }
 
-    private static List<Vector3D> extractSortedCenters(Collection<? extends PortalDTO> portals) {
-        return portals.stream()
+    // --- Convenience methods for backward compatibility ---
+
+    /**
+     * Generates spline from PathPoints (full pipeline: compile + sample).
+     */
+    public static List<Vector3D> generate(List<? extends PathPoint> points) {
+        return sampleUniform(compile(points));
+    }
+
+    /**
+     * Generates spline from portals only (legacy compatibility).
+     * Extracts center points and converts to PathPoints.
+     */
+    public static List<Vector3D> generate(Collection<? extends PortalDTO> portals, SplineConfig config) {
+        var pathPoints = portalsToPathPoints(portals);
+        if (pathPoints.size() < 2) return List.of();
+
+        if (config.visibility() == SplineVisibility.HIDDEN) return List.of();
+
+        return sampleUniform(compile(pathPoints));
+    }
+
+    /**
+     * Generates a partial spline around the current portal.
+     */
+    public static List<Vector3D> generatePartial(Collection<? extends PortalDTO> portals,
+                                                  int currentPortal, SplineConfig config) {
+        var allPoints = portalsToPathPoints(portals);
+        if (allPoints.size() < 2) return List.of();
+
+        int start = Math.max(0, currentPortal - 1);
+        int end = Math.min(allPoints.size(), currentPortal + config.lookAhead() + 1);
+        if (end - start < 2) return List.of();
+
+        return sampleUniform(compile(allPoints.subList(start, end)));
+    }
+
+    /**
+     * Generates spline from portals only (legacy, default config).
+     */
+    public static List<Vector3D> generate(Collection<? extends PortalDTO> portals) {
+        return generate(portals, SplineConfig.EASY);
+    }
+
+    /**
+     * Converts portals to PathPoints (portal centers only, no guide points).
+     */
+    public static List<PathPoint> portalsToPathPoints(Collection<? extends PortalDTO> portals) {
+        var sorted = portals.stream()
                 .sorted(Comparator.comparingInt(PortalDTO::index))
-                .map(portal -> portal.locations().stream()
-                        .filter(LocationDTO::center)
-                        .findFirst()
-                        .orElse(null))
-                .filter(loc -> loc != null)
-                .map(loc -> Vector3D.of(loc.x() + 0.5, loc.y() + 0.5, loc.z() + 0.5))
                 .toList();
+
+        var points = new ArrayList<PathPoint>();
+        for (int i = 0; i < sorted.size(); i++) {
+            var portal = sorted.get(i);
+            var center = portal.locations().stream()
+                    .filter(LocationDTO::center)
+                    .findFirst()
+                    .orElse(null);
+            if (center == null) continue;
+
+            var pos = Vector3D.of(center.x() + 0.5, center.y() + 0.5, center.z() + 0.5);
+            points.add(new PathPoint.PortalPoint(pos, i * 100, portal.index()));
+        }
+        return points;
+    }
+
+    private static double safeDistance(Vector3D a, Vector3D b) {
+        double d = a.distance(b);
+        return d < EPSILON ? EPSILON : d;
     }
 }
