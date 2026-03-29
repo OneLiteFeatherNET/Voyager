@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":shared:common"))
     implementation(project(":shared:phase"))
     implementation(project(":shared:conversation-api"))
+    implementation(project(":shared:spline"))
     // FAWE
     implementation(platform(libs.fawe.bom))
     compileOnly(libs.bundles.fawe)
@@ -46,7 +47,7 @@ tasks {
         }
     }
     runServer {
-        minecraftVersion("1.21.5")
+        minecraftVersion("1.21.8")
         downloadPlugins {
             modrinth("fastasyncworldedit", "mHtmqIig")
             modrinth("voidgen", "2hsK4Z87")

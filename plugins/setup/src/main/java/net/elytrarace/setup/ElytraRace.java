@@ -16,6 +16,7 @@ import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
 import net.elytrarace.setup.command.PortalEditCommand;
 import net.elytrarace.setup.command.PortalSaveCommand;
+import net.elytrarace.setup.command.PortalPathCommand;
 import net.elytrarace.setup.command.PortalShowCommand;
 import net.elytrarace.setup.command.PortalTestflyCommand;
 import net.elytrarace.setup.command.PortalUndoCommand;
@@ -166,6 +167,8 @@ public class ElytraRace extends JavaPlugin {
         PortalUndoCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal show: /elytrarace portal show (toggle particle preview)
         PortalShowCommand.register(this.commandManager, this.previewManager);
+        // Portal path: /elytrarace portal path (toggle spline ideal line)
+        PortalPathCommand.register(this.commandManager, this.previewManager);
         // Portal edit: /elytrarace portal edit <index> (load FAWE region for editing)
         PortalEditCommand.register(this.commandManager, this.mapService, this.editingContextManager);
         // Portal save: /elytrarace portal save (save edited FAWE region)

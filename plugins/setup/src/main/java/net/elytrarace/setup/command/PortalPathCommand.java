@@ -9,13 +9,13 @@ import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
 
 /**
- * Handles {@code /elytrarace portal show} — toggles particle preview of all portals.
+ * Handles {@code /elytrarace portal path} — toggles the spline ideal line preview.
  */
-public class PortalShowCommand {
+public class PortalPathCommand {
 
     private final ParticlePreviewManager previewManager;
 
-    public PortalShowCommand(ParticlePreviewManager previewManager) {
+    public PortalPathCommand(ParticlePreviewManager previewManager) {
         this.previewManager = previewManager;
     }
 
@@ -27,19 +27,19 @@ public class PortalShowCommand {
             return;
         }
 
-        boolean enabled = previewManager.togglePortals(player.getUniqueId());
+        boolean enabled = previewManager.toggleSpline(player.getUniqueId());
         if (enabled) {
-            player.sendActionBar(Component.translatable("portal.show.enabled"));
+            player.sendActionBar(Component.translatable("portal.path.enabled"));
         } else {
-            player.sendActionBar(Component.translatable("portal.show.disabled"));
+            player.sendActionBar(Component.translatable("portal.path.disabled"));
         }
     }
 
     public static void register(PaperCommandManager<Source> commandManager, ParticlePreviewManager previewManager) {
-        var cmd = new PortalShowCommand(previewManager);
+        var cmd = new PortalPathCommand(previewManager);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
-                .literal("show")
+                .literal("path")
                 .senderType(PlayerSource.class)
                 .handler(cmd::handle)
         );
