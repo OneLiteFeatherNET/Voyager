@@ -5,8 +5,9 @@ import net.elytrarace.setup.platform.BukkitConversationOwner;
 import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
-import net.elytrarace.common.utils.PluginTranslationRegistry;
+import net.elytrarace.setup.command.CupCreateCommand;
 import net.elytrarace.setup.command.EditingContextManager;
+import net.elytrarace.setup.command.MapCreateCommand;
 import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
 import net.elytrarace.setup.command.PortalEditCommand;
@@ -17,8 +18,6 @@ import net.elytrarace.setup.command.PortalUndoCommand;
 import net.elytrarace.setup.testfly.TestflyManager;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.undo.UndoManager;
-import net.elytrarace.setup.conversation.cup.CupPrompt;
-import net.elytrarace.setup.conversation.map.MapPrompt;
 import net.elytrarace.setup.conversation.portal.PortalPrompt;
 import net.elytrarace.setup.listener.SetupListener;
 import net.elytrarace.setup.model.SetupHolder;
@@ -138,52 +137,10 @@ public class ElytraRace extends JavaPlugin {
                     }
                 })
         );
-        this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
-                .literal("cup")
-                .literal("create")
-                .senderType(PlayerSource.class)
-                .handler(context -> {
-                    var player = context.sender().source();
-                    if (player.hasMetadata(SETUP_METADATA)) {
-                        var metadata = player.getMetadata(SETUP_METADATA).getFirst();
-                        Optional.ofNullable(metadata)
-                                .map(MetadataValue::value)
-                                .filter(SetupHolder.class::isInstance)
-                                .map(SetupHolder.class::cast)
-                                .ifPresent(setupHolder -> {
-                                    new ConversationFactory(new BukkitConversationOwner(this))
-                                            .withFirstPrompt(new CupPrompt())
-                                            .withPrefix(context1 -> Component.translatable("plugin.prefix"))
-                                            .buildConversation(setupHolder)
-                                            .begin();
-                                });
-
-                    }
-                })
-        );
-        this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
-                .literal("map")
-                .literal("create")
-                .senderType(PlayerSource.class)
-                .handler(context -> {
-                    var player = context.sender().source();
-                    if (player.hasMetadata(SETUP_METADATA)) {
-                        var metadata = player.getMetadata(SETUP_METADATA).getFirst();
-                        Optional.ofNullable(metadata)
-                                .map(MetadataValue::value)
-                                .filter(SetupHolder.class::isInstance)
-                                .map(SetupHolder.class::cast)
-                                .ifPresent(setupHolder -> {
-                                    new ConversationFactory(new BukkitConversationOwner(this))
-                                            .withFirstPrompt(new MapPrompt())
-                                            .withPrefix(context1 -> Component.translatable("plugin.prefix"))
-                                            .buildConversation(setupHolder)
-                                            .begin();
-                                });
-
-                    }
-                })
-        );
+        // Cup create: /elytrarace cup create <name> <displayName>
+        CupCreateCommand.register(this.commandManager, this.cupService);
+        // Map create: /elytrarace map create <cup> <name> <displayName>
+        MapCreateCommand.register(this.commandManager, this.mapService, this.cupService);
         // Quick portal command: /elytrarace portal (auto-detects FAWE region, auto-indexes)
         PortalCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal delete: /elytrarace portal delete <index>
