@@ -190,7 +190,7 @@ public class ElytraRace extends JavaPlugin {
         // Portal save: /elytrarace portal save (save edited FAWE region)
         PortalSaveCommand.register(this.commandManager, this.mapService, this.editingContextManager, this.undoManager);
         // Portal testfly: /elytrarace portal testfly [stop]
-        PortalTestflyCommand.register(this.commandManager, this.mapService, this.testflyManager);
+        PortalTestflyCommand.register(this.commandManager, this.mapService, this.testflyManager, this);
         // Guide point commands: /elytrarace guide [delete|list]
         GuideCommand.register(this.commandManager, this.mapService, this.guidePointStore);
         // Portals GUI: /elytrarace portals

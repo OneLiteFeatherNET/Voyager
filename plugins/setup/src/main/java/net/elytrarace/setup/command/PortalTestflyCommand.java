@@ -8,10 +8,12 @@ import net.elytrarace.setup.testfly.TestflySession;
 import net.elytrarace.setup.util.SetupGuard;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
@@ -30,10 +32,12 @@ public class PortalTestflyCommand {
 
     private final MapService mapService;
     private final TestflyManager testflyManager;
+    private final Plugin plugin;
 
-    public PortalTestflyCommand(MapService mapService, TestflyManager testflyManager) {
+    public PortalTestflyCommand(MapService mapService, TestflyManager testflyManager, Plugin plugin) {
         this.mapService = mapService;
         this.testflyManager = testflyManager;
+        this.plugin = plugin;
     }
 
     public void handleStart(CommandContext<PlayerSource> context) {
@@ -78,27 +82,28 @@ public class PortalTestflyCommand {
         var session = new TestflySession(player.getUniqueId(), sortedPortals, savedInventory, savedArmor);
         testflyManager.addSession(session);
 
-        // Equip player
-        player.getInventory().clear();
-        player.getInventory().setChestplate(new ItemStack(Material.ELYTRA));
-        player.getInventory().setItem(0, new ItemStack(Material.FIREWORK_ROCKET, 64));
-        player.setGameMode(GameMode.ADVENTURE);
+        // Must run on main thread: game mode change, inventory, teleport
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            player.getInventory().clear();
+            player.getInventory().setChestplate(new ItemStack(Material.ELYTRA));
+            player.getInventory().setItem(0, new ItemStack(Material.FIREWORK_ROCKET, 64));
+            player.setGameMode(GameMode.ADVENTURE);
 
-        // Teleport to before first portal
-        var firstPortal = sortedPortals.getFirst();
-        var center = firstPortal.locations().stream()
-                .filter(LocationDTO::center)
-                .findFirst()
-                .orElse(firstPortal.locations().getFirst());
+            var firstPortal = sortedPortals.getFirst();
+            var center = firstPortal.locations().stream()
+                    .filter(LocationDTO::center)
+                    .findFirst()
+                    .orElse(firstPortal.locations().getFirst());
 
-        var spawnLoc = new Location(player.getWorld(),
-                center.x() + 0.5, center.y() + 5, center.z() + 0.5);
-        player.teleport(spawnLoc);
+            var spawnLoc = new Location(player.getWorld(),
+                    center.x() + 0.5, center.y() + 5, center.z() + 0.5);
+            player.teleport(spawnLoc);
 
-        player.sendMessage(Component.translatable("testfly.start")
-                .arguments(Component.text(sortedPortals.size())));
-        player.sendMessage(Component.text("Jump and use firework rockets to start flying. " +
-                "Use /elytrarace portal testfly stop to end early.", NamedTextColor.GRAY));
+            player.sendMessage(Component.translatable("testfly.start")
+                    .arguments(Component.text(sortedPortals.size())));
+            player.sendMessage(Component.text("Jump and use firework rockets to start flying. " +
+                    "Use /elytrarace portal testfly stop to end early.", NamedTextColor.GRAY));
+        });
     }
 
     public void handleStop(CommandContext<PlayerSource> context) {
@@ -126,8 +131,8 @@ public class PortalTestflyCommand {
     }
 
     public static void register(PaperCommandManager<Source> commandManager, MapService mapService,
-                                TestflyManager testflyManager) {
-        var cmd = new PortalTestflyCommand(mapService, testflyManager);
+                                TestflyManager testflyManager, Plugin plugin) {
+        var cmd = new PortalTestflyCommand(mapService, testflyManager, plugin);
 
         // /elytrarace portal testfly (start)
         commandManager.command(commandManager.commandBuilder("elytrarace")
