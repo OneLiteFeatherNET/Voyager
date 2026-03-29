@@ -74,7 +74,7 @@ public final class ElytraPhysics {
         }
 
         // Step 6: Upward pitch boost — convert horizontal speed into altitude
-        if (pitchSin < 0) {  // pitchSin < 0 means looking up (negative pitch in radians)
+        if (pitchSin < 0 && hLook > 1e-8) {  // Guard against division by zero at extreme pitch
             double yAcc = hVel * (-pitchSin) * UPWARD_PITCH_BASE;
             velY += yAcc * UPWARD_PITCH_MULTIPLIER;
             velX -= lookX * yAcc / hLook;

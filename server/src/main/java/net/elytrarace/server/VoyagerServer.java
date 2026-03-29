@@ -57,9 +57,22 @@ public final class VoyagerServer {
 
     public static void main(String[] args) {
         String host = args.length > 0 ? args[0] : DEFAULT_HOST;
-        int port = args.length > 1 ? Integer.parseInt(args[1]) : DEFAULT_PORT;
+        int port = DEFAULT_PORT;
+        if (args.length > 1) {
+            try {
+                port = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid port '{}', using default {}", args[1], DEFAULT_PORT);
+            }
+        }
 
         VoyagerServer voyagerServer = new VoyagerServer();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOGGER.info("Shutting down Voyager server...");
+            MinecraftServer.stopCleanly();
+        }));
+
         voyagerServer.start(host, port);
     }
 }

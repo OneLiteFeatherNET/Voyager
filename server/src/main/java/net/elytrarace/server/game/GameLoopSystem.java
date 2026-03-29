@@ -59,11 +59,11 @@ public final class GameLoopSystem {
             // 2. Remember previous position (for collision line segment)
             Vec prevPos = new Vec(player.getPosition().x(), player.getPosition().y(), player.getPosition().z());
 
-            // 3. Apply velocity to player
-            player.setVelocity(newVelocity);
+            // 3. Predict next position (setVelocity doesn't move the player until next tick)
+            Vec currPos = prevPos.add(newVelocity);
 
-            // 4. Current position after velocity application
-            Vec currPos = new Vec(player.getPosition().x(), player.getPosition().y(), player.getPosition().z());
+            // 4. Apply velocity to player
+            player.setVelocity(newVelocity);
 
             // 5. Ring collision detection
             for (int i = 0; i < rings.size(); i++) {

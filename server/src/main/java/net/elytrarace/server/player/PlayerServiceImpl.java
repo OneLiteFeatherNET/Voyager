@@ -23,7 +23,7 @@ import java.util.UUID;
 public final class PlayerServiceImpl implements PlayerService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerServiceImpl.class);
-    private static final Pos LOBBY_SPAWN = new Pos(0, 2, 0);
+    public static final Pos LOBBY_SPAWN = new Pos(0, 2, 0);
 
     private final InstanceContainer lobbyInstance;
 
