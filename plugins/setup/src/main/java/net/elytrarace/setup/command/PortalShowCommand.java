@@ -3,6 +3,8 @@ package net.elytrarace.setup.command;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.util.SetupGuard;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
@@ -14,9 +16,11 @@ import org.incendo.cloud.paper.util.sender.Source;
 public class PortalShowCommand {
 
     private final ParticlePreviewManager previewManager;
+    private final Plugin plugin;
 
-    public PortalShowCommand(ParticlePreviewManager previewManager) {
+    public PortalShowCommand(ParticlePreviewManager previewManager, Plugin plugin) {
         this.previewManager = previewManager;
+        this.plugin = plugin;
     }
 
     public void handle(CommandContext<PlayerSource> context) {
@@ -27,16 +31,19 @@ public class PortalShowCommand {
             return;
         }
 
-        boolean enabled = previewManager.togglePortals(player.getUniqueId());
-        if (enabled) {
-            player.sendActionBar(Component.translatable("portal.show.enabled"));
-        } else {
-            player.sendActionBar(Component.translatable("portal.show.disabled"));
-        }
+        // world.spawn() inside togglePortals requires the main thread
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            boolean enabled = previewManager.togglePortals(player.getUniqueId());
+            if (enabled) {
+                player.sendActionBar(Component.translatable("portal.show.enabled"));
+            } else {
+                player.sendActionBar(Component.translatable("portal.show.disabled"));
+            }
+        });
     }
 
-    public static void register(PaperCommandManager<Source> commandManager, ParticlePreviewManager previewManager) {
-        var cmd = new PortalShowCommand(previewManager);
+    public static void register(PaperCommandManager<Source> commandManager, ParticlePreviewManager previewManager, Plugin plugin) {
+        var cmd = new PortalShowCommand(previewManager, plugin);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("show")

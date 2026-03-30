@@ -5,6 +5,7 @@ import net.elytrarace.setup.util.SetupGuard;
 import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
@@ -17,9 +18,11 @@ import static org.incendo.cloud.parser.standard.StringParser.stringParser;
 public class MapTeleportCommand {
 
     private final MapService mapService;
+    private final Plugin plugin;
 
-    public MapTeleportCommand(MapService mapService) {
+    public MapTeleportCommand(MapService mapService, Plugin plugin) {
         this.mapService = mapService;
+        this.plugin = plugin;
     }
 
     public void handle(CommandContext<PlayerSource> context) {
@@ -53,15 +56,17 @@ public class MapTeleportCommand {
             return;
         }
 
-        // Teleport to world spawn
+        // Teleport to world spawn — must run on main thread
         var spawn = world.getSpawnLocation();
-        player.teleport(spawn);
-        player.sendActionBar(Component.translatable("map.tp.success")
-                .arguments(map.displayName(), Component.text(map.world())));
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            player.teleport(spawn);
+            player.sendActionBar(Component.translatable("map.tp.success")
+                    .arguments(map.displayName(), Component.text(map.world())));
+        });
     }
 
-    public static void register(PaperCommandManager<Source> commandManager, MapService mapService) {
-        var cmd = new MapTeleportCommand(mapService);
+    public static void register(PaperCommandManager<Source> commandManager, MapService mapService, Plugin plugin) {
+        var cmd = new MapTeleportCommand(mapService, plugin);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("map")
                 .literal("tp")
