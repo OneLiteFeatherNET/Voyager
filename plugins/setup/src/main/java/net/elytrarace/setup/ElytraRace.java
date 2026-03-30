@@ -27,8 +27,12 @@ import net.elytrarace.setup.command.PortalShowCommand;
 import net.elytrarace.setup.command.PortalTestflyCommand;
 import net.elytrarace.setup.command.PortalUndoCommand;
 import net.elytrarace.setup.command.PortalsCommand;
+import net.elytrarace.setup.guard.SetupCommandGuard;
 import net.elytrarace.setup.gui.CupGuiListener;
 import net.elytrarace.setup.gui.PortalManagerListener;
+import net.elytrarace.setup.session.JsonSessionPersistence;
+import net.elytrarace.setup.session.SetupSessionManager;
+import net.elytrarace.setup.session.SetupSessionManagerImpl;
 import net.elytrarace.setup.testfly.TestflyManager;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.undo.UndoManager;
@@ -56,6 +60,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
@@ -75,6 +80,8 @@ public class ElytraRace extends JavaPlugin {
     private GuidePointStore guidePointStore;
     private ParticlePreviewManager previewManager;
     private TestflyManager testflyManager;
+    private SetupSessionManagerImpl sessionManager;
+    private JsonSessionPersistence sessionPersistence;
     private @NonNull PaperCommandManager<Source> commandManager;
 
     @Override
@@ -101,6 +108,8 @@ public class ElytraRace extends JavaPlugin {
         this.previewManager.start(this);
         this.testflyManager = new TestflyManager();
         this.testflyManager.start(this);
+        this.sessionManager = new SetupSessionManagerImpl();
+        this.sessionPersistence = new JsonSessionPersistence(getDataPath());
         CompletableFuture.runAsync(this::registerListeners);
         this.registerCommands();
         getLogger().info("ElytraRace has been enabled!");
@@ -114,6 +123,11 @@ public class ElytraRace extends JavaPlugin {
         if (testflyManager != null) {
             testflyManager.stop();
         }
+        // Persist all active sessions so builders can resume after restart
+        if (sessionPersistence != null && sessionManager != null) {
+            sessionPersistence.saveAll(sessionManager);
+            sessionPersistence.deleteExpired(Duration.ofDays(7));
+        }
         getLogger().info("ElytraRace has been disabled!");
     }
     private void registerListeners() {
@@ -123,6 +137,11 @@ public class ElytraRace extends JavaPlugin {
     }
 
     private void registerCommands() {
+        // Register the setup session guard as a postprocessor.
+        // This rejects commands from players without an active session,
+        // except for help/setup/cancel which are allowed without a session.
+        this.commandManager.registerCommandPostProcessor(new SetupCommandGuard(this.sessionManager));
+
         // Help: /elytrarace help (also bare /elytrarace)
         HelpCommand.register(this.commandManager);
         // Register commands here
@@ -136,6 +155,8 @@ public class ElytraRace extends JavaPlugin {
                         player.removeMetadata(SETUP_METADATA, this);
                     }
                     player.setMetadata(SETUP_METADATA, new FixedMetadataValue(this, new SetupHolder(player.getUniqueId())));
+                    // Also create a SetupSession alongside the legacy SetupHolder
+                    sessionManager.create(player.getUniqueId());
                 })
         );
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
@@ -153,6 +174,7 @@ public class ElytraRace extends JavaPlugin {
                                             setupHolder.getConversationTracker().abandonAllConversations();
                                         });
                         player.removeMetadata(SETUP_METADATA, this);
+                        sessionManager.remove(player.getUniqueId());
                         player.sendActionBar(Component.translatable("setup.cancel"));
                     }
                 })
@@ -166,7 +188,7 @@ public class ElytraRace extends JavaPlugin {
         // Map create: /elytrarace map create <cup> <name> <displayName>
         MapCreateCommand.register(this.commandManager, this.mapService, this.cupService);
         // Map teleport: /elytrarace map tp <name>
-        MapTeleportCommand.register(this.commandManager, this.mapService);
+        MapTeleportCommand.register(this.commandManager, this.mapService, this);
         // Map load: /elytrarace map load <worldFolder> (load Anvil world with VoidGen)
         MapLoadCommand.register(this.commandManager, this);
         // Map rename: /elytrarace map rename <oldName> <newName> <newDisplayName>
@@ -180,7 +202,7 @@ public class ElytraRace extends JavaPlugin {
         // Portal undo: /elytrarace portal undo
         PortalUndoCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal show: /elytrarace portal show (toggle particle preview)
-        PortalShowCommand.register(this.commandManager, this.previewManager);
+        PortalShowCommand.register(this.commandManager, this.previewManager, this);
         // Portal path: /elytrarace portal path (toggle spline ideal line)
         PortalPathCommand.register(this.commandManager, this.previewManager);
         // Spline config: /elytrarace spline <preset|spacing|size|color|info>
@@ -244,5 +266,13 @@ public class ElytraRace extends JavaPlugin {
 
     public TestflyManager getTestflyManager() {
         return testflyManager;
+    }
+
+    public SetupSessionManager getSessionManager() {
+        return sessionManager;
+    }
+
+    public JsonSessionPersistence getSessionPersistence() {
+        return sessionPersistence;
     }
 }
