@@ -30,6 +30,8 @@ import net.elytrarace.setup.command.PortalPathCommand;
 import net.elytrarace.setup.command.SplineConfigCommand;
 import net.elytrarace.setup.command.PortalShowCommand;
 import net.elytrarace.setup.command.PortalTestflyCommand;
+import net.elytrarace.setup.command.WizardCommand;
+import net.elytrarace.setup.wizard.WizardManager;
 import net.elytrarace.setup.command.PortalUndoCommand;
 import net.elytrarace.setup.command.PortalsCommand;
 import net.elytrarace.setup.guard.SetupCommandGuard;
@@ -85,6 +87,7 @@ public class ElytraRace extends JavaPlugin {
     private GuidePointStore guidePointStore;
     private ParticlePreviewManager previewManager;
     private TestflyManager testflyManager;
+    private WizardManager wizardManager;
     private SetupSessionManagerImpl sessionManager;
     private JsonSessionPersistence sessionPersistence;
     private @NonNull PaperCommandManager<Source> commandManager;
@@ -113,6 +116,7 @@ public class ElytraRace extends JavaPlugin {
         this.previewManager.start(this);
         this.testflyManager = new TestflyManager();
         this.testflyManager.start(this);
+        this.wizardManager = new WizardManager();
         this.sessionManager = new SetupSessionManagerImpl();
         this.sessionPersistence = new JsonSessionPersistence(getDataPath());
         CompletableFuture.runAsync(this::registerListeners);
@@ -207,9 +211,9 @@ public class ElytraRace extends JavaPlugin {
         // Portal undo: /elytrarace portal undo
         PortalUndoCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal show: /elytrarace portal show (toggle particle preview)
-        PortalShowCommand.register(this.commandManager, this.previewManager, this);
+        PortalShowCommand.register(this.commandManager, this.previewManager, this, this.sessionManager);
         // Portal path: /elytrarace portal path (toggle spline ideal line)
-        PortalPathCommand.register(this.commandManager, this.previewManager);
+        PortalPathCommand.register(this.commandManager, this.previewManager, this.sessionManager);
         // Spline config: /elytrarace spline <preset|spacing|size|color|info>
         SplineConfigCommand.register(this.commandManager, this.previewManager);
         // Portal edit: /elytrarace portal edit <index> (load FAWE region for editing)
@@ -241,6 +245,8 @@ public class ElytraRace extends JavaPlugin {
         MapUnloadCommand.register(this.commandManager, this.mapService, this);
         // Portal redo: /elytrarace portal redo
         PortalRedoCommand.register(this.commandManager, this.mapService, this.undoManager);
+        // Wizard: /elytrarace wizard start|stop
+        WizardCommand.register(this.commandManager, this.wizardManager);
     }
 
     public CupService getCupService() {
@@ -273,5 +279,9 @@ public class ElytraRace extends JavaPlugin {
 
     public JsonSessionPersistence getSessionPersistence() {
         return sessionPersistence;
+    }
+
+    public WizardManager getWizardManager() {
+        return wizardManager;
     }
 }

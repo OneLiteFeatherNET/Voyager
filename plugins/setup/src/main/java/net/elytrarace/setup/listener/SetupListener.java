@@ -4,12 +4,15 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import net.elytrarace.setup.ElytraRace;
 import net.elytrarace.setup.model.SetupHolder;
 import net.elytrarace.setup.session.SetupSessionManagerImpl;
+import net.elytrarace.setup.util.FaweHelper;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -40,6 +43,7 @@ public class SetupListener implements Listener {
         plugin.getPreviewManager().remove(playerId);
         plugin.getEditingContextManager().clearContext(playerId);
         plugin.getTestflyManager().remove(playerId);
+        plugin.getWizardManager().remove(playerId);
     }
 
     @EventHandler
@@ -57,7 +61,24 @@ public class SetupListener implements Listener {
             player.setMetadata(ElytraRace.SETUP_METADATA,
                     new FixedMetadataValue(plugin, new SetupHolder(playerId)));
             player.sendActionBar(Component.translatable("setup.session.restored"));
+
+            // Restore preview preferences on the main thread
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (restoredSession.portalPreviewEnabled()) {
+                    plugin.getPreviewManager().togglePortals(playerId);
+                }
+                if (restoredSession.splinePreviewEnabled()) {
+                    plugin.getPreviewManager().toggleSpline(playerId);
+                }
+            });
         });
+    }
+
+    @EventHandler
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        var player = event.getPlayer();
+        if (!player.hasMetadata(ElytraRace.SETUP_METADATA)) return;
+        FaweHelper.resetToPolyhedralSelector(player);
     }
 
 

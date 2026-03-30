@@ -1,6 +1,7 @@
 package net.elytrarace.setup.command;
 
 import net.elytrarace.setup.preview.ParticlePreviewManager;
+import net.elytrarace.setup.session.SetupSessionManager;
 import net.elytrarace.setup.util.SetupGuard;
 import net.kyori.adventure.text.Component;
 import org.incendo.cloud.context.CommandContext;
@@ -14,9 +15,11 @@ import org.incendo.cloud.paper.util.sender.Source;
 public class PortalPathCommand {
 
     private final ParticlePreviewManager previewManager;
+    private final SetupSessionManager sessionManager;
 
-    public PortalPathCommand(ParticlePreviewManager previewManager) {
+    public PortalPathCommand(ParticlePreviewManager previewManager, SetupSessionManager sessionManager) {
         this.previewManager = previewManager;
+        this.sessionManager = sessionManager;
     }
 
     public void handle(CommandContext<PlayerSource> context) {
@@ -28,6 +31,7 @@ public class PortalPathCommand {
         }
 
         boolean enabled = previewManager.toggleSpline(player.getUniqueId());
+        sessionManager.get(player.getUniqueId()).ifPresent(s -> s.setSplinePreview(enabled));
         if (enabled) {
             player.sendActionBar(Component.translatable("portal.path.enabled"));
         } else {
@@ -35,8 +39,8 @@ public class PortalPathCommand {
         }
     }
 
-    public static void register(PaperCommandManager<Source> commandManager, ParticlePreviewManager previewManager) {
-        var cmd = new PortalPathCommand(previewManager);
+    public static void register(PaperCommandManager<Source> commandManager, ParticlePreviewManager previewManager, SetupSessionManager sessionManager) {
+        var cmd = new PortalPathCommand(previewManager, sessionManager);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("path")

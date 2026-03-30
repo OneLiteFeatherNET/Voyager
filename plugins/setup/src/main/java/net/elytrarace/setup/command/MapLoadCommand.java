@@ -43,6 +43,7 @@ public class MapLoadCommand {
         if (existing != null) {
             existing.setAutoSave(false);
             player.teleport(existing.getSpawnLocation());
+            net.elytrarace.setup.util.FaweHelper.resetToPolyhedralSelector(player);
             player.sendActionBar(Component.translatable("map.load.already_loaded")
                     .arguments(Component.text(worldFolder)));
             return;
@@ -74,6 +75,8 @@ public class MapLoadCommand {
 
             world.setAutoSave(false);
             player.teleport(world.getSpawnLocation());
+            net.elytrarace.setup.util.FaweHelper.resetToPolyhedralSelector(player);
+            player.sendMessage(Component.translatable("map.load.fawe_switched"));
             player.sendActionBar(Component.translatable("map.load.success")
                     .arguments(Component.text(worldFolder)));
         });

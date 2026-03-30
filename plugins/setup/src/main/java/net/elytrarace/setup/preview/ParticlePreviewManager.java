@@ -3,6 +3,10 @@ package net.elytrarace.setup.preview;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.guide.GuidePointStore;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.validation.CompositeValidator;
+import net.elytrarace.setup.validation.MapCompletenessValidator;
+import net.elytrarace.setup.validation.PortalOverlapValidator;
+import net.elytrarace.setup.validation.SetupValidator;
 import net.elytrarace.spline.SplineConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
@@ -28,6 +32,11 @@ public final class ParticlePreviewManager {
     private final MapService mapService;
     private final GuidePointStore guideStore;
     private final PortalLabelManager labelManager = new PortalLabelManager();
+    private final SetupValidator validator = new CompositeValidator(
+            new MapCompletenessValidator(),
+            new PortalOverlapValidator()
+    );
+    private int renderCycle = 0;
     private BukkitTask task;
 
     public ParticlePreviewManager(MapService mapService, GuidePointStore guideStore) {
@@ -124,6 +133,7 @@ public final class ParticlePreviewManager {
     }
 
     private void renderAll() {
+        renderCycle++;
         var allPlayers = new HashSet<UUID>();
         allPlayers.addAll(portalPreviewPlayers);
         allPlayers.addAll(splinePreviewPlayers);
@@ -156,6 +166,14 @@ public final class ParticlePreviewManager {
                 var splinePoints = SplineRenderer.generateSplinePoints(map.portals(), guidePoints, config);
                 SplineRenderer.renderSpline(player, splinePoints, config);
                 SplineRenderer.renderGuidePoints(player, guidePoints);
+            }
+
+            // Show validation issues every 5 cycles (~2.5s)
+            if (renderCycle % 5 == 0) {
+                var issues = validator.validate(map);
+                issues.stream()
+                        .max(java.util.Comparator.comparingInt(i -> i.severity().ordinal()))
+                        .ifPresent(issue -> player.sendActionBar(issue.formatted()));
             }
         }
     }

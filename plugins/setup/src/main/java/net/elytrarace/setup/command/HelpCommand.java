@@ -80,6 +80,12 @@ public class HelpCommand {
         sendCmd(player, "/elytrarace spline color <r> <g> <b>", "RGB color");
         sendCmd(player, "/elytrarace spline info", "Show current config");
         player.sendMessage(Component.empty());
+
+        // Wizard
+        player.sendMessage(Component.text("Wizard:", NamedTextColor.YELLOW, TextDecoration.BOLD));
+        sendCmd(player, "/elytrarace wizard start", "Start guided setup mode");
+        sendCmd(player, "/elytrarace wizard stop", "Stop wizard overlay");
+        player.sendMessage(Component.empty());
     }
 
     private void sendStep(org.bukkit.entity.Player player, int step, String cmd, String desc) {

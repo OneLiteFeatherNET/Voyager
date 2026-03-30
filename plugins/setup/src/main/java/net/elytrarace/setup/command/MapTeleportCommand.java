@@ -60,6 +60,7 @@ public class MapTeleportCommand {
         var spawn = world.getSpawnLocation();
         Bukkit.getScheduler().runTask(plugin, () -> {
             player.teleport(spawn);
+            net.elytrarace.setup.util.FaweHelper.resetToPolyhedralSelector(player);
             player.sendActionBar(Component.translatable("map.tp.success")
                     .arguments(map.displayName(), Component.text(map.world())));
         });
