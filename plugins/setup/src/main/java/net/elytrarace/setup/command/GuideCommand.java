@@ -45,13 +45,13 @@ public class GuideCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
         var mapOpt = SetupGuard.getMapForWorld(mapService, player.getWorld());
         if (mapOpt.isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_map"));
             return;
         }
         var map = mapOpt.get();
@@ -139,13 +139,13 @@ public class GuideCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
         var mapOpt = SetupGuard.getMapForWorld(mapService, player.getWorld());
         if (mapOpt.isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_map"));
             return;
         }
         var map = mapOpt.get();
@@ -188,7 +188,7 @@ public class GuideCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -212,7 +212,7 @@ public class GuideCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -224,12 +224,13 @@ public class GuideCommand {
             return;
         }
 
-        player.sendMessage(Component.text("Guide Points (" + guides.size() + "):", NamedTextColor.GOLD));
+        player.sendMessage(Component.translatable("guide.list.header").arguments(Component.text(guides.size())));
         for (var guide : guides) {
-            player.sendMessage(Component.text(
-                    "  #" + guide.orderIndex() + " at " +
-                            String.format("%.1f, %.1f, %.1f", guide.x(), guide.y(), guide.z()),
-                    NamedTextColor.GRAY));
+            player.sendMessage(Component.translatable("guide.list.entry")
+                    .arguments(Component.text(guide.orderIndex()),
+                            Component.text(String.format("%.1f", guide.x())),
+                            Component.text(String.format("%.1f", guide.y())),
+                            Component.text(String.format("%.1f", guide.z()))));
         }
     }
 
@@ -240,7 +241,7 @@ public class GuideCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -265,7 +266,7 @@ public class GuideCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 

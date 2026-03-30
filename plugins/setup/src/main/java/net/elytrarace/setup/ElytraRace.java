@@ -17,8 +17,11 @@ import net.elytrarace.setup.command.MapCreateCommand;
 import net.elytrarace.setup.command.MapLoadCommand;
 import net.elytrarace.setup.command.MapRenameCommand;
 import net.elytrarace.setup.command.MapTeleportCommand;
+import net.elytrarace.setup.command.CupDeleteCommand;
 import net.elytrarace.setup.command.MapStatusCommand;
+import net.elytrarace.setup.command.MapUnloadCommand;
 import net.elytrarace.setup.command.PortalCancelCommand;
+import net.elytrarace.setup.command.PortalRedoCommand;
 import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
 import net.elytrarace.setup.command.PortalEditCommand;
@@ -224,30 +227,20 @@ public class ElytraRace extends JavaPlugin {
         // Portals GUI: /elytrarace portals
         PortalsCommand.register(this.commandManager, this.mapService, this);
 
-        // Legacy conversation-based portal creation: /elytrarace portal create
+        // Deprecated: /elytrarace portal create — redirect to /elytrarace portal
         this.commandManager.command(this.commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("create")
                 .senderType(PlayerSource.class)
-                .handler(context -> {
-                    var player = context.sender().source();
-                    if (player.hasMetadata(SETUP_METADATA)) {
-                        var metadata = player.getMetadata(SETUP_METADATA).getFirst();
-                        Optional.ofNullable(metadata)
-                                .map(MetadataValue::value)
-                                .filter(SetupHolder.class::isInstance)
-                                .map(SetupHolder.class::cast)
-                                .ifPresent(setupHolder -> {
-                                    new ConversationFactory(new BukkitConversationOwner(this))
-                                            .withFirstPrompt(new PortalPrompt())
-                                            .withPrefix(context1 -> Component.translatable("plugin.prefix"))
-                                            .buildConversation(setupHolder)
-                                            .begin();
-                                });
-
-                    }
-                })
+                .handler(context -> context.sender().source()
+                        .sendMessage(Component.translatable("portal.create.deprecated")))
         );
+        // Cup delete: /elytrarace cup delete <name>
+        CupDeleteCommand.register(this.commandManager, this.cupService);
+        // Map unload: /elytrarace map unload <name>
+        MapUnloadCommand.register(this.commandManager, this.mapService, this);
+        // Portal redo: /elytrarace portal redo
+        PortalRedoCommand.register(this.commandManager, this.mapService, this.undoManager);
     }
 
     public CupService getCupService() {

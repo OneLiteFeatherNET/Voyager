@@ -27,7 +27,7 @@ public class PortalShowCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 

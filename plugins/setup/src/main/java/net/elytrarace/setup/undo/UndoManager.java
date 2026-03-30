@@ -28,6 +28,24 @@ public final class UndoManager {
         return stack.pop();
     }
 
+    public Optional<UndoOperation> redo(UUID playerId) {
+        var stack = stacks.get(playerId);
+        if (stack == null) {
+            return Optional.empty();
+        }
+        return stack.redo();
+    }
+
+    public int undoSize(UUID playerId) {
+        var stack = stacks.get(playerId);
+        return stack == null ? 0 : stack.undoSize();
+    }
+
+    public int redoSize(UUID playerId) {
+        var stack = stacks.get(playerId);
+        return stack == null ? 0 : stack.redoSize();
+    }
+
     public void removePlayer(UUID playerId) {
         stacks.remove(playerId);
     }

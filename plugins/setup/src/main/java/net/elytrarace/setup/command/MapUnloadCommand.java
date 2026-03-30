@@ -10,17 +10,18 @@ import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
 import org.incendo.cloud.paper.util.sender.Source;
+
 import static org.incendo.cloud.parser.standard.StringParser.stringParser;
 
 /**
- * Handles {@code /elytrarace map tp <name>} — teleports the builder to a map's world.
+ * Handles {@code /elytrarace map unload <name>} — teleports all players out and unloads the world.
  */
-public class MapTeleportCommand {
+public class MapUnloadCommand {
 
     private final MapService mapService;
     private final Plugin plugin;
 
-    public MapTeleportCommand(MapService mapService, Plugin plugin) {
+    public MapUnloadCommand(MapService mapService, Plugin plugin) {
         this.mapService = mapService;
         this.plugin = plugin;
     }
@@ -33,43 +34,52 @@ public class MapTeleportCommand {
             return;
         }
 
-        String mapName = context.get("name");
+        String name = context.get("name");
 
-        // Find map by name value (without namespace prefix)
         var mapOpt = mapService.getMaps().stream()
-                .filter(m -> m.name().value().equalsIgnoreCase(mapName)
-                        || m.name().asString().equalsIgnoreCase(mapName))
+                .filter(m -> m.name().value().equalsIgnoreCase(name)
+                        || m.name().asString().equalsIgnoreCase(name))
                 .findFirst();
 
         if (mapOpt.isEmpty()) {
             player.sendMessage(Component.translatable("error.map.not_found")
-                    .arguments(Component.text(mapName)));
+                    .arguments(Component.text(name)));
             return;
         }
         var map = mapOpt.get();
-
-        // Find the Bukkit world
         var world = Bukkit.getWorld(map.world());
+
         if (world == null) {
-            player.sendMessage(Component.translatable("error.map.world.not_found")
+            player.sendMessage(Component.translatable("error.map.world.not_loaded")
                     .arguments(Component.text(map.world())));
             return;
         }
 
-        // Teleport to world spawn — must run on main thread
-        var spawn = world.getSpawnLocation();
+        var defaultWorld = Bukkit.getWorlds().getFirst();
+
+        // Must run on main thread: teleport + unload
         Bukkit.getScheduler().runTask(plugin, () -> {
-            player.teleport(spawn);
-            player.sendActionBar(Component.translatable("map.tp.success")
-                    .arguments(map.displayName(), Component.text(map.world())));
+            // Evict all players from the world first
+            for (var worldPlayer : world.getPlayers()) {
+                worldPlayer.teleport(defaultWorld.getSpawnLocation());
+            }
+
+            boolean unloaded = Bukkit.unloadWorld(world, true);
+            if (unloaded) {
+                player.sendActionBar(Component.translatable("map.unload.success")
+                        .arguments(Component.text(map.world())));
+            } else {
+                player.sendMessage(Component.translatable("error.map.unload.failed")
+                        .arguments(Component.text(map.world())));
+            }
         });
     }
 
     public static void register(PaperCommandManager<Source> commandManager, MapService mapService, Plugin plugin) {
-        var cmd = new MapTeleportCommand(mapService, plugin);
+        var cmd = new MapUnloadCommand(mapService, plugin);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("map")
-                .literal("tp")
+                .literal("unload")
                 .required("name", stringParser(), SetupSuggestions.mapNames(mapService))
                 .senderType(PlayerSource.class)
                 .handler(cmd::handle)

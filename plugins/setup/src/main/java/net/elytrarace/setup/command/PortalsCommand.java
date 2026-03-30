@@ -28,13 +28,13 @@ public class PortalsCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
         var mapOpt = SetupGuard.getMapForWorld(mapService, player.getWorld());
         if (mapOpt.isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_map"));
             return;
         }
         var map = mapOpt.get();

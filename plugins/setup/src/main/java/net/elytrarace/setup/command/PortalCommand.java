@@ -41,7 +41,7 @@ public class PortalCommand {
         // 1. Verify setup mode
         var holderOpt = SetupGuard.getSetupHolder(player);
         if (holderOpt.isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -56,14 +56,14 @@ public class PortalCommand {
         // 2. Verify world is set up and find map
         var world = player.getWorld();
         if (!SetupGuard.isSetupWorld(world)) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup_world")
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup_world")
                     .arguments(Component.text(world.getName())));
             return;
         }
 
         var mapOpt = SetupGuard.getMapForWorld(mapService, world);
         if (mapOpt.isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_map"));
             return;
         }
         var map = mapOpt.get();

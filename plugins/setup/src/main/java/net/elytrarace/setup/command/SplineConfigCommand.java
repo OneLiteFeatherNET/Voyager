@@ -36,7 +36,7 @@ public class SplineConfigCommand {
     public void handlePreset(CommandContext<PlayerSource> context) {
         var player = context.sender().source();
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -60,7 +60,7 @@ public class SplineConfigCommand {
     public void handleSpacing(CommandContext<PlayerSource> context) {
         var player = context.sender().source();
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -75,7 +75,7 @@ public class SplineConfigCommand {
     public void handleSize(CommandContext<PlayerSource> context) {
         var player = context.sender().source();
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -90,7 +90,7 @@ public class SplineConfigCommand {
     public void handleColor(CommandContext<PlayerSource> context) {
         var player = context.sender().source();
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 

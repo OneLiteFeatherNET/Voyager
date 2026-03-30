@@ -8,7 +8,6 @@ import net.elytrarace.setup.testfly.TestflySession;
 import net.elytrarace.setup.util.SetupGuard;
 import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -45,7 +44,7 @@ public class PortalTestflyCommand {
         var player = context.sender().source();
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
@@ -56,7 +55,7 @@ public class PortalTestflyCommand {
 
         var mapOpt = SetupGuard.getMapForWorld(mapService, player.getWorld());
         if (mapOpt.isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_map"));
             return;
         }
         var map = mapOpt.get();
@@ -110,8 +109,7 @@ public class PortalTestflyCommand {
 
             player.sendMessage(Component.translatable("testfly.start")
                     .arguments(Component.text(sortedPortals.size())));
-            player.sendMessage(Component.text("Jump and use firework rockets to start flying. " +
-                    "Use /elytrarace portal testfly stop to end early.", NamedTextColor.GRAY));
+            player.sendMessage(Component.translatable("testfly.start.hint"));
         });
     }
 
@@ -120,21 +118,22 @@ public class PortalTestflyCommand {
 
         var sessionOpt = testflyManager.endFlight(player.getUniqueId());
         if (sessionOpt.isEmpty()) {
-            player.sendMessage(Component.text("Not in a test flight.", NamedTextColor.RED));
+            player.sendMessage(Component.translatable("error.testfly.not_flying"));
             return;
         }
 
         var session = sessionOpt.get();
         player.sendMessage(Component.empty());
-        player.sendMessage(Component.text("TEST FLY ABORTED", NamedTextColor.YELLOW));
-        player.sendMessage(Component.text("Time:    " + session.elapsedFormatted(), NamedTextColor.WHITE));
-        player.sendMessage(Component.text("Portals: " + session.hitCount() + "/" + session.totalPortals() + " hit",
-                session.hitCount() > 0 ? NamedTextColor.GREEN : NamedTextColor.RED));
+        player.sendMessage(Component.translatable("testfly.stop.header"));
+        player.sendMessage(Component.translatable("testfly.stop.time")
+                .arguments(Component.text(session.elapsedFormatted())));
+        player.sendMessage(Component.translatable("testfly.stop.portals")
+                .arguments(Component.text(session.hitCount()), Component.text(session.totalPortals())));
 
         var missed = session.missedPortalIndices();
         if (!missed.isEmpty()) {
-            player.sendMessage(Component.text("Missed:  #" + String.join(", #",
-                    missed.stream().map(String::valueOf).toList()), NamedTextColor.RED));
+            player.sendMessage(Component.translatable("testfly.stop.missed")
+                    .arguments(Component.text(String.join(", #", missed.stream().map(String::valueOf).toList()))));
         }
         player.sendMessage(Component.empty());
     }

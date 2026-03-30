@@ -4,14 +4,16 @@ import java.util.ArrayDeque;
 import java.util.Optional;
 
 /**
- * Fixed-capacity LIFO stack for undo operations.
+ * Fixed-capacity bidirectional undo/redo stack.
+ * A new push clears the redo stack.
  */
 public final class UndoStack {
 
     private static final int DEFAULT_MAX_SIZE = 20;
 
     private final int maxSize;
-    private final ArrayDeque<UndoOperation> stack;
+    private final ArrayDeque<UndoOperation> undoStack;
+    private final ArrayDeque<UndoOperation> redoStack;
 
     public UndoStack() {
         this(DEFAULT_MAX_SIZE);
@@ -19,32 +21,60 @@ public final class UndoStack {
 
     public UndoStack(int maxSize) {
         this.maxSize = maxSize;
-        this.stack = new ArrayDeque<>(maxSize);
+        this.undoStack = new ArrayDeque<>(maxSize);
+        this.redoStack = new ArrayDeque<>(maxSize);
     }
 
     public void push(UndoOperation operation) {
-        if (stack.size() >= maxSize) {
-            stack.removeLast(); // evict oldest
+        if (undoStack.size() >= maxSize) {
+            undoStack.removeLast(); // evict oldest
         }
-        stack.push(operation);
+        undoStack.push(operation);
+        redoStack.clear(); // new action invalidates redo history
     }
 
     public Optional<UndoOperation> pop() {
-        if (stack.isEmpty()) {
+        if (undoStack.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(stack.pop());
+        var op = undoStack.pop();
+        if (redoStack.size() >= maxSize) {
+            redoStack.removeLast();
+        }
+        redoStack.push(op);
+        return Optional.of(op);
     }
 
-    public int size() {
-        return stack.size();
+    public Optional<UndoOperation> redo() {
+        if (redoStack.isEmpty()) {
+            return Optional.empty();
+        }
+        var op = redoStack.pop();
+        if (undoStack.size() >= maxSize) {
+            undoStack.removeLast();
+        }
+        undoStack.push(op);
+        return Optional.of(op);
+    }
+
+    public int undoSize() {
+        return undoStack.size();
+    }
+
+    public int redoSize() {
+        return redoStack.size();
     }
 
     public boolean isEmpty() {
-        return stack.isEmpty();
+        return undoStack.isEmpty();
+    }
+
+    public boolean canRedo() {
+        return !redoStack.isEmpty();
     }
 
     public void clear() {
-        stack.clear();
+        undoStack.clear();
+        redoStack.clear();
     }
 }

@@ -36,14 +36,14 @@ public class PortalDeleteCommand {
         int index = context.get("index");
 
         if (SetupGuard.getSetupHolder(player).isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_setup"));
             return;
         }
 
         var world = player.getWorld();
         var mapOpt = SetupGuard.getMapForWorld(mapService, world);
         if (mapOpt.isEmpty()) {
-            player.sendActionBar(Component.translatable("error.portal.quick.no_map"));
+            player.sendMessage(Component.translatable("error.portal.quick.no_map"));
             return;
         }
         var map = mapOpt.get();

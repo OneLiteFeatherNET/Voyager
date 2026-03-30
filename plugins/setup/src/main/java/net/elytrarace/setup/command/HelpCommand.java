@@ -24,12 +24,13 @@ public class HelpCommand {
         // Onboarding
         player.sendMessage(Component.text("Getting Started:", NamedTextColor.YELLOW, TextDecoration.BOLD));
         sendStep(player, 1, "/elytrarace setup", "Enter setup mode");
-        sendStep(player, 2, "/elytrarace cup create <name> <displayName>", "Create a cup");
-        sendStep(player, 3, "/elytrarace map load <worldFolder>", "Load a world");
-        sendStep(player, 4, "/elytrarace map create <cup> <name> <displayName>", "Register map");
-        sendStep(player, 5, "/elytrarace portal", "Place portals (FAWE select first)");
-        sendStep(player, 6, "/elytrarace portal show", "See portal outlines");
-        sendStep(player, 7, "/elytrarace portal testfly", "Test your map");
+        sendStep(player, 2, "/elytrarace cancel", "Exit setup mode at any time");
+        sendStep(player, 3, "/elytrarace cup create <name> <displayName>", "Create a cup");
+        sendStep(player, 4, "/elytrarace map load <worldFolder>", "Load a world");
+        sendStep(player, 5, "/elytrarace map create <cup> <name> <displayName>", "Register map");
+        sendStep(player, 6, "/elytrarace portal", "Place portals (FAWE select first)");
+        sendStep(player, 7, "/elytrarace portal show", "See portal outlines");
+        sendStep(player, 8, "/elytrarace portal testfly", "Test your map");
         player.sendMessage(Component.empty());
 
         // Portal commands
@@ -40,6 +41,7 @@ public class HelpCommand {
         sendCmd(player, "/elytrarace portal cancel", "Abort active portal edit");
         sendCmd(player, "/elytrarace portal delete <index>", "Delete portal");
         sendCmd(player, "/elytrarace portal undo", "Undo last action");
+        sendCmd(player, "/elytrarace portal redo", "Redo last undone action");
         sendCmd(player, "/elytrarace portal show", "Toggle particle preview");
         sendCmd(player, "/elytrarace portal path", "Toggle spline line");
         sendCmd(player, "/elytrarace portal testfly [startIndex]", "Test fly the map");
@@ -53,6 +55,7 @@ public class HelpCommand {
         sendCmd(player, "/elytrarace guide move <id>", "Move to current position");
         sendCmd(player, "/elytrarace guide delete <id>", "Delete guide point");
         sendCmd(player, "/elytrarace guide list", "List all guide points");
+        sendCmd(player, "/elytrarace guide tp <id>", "Teleport to guide point");
         player.sendMessage(Component.empty());
 
         // Map/Cup commands
@@ -62,8 +65,11 @@ public class HelpCommand {
         sendCmd(player, "/elytrarace map load <folder>", "Load world from disk");
         sendCmd(player, "/elytrarace map rename <old> <new> <display>", "Rename map");
         sendCmd(player, "/elytrarace map delete <name>", "Delete map");
+        sendCmd(player, "/elytrarace map unload <name>", "Unload map world");
         sendCmd(player, "/elytrarace cup", "Open cup manager GUI");
+        sendCmd(player, "/elytrarace cup create <name> <display>", "Create cup");
         sendCmd(player, "/elytrarace cup rename <old> <new> <display>", "Rename cup");
+        sendCmd(player, "/elytrarace cup delete <name>", "Delete cup");
         player.sendMessage(Component.empty());
 
         // Spline config
