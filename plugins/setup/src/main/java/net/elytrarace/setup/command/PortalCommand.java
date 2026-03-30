@@ -9,6 +9,7 @@ import net.elytrarace.setup.undo.UndoManager;
 import net.elytrarace.setup.undo.UndoOperation;
 import net.elytrarace.setup.util.FaweHelper;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.command.EditingContextManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.context.CommandContext;
@@ -26,10 +27,12 @@ public class PortalCommand {
 
     private final MapService mapService;
     private final UndoManager undoManager;
+    private final EditingContextManager editingContextManager;
 
-    public PortalCommand(MapService mapService, UndoManager undoManager) {
+    public PortalCommand(MapService mapService, UndoManager undoManager, EditingContextManager editingContextManager) {
         this.mapService = mapService;
         this.undoManager = undoManager;
+        this.editingContextManager = editingContextManager;
     }
 
     public void handle(CommandContext<PlayerSource> context) {
@@ -39,6 +42,14 @@ public class PortalCommand {
         var holderOpt = SetupGuard.getSetupHolder(player);
         if (holderOpt.isEmpty()) {
             player.sendActionBar(Component.translatable("error.portal.quick.no_setup"));
+            return;
+        }
+
+        // 1b. Block if a portal edit is currently active
+        if (editingContextManager.isEditing(player.getUniqueId())) {
+            var editCtx = editingContextManager.getContext(player.getUniqueId()).orElseThrow();
+            player.sendMessage(Component.translatable("error.portal.place.edit_active")
+                    .arguments(Component.text(editCtx.portalIndex())));
             return;
         }
 
@@ -123,9 +134,10 @@ public class PortalCommand {
     public static void register(
             org.incendo.cloud.paper.PaperCommandManager<org.incendo.cloud.paper.util.sender.Source> commandManager,
             MapService mapService,
-            UndoManager undoManager
+            UndoManager undoManager,
+            EditingContextManager editingContextManager
     ) {
-        var cmd = new PortalCommand(mapService, undoManager);
+        var cmd = new PortalCommand(mapService, undoManager, editingContextManager);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .senderType(PlayerSource.class)

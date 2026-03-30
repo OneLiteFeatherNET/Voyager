@@ -6,6 +6,7 @@ import net.elytrarace.common.map.model.PortalDTO;
 import net.elytrarace.setup.testfly.TestflyManager;
 import net.elytrarace.setup.testfly.TestflySession;
 import net.elytrarace.setup.util.SetupGuard;
+import net.elytrarace.setup.util.SetupSuggestions;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -70,9 +71,18 @@ public class PortalTestflyCommand {
                 .sorted(Comparator.comparingInt(PortalDTO::index))
                 .toList());
 
-        // Find starting portal (default: first)
-        int startFromIndex = 0;
-        // Optional startIndex argument handled by the variant command
+        // Find starting portal — use optional startIndex argument if provided
+        int startFromIndex = context.<Integer>optional("startIndex").orElse(0);
+        var startPortal = sortedPortals.stream()
+                .filter(p -> p.index() == startFromIndex)
+                .findFirst()
+                .orElse(null);
+        if (startFromIndex != 0 && startPortal == null) {
+            player.sendMessage(Component.translatable("error.testfly.invalid_start_index")
+                    .arguments(Component.text(startFromIndex)));
+            return;
+        }
+        var firstPortal = startPortal != null ? startPortal : sortedPortals.getFirst();
 
         // Save inventory
         var savedInventory = player.getInventory().getContents().clone();
@@ -89,7 +99,6 @@ public class PortalTestflyCommand {
             player.getInventory().setItem(0, new ItemStack(Material.FIREWORK_ROCKET, 64));
             player.setGameMode(GameMode.ADVENTURE);
 
-            var firstPortal = sortedPortals.getFirst();
             var center = firstPortal.locations().stream()
                     .filter(LocationDTO::center)
                     .findFirst()
@@ -134,10 +143,19 @@ public class PortalTestflyCommand {
                                 TestflyManager testflyManager, Plugin plugin) {
         var cmd = new PortalTestflyCommand(mapService, testflyManager, plugin);
 
-        // /elytrarace portal testfly (start)
+        // /elytrarace portal testfly (start, from first portal)
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("testfly")
+                .senderType(PlayerSource.class)
+                .handler(cmd::handleStart)
+        );
+
+        // /elytrarace portal testfly <startIndex> (start from specific portal)
+        commandManager.command(commandManager.commandBuilder("elytrarace")
+                .literal("portal")
+                .literal("testfly")
+                .optional("startIndex", integerParser(1), SetupSuggestions.portalIndices(mapService))
                 .senderType(PlayerSource.class)
                 .handler(cmd::handleStart)
         );

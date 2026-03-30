@@ -37,11 +37,12 @@ public class HelpCommand {
         sendCmd(player, "/elytrarace portal", "Save FAWE selection as portal");
         sendCmd(player, "/elytrarace portal edit <index>", "Edit portal in FAWE");
         sendCmd(player, "/elytrarace portal save", "Save edited portal");
+        sendCmd(player, "/elytrarace portal cancel", "Abort active portal edit");
         sendCmd(player, "/elytrarace portal delete <index>", "Delete portal");
         sendCmd(player, "/elytrarace portal undo", "Undo last action");
         sendCmd(player, "/elytrarace portal show", "Toggle particle preview");
         sendCmd(player, "/elytrarace portal path", "Toggle spline line");
-        sendCmd(player, "/elytrarace portal testfly", "Test fly the map");
+        sendCmd(player, "/elytrarace portal testfly [startIndex]", "Test fly the map");
         sendCmd(player, "/elytrarace portals", "Open portal manager GUI");
         player.sendMessage(Component.empty());
 
@@ -56,6 +57,7 @@ public class HelpCommand {
 
         // Map/Cup commands
         player.sendMessage(Component.text("Map & Cup:", NamedTextColor.YELLOW, TextDecoration.BOLD));
+        sendCmd(player, "/elytrarace map status", "Show map overview");
         sendCmd(player, "/elytrarace map tp <name>", "Teleport to map world");
         sendCmd(player, "/elytrarace map load <folder>", "Load world from disk");
         sendCmd(player, "/elytrarace map rename <old> <new> <display>", "Rename map");

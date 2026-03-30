@@ -5,6 +5,7 @@ import net.elytrarace.common.builder.MapDTOBuilder;
 import net.elytrarace.common.builder.PortalDTOBuilder;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.map.model.FilePortalDTO;
+import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.undo.UndoManager;
 import net.elytrarace.setup.undo.UndoOperation;
 import net.elytrarace.setup.util.FaweHelper;
@@ -27,12 +28,14 @@ public class PortalSaveCommand {
     private final MapService mapService;
     private final EditingContextManager editingContextManager;
     private final UndoManager undoManager;
+    private final ParticlePreviewManager previewManager;
 
     public PortalSaveCommand(MapService mapService, EditingContextManager editingContextManager,
-                             UndoManager undoManager) {
+                             UndoManager undoManager, ParticlePreviewManager previewManager) {
         this.mapService = mapService;
         this.editingContextManager = editingContextManager;
         this.undoManager = undoManager;
+        this.previewManager = previewManager;
     }
 
     public void handle(CommandContext<PlayerSource> context) {
@@ -97,6 +100,7 @@ public class PortalSaveCommand {
             if (success) {
                 player.sendActionBar(Component.translatable("portal.edit.saved")
                         .arguments(Component.text(editCtx.portalIndex())));
+                previewManager.refreshLabels(world.getName());
                 return mapService.saveMaps();
             }
             player.sendMessage(Component.translatable("error.portal.quick.save_failed")
@@ -109,8 +113,9 @@ public class PortalSaveCommand {
     }
 
     public static void register(PaperCommandManager<Source> commandManager, MapService mapService,
-                                EditingContextManager editingContextManager, UndoManager undoManager) {
-        var cmd = new PortalSaveCommand(mapService, editingContextManager, undoManager);
+                                EditingContextManager editingContextManager, UndoManager undoManager,
+                                ParticlePreviewManager previewManager) {
+        var cmd = new PortalSaveCommand(mapService, editingContextManager, undoManager, previewManager);
         commandManager.command(commandManager.commandBuilder("elytrarace")
                 .literal("portal")
                 .literal("save")

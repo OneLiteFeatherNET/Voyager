@@ -17,6 +17,8 @@ import net.elytrarace.setup.command.MapCreateCommand;
 import net.elytrarace.setup.command.MapLoadCommand;
 import net.elytrarace.setup.command.MapRenameCommand;
 import net.elytrarace.setup.command.MapTeleportCommand;
+import net.elytrarace.setup.command.MapStatusCommand;
+import net.elytrarace.setup.command.PortalCancelCommand;
 import net.elytrarace.setup.command.PortalCommand;
 import net.elytrarace.setup.command.PortalDeleteCommand;
 import net.elytrarace.setup.command.PortalEditCommand;
@@ -196,7 +198,7 @@ public class ElytraRace extends JavaPlugin {
         // Map delete: /elytrarace map delete <name>
         MapDeleteCommand.register(this.commandManager, this.mapService, this.cupService);
         // Quick portal command: /elytrarace portal (auto-detects FAWE region, auto-indexes)
-        PortalCommand.register(this.commandManager, this.mapService, this.undoManager);
+        PortalCommand.register(this.commandManager, this.mapService, this.undoManager, this.editingContextManager);
         // Portal delete: /elytrarace portal delete <index>
         PortalDeleteCommand.register(this.commandManager, this.mapService, this.undoManager);
         // Portal undo: /elytrarace portal undo
@@ -210,9 +212,13 @@ public class ElytraRace extends JavaPlugin {
         // Portal edit: /elytrarace portal edit <index> (load FAWE region for editing)
         PortalEditCommand.register(this.commandManager, this.mapService, this.editingContextManager);
         // Portal save: /elytrarace portal save (save edited FAWE region)
-        PortalSaveCommand.register(this.commandManager, this.mapService, this.editingContextManager, this.undoManager);
+        PortalSaveCommand.register(this.commandManager, this.mapService, this.editingContextManager, this.undoManager, this.previewManager);
+        // Portal cancel: /elytrarace portal cancel (abort active edit)
+        PortalCancelCommand.register(this.commandManager, this.editingContextManager);
         // Portal testfly: /elytrarace portal testfly [stop]
         PortalTestflyCommand.register(this.commandManager, this.mapService, this.testflyManager, this);
+        // Map status: /elytrarace map status
+        MapStatusCommand.register(this.commandManager, this.mapService, this.guidePointStore, this.previewManager);
         // Guide point commands: /elytrarace guide [delete|list]
         GuideCommand.register(this.commandManager, this.mapService, this.guidePointStore);
         // Portals GUI: /elytrarace portals

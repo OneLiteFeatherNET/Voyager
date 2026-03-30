@@ -85,6 +85,14 @@ public final class ParticlePreviewManager {
         return true;
     }
 
+    public boolean hasPortalPreview(UUID playerId) {
+        return portalPreviewPlayers.contains(playerId);
+    }
+
+    public boolean hasSplinePreview(UUID playerId) {
+        return splinePreviewPlayers.contains(playerId);
+    }
+
     public SplineConfig getConfig(UUID playerId) {
         return playerConfigs.getOrDefault(playerId, SplineConfig.BUILDER);
     }
