@@ -17,8 +17,8 @@ import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceContainer;
-import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.network.packet.server.play.SetCooldownPacket;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,11 +43,18 @@ public final class PlayerEventHandler {
     private final PlayerService playerService;
     private final InstanceContainer lobbyInstance;
     private final EventNode<Event> eventNode;
-    private final Map<UUID, Long> lastBoostTime = new ConcurrentHashMap<>();
+    /** Tracks per-player cooldown expiry as {@link System#currentTimeMillis()} deadline. */
+    private final Map<UUID, Long> boostCooldownExpiry = new ConcurrentHashMap<>();
     private @Nullable EntityManager entityManager;
 
     /** Active boost configuration — swapped out when a new map loads. */
     private volatile BoostConfig boostConfig = BoostConfig.DEFAULT;
+
+    /**
+     * The cooldown group sent to the client via {@link SetCooldownPacket}.
+     * Must match the item's registry key so the client greys out the correct hotbar slot.
+     */
+    private static final String FIREWORK_COOLDOWN_GROUP = Material.FIREWORK_ROCKET.key().asString();
 
     /**
      * Creates a new event handler that delegates player events to the given service.
@@ -111,7 +118,7 @@ public final class PlayerEventHandler {
     }
 
     private void onDisconnect(PlayerDisconnectEvent event) {
-        lastBoostTime.remove(event.getPlayer().getUuid());
+        boostCooldownExpiry.remove(event.getPlayer().getUuid());
         playerService.onPlayerLeave(event.getPlayer());
     }
 
@@ -128,6 +135,13 @@ public final class PlayerEventHandler {
             return;
         }
 
+        // Server-side cooldown guard — the client won't send USE_ITEM while the
+        // hotbar slot is greyed out, but defend against race conditions anyway.
+        Long expiry = boostCooldownExpiry.get(player.getUuid());
+        if (expiry != null && System.currentTimeMillis() < expiry) {
+            return;
+        }
+
         if (entityManager == null) {
             return;
         }
@@ -137,21 +151,14 @@ public final class PlayerEventHandler {
             return;
         }
 
-        // Cooldown guard
-        long now = System.currentTimeMillis();
-        Long last = lastBoostTime.get(player.getUuid());
-        if (last != null && (now - last) < boostConfig.cooldownMs()) {
-            return;
-        }
-        lastBoostTime.put(player.getUuid(), now);
+        // Record cooldown expiry and send native item cooldown packet so the
+        // firework rocket slot is visually greyed out in the hotbar.
+        BoostConfig cfg = this.boostConfig;
+        long cooldownMs = cfg.cooldownMs();
+        boostCooldownExpiry.put(player.getUuid(), System.currentTimeMillis() + cooldownMs);
 
-        // Consume one rocket
-        var stack = event.getItemStack();
-        if (stack.amount() > 1) {
-            player.setItemInHand(event.getHand(), stack.withAmount(stack.amount() - 1));
-        } else {
-            player.setItemInHand(event.getHand(), ItemStack.AIR);
-        }
+        int cooldownTicks = (int) (cooldownMs / 50L);
+        player.sendPacket(new SetCooldownPacket(FIREWORK_COOLDOWN_GROUP, cooldownTicks));
 
         applyBoost(player, flight);
     }
