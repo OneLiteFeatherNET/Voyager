@@ -106,20 +106,21 @@ class RingCollisionSystemTest {
     }
 
     @Test
-    void multipleRingsCanBePassedInOneTick(Env env) {
-        // Two rings close together, both passed in a single high-velocity tick
+    void secondRingIsIgnoredUntilFirstIsPassed(Env env) {
+        // Ring 0 at origin, ring 1 at z=10. Player is positioned to pass ring 1 directly
+        // but ring 0 has not been passed yet — ring 1 must be ignored.
         var map = new MapDefinition("TestMap", Path.of("/tmp/test"),
                 List.of(RING_AT_ORIGIN, RING_AT_Z10), new Pos(0, 60, -20));
         var entityManager = setupEntityManager(map);
 
         var instance = env.createFlatInstance();
-        // Player at z=15, velocity=30 means prevPos at z=-15 -- passes both rings
-        var player = env.createPlayer(instance, new Pos(0, 60, 15));
+        // prevPos at z=6, currentPos at z=14 — crosses ring 1 (z=10) but NOT ring 0 (z=0)
+        var player = env.createPlayer(instance, new Pos(0, 60, 14));
 
         var playerEntity = new Entity();
         var flight = new ElytraFlightComponent();
         flight.setFlying(true);
-        flight.setVelocity(new Vec(0, 0, 30));
+        flight.setVelocity(new Vec(0, 0, 8)); // prevPos = (0, 60, 6)
         playerEntity.addComponent(flight);
         playerEntity.addComponent(new PlayerRefComponent(player.getUuid(), player));
 
@@ -132,9 +133,10 @@ class RingCollisionSystemTest {
         entityManager.addEntity(playerEntity);
         entityManager.update(1.0f / 20.0f);
 
-        assertThat(tracker.hasPassed(0)).isTrue();
-        assertThat(tracker.hasPassed(1)).isTrue();
-        assertThat(score.getRingPoints()).isEqualTo(35); // 10 + 25
+        // Ring 1 must NOT be counted because ring 0 was not passed first
+        assertThat(tracker.hasPassed(0)).isFalse();
+        assertThat(tracker.hasPassed(1)).isFalse();
+        assertThat(score.getRingPoints()).isZero();
     }
 
     @Test
