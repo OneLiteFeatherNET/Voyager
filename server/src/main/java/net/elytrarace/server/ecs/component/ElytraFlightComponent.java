@@ -1,6 +1,7 @@
 package net.elytrarace.server.ecs.component;
 
 import net.elytrarace.common.ecs.Component;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 
 /**
@@ -13,6 +14,7 @@ public class ElytraFlightComponent implements Component {
     private boolean flying;
     private double pitch;
     private double yaw;
+    private Pos previousPosition;
 
     public Vec getVelocity() {
         return velocity;
@@ -44,6 +46,14 @@ public class ElytraFlightComponent implements Component {
 
     public void setYaw(double yaw) {
         this.yaw = yaw;
+    }
+
+    public Pos getPreviousPosition() {
+        return previousPosition;
+    }
+
+    public void setPreviousPosition(Pos previousPosition) {
+        this.previousPosition = previousPosition;
     }
 
     /**

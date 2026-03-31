@@ -120,10 +120,25 @@ public final class PlayerEventHandler {
             return;
         }
 
-        // Apply the firework boost
+        // Apply the firework boost as a direct forward impulse.
+        // We do NOT use flight.getVelocity() because the server-side velocity estimate
+        // may lag behind the client's actual speed. Instead we compute a pure look-direction
+        // impulse and add it on top of the client's current movement.
         Pos pos = player.getPosition();
-        Vec boostedVelocity = ElytraPhysics.applyFireworkBoost(
-                flight.getVelocity(), pos.pitch(), pos.yaw());
+        double pitchRad = Math.toRadians(pos.pitch());
+        double yawRad   = Math.toRadians(pos.yaw());
+        double cosP = Math.cos(pitchRad);
+        Vec lookDir = new Vec(
+            Math.sin(-yawRad - Math.PI) * (-cosP),
+            -Math.sin(pitchRad),
+            Math.cos(-yawRad - Math.PI) * (-cosP)
+        );
+        // Use server-estimated velocity as the base; fall back to look direction at
+        // a reasonable glide speed so the impulse is always additive.
+        Vec base = flight.getVelocity().lengthSquared() > 0.01
+            ? flight.getVelocity()
+            : lookDir.mul(0.6);  // ~12 blocks/second baseline if no estimate available
+        Vec boostedVelocity = ElytraPhysics.applyFireworkBoost(base, pos.pitch(), pos.yaw());
         flight.setVelocity(boostedVelocity);
         player.setVelocity(boostedVelocity);
 

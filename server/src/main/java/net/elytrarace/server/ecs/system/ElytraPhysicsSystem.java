@@ -34,16 +34,22 @@ public class ElytraPhysicsSystem implements net.elytrarace.common.ecs.System {
             return;
         }
 
-        // Read current orientation from the player
-        flight.setPitch(playerRef.getPlayer().getPosition().pitch());
-        flight.setYaw(playerRef.getPlayer().getPosition().yaw());
+        // Track orientation so collision and scoring systems can read it
+        var player = playerRef.getPlayer();
+        flight.setPitch(player.getPosition().pitch());
+        flight.setYaw(player.getPosition().yaw());
 
-        // Compute new velocity
-        Vec newVelocity = ElytraPhysics.computeNextVelocity(
-                flight.getVelocity(), flight.getPitch(), flight.getYaw());
-        flight.setVelocity(newVelocity);
-
-        // Apply velocity to the Minestom player
-        playerRef.getPlayer().setVelocity(newVelocity);
+        // Estimate server-side velocity from position delta (used for ring collision,
+        // NOT sent to the client — the client runs its own elytra physics).
+        var prev = flight.getPreviousPosition();
+        var curr = player.getPosition();
+        if (prev != null) {
+            flight.setVelocity(new Vec(
+                curr.x() - prev.x(),
+                curr.y() - prev.y(),
+                curr.z() - prev.z()
+            ));
+        }
+        flight.setPreviousPosition(curr);
     }
 }
