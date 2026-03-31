@@ -7,11 +7,13 @@
   "autoDeleteOnStop": true,
   "startPort": 44955,
   "processConfiguration": {
-    "environment": "MINESTOM",
+    "environment": "MINECRAFT_SERVER",
     "maxHeapMemorySize": 512,
     "jvmOptions": [
       "-XX:+UseZGC",
-      "-XX:+ZGenerational"
+      "-XX:+UseCompactObjectHeaders",
+      "-Xms256M",
+      "-Xmx512M"
     ]
   },
   "templates": [
