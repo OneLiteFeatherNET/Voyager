@@ -15,6 +15,7 @@ import net.elytrarace.server.ecs.system.RingEffectSystem;
 import net.elytrarace.server.ecs.system.RingVisualizationSystem;
 import net.elytrarace.server.ecs.system.ScoreDisplaySystem;
 import net.elytrarace.server.phase.GamePhaseFactory;
+import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerService;
 import net.elytrarace.server.ui.GameHudManager;
 import net.elytrarace.server.world.MapInstanceService;
@@ -41,15 +42,18 @@ public final class GameOrchestrator {
 
     private final PlayerService playerService;
     private final MapInstanceService mapInstanceService;
+    private final PlayerEventHandler playerEventHandler;
     private final GameHudManager hudManager;
     private final EntityManager entityManager;
 
     private Entity gameEntity;
     private LinearPhaseSeries<Phase> phaseSeries;
 
-    public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService) {
+    public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
+                            PlayerEventHandler playerEventHandler) {
         this.playerService = Objects.requireNonNull(playerService, "playerService must not be null");
         this.mapInstanceService = Objects.requireNonNull(mapInstanceService, "mapInstanceService must not be null");
+        this.playerEventHandler = Objects.requireNonNull(playerEventHandler, "playerEventHandler must not be null");
         this.hudManager = new GameHudManager();
         this.entityManager = new EntityManager();
     }
@@ -130,6 +134,9 @@ public final class GameOrchestrator {
             var activeMap = gameEntity.getComponent(ActiveMapComponent.class);
             activeMap.setMapInstance(instance);
             activeMap.setCurrentMap(mapDef);
+
+            // Push per-map boost config to the event handler
+            playerEventHandler.setBoostConfig(mapDef.boostConfig());
 
             // Teleport all online players, equip race kit, and activate elytra flight
             Pos spawn = mapDef.spawnPos();

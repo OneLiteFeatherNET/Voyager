@@ -2,9 +2,9 @@ package net.elytrarace.server.player;
 
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.server.cup.BoostConfig;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
-import net.elytrarace.server.physics.ElytraPhysics;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -18,11 +18,16 @@ import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.item.Material;
+import net.minestom.server.timer.Task;
+import net.minestom.server.timer.TaskSchedule;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registers Minestom player lifecycle events and delegates to {@link PlayerService}.
@@ -39,7 +44,11 @@ public final class PlayerEventHandler {
     private final PlayerService playerService;
     private final InstanceContainer lobbyInstance;
     private final EventNode<Event> eventNode;
+    private final Map<UUID, Long> lastBoostTime = new ConcurrentHashMap<>();
     private @Nullable EntityManager entityManager;
+
+    /** Active boost configuration — swapped out when a new map loads. */
+    private volatile BoostConfig boostConfig = BoostConfig.DEFAULT;
 
     /**
      * Creates a new event handler that delegates player events to the given service.
@@ -61,6 +70,16 @@ public final class PlayerEventHandler {
      */
     public void setEntityManager(@Nullable EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    /**
+     * Updates the active boost configuration. Call this whenever a new map loads
+     * so the boost feel can be tuned per-map.
+     *
+     * @param config the new boost configuration; must not be null
+     */
+    public void setBoostConfig(BoostConfig config) {
+        this.boostConfig = Objects.requireNonNull(config, "boostConfig must not be null");
     }
 
     /**
@@ -93,6 +112,7 @@ public final class PlayerEventHandler {
     }
 
     private void onDisconnect(PlayerDisconnectEvent event) {
+        lastBoostTime.remove(event.getPlayer().getUuid());
         playerService.onPlayerLeave(event.getPlayer());
     }
 
@@ -105,7 +125,6 @@ public final class PlayerEventHandler {
     private void onUseItem(PlayerUseItemEvent event) {
         Player player = event.getPlayer();
 
-        // Only handle firework rockets
         if (event.getItemStack().material() != Material.FIREWORK_ROCKET) {
             return;
         }
@@ -114,43 +133,69 @@ public final class PlayerEventHandler {
             return;
         }
 
-        // Find the player's ECS entity and check if they are flying elytra
         ElytraFlightComponent flight = findFlightComponent(player);
         if (flight == null || !flight.isFlying()) {
             return;
         }
 
-        // Apply the firework boost as a direct forward impulse.
-        // We do NOT use flight.getVelocity() because the server-side velocity estimate
-        // may lag behind the client's actual speed. Instead we compute a pure look-direction
-        // impulse and add it on top of the client's current movement.
-        Pos pos = player.getPosition();
-        double pitchRad = Math.toRadians(pos.pitch());
-        double yawRad   = Math.toRadians(pos.yaw());
-        double cosP = Math.cos(pitchRad);
-        Vec lookDir = new Vec(
-            Math.sin(-yawRad - Math.PI) * (-cosP),
-            -Math.sin(pitchRad),
-            Math.cos(-yawRad - Math.PI) * (-cosP)
-        );
-        // Use server-estimated velocity as the base; fall back to look direction at
-        // a reasonable glide speed so the impulse is always additive.
-        Vec base = flight.getVelocity().lengthSquared() > 0.01
-            ? flight.getVelocity()
-            : lookDir.mul(0.6);  // ~12 blocks/second baseline if no estimate available
-        Vec boostedVelocity = ElytraPhysics.applyFireworkBoost(base, pos.pitch(), pos.yaw());
-        flight.setVelocity(boostedVelocity);
-        player.setVelocity(boostedVelocity);
-
-        // Consume one rocket from the stack
-        var stack = event.getItemStack();
-        if (stack.amount() > 1) {
-            player.setItemInHand(event.getHand(), stack.withAmount(stack.amount() - 1));
-        } else {
-            player.setItemInHand(event.getHand(), net.minestom.server.item.ItemStack.AIR);
+        // Cooldown guard
+        long now = System.currentTimeMillis();
+        Long last = lastBoostTime.get(player.getUuid());
+        if (last != null && (now - last) < boostConfig.cooldownMs()) {
+            return;
         }
+        lastBoostTime.put(player.getUuid(), now);
 
-        LOGGER.debug("Firework boost applied to player {}", player.getUsername());
+        applyBoost(player, flight);
+    }
+
+    /**
+     * Applies a firework boost to the player: forward in their horizontal facing direction
+     * plus a fixed upward component, so the player always gains height regardless of pitch.
+     * <p>
+     * The boost is sustained for {@link #BOOST_DURATION_TICKS} ticks so the client's own
+     * elytra physics can "feel" it over several frames rather than a single packet that
+     * the physics loop might partially override.
+     * <p>
+     * Note: {@code player.setVelocity()} expects <b>blocks/second</b> in Minestom.
+     * All internal calculations use blocks/tick; the final value is multiplied by 20
+     * before being passed to Minestom.
+     */
+    private void applyBoost(Player player, ElytraFlightComponent flight) {
+        BoostConfig cfg = this.boostConfig;
+
+        // Boost direction: player's HORIZONTAL facing (yaw only, pitch ignored)
+        // + a fixed upward tilt so the player always gains height regardless of pitch.
+        double yawRad = Math.toRadians(player.getPosition().yaw());
+        double upRad  = Math.toRadians(cfg.upAngleDeg());
+        double cosUp  = Math.cos(upRad);
+        double sinUp  = Math.sin(upRad);
+
+        // Horizontal forward in Minecraft coords: yaw 0 = south (+Z)
+        double fwdX = -Math.sin(yawRad) * cosUp;
+        double fwdY =  sinUp;
+        double fwdZ =  Math.cos(yawRad) * cosUp;
+
+        // Scale to configured speed (blocks/tick)
+        Vec boostPerTick = new Vec(fwdX, fwdY, fwdZ).mul(cfg.speedBlocksPerTick());
+        // Minestom setVelocity() expects blocks/second — multiply by 20
+        Vec boostPerSecond = boostPerTick.mul(20.0);
+
+        // Sustain boost for durationTicks so the client's physics can "feel" it.
+        // Uses repeat() + cancel() since buildTask(Runnable) does not accept a Supplier<TaskSchedule>.
+        var remaining = new java.util.concurrent.atomic.AtomicInteger(cfg.durationTicks());
+        var taskRef   = new Task[1];
+        taskRef[0] = MinecraftServer.getSchedulerManager().buildTask(() -> {
+            if (!player.isOnline() || remaining.decrementAndGet() < 0) {
+                if (taskRef[0] != null) taskRef[0].cancel();
+                return;
+            }
+            flight.setVelocity(boostPerTick);
+            player.setVelocity(boostPerSecond);
+        }).repeat(TaskSchedule.nextTick()).schedule();
+
+        LOGGER.debug("Boost applied to {} — {} b/t at {}° up for {} ticks",
+                player.getUsername(), cfg.speedBlocksPerTick(), cfg.upAngleDeg(), cfg.durationTicks());
     }
 
     /**

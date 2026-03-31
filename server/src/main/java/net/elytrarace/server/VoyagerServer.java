@@ -66,6 +66,8 @@ public final class VoyagerServer {
     }
 
     public VoyagerServer(Path dataPath, Path worldsPath) {
+        System.setProperty("minestom.chunk-view-distance", "32");
+        System.setProperty("minestom.entity-view-distance", "32");
         this.server = MinecraftServer.init();
 
         LanguageService.create("elytrarace", Key.key("voyager", "lang"), dataPath)
@@ -82,7 +84,7 @@ public final class VoyagerServer {
         this.playerEventHandler.register();
 
         this.mapInstanceService = new AnvilMapInstanceService(instanceManager);
-        this.gameOrchestrator = new GameOrchestrator(playerService, mapInstanceService);
+        this.gameOrchestrator = new GameOrchestrator(playerService, mapInstanceService, playerEventHandler);
 
         // Wire the ECS entity manager into the event handler for firework boost support
         this.playerEventHandler.setEntityManager(gameOrchestrator.getEntityManager());
