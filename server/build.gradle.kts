@@ -16,7 +16,7 @@ dependencies {
     testImplementation(libs.minecraft.minestom.testing)
     testImplementation(platform("org.junit:junit-bom:5.12.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
 java {
