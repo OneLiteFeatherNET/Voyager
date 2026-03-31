@@ -193,8 +193,12 @@ public final class GameOrchestrator {
                 return;
             }
         }
-        LOGGER.warn("Could not find ECS entity for player {} to activate elytra flight",
-                player.getUsername());
+        // Player joined after startGame() — create entity on-demand
+        Entity playerEntity = GameEntityFactory.createPlayerEntity(player);
+        playerEntity.getComponent(ElytraFlightComponent.class).setFlying(true);
+        entityManager.addEntity(playerEntity);
+        hudManager.addPlayer(player);
+        LOGGER.info("Late-join: created ECS entity and activated elytra flight for player {}", player.getUsername());
     }
 
     /**
