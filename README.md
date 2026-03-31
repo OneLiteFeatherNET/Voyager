@@ -117,7 +117,7 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 
 ## License
 
-[See LICENSE file]
+MIT — see [LICENSE](LICENSE)
 
 ---
 
