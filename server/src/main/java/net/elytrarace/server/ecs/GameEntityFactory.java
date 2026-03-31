@@ -6,6 +6,7 @@ import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
+import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.minestom.server.entity.Player;
@@ -31,6 +32,7 @@ public final class GameEntityFactory {
         entity.addComponent(new ElytraFlightComponent());
         entity.addComponent(new RingTrackerComponent());
         entity.addComponent(new ScoreComponent());
+        entity.addComponent(new RingEffectComponent());
         return entity;
     }
 

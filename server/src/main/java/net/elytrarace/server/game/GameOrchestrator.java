@@ -11,6 +11,7 @@ import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
+import net.elytrarace.server.ecs.system.RingEffectSystem;
 import net.elytrarace.server.ecs.system.ScoreDisplaySystem;
 import net.elytrarace.server.phase.GamePhaseFactory;
 import net.elytrarace.server.player.PlayerService;
@@ -68,9 +69,10 @@ public final class GameOrchestrator {
         gameEntity = GameEntityFactory.createGameEntity(cup);
         entityManager.addEntity(gameEntity);
 
-        // Register ECS systems
+        // Register ECS systems (order matters: collision before effects)
         entityManager.addSystem(new ElytraPhysicsSystem());
-        entityManager.addSystem(new RingCollisionSystem(entityManager));
+        entityManager.addSystem(new RingCollisionSystem(entityManager, hudManager));
+        entityManager.addSystem(new RingEffectSystem());
         entityManager.addSystem(new ScoreDisplaySystem());
 
         // Create player entities for all currently online players

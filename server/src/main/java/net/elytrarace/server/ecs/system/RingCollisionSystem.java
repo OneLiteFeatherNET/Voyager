@@ -13,7 +13,9 @@ import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.physics.Ring;
 import net.elytrarace.server.physics.RingCollisionDetector;
 import net.elytrarace.server.physics.RingType;
+import net.elytrarace.server.ui.GameHudManager;
 import net.minestom.server.coordinate.Vec;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Set;
@@ -32,9 +34,15 @@ import java.util.Set;
 public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
 
     private final EntityManager entityManager;
+    private final @Nullable GameHudManager hudManager;
 
     public RingCollisionSystem(EntityManager entityManager) {
+        this(entityManager, null);
+    }
+
+    public RingCollisionSystem(EntityManager entityManager, @Nullable GameHudManager hudManager) {
         this.entityManager = entityManager;
+        this.hudManager = hudManager;
     }
 
     @Override
@@ -82,6 +90,11 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
                 if (entity.hasComponent(RingEffectComponent.class)) {
                     var effects = entity.getComponent(RingEffectComponent.class);
                     effects.addEffect(ring.type(), 1);
+                }
+
+                // Show ring pass feedback on the player's HUD
+                if (hudManager != null) {
+                    hudManager.showRingPassed(playerRef.getPlayerId(), ring.points());
                 }
             }
         }
