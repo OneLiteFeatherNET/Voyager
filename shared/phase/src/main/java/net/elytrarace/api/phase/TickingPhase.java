@@ -1,8 +1,5 @@
 package net.elytrarace.api.phase;
 
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 
 /**
@@ -13,19 +10,21 @@ import org.jetbrains.annotations.MustBeInvokedByOverriders;
 
 public abstract class TickingPhase extends TickedPhase {
 
+    private final PhaseScheduler scheduler;
     private final long interval;
     private final boolean async;
 
-    private BukkitTask scheduledTask;
+    private PhaseTask scheduledTask;
 
-    public TickingPhase(String name, JavaPlugin game, long interval, boolean async) {
-        super(name, game);
+    public TickingPhase(String name, PhaseScheduler scheduler, EventRegistrar eventRegistrar, long interval, boolean async) {
+        super(name, eventRegistrar);
+        this.scheduler = scheduler;
         this.interval = interval;
         this.async = async;
     }
 
-    public TickingPhase(String name, JavaPlugin game) {
-        this(name, game, 20, false);
+    public TickingPhase(String name, PhaseScheduler scheduler, EventRegistrar eventRegistrar) {
+        this(name, scheduler, eventRegistrar, 20, false);
     }
 
     /**
@@ -34,27 +33,22 @@ public abstract class TickingPhase extends TickedPhase {
     @Override
     @MustBeInvokedByOverriders
     public void onStart() {
-        if (async) {
-            scheduledTask = Bukkit.getScheduler().runTaskTimerAsynchronously(getPlugin(), this::onUpdate, 0L, interval);
-        } else {
-            scheduledTask = Bukkit.getScheduler().runTaskTimer(getPlugin(), this::onUpdate, 0L, interval);
-        }
+        scheduledTask = scheduler.runRepeating(this::onUpdate, interval, async);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void finish() {
         super.finish();
-        if (getScheduledTask() != null)
+        if (scheduledTask != null)
             scheduledTask.cancel();
     }
 
     /**
-     * Sets the scheduled task to the phase.
-     * @param scheduledTask The {@link BukkitTask} to set
+     * Sets the scheduled task for the phase.
+     * @param scheduledTask The task to set
      */
-
-    public void setScheduledTask(BukkitTask scheduledTask) {
+    public void setScheduledTask(PhaseTask scheduledTask) {
         this.scheduledTask = scheduledTask;
     }
 
@@ -62,7 +56,6 @@ public abstract class TickingPhase extends TickedPhase {
      * Returns the tick interval from the {@link TickingPhase}.
      * @return the interval
      */
-
     public long getInterval() {
         return interval;
     }
@@ -71,17 +64,23 @@ public abstract class TickingPhase extends TickedPhase {
      * Returns if the task is an async task.
      * @return True when the task is async otherwise false
      */
-
     public boolean isAsync() {
         return async;
     }
 
     /**
-     * Returns the {@link BukkitTask} from the phase.
+     * Returns the scheduled task from the phase.
      * @return the underlying task
      */
-
-    public BukkitTask getScheduledTask() {
+    public PhaseTask getScheduledTask() {
         return scheduledTask;
+    }
+
+    /**
+     * Returns the phase scheduler.
+     * @return the scheduler
+     */
+    public PhaseScheduler getScheduler() {
+        return scheduler;
     }
 }

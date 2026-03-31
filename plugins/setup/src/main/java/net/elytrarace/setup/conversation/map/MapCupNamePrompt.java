@@ -1,5 +1,7 @@
 package net.elytrarace.setup.conversation.map;
 
+import net.elytrarace.setup.platform.BukkitConversationOwner;
+
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
 import net.elytrarace.api.conversation.StringPrompt;
@@ -26,7 +28,7 @@ public class MapCupNamePrompt extends StringPrompt {
         if (input.isEmpty()) {
             return this;
         }
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin instanceof ElytraRace elytraRace) {
             var inputCupName = input.trim();
             var cupDTO = elytraRace.getCupService().getCups()
@@ -44,7 +46,7 @@ public class MapCupNamePrompt extends StringPrompt {
 
     @Override
     public Collection<String> suggestions(@NotNull ConversationContext context) {
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin instanceof ElytraRace elytraRace) {
             return elytraRace.getCupService().getCups()
                     .stream()

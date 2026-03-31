@@ -1,5 +1,7 @@
 package net.elytrarace.setup.conversation.cup;
 
+import net.elytrarace.setup.platform.BukkitConversationOwner;
+
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.Prompt;
 import net.elytrarace.api.conversation.StringPrompt;
@@ -34,7 +36,7 @@ public class CupNamePrompt extends StringPrompt {
             context.getForWhom().sendMessage(Component.translatable("error.cup.name.invalid"));
             return this;
         }
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (plugin == null) {
             return this;
         }

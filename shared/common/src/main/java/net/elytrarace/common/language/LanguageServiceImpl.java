@@ -5,7 +5,6 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.translation.GlobalTranslator;
 import net.kyori.adventure.translation.TranslationRegistry;
 import net.kyori.adventure.util.UTF8ResourceBundleControl;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
 import java.net.URL;
@@ -19,14 +18,14 @@ import java.util.concurrent.CompletableFuture;
 
 class LanguageServiceImpl implements LanguageService {
 
-    private volatile JavaPlugin plugin;
+    private volatile Path dataPath;
     private volatile Key key;
     private volatile String baseName;
 
-    LanguageServiceImpl(String baseName, Key key, JavaPlugin plugin) {
+    LanguageServiceImpl(String baseName, Key key, Path dataPath) {
         this.baseName = baseName;
         this.key = key;
-        this.plugin = plugin;
+        this.dataPath = dataPath;
     }
 
     @Override
@@ -34,7 +33,7 @@ class LanguageServiceImpl implements LanguageService {
         return CompletableFuture.runAsync(() -> {
             final TranslationRegistry translationRegistry = new PluginTranslationRegistry(TranslationRegistry.create(key));
             translationRegistry.defaultLocale(Locale.US);
-            Path langFolder = plugin.getDataFolder().toPath().resolve("lang");
+            Path langFolder = dataPath.resolve("lang");
             var languages = new HashSet<String>();
             languages.add("en-US");
             if (Files.exists(langFolder)) {

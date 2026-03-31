@@ -2,7 +2,6 @@ package net.elytrarace.api.conversation;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,16 +14,16 @@ import java.util.Map;
  * The Conversation class is responsible for tracking the current state of a
  * conversation, displaying prompts to the user, and dispatching the user's
  * response to the appropriate place. Conversation objects are not typically
- * instantiated directly. Instead a {@link org.bukkit.conversations.ConversationFactory} is used to
+ * instantiated directly. Instead a {@link ConversationFactory} is used to
  * construct identical conversations on demand.
  * <p>
- * Conversation flow consists of a directed graph of {@link org.bukkit.conversations.Prompt} objects.
+ * Conversation flow consists of a directed graph of {@link Prompt} objects.
  * Each time a prompt gets input from the user, it must return the next prompt
  * in the graph. Since each Prompt chooses the next Prompt, complex
  * conversation trees can be implemented where the nature of the player's
  * response directs the flow of the conversation.
  * <p>
- * Each conversation has a {@link org.bukkit.conversations.ConversationPrefix} that prepends all output
+ * Each conversation has a {@link ConversationPrefix} that prepends all output
  * from the conversation to the player. The ConversationPrefix can be used to
  * display the plugin name or conversation status as the conversation evolves.
  * <p>
@@ -55,8 +54,8 @@ public class Conversation {
      * @param forWhom The entity for whom this conversation is mediating.
      * @param firstPrompt The first prompt in the conversation graph.
      */
-    public Conversation(@Nullable Plugin plugin, @NotNull Conversable forWhom, @Nullable Prompt firstPrompt) {
-        this(plugin, forWhom, firstPrompt, new HashMap<Object, Object>());
+    public Conversation(@Nullable ConversationOwner owner, @NotNull Conversable forWhom, @Nullable Prompt firstPrompt) {
+        this(owner, forWhom, firstPrompt, new HashMap<Object, Object>());
     }
 
     /**
@@ -68,9 +67,9 @@ public class Conversation {
      * @param initialSessionData Any initial values to put in the conversation
      *     context sessionData map.
      */
-    public Conversation(@Nullable Plugin plugin, @NotNull Conversable forWhom, @Nullable Prompt firstPrompt, @NotNull Map<Object, Object> initialSessionData) {
+    public Conversation(@Nullable ConversationOwner owner, @NotNull Conversable forWhom, @Nullable Prompt firstPrompt, @NotNull Map<Object, Object> initialSessionData) {
         this.firstPrompt = firstPrompt;
-        this.context = new ConversationContext(plugin, forWhom, initialSessionData);
+        this.context = new ConversationContext(owner, forWhom, initialSessionData);
         this.modal = true;
         this.localEchoEnabled = true;
         this.prefix = new NullConversationPrefix();
@@ -164,7 +163,7 @@ public class Conversation {
     }
 
     /**
-     * Gets the list of {@link org.bukkit.conversations.ConversationCanceller}s
+     * Gets the list of {@link ConversationCanceller}s
      *
      * @return The list.
      */

@@ -7,8 +7,9 @@ import net.elytrarace.game.phase.EndPhase;
 import net.elytrarace.game.phase.GamePhase;
 import net.elytrarace.game.phase.LobbyPhase;
 import net.elytrarace.game.phase.PreparationPhase;
+import net.elytrarace.api.phase.EventRegistrar;
+import net.elytrarace.api.phase.PhaseScheduler;
 import net.elytrarace.game.service.GameService;
-import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Component that stores the current phase information.
@@ -23,7 +24,7 @@ public record PhaseComponent(LinearPhaseSeries<Phase> phaseSeries) implements Co
         phaseSeries.add(new PreparationPhase(gameService));
         phaseSeries.add(new LobbyPhase(gameService));
         phaseSeries.add(new GamePhase(gameService));
-        phaseSeries.add(new EndPhase(gameService.getPlugin()));
+        phaseSeries.add(new EndPhase(gameService.getPhaseScheduler(), gameService.getEventRegistrar()));
         phaseSeries.start();
         return new PhaseComponent(phaseSeries);
     }
@@ -31,10 +32,9 @@ public record PhaseComponent(LinearPhaseSeries<Phase> phaseSeries) implements Co
     /**
      * Creates a new PhaseComponent with a default phase series.
      */
-    public static PhaseComponent create(JavaPlugin plugin) {
+    public static PhaseComponent create(PhaseScheduler scheduler, EventRegistrar eventRegistrar) {
         LinearPhaseSeries<Phase> phaseSeries = new LinearPhaseSeries<>();
-        // Create a simplified phase series without GameService dependency
-        phaseSeries.add(new EndPhase(plugin));
+        phaseSeries.add(new EndPhase(scheduler, eventRegistrar));
         phaseSeries.start();
         return new PhaseComponent(phaseSeries);
     }

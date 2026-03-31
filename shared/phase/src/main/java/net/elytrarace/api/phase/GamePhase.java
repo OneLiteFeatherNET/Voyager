@@ -1,10 +1,5 @@
 package net.elytrarace.api.phase;
 
-import org.bukkit.Bukkit;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,50 +10,48 @@ import java.util.List;
  */
 public abstract class GamePhase extends Phase {
 
-    private final JavaPlugin plugin;
-    private List<Listener> phaseListeners;
+    private final EventRegistrar eventRegistrar;
+    private List<Object> phaseListeners;
 
-    public GamePhase(JavaPlugin plugin) {
-        this.plugin = plugin;
+    public GamePhase(EventRegistrar eventRegistrar) {
+        this.eventRegistrar = eventRegistrar;
     }
 
-    public GamePhase(String name, JavaPlugin plugin) {
+    public GamePhase(String name, EventRegistrar eventRegistrar) {
         super(name);
-        this.plugin = plugin;
+        this.eventRegistrar = eventRegistrar;
     }
 
     @Override
     public void start() {
         super.start();
 
-        if (this instanceof Listener)
-            Bukkit.getPluginManager().registerEvents((Listener) this, plugin);
+        eventRegistrar.registerListener(this);
         if (phaseListeners != null && !phaseListeners.isEmpty())
-            phaseListeners.forEach(listener -> Bukkit.getPluginManager().registerEvents(listener, plugin));
+            phaseListeners.forEach(eventRegistrar::registerListener);
     }
 
     @Override
     public void finish() {
-        if (this instanceof Listener)
-            HandlerList.unregisterAll((Listener) this);
+        eventRegistrar.unregisterListener(this);
         if (phaseListeners != null)
-            phaseListeners.forEach(HandlerList::unregisterAll);
+            phaseListeners.forEach(eventRegistrar::unregisterListener);
 
         super.finish();
     }
 
-    public JavaPlugin getPlugin() {
-        return plugin;
+    public EventRegistrar getEventRegistrar() {
+        return eventRegistrar;
     }
 
-    public void addPhaseListener(Listener listener) {
+    public void addPhaseListener(Object listener) {
         if (phaseListeners == null)
             phaseListeners = new ArrayList<>(3);
 
         phaseListeners.add(listener);
     }
 
-    public void removePhaseListener(Listener listener) {
+    public void removePhaseListener(Object listener) {
         if (phaseListeners != null)
             phaseListeners.remove(listener);
     }

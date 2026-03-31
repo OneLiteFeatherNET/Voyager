@@ -1,6 +1,5 @@
 package net.elytrarace.api.conversation;
 
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -8,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
  * a period of inactivity by the user.
  */
 public class InactivityConversationCanceller implements ConversationCanceller {
-    protected Plugin plugin;
+    protected ConversationOwner owner;
     protected int timeoutSeconds;
     protected Conversation conversation;
     private int taskId = -1;
@@ -16,11 +15,11 @@ public class InactivityConversationCanceller implements ConversationCanceller {
     /**
      * Creates an InactivityConversationCanceller.
      *
-     * @param plugin The owning plugin.
+     * @param owner The owning conversation owner.
      * @param timeoutSeconds The number of seconds of inactivity to wait.
      */
-    public InactivityConversationCanceller(@NotNull Plugin plugin, int timeoutSeconds) {
-        this.plugin = plugin;
+    public InactivityConversationCanceller(@NotNull ConversationOwner owner, int timeoutSeconds) {
+        this.owner = owner;
         this.timeoutSeconds = timeoutSeconds;
     }
 
@@ -32,7 +31,6 @@ public class InactivityConversationCanceller implements ConversationCanceller {
 
     @Override
     public boolean cancelBasedOnInput(@NotNull ConversationContext context, @NotNull String input) {
-        // Reset the inactivity timer
         stopTimer();
         startTimer();
         return false;
@@ -41,44 +39,33 @@ public class InactivityConversationCanceller implements ConversationCanceller {
     @Override
     @NotNull
     public ConversationCanceller clone() {
-        return new InactivityConversationCanceller(plugin, timeoutSeconds);
+        return new InactivityConversationCanceller(owner, timeoutSeconds);
     }
 
-    /**
-     * Starts an inactivity timer.
-     */
     private void startTimer() {
-        taskId = plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            @Override
-            public void run() {
-                if (conversation.getState() == Conversation.ConversationState.UNSTARTED) {
-                    startTimer();
-                } else if (conversation.getState() == Conversation.ConversationState.STARTED) {
-                    cancelling(conversation);
-                    conversation.abandon(new ConversationAbandonedEvent(conversation, InactivityConversationCanceller.this));
-                }
+        taskId = owner.getScheduler().scheduleDelayed(() -> {
+            if (conversation.getState() == Conversation.ConversationState.UNSTARTED) {
+                startTimer();
+            } else if (conversation.getState() == Conversation.ConversationState.STARTED) {
+                cancelling(conversation);
+                conversation.abandon(new ConversationAbandonedEvent(conversation, InactivityConversationCanceller.this));
             }
-        }, timeoutSeconds * 20);
+        }, timeoutSeconds * 20L);
     }
 
-    /**
-     * Stops the active inactivity timer.
-     */
     private void stopTimer() {
         if (taskId != -1) {
-            plugin.getServer().getScheduler().cancelTask(taskId);
+            owner.getScheduler().cancelTask(taskId);
             taskId = -1;
         }
     }
 
     /**
-     * Subclasses of InactivityConversationCanceller can override this method
-     * to take additional actions when the inactivity timer abandons the
-     * conversation.
+     * Subclasses can override this to take additional actions when the
+     * inactivity timer abandons the conversation.
      *
      * @param conversation The conversation being abandoned.
      */
     protected void cancelling(@NotNull Conversation conversation) {
-
     }
 }

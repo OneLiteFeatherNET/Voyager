@@ -14,7 +14,7 @@ public class GamePhase extends TickingPhase {
     private final GameService gameService;
 
     public GamePhase(GameService gameService) {
-        super("Game", gameService.getPlugin(), 1, true);
+        super("Game", gameService.getPhaseScheduler(), gameService.getEventRegistrar(), 1, true);
         this.gameService = gameService;
     }
 

@@ -1,0 +1,54 @@
+package net.elytrarace.server.phase;
+
+import net.minestom.server.MinecraftServer;
+import net.minestom.server.utils.time.TimeUnit;
+import net.theevilreaper.xerus.api.phase.TickDirection;
+import net.theevilreaper.xerus.api.phase.TimedPhase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * End phase for the Minestom server.
+ * <p>
+ * Counts down from a configurable number of ticks (default 100 ticks = 5 seconds at 20 TPS)
+ * while displaying the results and remaining time to all players. When the countdown
+ * finishes, the server is stopped.
+ */
+public final class MinestomEndPhase extends TimedPhase {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MinestomEndPhase.class);
+    private static final int DEFAULT_END_TICKS = 100;
+
+    private final int endTicks;
+
+    public MinestomEndPhase() {
+        this(DEFAULT_END_TICKS);
+    }
+
+    public MinestomEndPhase(int endTicks) {
+        super("end", TimeUnit.SERVER_TICK, 20);
+        this.endTicks = endTicks;
+        setEndTicks(0);
+        setCurrentTicks(endTicks);
+        setTickDirection(TickDirection.DOWN);
+    }
+
+    @Override
+    public void onStart() {
+        setCurrentTicks(endTicks);
+        super.onStart();
+        LOGGER.info("End phase started — showing results for {} seconds", endTicks);
+        // TODO: Calculate and display final scoreboard / top three
+    }
+
+    @Override
+    public void onUpdate() {
+        PhaseUiHelper.broadcastTimeActionBar("phase.end.time", getCurrentTicks());
+    }
+
+    @Override
+    protected void onFinish() {
+        LOGGER.info("End phase finished — stopping server");
+        MinecraftServer.stopCleanly();
+    }
+}

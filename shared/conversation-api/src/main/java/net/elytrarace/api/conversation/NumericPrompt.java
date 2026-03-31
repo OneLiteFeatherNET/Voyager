@@ -46,7 +46,7 @@ public abstract class NumericPrompt extends ValidatingPrompt {
      *
      * @param context Context information about the conversation.
      * @param input The user's response as a {@link Number}.
-     * @return The next {@link org.bukkit.conversations.Prompt} in the prompt graph.
+     * @return The next {@link Prompt} in the prompt graph.
      */
     @Nullable
     protected abstract Prompt acceptValidatedInput(@NotNull ConversationContext context, @NotNull Number input);

@@ -35,7 +35,12 @@ final class CupProvider {
         this.defaultCups = defaultCups;
 
         if (!Files.exists(this.cupPath)) {
-            throw new IllegalStateException("The cup folder does not exist. Please name the cup folder " + CUPS_FOLDER);
+            try {
+                Files.createDirectories(this.cupPath);
+                CUP_LOGGER.info("Created cups folder at {}", this.cupPath);
+            } catch (java.io.IOException e) {
+                throw new IllegalStateException("Could not create cups folder at " + this.cupPath, e);
+            }
         }
         loadCups();
     }

@@ -1,8 +1,6 @@
 package net.elytrarace.api.conversation;
 
 import net.kyori.adventure.text.Component;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +21,7 @@ import java.util.Map;
  */
 public class ConversationFactory {
 
-    protected Plugin plugin;
+    protected ConversationOwner owner;
     protected boolean isModal;
     protected boolean localEchoEnabled;
     protected ConversationPrefix prefix;
@@ -38,8 +36,8 @@ public class ConversationFactory {
      *
      * @param plugin The plugin that owns the factory.
      */
-    public ConversationFactory(@NotNull Plugin plugin) {
-        this.plugin = plugin;
+    public ConversationFactory(@NotNull ConversationOwner owner) {
+        this.owner = owner;
         isModal = true;
         localEchoEnabled = true;
         prefix = new NullConversationPrefix();
@@ -106,7 +104,7 @@ public class ConversationFactory {
      */
     @NotNull
     public ConversationFactory withTimeout(int timeoutSeconds) {
-        return withConversationCanceller(new InactivityConversationCanceller(plugin, timeoutSeconds));
+        return withConversationCanceller(new InactivityConversationCanceller(owner, timeoutSeconds));
     }
 
     /**
@@ -198,8 +196,8 @@ public class ConversationFactory {
     @NotNull
     public Conversation buildConversation(@NotNull Conversable forWhom) {
         //Abort conversation construction if we aren't supposed to talk to non-players
-        if (playerOnlyMessage != null && !(forWhom instanceof Player)) {
-            return new Conversation(plugin, forWhom, new NotPlayerMessagePrompt());
+        if (playerOnlyMessage != null && !forWhom.isPlayer()) {
+            return new Conversation(owner, forWhom, new NotPlayerMessagePrompt());
         }
 
         //Clone any initial session data
@@ -207,7 +205,7 @@ public class ConversationFactory {
         copiedInitialSessionData.putAll(initialSessionData);
 
         //Build and return a conversation
-        Conversation conversation = new Conversation(plugin, forWhom, firstPrompt, copiedInitialSessionData);
+        Conversation conversation = new Conversation(owner, forWhom, firstPrompt, copiedInitialSessionData);
         conversation.setModal(isModal);
         conversation.setLocalEchoEnabled(localEchoEnabled);
         conversation.setPrefix(prefix);

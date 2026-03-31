@@ -10,10 +10,19 @@ dependencies {
     compileOnly(libs.minecraft.paper)
     implementation(libs.minecraft.cloud.paper)
     implementation(project(":shared:common"))
+    implementation(project(":shared:phase"))
     implementation(project(":shared:conversation-api"))
+    implementation(project(":shared:spline"))
     // FAWE
     implementation(platform(libs.fawe.bom))
     compileOnly(libs.bundles.fawe)
+    // Geometry (for testfly collision detection via PortalCollisionHelper)
+    implementation(libs.geometry)
+    // Test
+    testImplementation(platform("org.junit:junit-bom:5.12.2"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core:3.27.3")
 }
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
@@ -38,7 +47,11 @@ tasks {
         }
     }
     runServer {
-        minecraftVersion("1.21.5")
+        minecraftVersion("1.21.8")
+        downloadPlugins {
+            modrinth("fastasyncworldedit", "mHtmqIig")
+            modrinth("voidgen", "2hsK4Z87")
+        }
     }
 }
 

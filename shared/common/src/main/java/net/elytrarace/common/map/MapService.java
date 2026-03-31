@@ -2,10 +2,10 @@ package net.elytrarace.common.map;
 
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.map.model.MapDTO;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -83,11 +83,11 @@ public interface MapService {
 
     /**
      * Creates a new instance of the map service
-     * @param plugin the plugin to create the service for
+     * @param dataPath the data path for storing map files
      * @return the map service
      */
     @Contract("_ -> new")
-    static MapService create(@NotNull JavaPlugin plugin) {
-        return new MapServiceImpl(plugin);
+    static MapService create(@NotNull Path dataPath) {
+        return new MapServiceImpl(dataPath);
     }
 }

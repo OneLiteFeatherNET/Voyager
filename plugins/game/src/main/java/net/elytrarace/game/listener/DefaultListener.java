@@ -5,7 +5,6 @@ import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.api.phase.LinearPhaseSeries;
 import net.elytrarace.api.phase.Phase;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
-import net.elytrarace.common.listener.CancellableListener;
 import net.elytrarace.game.phase.EndPhase;
 import net.elytrarace.game.phase.GamePhase;
 import net.elytrarace.game.phase.LobbyPhase;
@@ -35,7 +34,7 @@ import org.bukkit.event.server.ServerListPingEvent;
 import java.util.List;
 import java.util.Optional;
 
-public class DefaultListener implements Listener, CancellableListener {
+public class DefaultListener implements Listener {
 
     private static final List<Class<?>> RIGHT_CLICK_DENIED_INTERACTABLES = List.of(Sign.class, Chest.class, Container.class);
     private static final List<Class<?>> PHYSICS_DENIED_INTERACTABLES = List.of(Farmland.class);
@@ -49,47 +48,47 @@ public class DefaultListener implements Listener, CancellableListener {
 
     @EventHandler
     public void onArmorStandManipulateEvent(PlayerArmorStandManipulateEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onLeafDecay(LeavesDecayEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onBedEnterEvent(PlayerBedEnterEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onHandleDrop(PlayerDropItemEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onHandlePickup(EntityPickupItemEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onFoodLevelChange(FoodLevelChangeEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
-        cancelEvent(event);
+        event.setCancelled(true);
     }
 
     @EventHandler
@@ -178,11 +177,11 @@ public class DefaultListener implements Listener, CancellableListener {
         Optional.ofNullable(event.getClickedBlock())
                 .map(Block::getBlockData).ifPresent(blockData -> {
                     if (event.getAction().equals(Action.PHYSICAL) && PHYSICS_DENIED_INTERACTABLES.stream().anyMatch(clazz -> clazz.isInstance(blockData))) {
-                        cancelEvent(event);
+                        event.setCancelled(true);
                         return;
                     }
                     if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && RIGHT_CLICK_DENIED_INTERACTABLES.stream().anyMatch(clazz -> clazz.isInstance(blockData))) {
-                        cancelEvent(event);
+                        event.setCancelled(true);
                     }
                 });
     }

@@ -89,7 +89,7 @@ public class SimpleElytraRace extends JavaPlugin {
 
         // Load language
         LanguageService
-                .create("elytrarace", Key.key("elytrarace", "language"), this)
+                .create("elytrarace", Key.key("elytrarace", "language"), getDataFolder().toPath())
                 .loadLanguage()
                 .thenRun(() -> getLogger().info("Language has been loaded"));
 

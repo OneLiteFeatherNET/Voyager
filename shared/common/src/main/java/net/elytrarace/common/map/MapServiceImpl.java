@@ -6,9 +6,9 @@ import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import net.elytrarace.common.utils.GsonUtil;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,8 +18,8 @@ class MapServiceImpl implements MapService {
 
     private final MapProvider mapProvider;
 
-    MapServiceImpl(@NotNull JavaPlugin plugin) {
-        mapProvider = new MapProvider(GsonUtil.GSON, plugin.getDataPath(), ArrayList::new);
+    MapServiceImpl(@NotNull Path dataPath) {
+        mapProvider = new MapProvider(GsonUtil.GSON, dataPath, ArrayList::new);
     }
 
     @Override

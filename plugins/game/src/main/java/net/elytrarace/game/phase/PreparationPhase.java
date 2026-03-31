@@ -2,16 +2,18 @@ package net.elytrarace.game.phase;
 
 import net.elytrarace.api.phase.TickDirection;
 import net.elytrarace.api.phase.TimedPhase;
-import net.elytrarace.game.ElytraRace;
 import net.elytrarace.game.service.GameService;
 import org.bukkit.Bukkit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PreparationPhase extends TimedPhase {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PreparationPhase.class);
     private final GameService game;
 
     public PreparationPhase(GameService game) {
-        super("Preparation", game.getPlugin(), 20, true);
+        super("Preparation", game.getPhaseScheduler(), game.getEventRegistrar(), 20, true);
         this.game = game;
         setEndTicks(15);
         setCurrentTicks(0);
@@ -21,16 +23,14 @@ public class PreparationPhase extends TimedPhase {
     @Override
     public void onStart() {
         super.onStart();
-        this.getPlugin().getLogger().info("Preparation phase has started!");
+        LOGGER.info("Preparation phase has started!");
     }
 
     @Override
     protected void onFinish() {
-        if (getPlugin() instanceof ElytraRace elytraRace) {
-            if (game.getCurrentCup().isEmpty()) {
-                elytraRace.getLogger().warning("No cup has been set, shutting down server...");
-                Bukkit.shutdown();
-            }
+        if (game.getCurrentCup().isEmpty()) {
+            LOGGER.warn("No cup has been set, shutting down server...");
+            Bukkit.shutdown();
         }
     }
 

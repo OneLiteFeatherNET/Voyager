@@ -1,5 +1,7 @@
 package net.elytrarace.setup.conversation.portal;
 
+import net.elytrarace.setup.platform.BukkitConversationOwner;
+
 import com.fastasyncworldedit.core.regions.PolyhedralRegion;
 import net.elytrarace.api.conversation.ConversationContext;
 import net.elytrarace.api.conversation.MessagePrompt;
@@ -41,7 +43,7 @@ public class PortalSavePrompt extends MessagePrompt {
         var portals = new TreeSet<>(map.portals());
         portals.add(portalDTO);
         var newMap = MapDTOBuilder.create().from(map).portals(portals).build();
-        var plugin = context.getPlugin();
+        var plugin = ((BukkitConversationOwner) context.getOwner()).getPlugin();
         if (!(plugin instanceof ElytraRace elytraRace)) {
             return END_OF_CONVERSATION;
         }
