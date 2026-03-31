@@ -41,6 +41,7 @@ public final class MinestomEndPhase extends TimedPhase {
 
     private final int endTicksValue;
     private final @Nullable EntityManager entityManager;
+    private boolean finishing = false;
 
     public MinestomEndPhase() {
         this(DEFAULT_END_TICKS, null);
@@ -56,7 +57,17 @@ public final class MinestomEndPhase extends TimedPhase {
     }
 
     @Override
+    public void finish() {
+        if (finishing) {
+            return;
+        }
+        finishing = true;
+        super.finish();
+    }
+
+    @Override
     public void onStart() {
+        finishing = false;
         setCurrentTicks(endTicksValue);
         super.onStart();
         LOGGER.info("End phase started — showing results for {} ticks", endTicksValue);
@@ -70,8 +81,13 @@ public final class MinestomEndPhase extends TimedPhase {
 
     @Override
     protected void onFinish() {
-        LOGGER.info("End phase finished — stopping server");
-        MinecraftServer.stopCleanly();
+        LOGGER.info("End phase finished — scheduling server stop");
+        // Schedule stop for the next tick so the finish() chain completes cleanly
+        // before the server shuts down (avoids "Advance called on not running phase").
+        MinecraftServer.getSchedulerManager()
+                .buildTask(MinecraftServer::stopCleanly)
+                .delay(1, TimeUnit.SERVER_TICK)
+                .schedule();
     }
 
     /**

@@ -20,6 +20,7 @@ public final class MinestomLobbyPhase extends TimedPhase {
 
     private final int lobbyTicks;
     private final Runnable onMapSwitch;
+    private boolean finishing = false;
 
     public MinestomLobbyPhase() {
         this(DEFAULT_LOBBY_TICKS, null);
@@ -40,9 +41,19 @@ public final class MinestomLobbyPhase extends TimedPhase {
 
     @Override
     public void onStart() {
+        finishing = false;
         setCurrentTicks(lobbyTicks);
         super.onStart();
         LOGGER.info("Lobby phase started — counting down from {} seconds", lobbyTicks);
+    }
+
+    @Override
+    public void finish() {
+        if (finishing) {
+            return;
+        }
+        finishing = true;
+        super.finish();
     }
 
     @Override

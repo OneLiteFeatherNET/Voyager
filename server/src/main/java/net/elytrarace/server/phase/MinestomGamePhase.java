@@ -40,6 +40,7 @@ public final class MinestomGamePhase extends TickingPhase {
     private final int raceDurationTicks;
     private final Runnable onGamePhaseFinished;
     private int elapsedTicks;
+    private boolean finishing = false;
 
     public MinestomGamePhase(EntityManager entityManager) {
         this(entityManager, DEFAULT_RACE_DURATION_TICKS, null);
@@ -55,8 +56,9 @@ public final class MinestomGamePhase extends TickingPhase {
 
     @Override
     public void onStart() {
-        super.onStart();
+        finishing = false;
         elapsedTicks = 0;
+        super.onStart();
         LOGGER.info("Game phase started — ECS loop running every tick, race duration {} ticks",
                 raceDurationTicks);
     }
@@ -80,6 +82,10 @@ public final class MinestomGamePhase extends TickingPhase {
 
     @Override
     public void finish() {
+        if (finishing) {
+            return;
+        }
+        finishing = true;
         LOGGER.info("Game phase finished");
         if (onGamePhaseFinished != null) {
             onGamePhaseFinished.run();
