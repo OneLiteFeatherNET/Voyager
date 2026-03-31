@@ -28,20 +28,25 @@ public final class GamePhaseFactory {
      * @return a ready-to-start phase series
      */
     public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager) {
-        return createGamePhases(entityManager, null);
+        return createGamePhases(entityManager, null, null);
     }
 
     /**
      * Creates a linear phase series containing lobby, game, and end phases.
      *
-     * @param entityManager the ECS entity manager driving the game loop
-     * @param onMapSwitch   callback invoked when the lobby phase ends, before the game phase starts;
-     *                      use this to trigger map loading and player teleportation
+     * @param entityManager        the ECS entity manager driving the game loop
+     * @param onMapSwitch          callback invoked when the lobby phase ends, before the game phase starts;
+     *                             use this to trigger map loading and player teleportation
+     * @param onGamePhaseFinished  callback invoked when the game phase finishes (race duration expired
+     *                             or all rings passed); use this to advance to the next map or end phase
      * @return a ready-to-start phase series
      */
-    public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager, @Nullable Runnable onMapSwitch) {
+    public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager,
+                                                            @Nullable Runnable onMapSwitch,
+                                                            @Nullable Runnable onGamePhaseFinished) {
         var lobby = new MinestomLobbyPhase(120, onMapSwitch);
-        var game = new MinestomGamePhase(entityManager);
+        var game = new MinestomGamePhase(entityManager,
+                MinestomGamePhase.DEFAULT_RACE_DURATION_TICKS, onGamePhaseFinished);
         var end = new MinestomEndPhase();
         return new LinearPhaseSeries<>("game-phases", List.of(lobby, game, end));
     }

@@ -82,10 +82,16 @@ public final class GameOrchestrator {
             hudManager.addPlayer(player);
         }
 
-        // Create and start the phase series — loadNextMap() is triggered when lobby ends
+        // Create and start the phase series
+        // - onMapSwitch: loadNextMap() is triggered when lobby ends
+        // - onGamePhaseFinished: advance to next map or let series proceed to end phase
         phaseSeries = GamePhaseFactory.createGamePhases(entityManager,
                 () -> loadNextMap().exceptionally(ex -> {
                     LOGGER.error("Failed to load first map after lobby", ex);
+                    return null;
+                }),
+                () -> advanceToNextMap().exceptionally(ex -> {
+                    LOGGER.error("Failed to advance to next map", ex);
                     return null;
                 }));
         phaseSeries.start();
