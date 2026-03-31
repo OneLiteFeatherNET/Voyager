@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.0.0...v1.1.0) (2026-03-31)
+
+
+### Features
+
+* **server:** add Log4j2 as SLF4J 2.x provider ([5c44ffc](https://github.com/OneLiteFeatherNET/Voyager/commit/5c44ffc370a5e2847e19f4c224336367f245a83d))
+* **server:** add runServer Gradle task for local development ([f0dcb09](https://github.com/OneLiteFeatherNET/Voyager/commit/f0dcb098b4ae7a6d86f6b6823c128f6e62a8657f))
+* **server:** auto-load cups and maps from run/data/ on startup ([5cbd9c0](https://github.com/OneLiteFeatherNET/Voyager/commit/5cbd9c0bbe0eb84d48253bacfa01fe937297e5b8))
+
 # 1.0.0 (2026-03-31)
 
 
