@@ -10,6 +10,7 @@ import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
+import net.elytrarace.server.ecs.system.OutOfBoundsSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
 import net.elytrarace.server.ecs.system.RingEffectSystem;
 import net.elytrarace.server.ecs.system.RingVisualizationSystem;
@@ -74,9 +75,10 @@ public final class GameOrchestrator {
         gameEntity = GameEntityFactory.createGameEntity(cup);
         entityManager.addEntity(gameEntity);
 
-        // Register ECS systems (order matters: collision before effects)
+        // Register ECS systems (order matters: physics first, then collision, then bounds)
         entityManager.addSystem(new ElytraPhysicsSystem());
         entityManager.addSystem(new RingCollisionSystem(entityManager, hudManager));
+        entityManager.addSystem(new OutOfBoundsSystem(entityManager, playerService));
         entityManager.addSystem(new RingEffectSystem());
         entityManager.addSystem(new RingVisualizationSystem(entityManager));
         entityManager.addSystem(new ScoreDisplaySystem());
