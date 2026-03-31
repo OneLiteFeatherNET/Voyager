@@ -16,6 +16,7 @@ Voyager (internally "ElytraRace") is a Minecraft elytra racing minigame (Mario K
 - **Conversation API**: Complete rewrite (platform-agnostic)
 - **Deployment**: CloudNet v4 (primary), Cloud-Native/K8s (later)
 - **Commits**: Conventional Commits, no Co-Author
+- **Version Catalog**: Defined programmatically in `settings.gradle.kts` via `dependencyResolutionManagement { versionCatalogs { ... } }` — do NOT use `gradle/libs.versions.toml`
 
 ## Build Commands
 

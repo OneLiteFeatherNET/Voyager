@@ -473,25 +473,29 @@ dependencyLocking {
 // Lockfile: gradle.lockfile per project (committed to Git)
 ```
 
-### Version Catalog — Best Practices (Gradle 9.x)
+### Version Catalog — Project Convention (Gradle 9.x)
 
-```toml
-# gradle/libs.versions.toml (recommended over programmatic definition)
-[versions]
-minestom = "2026.03.25-1.21.11"
-shadow = "9.4.0"
+**DECISION: Voyager uses the programmatic API in `settings.gradle.kts` — NOT `gradle/libs.versions.toml`.**
 
-[libraries]
-# Use kebab-case with hyphens (not dots)
-minecraft-minestom = { module = "net.minestom:minestom", version.ref = "minestom" }
-minecraft-minestom-testing = { module = "net.minestom:testing", version.ref = "minestom" }
+Do NOT suggest migrating to TOML. Do NOT generate TOML catalog files. All dependency versions are defined via `dependencyResolutionManagement { versionCatalogs { create("libs") { ... } } }` in `settings.gradle.kts`.
 
-[bundles]
-# Group related deps for cleaner build scripts
-hibernate = ["hibernate-core", "hibernate-hikaricp"]
+```kotlin
+// settings.gradle.kts — canonical version catalog location for this project
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            version("minestom", "2026.03.25-1.21.11")
+            version("shadow", "9.4.0")
 
-[plugins]
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+            library("minecraft.minestom", "net.minestom", "minestom").versionRef("minestom")
+            library("minecraft.minestom.testing", "net.minestom", "testing").versionRef("minestom")
+
+            bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
+
+            plugin("shadow", "com.gradleup.shadow").versionRef("shadow")
+        }
+    }
+}
 ```
 
 ### Develocity (Build Scans)
