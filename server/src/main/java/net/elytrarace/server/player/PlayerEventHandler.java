@@ -17,6 +17,7 @@ import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
@@ -145,6 +146,14 @@ public final class PlayerEventHandler {
             return;
         }
         lastBoostTime.put(player.getUuid(), now);
+
+        // Consume one rocket
+        var stack = event.getItemStack();
+        if (stack.amount() > 1) {
+            player.setItemInHand(event.getHand(), stack.withAmount(stack.amount() - 1));
+        } else {
+            player.setItemInHand(event.getHand(), ItemStack.AIR);
+        }
 
         applyBoost(player, flight);
     }

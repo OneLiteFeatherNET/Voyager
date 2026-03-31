@@ -18,6 +18,9 @@ public record BoostConfig(
         int durationTicks,
         long cooldownMs
 ) {
-    /** Sensible defaults: fast launch, 25° upward tilt, 1-second sustain, 3-second cooldown. */
-    public static final BoostConfig DEFAULT = new BoostConfig(2.5, 25.0, 20, 3_000);
+    /**
+     * Defaults based on game design spec:
+     * 2.5 b/t speed, 25° upward tilt, 1.5 s sustain (30 ticks), 4 s cooldown (80 ticks).
+     */
+    public static final BoostConfig DEFAULT = new BoostConfig(2.5, 25.0, 30, 4_000);
 }

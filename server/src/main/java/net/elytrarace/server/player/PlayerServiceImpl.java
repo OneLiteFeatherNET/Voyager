@@ -70,7 +70,7 @@ public final class PlayerServiceImpl implements PlayerService {
 
         player.getInventory().clear();
         player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
-        player.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, 16));
+        player.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, 3));
 
         LOGGER.debug("Equipped player {} with elytra and firework rockets", player.getUsername());
     }
