@@ -1,10 +1,15 @@
 name: Release
+
 on:
   push:
-    tags: ['v*']
+    branches:
+      - master
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
 
 jobs:
   release:
@@ -12,27 +17,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: temurin
           java-version: 25
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
         with:
-          cache-read-only: true
+          cache-read-only: false
 
-      - name: Build Shadow JAR
-        run: ./gradlew :server:shadowJar
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: lts/*
+
+      - name: Install semantic-release dependencies
+        run: npm clean-install
+
+      - name: Run semantic-release
+        run: npx --no-install semantic-release
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
           ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: server/build/libs/*.jar
-          generate_release_notes: true
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"

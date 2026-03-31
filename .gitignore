@@ -3,6 +3,9 @@
 *.ctxt
 .mtj.tmp/
 *.jar
+
+# Node / semantic-release
+node_modules/
 *.war
 *.nar
 *.ear

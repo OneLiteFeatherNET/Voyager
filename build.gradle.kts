@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "net.onelitefeather"
-version = "0.0.1-SNAPSHOT"
+// version is managed by semantic-release via gradle.properties
 
 subprojects {
     repositories {
