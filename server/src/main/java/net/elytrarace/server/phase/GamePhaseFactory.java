@@ -47,7 +47,7 @@ public final class GamePhaseFactory {
         var lobby = new MinestomLobbyPhase(120, onMapSwitch);
         var game = new MinestomGamePhase(entityManager,
                 MinestomGamePhase.DEFAULT_RACE_DURATION_TICKS, onGamePhaseFinished);
-        var end = new MinestomEndPhase();
+        var end = new MinestomEndPhase(100, entityManager);
         return new LinearPhaseSeries<>("game-phases", List.of(lobby, game, end));
     }
 }
