@@ -1,6 +1,9 @@
 package net.elytrarace.server.phase;
 
+import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.server.ecs.component.ActiveMapComponent;
+import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.minestom.server.utils.time.TimeUnit;
 import net.theevilreaper.xerus.api.phase.TickingPhase;
 import org.slf4j.Logger;
@@ -12,6 +15,12 @@ import org.slf4j.LoggerFactory;
  * Runs every tick (interval = 1) and drives the ECS game loop by calling
  * {@link EntityManager#update(float)} each tick. Physics, collision detection,
  * and scoring are handled by the systems registered on the entity manager.
+ * <p>
+ * The phase finishes when either:
+ * <ul>
+ *   <li>The configurable race duration expires (default 6000 ticks = 5 minutes at 20 TPS)</li>
+ *   <li>All players have passed all rings on the current map</li>
+ * </ul>
  */
 public final class MinestomGamePhase extends TickingPhase {
 
@@ -22,28 +31,96 @@ public final class MinestomGamePhase extends TickingPhase {
      */
     private static final float TICK_DELTA = 1.0f / 20.0f;
 
+    /**
+     * Default race duration in ticks (5 minutes at 20 TPS).
+     */
+    public static final int DEFAULT_RACE_DURATION_TICKS = 6000;
+
     private final EntityManager entityManager;
+    private final int raceDurationTicks;
+    private final Runnable onGamePhaseFinished;
+    private int elapsedTicks;
 
     public MinestomGamePhase(EntityManager entityManager) {
+        this(entityManager, DEFAULT_RACE_DURATION_TICKS, null);
+    }
+
+    public MinestomGamePhase(EntityManager entityManager, int raceDurationTicks,
+                             Runnable onGamePhaseFinished) {
         super("game", TimeUnit.SERVER_TICK, 1);
         this.entityManager = entityManager;
+        this.raceDurationTicks = raceDurationTicks;
+        this.onGamePhaseFinished = onGamePhaseFinished;
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        LOGGER.info("Game phase started — ECS loop running every tick");
+        elapsedTicks = 0;
+        LOGGER.info("Game phase started — ECS loop running every tick, race duration {} ticks",
+                raceDurationTicks);
     }
 
     @Override
     public void onUpdate() {
         entityManager.update(TICK_DELTA);
+        elapsedTicks++;
+
+        if (elapsedTicks >= raceDurationTicks) {
+            LOGGER.info("Race duration expired after {} ticks", elapsedTicks);
+            finish();
+            return;
+        }
+
+        if (allPlayersFinished()) {
+            LOGGER.info("All players have passed all rings after {} ticks", elapsedTicks);
+            finish();
+        }
     }
 
     @Override
     public void finish() {
         LOGGER.info("Game phase finished");
+        if (onGamePhaseFinished != null) {
+            onGamePhaseFinished.run();
+        }
         super.finish();
+    }
+
+    /**
+     * Checks whether all players with a {@link RingTrackerComponent} have passed
+     * every ring on the current map.
+     */
+    private boolean allPlayersFinished() {
+        int totalRings = getTotalRingCount();
+        if (totalRings <= 0) {
+            return false;
+        }
+
+        var playerEntities = entityManager.getEntitiesWithComponent(RingTrackerComponent.class);
+        if (playerEntities.isEmpty()) {
+            return false;
+        }
+
+        for (Entity entity : playerEntities) {
+            var tracker = entity.getComponent(RingTrackerComponent.class);
+            if (tracker.passedCount() < totalRings) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int getTotalRingCount() {
+        for (Entity entity : entityManager.getEntities()) {
+            if (entity.hasComponent(ActiveMapComponent.class)) {
+                var activeMap = entity.getComponent(ActiveMapComponent.class);
+                if (activeMap.getCurrentMap() != null) {
+                    return activeMap.getCurrentMap().rings().size();
+                }
+            }
+        }
+        return 0;
     }
 
     /**
@@ -53,5 +130,12 @@ public final class MinestomGamePhase extends TickingPhase {
      */
     public EntityManager getEntityManager() {
         return entityManager;
+    }
+
+    /**
+     * Returns the number of ticks elapsed since the game phase started.
+     */
+    public int getElapsedTicks() {
+        return elapsedTicks;
     }
 }
