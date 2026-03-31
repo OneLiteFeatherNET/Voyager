@@ -40,21 +40,21 @@ public final class DevStartCommand extends Command {
 
     private void triggerMapLoad(Player source) {
         try {
-            orchestrator.loadNextMap().whenComplete((v, err) -> {
+            orchestrator.skipLobbyToGame().whenComplete((v, err) -> {
                 if (err != null) {
-                    LOGGER.error("[dev-start] Failed to load map", err);
+                    LOGGER.error("[dev-start] Failed to start game", err);
                     if (source != null) {
-                        source.sendMessage(Component.text("[dev] Map load failed: " + err.getMessage(), NamedTextColor.RED));
+                        source.sendMessage(Component.text("[dev] Start failed: " + err.getMessage(), NamedTextColor.RED));
                     }
                 } else {
-                    LOGGER.info("[dev-start] Map loaded successfully");
+                    LOGGER.info("[dev-start] Game started successfully");
                     MinecraftServer.getConnectionManager().getOnlinePlayers().forEach(p ->
-                        p.sendMessage(Component.text("[dev] Map loaded!", NamedTextColor.GREEN))
+                        p.sendMessage(Component.text("[dev] Game started! Fly through the rings.", NamedTextColor.GREEN))
                     );
                 }
             });
         } catch (Exception e) {
-            LOGGER.error("[dev-start] Error triggering map load", e);
+            LOGGER.error("[dev-start] Error starting game", e);
         }
     }
 }

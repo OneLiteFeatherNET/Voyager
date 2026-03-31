@@ -108,6 +108,26 @@ public final class GameOrchestrator {
     }
 
     /**
+     * Skips the lobby countdown and immediately starts the game phase.
+     * <p>
+     * Loads the first map, then calls {@link net.elytrarace.api.phase.LinearPhaseSeries#advance()}
+     * to transition Lobby → Game so the ECS game loop ({@link EntityManager#update}) starts
+     * ticking and ring collision / scoring become active.
+     * <p>
+     * Intended only for local development ({@code -Dvoyager.dev=true}).
+     *
+     * @return a future that completes when the map has been loaded and the game phase has started
+     */
+    public CompletableFuture<Void> skipLobbyToGame() {
+        return loadNextMap().thenRun(() -> {
+            if (phaseSeries != null) {
+                phaseSeries.advance(); // Lobby → Game phase (starts ECS loop)
+                LOGGER.info("[dev] Lobby skipped — game phase started, ECS loop running");
+            }
+        });
+    }
+
+    /**
      * Loads the next map from the cup progression.
      * <p>
      * Reads the current map from {@link CupProgressComponent}, loads the world
