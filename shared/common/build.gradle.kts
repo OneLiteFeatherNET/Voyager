@@ -5,7 +5,7 @@ dependencies {
     // Math
     implementation(libs.geometry)
     // Adventure API (was provided transitively by Paper)
-    api(platform("net.kyori:adventure-bom:4.21.0"))
+    api(platform("net.kyori:adventure-bom:4.26.1"))
     api("net.kyori:adventure-api")
     api("net.kyori:adventure-text-minimessage")
     api("net.kyori:adventure-text-serializer-plain")
