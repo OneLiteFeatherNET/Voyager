@@ -57,7 +57,8 @@ tasks {
             "-XX:+UseZGC",
             "-XX:+UseCompactObjectHeaders",
             "-Xms256M",
-            "-Xmx512M"
+            "-Xmx512M",
+            "-Dvoyager.dev=true"   // enables /dev-start command to skip lobby countdown
         )
         workingDir = rootProject.file("run")
         providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }

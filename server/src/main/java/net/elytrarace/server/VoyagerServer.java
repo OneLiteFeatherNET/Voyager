@@ -3,6 +3,7 @@ package net.elytrarace.server;
 import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
+import net.elytrarace.server.command.DevStartCommand;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.CupLoader;
 import net.elytrarace.server.game.GameOrchestrator;
@@ -92,6 +93,11 @@ public final class VoyagerServer {
 
         LOGGER.info("Data path:   {}", dataPath.toAbsolutePath());
         LOGGER.info("Worlds path: {}", worldsPath.toAbsolutePath());
+
+        if (Boolean.getBoolean("voyager.dev")) {
+            MinecraftServer.getCommandManager().register(new DevStartCommand(gameOrchestrator));
+            LOGGER.warn("Dev mode active — /dev-start command registered (skips lobby countdown)");
+        }
     }
 
     public void start() {
