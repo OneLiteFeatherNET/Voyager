@@ -6,6 +6,7 @@ import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.minestom.server.utils.time.TimeUnit;
 import net.theevilreaper.xerus.api.phase.TickingPhase;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ public final class MinestomGamePhase extends TickingPhase {
 
     private final EntityManager entityManager;
     private final int raceDurationTicks;
-    private final Runnable onGamePhaseFinished;
+    private Runnable onGamePhaseFinished;
     private int elapsedTicks;
     private boolean finishing = false;
 
@@ -143,5 +144,17 @@ public final class MinestomGamePhase extends TickingPhase {
      */
     public int getElapsedTicks() {
         return elapsedTicks;
+    }
+
+    /**
+     * Sets the callback invoked when the game phase finishes.
+     * <p>
+     * Pass {@code null} to clear the callback (e.g., during a game restart
+     * to prevent stale callbacks from triggering unwanted phase transitions).
+     *
+     * @param callback the callback to invoke on finish, or {@code null} to clear
+     */
+    public void setOnGamePhaseFinished(@Nullable Runnable callback) {
+        this.onGamePhaseFinished = callback;
     }
 }

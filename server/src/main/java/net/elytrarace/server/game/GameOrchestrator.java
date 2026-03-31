@@ -19,13 +19,14 @@ import net.elytrarace.server.ecs.system.RingVisualizationSystem;
 import net.elytrarace.server.ecs.system.ScoreDisplaySystem;
 import net.elytrarace.server.ecs.system.SplineVisualizationSystem;
 import net.elytrarace.server.phase.GamePhaseFactory;
+import net.elytrarace.server.phase.MinestomEndPhase;
+import net.elytrarace.server.phase.MinestomGamePhase;
 import net.elytrarace.server.phase.MinestomLobbyPhase;
 import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerService;
 import net.elytrarace.server.ui.GameHudManager;
 import net.elytrarace.server.world.MapInstanceService;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
-import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
@@ -34,6 +35,7 @@ import net.theevilreaper.xerus.api.phase.Phase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -118,23 +120,83 @@ public final class GameOrchestrator {
     /**
      * Skips the lobby countdown and immediately starts the game phase.
      * <p>
-     * Loads the first map, then calls {@link net.elytrarace.api.phase.LinearPhaseSeries#advance()}
-     * to transition Lobby → Game so the ECS game loop ({@link EntityManager#update}) starts
-     * ticking and ring collision / scoring become active.
+     * If currently in the lobby phase, finishes it via the normal lifecycle path:
+     * {@code lobbyPhase.finish()} cancels the timer, fires {@code onMapSwitch} (which loads
+     * the map), and triggers the {@code finishedCallback} (which advances to the Game phase).
+     * This avoids the double-phase bug where the lobby timer task would keep running after
+     * a manual {@code phaseSeries.advance()} call.
+     * <p>
+     * If currently in the Game or End phase (i.e., a restart), the game is fully reset:
+     * current phase is stopped cleanly, player entities are removed, cup progress resets,
+     * the phase series is recreated, and the new lobby is immediately finished.
      * <p>
      * Intended only for local development ({@code -Dvoyager.dev=true}).
      *
-     * @return a future that completes when the map has been loaded and the game phase has started
+     * @return a future that completes when the skip has been initiated
      */
     public CompletableFuture<Void> skipLobbyToGame() {
-        return loadNextMap().thenRun(() -> {
-            if (phaseSeries != null && phaseSeries.getCurrentPhase() instanceof MinestomLobbyPhase) {
-                phaseSeries.advance(); // Lobby → Game phase (starts ECS loop)
-                LOGGER.info("[dev] Lobby skipped — game phase started, ECS loop running");
-            } else {
-                LOGGER.warn("[dev] skipLobbyToGame() called but current phase is not Lobby — ignoring advance");
-            }
-        });
+        if (phaseSeries == null || gameEntity == null) {
+            LOGGER.warn("[dev] No game running to skip");
+            return CompletableFuture.completedFuture(null);
+        }
+
+        Phase current = phaseSeries.getCurrentPhase();
+
+        if (current instanceof MinestomLobbyPhase lobbyPhase) {
+            // Normal finish path: cancels timer, fires onMapSwitch (loads map),
+            // fires finishedCallback (advances to Game). No double-phase risk.
+            LOGGER.info("[dev] Finishing lobby immediately via normal path");
+            lobbyPhase.finish();
+            return CompletableFuture.completedFuture(null);
+        }
+
+        // Not in lobby: full restart
+        LOGGER.info("[dev] Restarting game from phase: {}", current.getClass().getSimpleName());
+        restartGame(current);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    /**
+     * Performs a full game restart from a non-lobby phase.
+     * <p>
+     * Stops the current phase cleanly (clearing callbacks to prevent stale transitions),
+     * removes all player entities so they are recreated fresh with score=0, resets cup
+     * progress, recreates the phase series, and immediately finishes the new lobby.
+     *
+     * @param currentPhase the currently running phase to stop
+     */
+    private void restartGame(Phase currentPhase) {
+        // 1. Stop current phase cleanly (clear callbacks to prevent stale transitions)
+        currentPhase.setFinishedCallback(null);
+        if (currentPhase instanceof MinestomGamePhase gp) {
+            gp.setOnGamePhaseFinished(null);
+        } else if (currentPhase instanceof MinestomEndPhase ep) {
+            ep.setSuppressOnFinish(true);
+        }
+        currentPhase.finish(); // cancels the underlying scheduler task
+
+        // 2. Remove all player entities so they are recreated fresh with score=0
+        new ArrayList<>(entityManager.getEntities()).stream()
+                .filter(e -> e.hasComponent(PlayerRefComponent.class))
+                .forEach(entityManager::removeEntity);
+
+        // 3. Reset cup progress to first map
+        gameEntity.getComponent(CupProgressComponent.class).reset();
+
+        // 4. Recreate phase series with fresh phases
+        phaseSeries = GamePhaseFactory.createGamePhases(entityManager,
+                () -> loadNextMap().exceptionally(ex -> {
+                    LOGGER.error("Failed to load map after lobby", ex);
+                    return null;
+                }),
+                () -> advanceToNextMap().exceptionally(ex -> {
+                    LOGGER.error("Failed to advance to next map", ex);
+                    return null;
+                }));
+        phaseSeries.start(); // starts Lobby
+
+        // 5. Immediately finish the new lobby via normal path
+        ((MinestomLobbyPhase) phaseSeries.getCurrentPhase()).finish();
     }
 
     /**
@@ -162,49 +224,45 @@ public final class GameOrchestrator {
                 cupProgress.getCurrentMapIndex() + 1, cupProgress.totalMaps());
 
         return mapInstanceService.loadMap(mapDef.name(), mapDef.worldDirectory()).thenAccept(instance -> {
-            // Schedule all game state mutations on the server tick thread to avoid
-            // thread-safety issues with EntityManager (non-thread-safe HashSet).
-            MinecraftServer.getSchedulerManager().buildTask(() -> {
-                // Update game entity with the loaded map
-                var activeMap = gameEntity.getComponent(ActiveMapComponent.class);
-                activeMap.setMapInstance(instance);
-                activeMap.setCurrentMap(mapDef);
+            // Update game entity with the loaded map
+            var activeMap = gameEntity.getComponent(ActiveMapComponent.class);
+            activeMap.setMapInstance(instance);
+            activeMap.setCurrentMap(mapDef);
 
-                // Push per-map boost config to the event handler
-                playerEventHandler.setBoostConfig(mapDef.boostConfig());
+            // Push per-map boost config to the event handler
+            playerEventHandler.setBoostConfig(mapDef.boostConfig());
 
-                // Reset per-map ECS state for all player entities
-                for (Entity entity : entityManager.getEntities()) {
-                    if (entity.hasComponent(ScoreComponent.class)) {
-                        entity.getComponent(ScoreComponent.class).reset();
-                    }
-                    if (entity.hasComponent(RingTrackerComponent.class)) {
-                        entity.getComponent(RingTrackerComponent.class).reset();
-                    }
+            // Reset per-map ECS state for all player entities
+            for (Entity entity : entityManager.getEntities()) {
+                if (entity.hasComponent(ScoreComponent.class)) {
+                    entity.getComponent(ScoreComponent.class).reset();
                 }
-
-                // Use world spawn from level.dat, fall back to map definition spawn
-                Pos spawn = readWorldSpawn(instance, mapDef.spawnPos());
-
-                // Teleport all online players, equip race kit, and activate elytra flight
-                for (Player player : playerService.getOnlinePlayers()) {
-                    playerService.teleportToInstance(player, instance, spawn)
-                            .thenRun(() -> {
-                                playerService.equipForRace(player);
-                                activateElytraFlight(player);
-                            });
+                if (entity.hasComponent(RingTrackerComponent.class)) {
+                    entity.getComponent(RingTrackerComponent.class).reset();
                 }
+            }
 
-                // Show HUD elements
-                hudManager.showMapTitleToAll(mapDef.name());
-                hudManager.showCupProgressToAll(
-                        cupProgress.getCup().name(),
-                        cupProgress.getCurrentMapIndex() + 1,
-                        cupProgress.totalMaps()
-                );
+            // Use world spawn from level.dat, fall back to map definition spawn
+            Pos spawn = readWorldSpawn(instance, mapDef.spawnPos());
 
-                LOGGER.info("Map '{}' loaded and players teleported", mapDef.name());
-            }).schedule();
+            // Teleport all online players, equip race kit, and activate elytra flight
+            for (Player player : playerService.getOnlinePlayers()) {
+                playerService.teleportToInstance(player, instance, spawn)
+                        .thenRun(() -> {
+                            playerService.equipForRace(player);
+                            activateElytraFlight(player);
+                        });
+            }
+
+            // Show HUD elements
+            hudManager.showMapTitleToAll(mapDef.name());
+            hudManager.showCupProgressToAll(
+                    cupProgress.getCup().name(),
+                    cupProgress.getCurrentMapIndex() + 1,
+                    cupProgress.totalMaps()
+            );
+
+            LOGGER.info("Map '{}' loaded and players teleported", mapDef.name());
         });
     }
 

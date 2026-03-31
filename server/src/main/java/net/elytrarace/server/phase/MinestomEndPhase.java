@@ -42,6 +42,7 @@ public final class MinestomEndPhase extends TimedPhase {
     private final int endTicksValue;
     private final @Nullable EntityManager entityManager;
     private boolean finishing = false;
+    private boolean suppressOnFinish = false;
 
     public MinestomEndPhase() {
         this(DEFAULT_END_TICKS, null);
@@ -81,6 +82,10 @@ public final class MinestomEndPhase extends TimedPhase {
 
     @Override
     protected void onFinish() {
+        if (suppressOnFinish) {
+            LOGGER.info("End phase finished — server stop suppressed (game restart)");
+            return;
+        }
         LOGGER.info("End phase finished — scheduling server stop");
         // Schedule stop for the next tick so the finish() chain completes cleanly
         // before the server shuts down (avoids "Advance called on not running phase").
@@ -88,6 +93,18 @@ public final class MinestomEndPhase extends TimedPhase {
                 .buildTask(MinecraftServer::stopCleanly)
                 .delay(1, TimeUnit.SERVER_TICK)
                 .schedule();
+    }
+
+    /**
+     * Suppresses the server stop that normally occurs when the end phase finishes.
+     * <p>
+     * Call this before {@link #finish()} during a game restart to prevent the
+     * end phase from shutting down the server.
+     *
+     * @param suppress {@code true} to suppress the server stop
+     */
+    public void setSuppressOnFinish(boolean suppress) {
+        this.suppressOnFinish = suppress;
     }
 
     /**

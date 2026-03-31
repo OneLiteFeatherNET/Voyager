@@ -57,4 +57,12 @@ public class CupProgressComponent implements Component {
     public int totalMaps() {
         return cup.maps().size();
     }
+
+    /**
+     * Resets the cup progress back to the first map.
+     */
+    public void reset() {
+        this.currentMapIndex = 0;
+        this.complete = false;
+    }
 }
