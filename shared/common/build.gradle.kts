@@ -14,7 +14,7 @@ dependencies {
     // Guava (was provided transitively by Paper)
     implementation("com.google.guava:guava:33.4.0-jre")
     // Logging (was provided transitively by Paper)
-    api("org.slf4j:slf4j-api:2.0.16")
+    api("org.slf4j:slf4j-api:2.0.17")
     // Annotations
     compileOnly(libs.jetbrains.annotations)
     // Test
