@@ -57,6 +57,10 @@ public final class UndoStack {
         return Optional.of(op);
     }
 
+    public int size() {
+        return undoStack.size();
+    }
+
     public int undoSize() {
         return undoStack.size();
     }
