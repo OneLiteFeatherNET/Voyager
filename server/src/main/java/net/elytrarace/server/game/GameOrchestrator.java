@@ -78,8 +78,12 @@ public final class GameOrchestrator {
             hudManager.addPlayer(player);
         }
 
-        // Create and start the phase series
-        phaseSeries = GamePhaseFactory.createGamePhases(entityManager);
+        // Create and start the phase series — loadNextMap() is triggered when lobby ends
+        phaseSeries = GamePhaseFactory.createGamePhases(entityManager,
+                () -> loadNextMap().exceptionally(ex -> {
+                    LOGGER.error("Failed to load first map after lobby", ex);
+                    return null;
+                }));
         phaseSeries.start();
 
         LOGGER.info("Game started with {} players", playerService.getOnlinePlayers().size());

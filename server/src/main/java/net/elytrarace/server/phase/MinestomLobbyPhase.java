@@ -19,14 +19,20 @@ public final class MinestomLobbyPhase extends TimedPhase {
     private static final int DEFAULT_LOBBY_TICKS = 120;
 
     private final int lobbyTicks;
+    private final Runnable onMapSwitch;
 
     public MinestomLobbyPhase() {
-        this(DEFAULT_LOBBY_TICKS);
+        this(DEFAULT_LOBBY_TICKS, null);
     }
 
     public MinestomLobbyPhase(int lobbyTicks) {
+        this(lobbyTicks, null);
+    }
+
+    public MinestomLobbyPhase(int lobbyTicks, Runnable onMapSwitch) {
         super("lobby", TimeUnit.SERVER_TICK, 20);
         this.lobbyTicks = lobbyTicks;
+        this.onMapSwitch = onMapSwitch;
         setEndTicks(0);
         setCurrentTicks(lobbyTicks);
         setTickDirection(TickDirection.DOWN);
@@ -47,7 +53,8 @@ public final class MinestomLobbyPhase extends TimedPhase {
     @Override
     protected void onFinish() {
         LOGGER.info("Lobby phase finished — signaling map switch");
-        // The LinearPhaseSeries finishedCallback will advance to the next phase.
-        // Concrete map-switch logic (teleport, instance swap) will be wired externally.
+        if (onMapSwitch != null) {
+            onMapSwitch.run();
+        }
     }
 }

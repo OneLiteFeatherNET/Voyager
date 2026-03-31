@@ -1,6 +1,7 @@
 package net.elytrarace.server;
 
 import net.elytrarace.common.cup.CupService;
+import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.CupLoader;
@@ -10,9 +11,11 @@ import net.elytrarace.server.player.PlayerService;
 import net.elytrarace.server.player.PlayerServiceImpl;
 import net.elytrarace.server.world.AnvilMapInstanceService;
 import net.elytrarace.server.world.MapInstanceService;
+import net.kyori.adventure.key.Key;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
+import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.block.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +67,13 @@ public final class VoyagerServer {
     public VoyagerServer(Path dataPath, Path worldsPath) {
         this.server = MinecraftServer.init();
 
+        LanguageService.create("elytrarace", Key.key("voyager", "lang"), dataPath)
+                .loadLanguage()
+                .join();
+
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
         this.lobbyInstance = instanceManager.createInstanceContainer();
+        this.lobbyInstance.setChunkSupplier(LightingChunk::new);
         this.lobbyInstance.setGenerator(unit -> unit.modifier().fillHeight(0, 1, Block.STONE));
 
         this.playerService = new PlayerServiceImpl(lobbyInstance);

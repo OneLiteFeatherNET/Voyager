@@ -3,6 +3,7 @@ package net.elytrarace.server.phase;
 import net.elytrarace.common.ecs.EntityManager;
 import net.theevilreaper.xerus.api.phase.LinearPhaseSeries;
 import net.theevilreaper.xerus.api.phase.Phase;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -27,7 +28,19 @@ public final class GamePhaseFactory {
      * @return a ready-to-start phase series
      */
     public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager) {
-        var lobby = new MinestomLobbyPhase();
+        return createGamePhases(entityManager, null);
+    }
+
+    /**
+     * Creates a linear phase series containing lobby, game, and end phases.
+     *
+     * @param entityManager the ECS entity manager driving the game loop
+     * @param onMapSwitch   callback invoked when the lobby phase ends, before the game phase starts;
+     *                      use this to trigger map loading and player teleportation
+     * @return a ready-to-start phase series
+     */
+    public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager, @Nullable Runnable onMapSwitch) {
+        var lobby = new MinestomLobbyPhase(120, onMapSwitch);
         var game = new MinestomGamePhase(entityManager);
         var end = new MinestomEndPhase();
         return new LinearPhaseSeries<>("game-phases", List.of(lobby, game, end));
