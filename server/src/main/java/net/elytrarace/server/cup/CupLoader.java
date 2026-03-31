@@ -1,9 +1,9 @@
 package net.elytrarace.server.cup;
 
 import net.elytrarace.common.cup.CupService;
-import net.elytrarace.common.map.model.BoostConfigDTO;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
+import net.elytrarace.common.guide.GuidePointStore;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.LocationDTO;
@@ -32,11 +32,13 @@ public final class CupLoader {
 
     private final CupService cupService;
     private final MapService mapService;
+    private final GuidePointStore guidePointStore;
     private final Path worldsPath;
 
-    public CupLoader(@NotNull CupService cupService, @NotNull MapService mapService, @NotNull Path worldsPath) {
+    public CupLoader(@NotNull CupService cupService, @NotNull MapService mapService, @NotNull Path dataPath, @NotNull Path worldsPath) {
         this.cupService = cupService;
         this.mapService = mapService;
+        this.guidePointStore = new GuidePointStore(dataPath);
         this.worldsPath = worldsPath;
     }
 
@@ -104,9 +106,10 @@ public final class CupLoader {
 
         var spawnPos = deriveSpawn(portals);
         var boostConfig = convertBoostConfig(dto);
-        LOGGER.info("  Map '{}' — {} rings, spawn {}, boost {}", dto.name().asString(), rings.size(), spawnPos, boostConfig);
+        var guidePoints = guidePointStore.getGuidePoints(dto.world());
+        LOGGER.info("  Map '{}' — {} rings, {} guide points, spawn {}, boost {}", dto.name().asString(), rings.size(), guidePoints.size(), spawnPos, boostConfig);
 
-        return Optional.of(new MapDefinition(dto.name().asString(), worldDir, rings, spawnPos, boostConfig));
+        return Optional.of(new MapDefinition(dto.name().asString(), worldDir, rings, spawnPos, boostConfig, guidePoints));
     }
 
     /**

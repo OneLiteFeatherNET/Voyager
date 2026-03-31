@@ -9,12 +9,15 @@ import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
+import net.elytrarace.server.ecs.component.RingTrackerComponent;
+import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.OutOfBoundsSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
 import net.elytrarace.server.ecs.system.RingEffectSystem;
 import net.elytrarace.server.ecs.system.RingVisualizationSystem;
 import net.elytrarace.server.ecs.system.ScoreDisplaySystem;
+import net.elytrarace.server.ecs.system.SplineVisualizationSystem;
 import net.elytrarace.server.phase.GamePhaseFactory;
 import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerService;
@@ -81,6 +84,7 @@ public final class GameOrchestrator {
         entityManager.addSystem(new OutOfBoundsSystem(entityManager, playerService));
         entityManager.addSystem(new RingEffectSystem());
         entityManager.addSystem(new RingVisualizationSystem(entityManager));
+        entityManager.addSystem(new SplineVisualizationSystem());
         entityManager.addSystem(new ScoreDisplaySystem());
 
         // Create player entities for all currently online players
@@ -159,6 +163,16 @@ public final class GameOrchestrator {
 
             // Push per-map boost config to the event handler
             playerEventHandler.setBoostConfig(mapDef.boostConfig());
+
+            // Reset per-map ECS state for all player entities
+            for (Entity entity : entityManager.getEntities()) {
+                if (entity.hasComponent(ScoreComponent.class)) {
+                    entity.getComponent(ScoreComponent.class).reset();
+                }
+                if (entity.hasComponent(RingTrackerComponent.class)) {
+                    entity.getComponent(RingTrackerComponent.class).reset();
+                }
+            }
 
             // Teleport all online players, equip race kit, and activate elytra flight
             Pos spawn = mapDef.spawnPos();

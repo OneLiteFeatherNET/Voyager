@@ -91,7 +91,7 @@ public final class VoyagerServer {
 
         var cupService = CupService.create(dataPath);
         var mapService = MapService.create(dataPath);
-        this.cupLoader = new CupLoader(cupService, mapService, worldsPath);
+        this.cupLoader = new CupLoader(cupService, mapService, dataPath, worldsPath);
 
         LOGGER.info("Data path:   {}", dataPath.toAbsolutePath());
         LOGGER.info("Worlds path: {}", worldsPath.toAbsolutePath());
