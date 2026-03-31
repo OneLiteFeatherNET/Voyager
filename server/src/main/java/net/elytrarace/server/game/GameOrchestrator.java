@@ -19,12 +19,16 @@ import net.elytrarace.server.ecs.system.RingVisualizationSystem;
 import net.elytrarace.server.ecs.system.ScoreDisplaySystem;
 import net.elytrarace.server.ecs.system.SplineVisualizationSystem;
 import net.elytrarace.server.phase.GamePhaseFactory;
+import net.elytrarace.server.phase.MinestomLobbyPhase;
 import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerService;
 import net.elytrarace.server.ui.GameHudManager;
 import net.elytrarace.server.world.MapInstanceService;
+import net.kyori.adventure.nbt.CompoundBinaryTag;
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
+import net.minestom.server.instance.InstanceContainer;
 import net.theevilreaper.xerus.api.phase.LinearPhaseSeries;
 import net.theevilreaper.xerus.api.phase.Phase;
 import org.slf4j.Logger;
@@ -124,9 +128,11 @@ public final class GameOrchestrator {
      */
     public CompletableFuture<Void> skipLobbyToGame() {
         return loadNextMap().thenRun(() -> {
-            if (phaseSeries != null) {
+            if (phaseSeries != null && phaseSeries.getCurrentPhase() instanceof MinestomLobbyPhase) {
                 phaseSeries.advance(); // Lobby → Game phase (starts ECS loop)
                 LOGGER.info("[dev] Lobby skipped — game phase started, ECS loop running");
+            } else {
+                LOGGER.warn("[dev] skipLobbyToGame() called but current phase is not Lobby — ignoring advance");
             }
         });
     }
@@ -156,43 +162,49 @@ public final class GameOrchestrator {
                 cupProgress.getCurrentMapIndex() + 1, cupProgress.totalMaps());
 
         return mapInstanceService.loadMap(mapDef.name(), mapDef.worldDirectory()).thenAccept(instance -> {
-            // Update game entity with the loaded map
-            var activeMap = gameEntity.getComponent(ActiveMapComponent.class);
-            activeMap.setMapInstance(instance);
-            activeMap.setCurrentMap(mapDef);
+            // Schedule all game state mutations on the server tick thread to avoid
+            // thread-safety issues with EntityManager (non-thread-safe HashSet).
+            MinecraftServer.getSchedulerManager().buildTask(() -> {
+                // Update game entity with the loaded map
+                var activeMap = gameEntity.getComponent(ActiveMapComponent.class);
+                activeMap.setMapInstance(instance);
+                activeMap.setCurrentMap(mapDef);
 
-            // Push per-map boost config to the event handler
-            playerEventHandler.setBoostConfig(mapDef.boostConfig());
+                // Push per-map boost config to the event handler
+                playerEventHandler.setBoostConfig(mapDef.boostConfig());
 
-            // Reset per-map ECS state for all player entities
-            for (Entity entity : entityManager.getEntities()) {
-                if (entity.hasComponent(ScoreComponent.class)) {
-                    entity.getComponent(ScoreComponent.class).reset();
+                // Reset per-map ECS state for all player entities
+                for (Entity entity : entityManager.getEntities()) {
+                    if (entity.hasComponent(ScoreComponent.class)) {
+                        entity.getComponent(ScoreComponent.class).reset();
+                    }
+                    if (entity.hasComponent(RingTrackerComponent.class)) {
+                        entity.getComponent(RingTrackerComponent.class).reset();
+                    }
                 }
-                if (entity.hasComponent(RingTrackerComponent.class)) {
-                    entity.getComponent(RingTrackerComponent.class).reset();
+
+                // Use world spawn from level.dat, fall back to map definition spawn
+                Pos spawn = readWorldSpawn(instance, mapDef.spawnPos());
+
+                // Teleport all online players, equip race kit, and activate elytra flight
+                for (Player player : playerService.getOnlinePlayers()) {
+                    playerService.teleportToInstance(player, instance, spawn)
+                            .thenRun(() -> {
+                                playerService.equipForRace(player);
+                                activateElytraFlight(player);
+                            });
                 }
-            }
 
-            // Teleport all online players, equip race kit, and activate elytra flight
-            Pos spawn = mapDef.spawnPos();
-            for (Player player : playerService.getOnlinePlayers()) {
-                playerService.teleportToInstance(player, instance, spawn)
-                        .thenRun(() -> {
-                            playerService.equipForRace(player);
-                            activateElytraFlight(player);
-                        });
-            }
+                // Show HUD elements
+                hudManager.showMapTitleToAll(mapDef.name());
+                hudManager.showCupProgressToAll(
+                        cupProgress.getCup().name(),
+                        cupProgress.getCurrentMapIndex() + 1,
+                        cupProgress.totalMaps()
+                );
 
-            // Show HUD elements
-            hudManager.showMapTitleToAll(mapDef.name());
-            hudManager.showCupProgressToAll(
-                    cupProgress.getCup().name(),
-                    cupProgress.getCurrentMapIndex() + 1,
-                    cupProgress.totalMaps()
-            );
-
-            LOGGER.info("Map '{}' loaded and players teleported", mapDef.name());
+                LOGGER.info("Map '{}' loaded and players teleported", mapDef.name());
+            }).schedule();
         });
     }
 
@@ -242,6 +254,26 @@ public final class GameOrchestrator {
         entityManager.addEntity(playerEntity);
         hudManager.addPlayer(player);
         LOGGER.info("Late-join: created ECS entity and activated elytra flight for player {}", player.getUsername());
+    }
+
+    /**
+     * Reads the world spawn position from the instance's level.dat NBT data.
+     * The structure is: root -> "Data" -> SpawnX / SpawnY / SpawnZ.
+     * Falls back to the provided default if the data is not present.
+     */
+    private static Pos readWorldSpawn(InstanceContainer instance, Pos fallback) {
+        CompoundBinaryTag root = instance.tagHandler().asCompound();
+        CompoundBinaryTag data = root.getCompound("Data");
+        if (data.size() == 0) {
+            return fallback;
+        }
+        int spawnX = data.getInt("SpawnX", Integer.MIN_VALUE);
+        int spawnY = data.getInt("SpawnY", Integer.MIN_VALUE);
+        int spawnZ = data.getInt("SpawnZ", Integer.MIN_VALUE);
+        if (spawnX == Integer.MIN_VALUE || spawnY == Integer.MIN_VALUE || spawnZ == Integer.MIN_VALUE) {
+            return fallback;
+        }
+        return new Pos(spawnX, spawnY, spawnZ);
     }
 
     /**

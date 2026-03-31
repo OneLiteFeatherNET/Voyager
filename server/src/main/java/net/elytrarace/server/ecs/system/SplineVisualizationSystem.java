@@ -27,9 +27,9 @@ import java.util.*;
  */
 public class SplineVisualizationSystem implements net.elytrarace.common.ecs.System {
 
-    private static final int TICK_INTERVAL = 20;
-    private static final int POINTS_PER_SEGMENT = 8;
-    private static final Particle SPLINE_PARTICLE = Particle.ENCHANTED_HIT;
+    private static final int TICK_INTERVAL = 5;
+    private static final int POINTS_PER_SEGMENT = 24;
+    private static final Particle SPLINE_PARTICLE = Particle.END_ROD;
 
     private int tickCounter;
     private List<Vec> cachedPath = List.of();
@@ -64,7 +64,7 @@ public class SplineVisualizationSystem implements net.elytrarace.common.ecs.Syst
         for (Vec point : cachedPath) {
             var packet = new ParticlePacket(SPLINE_PARTICLE,
                     point.x(), point.y(), point.z(),
-                    0f, 0f, 0f, 0f, 1);
+                    0.1f, 0.1f, 0.1f, 0f, 3);
             for (Player player : players) {
                 player.sendPacket(packet);
             }

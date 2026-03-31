@@ -40,8 +40,12 @@ public final class AnvilMapInstanceService implements MapInstanceService {
         return CompletableFuture.supplyAsync(() -> {
             LOGGER.info("Loading map '{}' from {}", mapName, worldDirectory);
 
+            var loader = new AnvilLoader(worldDirectory);
             var instance = instanceManager.createInstanceContainer();
-            instance.setChunkLoader(new AnvilLoader(worldDirectory));
+            instance.setChunkLoader(loader);
+
+            // Read level.dat into the instance tag handler (provides SpawnX/Y/Z etc.)
+            loader.loadInstance(instance);
 
             loadedInstances.add(instance);
             LOGGER.info("Map '{}' loaded successfully (instance {})", mapName, instance.getUuid());
