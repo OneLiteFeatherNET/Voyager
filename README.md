@@ -47,10 +47,11 @@ We're continuing this approach and want to see how far it can go. Can a team of 
 
 | Layer | Technology |
 |---|---|
-| Game Server | [Minestom](https://minestom.net/) 2026.x (standalone, no vanilla code) |
-| Setup Tool | [Paper](https://papermc.io/) + FastAsyncWorldEdit |
+| Game Server | [Minestom](https://minestom.net/) 2026.03.25-1.21.11 (standalone, no vanilla code) |
+| Setup Tool | [Paper](https://papermc.io/) 1.21.5 + FastAsyncWorldEdit |
 | Language | Java 25 |
-| Build | Gradle 9.4 + ShadowJar |
+| Build | Gradle 9.4 + ShadowJar 9.4.0 |
+| Dependencies | Version catalog defined in `settings.gradle.kts` |
 | Database | MariaDB via Hibernate ORM 7 + HikariCP |
 | Deployment | CloudNet v4 (primary), Kubernetes (planned) |
 | Commands | [Cloud](https://github.com/Incendo/cloud) (Incendo) |
@@ -90,6 +91,22 @@ java -jar server/build/libs/*.jar
 ./gradlew test
 ```
 
+## Branch Strategy and Releases
+
+`main` is the primary branch. All feature and fix branches are cut from `main` and merged back via pull request.
+
+Releases are fully automated via [semantic-release](https://github.com/semantic-release/semantic-release). Pushing to `main` triggers a pipeline that determines the next version from commit messages, updates `CHANGELOG.md`, and publishes a GitHub Release with the Shadow JAR attached.
+
+Version increments follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Commit type | Version bump |
+|---|---|
+| `fix:` | patch (e.g. 1.2.3 → 1.2.4) |
+| `feat:` | minor (e.g. 1.2.3 → 1.3.0) |
+| `feat!:` or `BREAKING CHANGE:` | major (e.g. 1.2.3 → 2.0.0) |
+
+CI runs on GitHub Actions with SHA-pinned actions, a matrix build across Ubuntu, Windows, and macOS, JaCoCo coverage reporting, and Gradle dependency caching.
+
 ## Migration Status
 
 The game is being migrated from Paper to Minestom. Current progress:
@@ -109,6 +126,8 @@ The game is being migrated from Paper to Minestom. Current progress:
 This is an open experiment. If you're interested in AI-assisted game development, agent team design, or just want to race with elytra — contributions are welcome.
 
 The `.claude/agents/` directory contains the full agent team definitions. Each agent has specific domain knowledge, trigger conditions, and working methods. If you use Claude Code, you can leverage the entire team.
+
+All commits must follow [Conventional Commits](https://www.conventionalcommits.org/) — this drives the automated versioning pipeline.
 
 ## License
 
