@@ -159,11 +159,14 @@ public final class PlayerEventHandler {
     }
 
     /**
-     * Applies a firework boost to the player: forward in their horizontal facing direction
-     * plus a fixed upward component, so the player always gains height regardless of pitch.
+     * Applies a firework boost to the player in their full look direction (yaw + pitch).
      * <p>
-     * The boost is sustained for {@link #BOOST_DURATION_TICKS} ticks so the client's own
-     * elytra physics can "feel" it over several frames rather than a single packet that
+     * The boost direction is computed from both yaw and pitch using vanilla Minecraft
+     * look-direction math, so players control exactly where the boost pushes them:
+     * looking up boosts upward, looking level boosts forward, looking down boosts downward.
+     * <p>
+     * The boost is sustained for {@link BoostConfig#durationTicks()} ticks so the client's
+     * own elytra physics can "feel" it over several frames rather than a single packet that
      * the physics loop might partially override.
      * <p>
      * Note: {@code player.setVelocity()} expects <b>blocks/second</b> in Minestom.
@@ -173,20 +176,17 @@ public final class PlayerEventHandler {
     private void applyBoost(Player player, ElytraFlightComponent flight) {
         BoostConfig cfg = this.boostConfig;
 
-        // Boost direction: player's HORIZONTAL facing (yaw only, pitch ignored)
-        // + a fixed upward tilt so the player always gains height regardless of pitch.
-        double yawRad = Math.toRadians(player.getPosition().yaw());
-        double upRad  = Math.toRadians(cfg.upAngleDeg());
-        double cosUp  = Math.cos(upRad);
-        double sinUp  = Math.sin(upRad);
+        // Boost direction: player's full look direction (yaw + pitch).
+        // Minecraft convention: yaw 0 = south (+Z), pitch negative = looking up.
+        double yawRad   = Math.toRadians(player.getPosition().yaw());
+        double pitchRad = Math.toRadians(player.getPosition().pitch());
 
-        // Horizontal forward in Minecraft coords: yaw 0 = south (+Z)
-        double fwdX = -Math.sin(yawRad) * cosUp;
-        double fwdY =  sinUp;
-        double fwdZ =  Math.cos(yawRad) * cosUp;
+        double lookX = -Math.sin(yawRad) * Math.cos(pitchRad);
+        double lookY = -Math.sin(pitchRad);
+        double lookZ =  Math.cos(yawRad) * Math.cos(pitchRad);
 
         // Scale to configured speed (blocks/tick)
-        Vec boostPerTick = new Vec(fwdX, fwdY, fwdZ).mul(cfg.speedBlocksPerTick());
+        Vec boostPerTick = new Vec(lookX, lookY, lookZ).mul(cfg.speedBlocksPerTick());
         // Minestom setVelocity() expects blocks/second — multiply by 20
         Vec boostPerSecond = boostPerTick.mul(20.0);
 
@@ -203,8 +203,8 @@ public final class PlayerEventHandler {
             player.setVelocity(boostPerSecond);
         }).repeat(TaskSchedule.nextTick()).schedule();
 
-        LOGGER.debug("Boost applied to {} — {} b/t at {}° up for {} ticks",
-                player.getUsername(), cfg.speedBlocksPerTick(), cfg.upAngleDeg(), cfg.durationTicks());
+        LOGGER.debug("Boost applied to {} — {} b/t along look direction for {} ticks",
+                player.getUsername(), cfg.speedBlocksPerTick(), cfg.durationTicks());
     }
 
     /**
