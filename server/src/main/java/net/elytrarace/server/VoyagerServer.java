@@ -83,6 +83,9 @@ public final class VoyagerServer {
         this.mapInstanceService = new AnvilMapInstanceService(instanceManager);
         this.gameOrchestrator = new GameOrchestrator(playerService, mapInstanceService);
 
+        // Wire the ECS entity manager into the event handler for firework boost support
+        this.playerEventHandler.setEntityManager(gameOrchestrator.getEntityManager());
+
         var cupService = CupService.create(dataPath);
         var mapService = MapService.create(dataPath);
         this.cupLoader = new CupLoader(cupService, mapService, worldsPath);

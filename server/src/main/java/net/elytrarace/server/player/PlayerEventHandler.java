@@ -1,14 +1,24 @@
 package net.elytrarace.server.player;
 
+import net.elytrarace.common.ecs.Entity;
+import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.PlayerRefComponent;
+import net.elytrarace.server.physics.ElytraPhysics;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.GameMode;
+import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
+import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.item.Material;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +39,7 @@ public final class PlayerEventHandler {
     private final PlayerService playerService;
     private final InstanceContainer lobbyInstance;
     private final EventNode<Event> eventNode;
+    private @Nullable EntityManager entityManager;
 
     /**
      * Creates a new event handler that delegates player events to the given service.
@@ -43,6 +54,16 @@ public final class PlayerEventHandler {
     }
 
     /**
+     * Sets the ECS entity manager used to look up player flight state for firework boosts.
+     * Must be called before {@link #register()} or the firework boost handler will be inactive.
+     *
+     * @param entityManager the ECS entity manager
+     */
+    public void setEntityManager(@Nullable EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    /**
      * Registers all player-related event listeners and attaches the event node
      * to the global event handler.
      */
@@ -50,6 +71,7 @@ public final class PlayerEventHandler {
         eventNode.addListener(AsyncPlayerConfigurationEvent.class, this::onConfiguration);
         eventNode.addListener(PlayerDisconnectEvent.class, this::onDisconnect);
         eventNode.addListener(PlayerSpawnEvent.class, this::onSpawn);
+        eventNode.addListener(PlayerUseItemEvent.class, this::onUseItem);
 
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
         LOGGER.info("Player event handlers registered");
@@ -78,6 +100,61 @@ public final class PlayerEventHandler {
         if (event.isFirstSpawn()) {
             event.getPlayer().setGameMode(GameMode.ADVENTURE);
         }
+    }
+
+    private void onUseItem(PlayerUseItemEvent event) {
+        Player player = event.getPlayer();
+
+        // Only handle firework rockets
+        if (event.getItemStack().material() != Material.FIREWORK_ROCKET) {
+            return;
+        }
+
+        if (entityManager == null) {
+            return;
+        }
+
+        // Find the player's ECS entity and check if they are flying elytra
+        ElytraFlightComponent flight = findFlightComponent(player);
+        if (flight == null || !flight.isFlying()) {
+            return;
+        }
+
+        // Apply the firework boost
+        Pos pos = player.getPosition();
+        Vec boostedVelocity = ElytraPhysics.applyFireworkBoost(
+                flight.getVelocity(), pos.pitch(), pos.yaw());
+        flight.setVelocity(boostedVelocity);
+        player.setVelocity(boostedVelocity);
+
+        // Consume one rocket from the stack
+        var stack = event.getItemStack();
+        if (stack.amount() > 1) {
+            player.setItemInHand(event.getHand(), stack.withAmount(stack.amount() - 1));
+        } else {
+            player.setItemInHand(event.getHand(), net.minestom.server.item.ItemStack.AIR);
+        }
+
+        LOGGER.debug("Firework boost applied to player {}", player.getUsername());
+    }
+
+    /**
+     * Finds the {@link ElytraFlightComponent} for the given player from the ECS entity manager.
+     */
+    private @Nullable ElytraFlightComponent findFlightComponent(Player player) {
+        if (entityManager == null) {
+            return null;
+        }
+        for (Entity entity : entityManager.getEntities()) {
+            if (!entity.hasComponent(PlayerRefComponent.class)) {
+                continue;
+            }
+            var ref = entity.getComponent(PlayerRefComponent.class);
+            if (ref.getPlayerId().equals(player.getUuid())) {
+                return entity.getComponent(ElytraFlightComponent.class);
+            }
+        }
+        return null;
     }
 
     /**
