@@ -52,7 +52,17 @@ tasks {
             "-Xms256M",
             "-Xmx512M"
         )
-        // Pass through host/port via Gradle properties:
+        // Working directory: run/ at the project root
+        // Place your data and worlds here:
+        //   run/data/cups/cups.json
+        //   run/data/maps/{worldName}/map.json
+        //   run/worlds/{worldName}/
+        workingDir = rootProject.file("run")
+        // Override data/worlds paths via Gradle properties if needed:
+        //   ./gradlew :server:runServer -PdataPath=/path/to/data -PworldsPath=/path/to/worlds
+        providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
+        providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
+        // Pass through host/port:
         //   ./gradlew :server:runServer -Phost=0.0.0.0 -Pport=25565
         val host = providers.gradleProperty("host").orElse("0.0.0.0")
         val port = providers.gradleProperty("port").orElse("25565")

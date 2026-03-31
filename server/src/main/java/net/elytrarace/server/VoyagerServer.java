@@ -1,17 +1,16 @@
 package net.elytrarace.server;
 
+import net.elytrarace.common.cup.CupService;
+import net.elytrarace.common.map.MapService;
 import net.elytrarace.server.cup.CupDefinition;
-import net.elytrarace.server.cup.MapDefinition;
+import net.elytrarace.server.cup.CupLoader;
 import net.elytrarace.server.game.GameOrchestrator;
-import net.elytrarace.server.physics.Ring;
 import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerService;
 import net.elytrarace.server.player.PlayerServiceImpl;
 import net.elytrarace.server.world.AnvilMapInstanceService;
 import net.elytrarace.server.world.MapInstanceService;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
@@ -19,11 +18,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.List;
 
 /**
  * Voyager standalone Minestom server entry point.
- * Manages the server lifecycle: initialization, instance creation, and shutdown.
+ * Manages the server lifecycle: initialization, data loading, and startup.
+ *
+ * <p>Directory layout (relative to working directory):
+ * <pre>
+ * run/
+ *   data/
+ *     cups/cups.json
+ *     maps/{worldName}/map.json
+ *     maps/{worldName}/portals.json
+ *   worlds/
+ *     {worldName}/   ← Anvil world directories from the Setup Server
+ * </pre>
+ *
+ * Override the defaults via system properties:
+ * <ul>
+ *   <li>{@code -DVOYAGER_DATA_PATH=...}  — path to the data directory (default: {@code run/data})</li>
+ *   <li>{@code -DVOYAGER_WORLDS_PATH=...} — path to the worlds directory (default: {@code run/worlds})</li>
+ * </ul>
  */
 public final class VoyagerServer {
 
@@ -37,8 +52,16 @@ public final class VoyagerServer {
     private final PlayerEventHandler playerEventHandler;
     private final MapInstanceService mapInstanceService;
     private final GameOrchestrator gameOrchestrator;
+    private final CupLoader cupLoader;
 
     public VoyagerServer() {
+        this(
+            Path.of(System.getProperty("VOYAGER_DATA_PATH", "run/data")),
+            Path.of(System.getProperty("VOYAGER_WORLDS_PATH", "run/worlds"))
+        );
+    }
+
+    public VoyagerServer(Path dataPath, Path worldsPath) {
         this.server = MinecraftServer.init();
 
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
@@ -51,6 +74,13 @@ public final class VoyagerServer {
 
         this.mapInstanceService = new AnvilMapInstanceService(instanceManager);
         this.gameOrchestrator = new GameOrchestrator(playerService, mapInstanceService);
+
+        var cupService = CupService.create(dataPath);
+        var mapService = MapService.create(dataPath);
+        this.cupLoader = new CupLoader(cupService, mapService, worldsPath);
+
+        LOGGER.info("Data path:   {}", dataPath.toAbsolutePath());
+        LOGGER.info("Worlds path: {}", worldsPath.toAbsolutePath());
     }
 
     public void start() {
@@ -61,6 +91,18 @@ public final class VoyagerServer {
         LOGGER.info("Starting Voyager server on {}:{}", host, port);
         server.start(host, port);
         LOGGER.info("Voyager server started successfully");
+
+        cupLoader.loadFirstCup().ifPresentOrElse(
+            cup -> {
+                LOGGER.info("Auto-starting cup '{}'", cup.name());
+                gameOrchestrator.startGame(cup);
+            },
+            () -> LOGGER.warn("No cup loaded — place cups/maps under run/data/ and worlds under run/worlds/")
+        );
+    }
+
+    public void startGame(CupDefinition cup) {
+        gameOrchestrator.startGame(cup);
     }
 
     public InstanceContainer getLobbyInstance() {
@@ -79,28 +121,8 @@ public final class VoyagerServer {
         return gameOrchestrator;
     }
 
-    /**
-     * Starts a game session for the given cup definition.
-     * Delegates to the {@link GameOrchestrator} to wire up all subsystems.
-     *
-     * @param cup the cup definition to start
-     */
-    public void startGame(CupDefinition cup) {
-        gameOrchestrator.startGame(cup);
-    }
-
-    /**
-     * Creates a demo cup with three placeholder maps for testing purposes.
-     * The maps have no rings and use temporary world directories.
-     *
-     * @return a demo cup definition
-     */
-    public static CupDefinition createDemoCup() {
-        var ring = new Ring(new Vec(0, 50, 50), new Vec(0, 0, 1), 5.0, 10);
-        var map1 = new MapDefinition("Demo Map 1", Path.of("/tmp/demo-map-1"), List.of(ring), new Pos(0, 60, 0));
-        var map2 = new MapDefinition("Demo Map 2", Path.of("/tmp/demo-map-2"), List.of(ring), new Pos(0, 60, 0));
-        var map3 = new MapDefinition("Demo Map 3", Path.of("/tmp/demo-map-3"), List.of(ring), new Pos(0, 60, 0));
-        return new CupDefinition("Demo Cup", List.of(map1, map2, map3));
+    public CupLoader getCupLoader() {
+        return cupLoader;
     }
 
     public static void main(String[] args) {
@@ -114,7 +136,7 @@ public final class VoyagerServer {
             }
         }
 
-        VoyagerServer voyagerServer = new VoyagerServer();
+        var voyagerServer = new VoyagerServer();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             LOGGER.info("Shutting down Voyager server...");

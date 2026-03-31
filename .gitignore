@@ -6,6 +6,10 @@
 
 # Node / semantic-release
 node_modules/
+
+# Local server run directory — worlds and data are not committed
+run/data/
+run/worlds/
 *.war
 *.nar
 *.ear
