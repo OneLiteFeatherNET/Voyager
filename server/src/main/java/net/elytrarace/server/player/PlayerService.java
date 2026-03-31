@@ -7,6 +7,7 @@ import net.minestom.server.instance.InstanceContainer;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Service responsible for player lifecycle management: join, leave, teleportation,
@@ -37,8 +38,18 @@ public interface PlayerService {
      * @param player   the player to teleport
      * @param instance the target instance
      * @param spawnPos the position to spawn the player at within the target instance
+     * @return a future that completes when the player has fully spawned in the target instance
      */
-    void teleportToInstance(Player player, InstanceContainer instance, Pos spawnPos);
+    CompletableFuture<Void> teleportToInstance(Player player, InstanceContainer instance, Pos spawnPos);
+
+    /**
+     * Clears the player's inventory and equips the standard race kit:
+     * an elytra in the chestplate slot and firework rockets in hotbar slot 0.
+     * Call this after the teleport future completes so packets arrive in order.
+     *
+     * @param player the player to equip
+     */
+    void equipForRace(Player player);
 
     /**
      * Returns all currently online players.

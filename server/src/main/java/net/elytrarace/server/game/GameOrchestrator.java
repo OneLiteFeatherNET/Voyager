@@ -119,10 +119,11 @@ public final class GameOrchestrator {
             activeMap.setMapInstance(instance);
             activeMap.setCurrentMap(mapDef);
 
-            // Teleport all online players to the map spawn
+            // Teleport all online players and equip race kit once spawn completes
             Pos spawn = mapDef.spawnPos();
             for (Player player : playerService.getOnlinePlayers()) {
-                playerService.teleportToInstance(player, instance, spawn);
+                playerService.teleportToInstance(player, instance, spawn)
+                        .thenRun(() -> playerService.equipForRace(player));
             }
 
             // Show HUD elements

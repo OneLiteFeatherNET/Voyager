@@ -2,8 +2,11 @@ package net.elytrarace.server.player;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +14,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Default implementation of {@link PlayerService}.
@@ -49,7 +53,7 @@ public final class PlayerServiceImpl implements PlayerService {
     }
 
     @Override
-    public void teleportToInstance(Player player, InstanceContainer instance, Pos spawnPos) {
+    public CompletableFuture<Void> teleportToInstance(Player player, InstanceContainer instance, Pos spawnPos) {
         Objects.requireNonNull(player, "player must not be null");
         Objects.requireNonNull(instance, "instance must not be null");
         Objects.requireNonNull(spawnPos, "spawnPos must not be null");
@@ -57,7 +61,18 @@ public final class PlayerServiceImpl implements PlayerService {
         LOGGER.debug("Teleporting player {} to instance {} at {}",
                 player.getUsername(), instance.getUuid(), spawnPos);
 
-        player.setInstance(instance, spawnPos);
+        return player.setInstance(instance, spawnPos);
+    }
+
+    @Override
+    public void equipForRace(Player player) {
+        Objects.requireNonNull(player, "player must not be null");
+
+        player.getInventory().clear();
+        player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
+        player.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, 16));
+
+        LOGGER.debug("Equipped player {} with elytra and firework rockets", player.getUsername());
     }
 
     @Override
