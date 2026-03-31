@@ -5,37 +5,48 @@ on:
   pull_request:
     branches: ['**']
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   build:
     if: github.repository_owner == 'OneLiteFeatherNET'
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    env:
-      ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
-      ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 25
 
-      - name: Build
-        run: ./gradlew clean build
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/master' && github.event_name == 'pull_request' }}
 
-      - name: Upload JaCoCo Reports
+      - name: Build
+        run: ./gradlew build
+        env:
+          ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
+          ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
+
+      - name: Upload JaCoCo reports
         if: always() && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-reports
           path: '**/build/reports/jacoco/**'
           retention-days: 14
+          if-no-files-found: ignore
 
       - name: Upload Shadow JAR
         if: matrix.os == 'ubuntu-latest'
