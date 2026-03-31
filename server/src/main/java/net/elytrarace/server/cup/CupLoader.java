@@ -1,6 +1,7 @@
 package net.elytrarace.server.cup;
 
 import net.elytrarace.common.cup.CupService;
+import net.elytrarace.common.map.model.BoostConfigDTO;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.map.MapService;
@@ -102,9 +103,24 @@ public final class CupLoader {
                 .toList();
 
         var spawnPos = deriveSpawn(portals);
-        LOGGER.info("  Map '{}' — {} rings, spawn {}", dto.name().asString(), rings.size(), spawnPos);
+        var boostConfig = convertBoostConfig(dto);
+        LOGGER.info("  Map '{}' — {} rings, spawn {}, boost {}", dto.name().asString(), rings.size(), spawnPos, boostConfig);
 
-        return Optional.of(new MapDefinition(dto.name().asString(), worldDir, rings, spawnPos));
+        return Optional.of(new MapDefinition(dto.name().asString(), worldDir, rings, spawnPos, boostConfig));
+    }
+
+    /**
+     * Reads boost config from the map DTO, falling back field-by-field to {@link BoostConfig#DEFAULT}.
+     * Any absent JSON field is {@code null} after Gson deserialisation.
+     */
+    private BoostConfig convertBoostConfig(@NotNull FileMapDTO dto) {
+        var raw = dto.boostConfig();
+        if (raw == null) {
+            return BoostConfig.DEFAULT;
+        }
+        double speed    = raw.speedBlocksPerTick() != null ? raw.speedBlocksPerTick() : BoostConfig.DEFAULT.speedBlocksPerTick();
+        long cooldown   = raw.cooldownMs()          != null ? raw.cooldownMs()          : BoostConfig.DEFAULT.cooldownMs();
+        return new BoostConfig(speed, cooldown);
     }
 
     /**
