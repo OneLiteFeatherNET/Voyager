@@ -7,6 +7,8 @@ import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.ecs.GameEntityFactory;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
+import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
 import net.elytrarace.server.ecs.system.ScoreDisplaySystem;
@@ -119,11 +121,14 @@ public final class GameOrchestrator {
             activeMap.setMapInstance(instance);
             activeMap.setCurrentMap(mapDef);
 
-            // Teleport all online players and equip race kit once spawn completes
+            // Teleport all online players, equip race kit, and activate elytra flight
             Pos spawn = mapDef.spawnPos();
             for (Player player : playerService.getOnlinePlayers()) {
                 playerService.teleportToInstance(player, instance, spawn)
-                        .thenRun(() -> playerService.equipForRace(player));
+                        .thenRun(() -> {
+                            playerService.equipForRace(player);
+                            activateElytraFlight(player);
+                        });
             }
 
             // Show HUD elements
@@ -158,6 +163,28 @@ public final class GameOrchestrator {
         }
 
         return loadNextMap();
+    }
+
+    /**
+     * Activates elytra flight for a player by finding their ECS entity and setting
+     * the flying flag on their {@link ElytraFlightComponent}.
+     *
+     * @param player the player whose elytra flight should be activated
+     */
+    private void activateElytraFlight(Player player) {
+        for (Entity entity : entityManager.getEntities()) {
+            if (!entity.hasComponent(PlayerRefComponent.class)) {
+                continue;
+            }
+            var ref = entity.getComponent(PlayerRefComponent.class);
+            if (ref.getPlayerId().equals(player.getUuid())) {
+                entity.getComponent(ElytraFlightComponent.class).setFlying(true);
+                LOGGER.debug("Elytra flight activated for player {}", player.getUsername());
+                return;
+            }
+        }
+        LOGGER.warn("Could not find ECS entity for player {} to activate elytra flight",
+                player.getUsername());
     }
 
     /**
