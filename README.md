@@ -67,7 +67,7 @@ shared/common/       ECS framework, services, utilities (platform-agnostic)
 shared/phase/        Game phase lifecycle (Lobby → Game → End)
 shared/conversation-api/  Player prompt system (platform-agnostic)
 shared/database/     Hibernate persistence layer
-docs/                Architecture decisions, migration status, research papers
+docs/                Architecture decisions, research papers, ADRs
 .claude/agents/      The 22 AI agent definitions
 .claude/skills/      Reusable slash-command workflows
 ```
@@ -106,20 +106,6 @@ Version increments follow [Conventional Commits](https://www.conventionalcommits
 | `feat!:` or `BREAKING CHANGE:` | major (e.g. 1.2.3 → 2.0.0) |
 
 CI runs on GitHub Actions with SHA-pinned actions, a matrix build across Ubuntu, Windows, and macOS, JaCoCo coverage reporting, and Gradle dependency caching.
-
-## Migration Status
-
-The game is being migrated from Paper to Minestom. Current progress:
-
-| Milestone | Status |
-|---|---|
-| M1: Foundation (Java 25, server module, bootstrap) | Complete |
-| M2: Shared Module Cleanup (remove Bukkit deps) | 80% |
-| M3: Core Game (events, scheduler, worlds, phases) | 70% |
-| M4: Gameplay (physics, collision, cups, UI) | 85% |
-| M5: Polish & Deploy (CloudNet, Docker, persistence) | 40% |
-
-49 tests passing. See [docs/migration/status.md](docs/migration/status.md) for details.
 
 ## Contributing
 
