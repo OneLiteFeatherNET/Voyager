@@ -12,11 +12,13 @@ dependencies {
     implementation(project(":shared:common"))
     implementation(project(":shared:database"))
     implementation(libs.geometry)
+    runtimeOnly(libs.log4j2.core)
+    runtimeOnly(libs.log4j2.slf4j2)
 
     testImplementation(libs.minecraft.minestom.testing)
     testImplementation(platform("org.junit:junit-bom:5.12.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
 java {

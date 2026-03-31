@@ -38,6 +38,11 @@ dependencyResolutionManagement {
             library("fawe.bukkit", "com.fastasyncworldedit", "FastAsyncWorldEdit-Bukkit").withoutVersion()
             library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
 
+            // Logging — Log4j2 as SLF4J 2.x provider (Minestom ships SLF4J 2.x API)
+            version("log4j2", "2.24.3")
+            library("log4j2.core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j2")
+            library("log4j2.slf4j2", "org.apache.logging.log4j", "log4j-slf4j2-impl").versionRef("log4j2")
+
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
             bundle("fawe", listOf("fawe.core", "fawe.bukkit"))
 
