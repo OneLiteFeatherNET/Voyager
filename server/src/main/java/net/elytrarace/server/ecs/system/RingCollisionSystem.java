@@ -72,30 +72,27 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
         Vec currentPos = new Vec(pos.x(), pos.y(), pos.z());
         Vec prevPos = currentPos.sub(flight.getVelocity());
 
-        for (int i = 0; i < rings.size(); i++) {
-            if (tracker.hasPassed(i)) {
-                continue;
+        int nextIndex = tracker.passedCount();
+        if (nextIndex >= rings.size()) {
+            return;
+        }
+
+        Ring ring = rings.get(nextIndex);
+        if (RingCollisionDetector.checkPassthrough(ring, prevPos, currentPos)) {
+            tracker.markPassed(nextIndex);
+            score.addRingPoints(ring.points());
+
+            if (ring.type() == RingType.CHECKPOINT) {
+                tracker.markCheckpointPassed(nextIndex);
             }
 
-            Ring ring = rings.get(i);
-            if (RingCollisionDetector.checkPassthrough(ring, prevPos, currentPos)) {
-                tracker.markPassed(i);
-                score.addRingPoints(ring.points());
+            if (entity.hasComponent(RingEffectComponent.class)) {
+                var effects = entity.getComponent(RingEffectComponent.class);
+                effects.addEffect(ring.type(), 1);
+            }
 
-                if (ring.type() == RingType.CHECKPOINT) {
-                    tracker.markCheckpointPassed(i);
-                }
-
-                // Queue the ring effect if the entity has a RingEffectComponent
-                if (entity.hasComponent(RingEffectComponent.class)) {
-                    var effects = entity.getComponent(RingEffectComponent.class);
-                    effects.addEffect(ring.type(), 1);
-                }
-
-                // Show ring pass feedback on the player's HUD
-                if (hudManager != null) {
-                    hudManager.showRingPassed(playerRef.getPlayerId(), ring.points());
-                }
+            if (hudManager != null) {
+                hudManager.showRingPassed(playerRef.getPlayerId(), ring.points());
             }
         }
     }

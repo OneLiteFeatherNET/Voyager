@@ -19,8 +19,6 @@ import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.minestom.server.timer.Task;
-import net.minestom.server.timer.TaskSchedule;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,9 +163,9 @@ public final class PlayerEventHandler {
      * look-direction math, so players control exactly where the boost pushes them:
      * looking up boosts upward, looking level boosts forward, looking down boosts downward.
      * <p>
-     * The boost is sustained for {@link BoostConfig#durationTicks()} ticks so the client's
-     * own elytra physics can "feel" it over several frames rather than a single packet that
-     * the physics loop might partially override.
+     * The boost is a single one-shot impulse — the client's own elytra physics handle
+     * drag, gravity and steering from that point on, so the player retains full
+     * directional control immediately after the kick.
      * <p>
      * Note: {@code player.setVelocity()} expects <b>blocks/second</b> in Minestom.
      * All internal calculations use blocks/tick; the final value is multiplied by 20
@@ -186,25 +184,16 @@ public final class PlayerEventHandler {
         double lookZ =  Math.cos(yawRad) * Math.cos(pitchRad);
 
         // Scale to configured speed (blocks/tick)
-        Vec boostPerTick = new Vec(lookX, lookY, lookZ).mul(cfg.speedBlocksPerTick());
+        Vec boostPerTick   = new Vec(lookX, lookY, lookZ).mul(cfg.speedBlocksPerTick());
         // Minestom setVelocity() expects blocks/second — multiply by 20
         Vec boostPerSecond = boostPerTick.mul(20.0);
 
-        // Sustain boost for durationTicks so the client's physics can "feel" it.
-        // Uses repeat() + cancel() since buildTask(Runnable) does not accept a Supplier<TaskSchedule>.
-        var remaining = new java.util.concurrent.atomic.AtomicInteger(cfg.durationTicks());
-        var taskRef   = new Task[1];
-        taskRef[0] = MinecraftServer.getSchedulerManager().buildTask(() -> {
-            if (!player.isOnline() || remaining.decrementAndGet() < 0) {
-                if (taskRef[0] != null) taskRef[0].cancel();
-                return;
-            }
-            flight.setVelocity(boostPerTick);
-            player.setVelocity(boostPerSecond);
-        }).repeat(TaskSchedule.nextTick()).schedule();
+        // One-shot impulse: set velocity once, let client elytra physics take over
+        flight.setVelocity(boostPerTick);
+        player.setVelocity(boostPerSecond);
 
-        LOGGER.debug("Boost applied to {} — {} b/t along look direction for {} ticks",
-                player.getUsername(), cfg.speedBlocksPerTick(), cfg.durationTicks());
+        LOGGER.debug("Boost applied to {} — {} b/t along look direction",
+                player.getUsername(), cfg.speedBlocksPerTick());
     }
 
     /**
