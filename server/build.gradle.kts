@@ -40,4 +40,23 @@ tasks {
             attributes["Main-Class"] = "net.elytrarace.server.VoyagerServer"
         }
     }
+
+    register<JavaExec>("runServer") {
+        group = "voyager"
+        description = "Build and run the Voyager game server locally"
+        dependsOn(shadowJar)
+        classpath = files(shadowJar.get().archiveFile)
+        jvmArgs(
+            "-XX:+UseZGC",
+            "-XX:+UseCompactObjectHeaders",
+            "-Xms256M",
+            "-Xmx512M"
+        )
+        // Pass through host/port via Gradle properties:
+        //   ./gradlew :server:runServer -Phost=0.0.0.0 -Pport=25565
+        val host = providers.gradleProperty("host").orElse("0.0.0.0")
+        val port = providers.gradleProperty("port").orElse("25565")
+        args(host.get(), port.get())
+        standardInput = System.`in`
+    }
 }
