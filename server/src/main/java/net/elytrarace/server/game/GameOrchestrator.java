@@ -232,16 +232,6 @@ public final class GameOrchestrator {
             // Push per-map boost config to the event handler
             playerEventHandler.setBoostConfig(mapDef.boostConfig());
 
-            // Reset per-map ECS state for all player entities
-            for (Entity entity : entityManager.getEntities()) {
-                if (entity.hasComponent(ScoreComponent.class)) {
-                    entity.getComponent(ScoreComponent.class).reset();
-                }
-                if (entity.hasComponent(RingTrackerComponent.class)) {
-                    entity.getComponent(RingTrackerComponent.class).reset();
-                }
-            }
-
             // Use world spawn from level.dat, fall back to map definition spawn
             Pos spawn = readWorldSpawn(instance, mapDef.spawnPos());
 
@@ -301,12 +291,19 @@ public final class GameOrchestrator {
             }
             var ref = entity.getComponent(PlayerRefComponent.class);
             if (ref.getPlayerId().equals(player.getUuid())) {
+                // Reset per-map state at the moment of teleport to start
+                if (entity.hasComponent(ScoreComponent.class)) {
+                    entity.getComponent(ScoreComponent.class).reset();
+                }
+                if (entity.hasComponent(RingTrackerComponent.class)) {
+                    entity.getComponent(RingTrackerComponent.class).reset();
+                }
                 entity.getComponent(ElytraFlightComponent.class).setFlying(true);
-                LOGGER.debug("Elytra flight activated for player {}", player.getUsername());
+                LOGGER.debug("Elytra flight activated and state reset for player {}", player.getUsername());
                 return;
             }
         }
-        // Player joined after startGame() — create entity on-demand
+        // Player joined after startGame() — create entity on-demand (starts with score=0)
         Entity playerEntity = GameEntityFactory.createPlayerEntity(player);
         playerEntity.getComponent(ElytraFlightComponent.class).setFlying(true);
         entityManager.addEntity(playerEntity);
