@@ -4,6 +4,7 @@ import net.elytrarace.server.cup.BoostConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 class FireworkBoostComponentTest {
 
@@ -29,36 +30,48 @@ class FireworkBoostComponentTest {
     }
 
     @Test
-    void startCooldownSetsTicksFromConfig() {
+    void startCooldownActivatesCooldown() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(2.5, 2_000)); // 2000 ms / 50 ms = 40 ticks
+        comp.setBoostConfig(new BoostConfig(2.5, 4_000));
 
         comp.startCooldown();
 
-        assertThat(comp.getCooldownRemainingTicks()).isEqualTo(40);
         assertThat(comp.isOnCooldown()).isTrue();
     }
 
     @Test
-    void tickCooldownDecrementsToZero() {
+    void getCooldownRemainingTicksApproximatesConfiguredDuration() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(2.5, 100)); // 2 ticks
+        comp.setBoostConfig(new BoostConfig(2.5, 2_000)); // 2000 ms = 40 ticks
+
         comp.startCooldown();
 
-        comp.tickCooldown();
-        assertThat(comp.isOnCooldown()).isTrue();
+        // Allow ±2 ticks of measurement slack (wall-clock call overhead)
+        assertThat(comp.getCooldownRemainingTicks()).isCloseTo(40, within(2));
+    }
 
-        comp.tickCooldown();
+    @Test
+    void getCooldownRemainingTicksReturnsZeroAfterExpiry() throws InterruptedException {
+        var comp = new FireworkBoostComponent();
+        comp.setBoostConfig(new BoostConfig(2.5, 50)); // 50 ms = 1 tick
+
+        comp.startCooldown();
+        Thread.sleep(100); // wait for cooldown to expire
+
+        assertThat(comp.getCooldownRemainingTicks()).isEqualTo(0);
         assertThat(comp.isOnCooldown()).isFalse();
     }
 
     @Test
-    void tickCooldownDoesNotGoBelowZero() {
+    void cooldownExpiresAfterConfiguredDuration() throws InterruptedException {
         var comp = new FireworkBoostComponent();
-        comp.tickCooldown();
-        comp.tickCooldown();
+        comp.setBoostConfig(new BoostConfig(2.5, 100)); // 100 ms
 
-        assertThat(comp.getCooldownRemainingTicks()).isEqualTo(0);
+        comp.startCooldown();
+        assertThat(comp.isOnCooldown()).isTrue();
+
+        Thread.sleep(150);
+        assertThat(comp.isOnCooldown()).isFalse();
     }
 
     @Test

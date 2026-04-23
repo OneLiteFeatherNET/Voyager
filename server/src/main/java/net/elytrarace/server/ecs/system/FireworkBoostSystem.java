@@ -50,8 +50,6 @@ public class FireworkBoostSystem implements net.elytrarace.common.ecs.System {
         var flight = entity.getComponent(ElytraFlightComponent.class);
         var playerRef = entity.getComponent(PlayerRefComponent.class);
 
-        boost.tickCooldown();
-
         if (!boost.claimBoostRequest()) {
             return;
         }

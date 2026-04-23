@@ -70,6 +70,7 @@ class FireworkBoostSystemTest {
 
         var entity = buildEntity(player, true);
         var boost = entity.getComponent(FireworkBoostComponent.class);
+        var flight = entity.getComponent(ElytraFlightComponent.class);
 
         // Simulate a previous boost that started the cooldown
         boost.startCooldown();
@@ -77,28 +78,25 @@ class FireworkBoostSystemTest {
         boost.requestBoost();
         new FireworkBoostSystem().process(entity, TICK);
 
-        // Cooldown was active — no impulse, no second cooldown reset
-        assertThat(boost.getCooldownRemainingTicks())
-                .isLessThan((int) (BoostConfig.DEFAULT.cooldownMs() / 50L));
+        // Cooldown was active — no impulse applied
+        assertThat(flight.getVelocity().length()).isEqualTo(0.0);
     }
 
     @Test
-    void cooldownCountsDownEachTick(Env env) {
+    void cooldownRemainingTicksDecreaseOverTime(Env env) throws InterruptedException {
         var instance = env.createFlatInstance();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, true);
         var boost = entity.getComponent(FireworkBoostComponent.class);
-        var system = new FireworkBoostSystem();
 
-        // Apply boost to start cooldown
         boost.requestBoost();
-        system.process(entity, TICK);
+        new FireworkBoostSystem().process(entity, TICK);
         int initial = boost.getCooldownRemainingTicks();
 
-        // One tick later, without a new request
-        system.process(entity, TICK);
-        assertThat(boost.getCooldownRemainingTicks()).isEqualTo(initial - 1);
+        Thread.sleep(200); // 200 ms = 4 ticks elapsed
+
+        assertThat(boost.getCooldownRemainingTicks()).isLessThan(initial);
     }
 
     @Test

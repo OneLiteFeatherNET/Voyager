@@ -12,11 +12,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * uses a firework rocket. {@link FireworkBoostSystem} reads and clears the flag
  * on the tick thread each game tick, so all {@code volatile}/{@code AtomicBoolean}
  * fields here are intentionally thread-safe.
+ * <p>
+ * Cooldown enforcement uses wall-clock time ({@link System#currentTimeMillis()})
+ * rather than tick counting. This keeps the server-side guard in sync with the
+ * client-side item cooldown visual (sent via {@code SetCooldownPacket}): both
+ * measure real elapsed time, so server lag cannot cause them to diverge.
  */
 public class FireworkBoostComponent implements Component {
 
     private final AtomicBoolean boostRequested = new AtomicBoolean(false);
-    private int cooldownRemainingTicks = 0;
+    /** Absolute wall-clock deadline in ms. Zero means no active cooldown. */
+    private long cooldownExpiryMs = 0L;
     private volatile BoostConfig boostConfig = BoostConfig.DEFAULT;
 
     /**
@@ -36,30 +42,28 @@ public class FireworkBoostComponent implements Component {
     }
 
     /**
-     * Decrements the cooldown counter by one tick. No-op when already at zero.
-     * Called by {@link FireworkBoostSystem} every tick.
+     * Returns {@code true} while the wall-clock cooldown has not yet expired.
+     * Safe to call from any thread.
      */
-    public void tickCooldown() {
-        if (cooldownRemainingTicks > 0) {
-            cooldownRemainingTicks--;
-        }
-    }
-
-    /** Returns {@code true} while the cooldown has not yet expired. */
     public boolean isOnCooldown() {
-        return cooldownRemainingTicks > 0;
+        return System.currentTimeMillis() < cooldownExpiryMs;
     }
 
     /**
-     * Resets the cooldown to the full duration defined in {@link #getBoostConfig()}.
-     * Call this immediately after applying a boost.
+     * Starts the cooldown by recording an expiry timestamp based on the current
+     * wall-clock time plus the configured duration. Call immediately after applying a boost.
      */
     public void startCooldown() {
-        cooldownRemainingTicks = (int) (boostConfig.cooldownMs() / 50L);
+        cooldownExpiryMs = System.currentTimeMillis() + boostConfig.cooldownMs();
     }
 
+    /**
+     * Returns the remaining cooldown in server ticks (rounded down), for use in
+     * {@code SetCooldownPacket}. Returns 0 when the cooldown has expired.
+     */
     public int getCooldownRemainingTicks() {
-        return cooldownRemainingTicks;
+        long remainingMs = cooldownExpiryMs - System.currentTimeMillis();
+        return (int) Math.max(0L, remainingMs / 50L);
     }
 
     public BoostConfig getBoostConfig() {
