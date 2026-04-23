@@ -66,7 +66,14 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
         List<Ring> rings = map.rings();
         var pos = playerRef.getPlayer().getPosition();
         Vec currentPos = new Vec(pos.x(), pos.y(), pos.z());
-        Vec prevPos = currentPos.sub(flight.getVelocity());
+
+        // Use actual stored previous position rather than velocity subtraction,
+        // since flight.velocity is now server-tracked (not position delta).
+        var prevPosStored = flight.getPreviousPosition();
+        if (prevPosStored == null) {
+            return; // first tick after teleport, no previous position yet
+        }
+        Vec prevPos = new Vec(prevPosStored.x(), prevPosStored.y(), prevPosStored.z());
 
         int nextIndex = tracker.passedCount();
         if (nextIndex >= rings.size()) {

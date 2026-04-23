@@ -6,6 +6,7 @@ import net.elytrarace.server.cup.BoostConfig;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.FireworkBoostComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
+import net.elytrarace.server.physics.ElytraPhysics;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.server.play.SetCooldownPacket;
@@ -73,10 +74,11 @@ public class FireworkBoostSystem implements net.elytrarace.common.ecs.System {
             return;
         }
 
-        Vec look = lookVec(player.getPosition().yaw(), player.getPosition().pitch());
-        // Vanilla: newVel = 0.5 * currentVel + 0.85 * look
+        // Vanilla boost formula applied on top of the physics-updated velocity.
+        // ElytraPhysics.applyFireworkBoost: newVel = 0.5 * currentVel + 0.85 * look
+        var pos = player.getPosition();
         Vec newVel = clampMagnitude(
-                flight.getVelocity().mul(0.5).add(look.mul(0.85)),
+                ElytraPhysics.applyFireworkBoost(flight.getVelocity(), pos.pitch(), pos.yaw()),
                 cfg.maxSpeedBlocksPerTick()
         );
         flight.setVelocity(newVel);
@@ -85,15 +87,6 @@ public class FireworkBoostSystem implements net.elytrarace.common.ecs.System {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static Vec lookVec(float yaw, float pitch) {
-        double yawRad   = Math.toRadians(yaw);
-        double pitchRad = Math.toRadians(pitch);
-        return new Vec(
-                -Math.sin(yawRad) * Math.cos(pitchRad),
-                -Math.sin(pitchRad),
-                 Math.cos(yawRad) * Math.cos(pitchRad));
-    }
 
     private static Vec clampMagnitude(Vec v, double max) {
         double mag = v.length();

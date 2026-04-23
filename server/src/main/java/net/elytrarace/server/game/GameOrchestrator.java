@@ -84,10 +84,13 @@ public final class GameOrchestrator {
         gameEntity = GameEntityFactory.createGameEntity(cup);
         entityManager.addEntity(gameEntity);
 
-        // Register ECS systems (order matters: physics first, then collision, then bounds)
+        // Register ECS systems — order matters:
+        // 1. RingCollisionSystem reads previousPosition from the LAST tick (before physics updates it)
+        // 2. ElytraPhysicsSystem advances server-tracked velocity and updates previousPosition
+        // 3. FireworkBoostSystem overrides velocity with boost formula when burning
+        entityManager.addSystem(new RingCollisionSystem(entityManager));
         entityManager.addSystem(new ElytraPhysicsSystem());
         entityManager.addSystem(new FireworkBoostSystem());
-        entityManager.addSystem(new RingCollisionSystem(entityManager));
         entityManager.addSystem(new OutOfBoundsSystem(entityManager, playerService));
         entityManager.addSystem(new RingEffectSystem());
         entityManager.addSystem(new RingVisualizationSystem(entityManager));
@@ -313,7 +316,10 @@ public final class GameOrchestrator {
                 if (entity.hasComponent(FireworkBoostComponent.class)) {
                     entity.getComponent(FireworkBoostComponent.class).cancelBurn();
                 }
-                entity.getComponent(ElytraFlightComponent.class).setFlying(true);
+                var flight = entity.getComponent(ElytraFlightComponent.class);
+                flight.setVelocity(net.minestom.server.coordinate.Vec.ZERO);
+                flight.setPreviousPosition(null); // reset so ring collision skips the first tick
+                flight.setFlying(true);
                 LOGGER.debug("Elytra flight activated and state reset for player {}", player.getUsername());
                 return;
             }
