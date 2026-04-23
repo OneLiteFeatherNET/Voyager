@@ -10,7 +10,7 @@ dependencies {
     api("net.kyori:adventure-text-minimessage")
     api("net.kyori:adventure-text-serializer-plain")
     // Gson (was provided transitively by Paper)
-    api("com.google.code.gson:gson:2.12.1")
+    api("com.google.code.gson:gson:2.14.0")
     // Guava (was provided transitively by Paper)
     implementation("com.google.guava:guava:33.4.0-jre")
     // Logging (was provided transitively by Paper)
