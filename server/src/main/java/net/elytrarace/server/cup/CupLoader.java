@@ -121,12 +121,10 @@ public final class CupLoader {
         if (raw == null) {
             return BoostConfig.DEFAULT;
         }
-        double kick     = raw.kickBlocksPerTick()     != null ? raw.kickBlocksPerTick()     : BoostConfig.DEFAULT.kickBlocksPerTick();
         int    burn     = raw.burnDurationTicks()     != null ? raw.burnDurationTicks()     : BoostConfig.DEFAULT.burnDurationTicks();
-        double thrust   = raw.thrustBlocksPerTick()   != null ? raw.thrustBlocksPerTick()   : BoostConfig.DEFAULT.thrustBlocksPerTick();
         double maxSpeed = raw.maxSpeedBlocksPerTick() != null ? raw.maxSpeedBlocksPerTick() : BoostConfig.DEFAULT.maxSpeedBlocksPerTick();
         long   cooldown = raw.cooldownMs()            != null ? raw.cooldownMs()            : BoostConfig.DEFAULT.cooldownMs();
-        return new BoostConfig(kick, burn, thrust, maxSpeed, cooldown);
+        return new BoostConfig(burn, maxSpeed, cooldown);
     }
 
     /**

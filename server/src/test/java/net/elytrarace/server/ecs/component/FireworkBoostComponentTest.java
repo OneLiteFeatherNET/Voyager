@@ -32,7 +32,7 @@ class FireworkBoostComponentTest {
     @Test
     void startCooldownActivatesCooldown() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 4_000));
+        comp.setBoostConfig(new BoostConfig(24, 3.5, 4_000));
         comp.startCooldown();
 
         assertThat(comp.isOnCooldown()).isTrue();
@@ -41,7 +41,7 @@ class FireworkBoostComponentTest {
     @Test
     void getCooldownRemainingTicksApproximatesConfiguredDuration() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 2_000)); // 2 s = 40 ticks
+        comp.setBoostConfig(new BoostConfig(24, 3.5, 2_000)); // 2 s = 40 ticks
         comp.startCooldown();
 
         assertThat(comp.getCooldownRemainingTicks()).isCloseTo(40, within(2));
@@ -50,7 +50,7 @@ class FireworkBoostComponentTest {
     @Test
     void cooldownExpiresAfterConfiguredDuration() throws InterruptedException {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 100));
+        comp.setBoostConfig(new BoostConfig(24, 3.5, 100));
         comp.startCooldown();
 
         assertThat(comp.isOnCooldown()).isTrue();
@@ -69,7 +69,7 @@ class FireworkBoostComponentTest {
     @Test
     void startBurnActivatesBurn() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 4_000));
+        comp.setBoostConfig(new BoostConfig(24, 3.5, 4_000));
         comp.startBurn();
 
         assertThat(comp.isBurning()).isTrue();
@@ -79,7 +79,7 @@ class FireworkBoostComponentTest {
     @Test
     void tickBurnDecrementsToZero() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(0.5, 3, 0.035, 2.75, 4_000));
+        comp.setBoostConfig(new BoostConfig(3, 3.5, 4_000));
         comp.startBurn();
 
         comp.tickBurn();
@@ -102,7 +102,7 @@ class FireworkBoostComponentTest {
     @Test
     void cancelBurnStopsBurn() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 4_000));
+        comp.setBoostConfig(new BoostConfig(24, 3.5, 4_000));
         comp.startBurn();
 
         comp.cancelBurn();
@@ -122,7 +122,7 @@ class FireworkBoostComponentTest {
     @Test
     void boostConfigCanBeReplaced() {
         var comp = new FireworkBoostComponent();
-        var custom = new BoostConfig(1.0, 30, 0.05, 3.0, 8_000);
+        var custom = new BoostConfig(30, 4.0, 8_000);
         comp.setBoostConfig(custom);
 
         assertThat(comp.getBoostConfig()).isEqualTo(custom);
