@@ -8,10 +8,13 @@ import net.elytrarace.server.ecs.GameEntityFactory;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.FireworkBoostComponent;
+import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
+import net.elytrarace.server.ecs.system.FireworkBoostSystem;
 import net.elytrarace.server.ecs.system.OutOfBoundsSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
 import net.elytrarace.server.ecs.system.RingEffectSystem;
@@ -24,7 +27,6 @@ import net.elytrarace.server.phase.MinestomGamePhase;
 import net.elytrarace.server.phase.MinestomLobbyPhase;
 import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerService;
-import net.elytrarace.server.ui.GameHudManager;
 import net.elytrarace.server.world.MapInstanceService;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.coordinate.Pos;
@@ -53,7 +55,6 @@ public final class GameOrchestrator {
     private final PlayerService playerService;
     private final MapInstanceService mapInstanceService;
     private final PlayerEventHandler playerEventHandler;
-    private final GameHudManager hudManager;
     private final EntityManager entityManager;
 
     private Entity gameEntity;
@@ -64,7 +65,6 @@ public final class GameOrchestrator {
         this.playerService = Objects.requireNonNull(playerService, "playerService must not be null");
         this.mapInstanceService = Objects.requireNonNull(mapInstanceService, "mapInstanceService must not be null");
         this.playerEventHandler = Objects.requireNonNull(playerEventHandler, "playerEventHandler must not be null");
-        this.hudManager = new GameHudManager();
         this.entityManager = new EntityManager();
     }
 
@@ -86,7 +86,8 @@ public final class GameOrchestrator {
 
         // Register ECS systems (order matters: physics first, then collision, then bounds)
         entityManager.addSystem(new ElytraPhysicsSystem());
-        entityManager.addSystem(new RingCollisionSystem(entityManager, hudManager));
+        entityManager.addSystem(new FireworkBoostSystem());
+        entityManager.addSystem(new RingCollisionSystem(entityManager));
         entityManager.addSystem(new OutOfBoundsSystem(entityManager, playerService));
         entityManager.addSystem(new RingEffectSystem());
         entityManager.addSystem(new RingVisualizationSystem(entityManager));
@@ -95,9 +96,7 @@ public final class GameOrchestrator {
 
         // Create player entities for all currently online players
         for (Player player : playerService.getOnlinePlayers()) {
-            Entity playerEntity = GameEntityFactory.createPlayerEntity(player);
-            entityManager.addEntity(playerEntity);
-            hudManager.addPlayer(player);
+            entityManager.addEntity(GameEntityFactory.createPlayerEntity(player));
         }
 
         // Create and start the phase series
@@ -178,7 +177,11 @@ public final class GameOrchestrator {
         // 2. Remove all player entities so they are recreated fresh with score=0
         new ArrayList<>(entityManager.getEntities()).stream()
                 .filter(e -> e.hasComponent(PlayerRefComponent.class))
-                .forEach(entityManager::removeEntity);
+                .forEach(e -> {
+                    var hud = e.getComponent(HudComponent.class);
+                    if (hud != null) hud.cleanup();
+                    entityManager.removeEntity(e);
+                });
 
         // 3. Reset cup progress to first map
         gameEntity.getComponent(CupProgressComponent.class).reset();
@@ -229,8 +232,13 @@ public final class GameOrchestrator {
             activeMap.setMapInstance(instance);
             activeMap.setCurrentMap(mapDef);
 
-            // Push per-map boost config to the event handler
-            playerEventHandler.setBoostConfig(mapDef.boostConfig());
+            // Push per-map boost config into each player's ECS component
+            for (Entity entity : entityManager.getEntities()) {
+                var boostComp = entity.getComponent(FireworkBoostComponent.class);
+                if (boostComp != null) {
+                    boostComp.setBoostConfig(mapDef.boostConfig());
+                }
+            }
 
             // Use world spawn from level.dat, fall back to map definition spawn
             Pos spawn = readWorldSpawn(instance, mapDef.spawnPos());
@@ -244,13 +252,17 @@ public final class GameOrchestrator {
                         });
             }
 
-            // Show HUD elements
-            hudManager.showMapTitleToAll(mapDef.name());
-            hudManager.showCupProgressToAll(
-                    cupProgress.getCup().name(),
-                    cupProgress.getCurrentMapIndex() + 1,
-                    cupProgress.totalMaps()
-            );
+            // Show HUD elements via each player's HudComponent
+            String cupName = cupProgress.getCup().name();
+            int mapIndex = cupProgress.getCurrentMapIndex() + 1;
+            int totalMaps = cupProgress.totalMaps();
+            for (Entity entity : entityManager.getEntities()) {
+                var hud = entity.getComponent(HudComponent.class);
+                if (hud != null) {
+                    hud.showMapTitle(mapDef.name());
+                    hud.showCupProgress(cupName, mapIndex, totalMaps);
+                }
+            }
 
             LOGGER.info("Map '{}' loaded and players teleported", mapDef.name());
         });
@@ -307,7 +319,6 @@ public final class GameOrchestrator {
         Entity playerEntity = GameEntityFactory.createPlayerEntity(player);
         playerEntity.getComponent(ElytraFlightComponent.class).setFlying(true);
         entityManager.addEntity(playerEntity);
-        hudManager.addPlayer(player);
         LOGGER.info("Late-join: created ECS entity and activated elytra flight for player {}", player.getUsername());
     }
 
@@ -336,7 +347,12 @@ public final class GameOrchestrator {
      * Should be called when the game ends.
      */
     public void cleanup() {
-        hudManager.cleanup();
+        for (Entity entity : entityManager.getEntities()) {
+            var hud = entity.getComponent(HudComponent.class);
+            if (hud != null) {
+                hud.cleanup();
+            }
+        }
         LOGGER.info("Game orchestrator cleaned up");
     }
 
@@ -352,13 +368,6 @@ public final class GameOrchestrator {
      */
     public Entity getGameEntity() {
         return gameEntity;
-    }
-
-    /**
-     * Returns the HUD manager for this game.
-     */
-    public GameHudManager getHudManager() {
-        return hudManager;
     }
 
     /**

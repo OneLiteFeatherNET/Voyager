@@ -3,10 +3,9 @@ package net.elytrarace.server.ecs.system;
 import net.elytrarace.common.ecs.Component;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.minestom.server.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +18,9 @@ import java.util.UUID;
  * Only updates while the player is actively flying to avoid spamming the
  * actionbar during lobby or end phases. Throttled to every 4 ticks (5 Hz)
  * and only re-sends when displayed values change, to prevent visual flickering.
+ * <p>
+ * All rendering is delegated to {@link HudComponent#updateActionbar} so that
+ * formatting logic lives in one place.
  */
 public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
 
@@ -29,14 +31,15 @@ public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
 
     @Override
     public Set<Class<? extends Component>> getRequiredComponents() {
-        return Set.of(PlayerRefComponent.class, ScoreComponent.class, ElytraFlightComponent.class);
+        return Set.of(PlayerRefComponent.class, ScoreComponent.class,
+                ElytraFlightComponent.class, HudComponent.class);
     }
 
     @Override
     public void process(Entity entity, float deltaTime) {
         var flight = entity.getComponent(ElytraFlightComponent.class);
         var score = entity.getComponent(ScoreComponent.class);
-        var playerRef = entity.getComponent(PlayerRefComponent.class);
+        var hud = entity.getComponent(HudComponent.class);
 
         if (!flight.isFlying()) {
             return;
@@ -50,7 +53,6 @@ public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
         }
         tickCounters.put(entityId, 0);
 
-        Player player = playerRef.getPlayer();
         double speedBps = flight.getSpeedBlocksPerSecond();
         int totalScore = score.getTotal();
 
@@ -63,13 +65,6 @@ public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
         }
         lastDisplayHash.put(entityId, displayHash);
 
-        player.sendActionBar(
-                net.kyori.adventure.text.Component.text("Speed: ", NamedTextColor.WHITE)
-                        .append(net.kyori.adventure.text.Component.text(
-                                String.format("%.1f", speedBps), NamedTextColor.WHITE))
-                        .append(net.kyori.adventure.text.Component.text(
-                                " m/s | Points: ", NamedTextColor.WHITE))
-                        .append(net.kyori.adventure.text.Component.text(
-                                totalScore, NamedTextColor.WHITE)));
+        hud.updateActionbar(speedBps, totalScore);
     }
 }

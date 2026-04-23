@@ -6,6 +6,7 @@ import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
@@ -13,7 +14,6 @@ import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.physics.Ring;
 import net.elytrarace.server.physics.RingCollisionDetector;
 import net.elytrarace.server.physics.RingType;
-import net.elytrarace.server.ui.GameHudManager;
 import net.minestom.server.coordinate.Vec;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +27,8 @@ import java.util.Set;
  * computes the predicted position (prevPos + velocity) and checks for a passthrough
  * using {@link RingCollisionDetector}. On a hit, the ring is marked as passed and
  * the corresponding points are added to the player's {@link ScoreComponent}.
+ * Ring-pass feedback (actionbar flash + sound) is sent via {@link HudComponent}
+ * when present on the entity.
  * <p>
  * Requires a game entity with an {@link ActiveMapComponent} to be present in the
  * {@link EntityManager} in order to know which rings to check against.
@@ -34,15 +36,9 @@ import java.util.Set;
 public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
 
     private final EntityManager entityManager;
-    private final @Nullable GameHudManager hudManager;
 
     public RingCollisionSystem(EntityManager entityManager) {
-        this(entityManager, null);
-    }
-
-    public RingCollisionSystem(EntityManager entityManager, @Nullable GameHudManager hudManager) {
         this.entityManager = entityManager;
-        this.hudManager = hudManager;
     }
 
     @Override
@@ -87,21 +83,20 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
             }
 
             if (entity.hasComponent(RingEffectComponent.class)) {
-                var effects = entity.getComponent(RingEffectComponent.class);
-                effects.addEffect(ring.type(), 1);
+                entity.getComponent(RingEffectComponent.class).addEffect(ring.type(), 1);
             }
 
-            if (hudManager != null) {
-                hudManager.showRingPassed(playerRef.getPlayerId(), ring.points());
+            var hud = entity.getComponent(HudComponent.class);
+            if (hud != null) {
+                hud.showRingPassed(ring.points());
             }
         }
     }
 
-    private MapDefinition findActiveMap() {
+    private @Nullable MapDefinition findActiveMap() {
         for (Entity entity : entityManager.getEntities()) {
             if (entity.hasComponent(ActiveMapComponent.class)) {
-                ActiveMapComponent activeMap = entity.getComponent(ActiveMapComponent.class);
-                return activeMap.getCurrentMap();
+                return entity.getComponent(ActiveMapComponent.class).getCurrentMap();
             }
         }
         return null;

@@ -5,6 +5,8 @@ import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.FireworkBoostComponent;
+import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
@@ -30,6 +32,8 @@ public final class GameEntityFactory {
         Entity entity = new Entity();
         entity.addComponent(new PlayerRefComponent(player.getUuid(), player));
         entity.addComponent(new ElytraFlightComponent());
+        entity.addComponent(new FireworkBoostComponent());
+        entity.addComponent(new HudComponent(player));
         entity.addComponent(new RingTrackerComponent());
         entity.addComponent(new ScoreComponent());
         entity.addComponent(new RingEffectComponent());
