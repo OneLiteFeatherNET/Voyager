@@ -310,6 +310,9 @@ public final class GameOrchestrator {
                 if (entity.hasComponent(RingTrackerComponent.class)) {
                     entity.getComponent(RingTrackerComponent.class).reset();
                 }
+                if (entity.hasComponent(FireworkBoostComponent.class)) {
+                    entity.getComponent(FireworkBoostComponent.class).cancelBurn();
+                }
                 entity.getComponent(ElytraFlightComponent.class).setFlying(true);
                 LOGGER.debug("Elytra flight activated and state reset for player {}", player.getUsername());
                 return;

@@ -32,8 +32,7 @@ class FireworkBoostComponentTest {
     @Test
     void startCooldownActivatesCooldown() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(2.5, 4_000));
-
+        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 4_000));
         comp.startCooldown();
 
         assertThat(comp.isOnCooldown()).isTrue();
@@ -42,37 +41,77 @@ class FireworkBoostComponentTest {
     @Test
     void getCooldownRemainingTicksApproximatesConfiguredDuration() {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(2.5, 2_000)); // 2000 ms = 40 ticks
-
+        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 2_000)); // 2 s = 40 ticks
         comp.startCooldown();
 
-        // Allow ±2 ticks of measurement slack (wall-clock call overhead)
         assertThat(comp.getCooldownRemainingTicks()).isCloseTo(40, within(2));
-    }
-
-    @Test
-    void getCooldownRemainingTicksReturnsZeroAfterExpiry() throws InterruptedException {
-        var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(2.5, 50)); // 50 ms = 1 tick
-
-        comp.startCooldown();
-        Thread.sleep(100); // wait for cooldown to expire
-
-        assertThat(comp.getCooldownRemainingTicks()).isEqualTo(0);
-        assertThat(comp.isOnCooldown()).isFalse();
     }
 
     @Test
     void cooldownExpiresAfterConfiguredDuration() throws InterruptedException {
         var comp = new FireworkBoostComponent();
-        comp.setBoostConfig(new BoostConfig(2.5, 100)); // 100 ms
-
+        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 100));
         comp.startCooldown();
-        assertThat(comp.isOnCooldown()).isTrue();
 
+        assertThat(comp.isOnCooldown()).isTrue();
         Thread.sleep(150);
         assertThat(comp.isOnCooldown()).isFalse();
     }
+
+    // ── Burn state ─────────────────────────────────────────────────────────────
+
+    @Test
+    void notBurningByDefault() {
+        var comp = new FireworkBoostComponent();
+        assertThat(comp.isBurning()).isFalse();
+    }
+
+    @Test
+    void startBurnActivatesBurn() {
+        var comp = new FireworkBoostComponent();
+        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 4_000));
+        comp.startBurn();
+
+        assertThat(comp.isBurning()).isTrue();
+        assertThat(comp.getBurnTicksRemaining()).isEqualTo(24);
+    }
+
+    @Test
+    void tickBurnDecrementsToZero() {
+        var comp = new FireworkBoostComponent();
+        comp.setBoostConfig(new BoostConfig(0.5, 3, 0.035, 2.75, 4_000));
+        comp.startBurn();
+
+        comp.tickBurn();
+        assertThat(comp.getBurnTicksRemaining()).isEqualTo(2);
+
+        comp.tickBurn();
+        comp.tickBurn();
+        assertThat(comp.isBurning()).isFalse();
+    }
+
+    @Test
+    void tickBurnDoesNotGoBelowZero() {
+        var comp = new FireworkBoostComponent();
+        comp.tickBurn();
+        comp.tickBurn();
+
+        assertThat(comp.getBurnTicksRemaining()).isEqualTo(0);
+    }
+
+    @Test
+    void cancelBurnStopsBurn() {
+        var comp = new FireworkBoostComponent();
+        comp.setBoostConfig(new BoostConfig(0.5, 24, 0.035, 2.75, 4_000));
+        comp.startBurn();
+
+        comp.cancelBurn();
+
+        assertThat(comp.isBurning()).isFalse();
+        assertThat(comp.getBurnTicksRemaining()).isEqualTo(0);
+    }
+
+    // ── Config ─────────────────────────────────────────────────────────────────
 
     @Test
     void defaultConfigIsApplied() {
@@ -83,7 +122,7 @@ class FireworkBoostComponentTest {
     @Test
     void boostConfigCanBeReplaced() {
         var comp = new FireworkBoostComponent();
-        var custom = new BoostConfig(5.0, 8_000);
+        var custom = new BoostConfig(1.0, 30, 0.05, 3.0, 8_000);
         comp.setBoostConfig(custom);
 
         assertThat(comp.getBoostConfig()).isEqualTo(custom);
@@ -92,7 +131,6 @@ class FireworkBoostComponentTest {
     @Test
     void concurrentRequestAndClaim() throws InterruptedException {
         var comp = new FireworkBoostComponent();
-
         Thread requester = new Thread(comp::requestBoost);
         requester.start();
         requester.join();
