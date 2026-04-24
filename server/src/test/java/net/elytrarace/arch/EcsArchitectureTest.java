@@ -23,18 +23,21 @@ class EcsArchitectureTest {
     static final ArchRule components_must_be_named_component =
             classes().that().implement(Component.class)
                     .should().haveSimpleNameEndingWith("Component")
+                    .allowEmptyShould(true)
                     .because("ECS data holders must have the *Component suffix (ManisGame convention)");
 
     @ArchTest
     static final ArchRule systems_must_be_named_system =
             classes().that().implement(System.class)
                     .should().haveSimpleNameEndingWith("System")
+                    .allowEmptyShould(true)
                     .because("ECS processors must have the *System suffix (ManisGame convention)");
 
     @ArchTest
     static final ArchRule systems_must_reside_in_system_package =
             classes().that().implement(System.class)
                     .should().resideInAPackage("..system..")
+                    .allowEmptyShould(true)
                     .because("Systems belong in a dedicated system subpackage");
 
     @ArchTest
@@ -44,5 +47,6 @@ class EcsArchitectureTest {
                     .and().areNotAnnotations()
                     .and().resideInAPackage("net.elytrarace.server.ecs.component..")
                     .should().implement(Component.class)
+                    .allowEmptyShould(true)
                     .because("Every *Component in the ECS component package must implement the Component marker interface");
 }

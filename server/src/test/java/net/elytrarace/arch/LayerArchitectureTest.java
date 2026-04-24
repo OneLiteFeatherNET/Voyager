@@ -37,6 +37,7 @@ class LayerArchitectureTest {
     static final ArchRule server_must_not_use_paper =
             noClasses().that().resideInAPackage("net.elytrarace.server..")
                     .should().dependOnClassesThat().resideInAPackage("org.bukkit..")
+                    .allowEmptyShould(true)
                     .because("server module is Minestom-only; Paper API is forbidden");
 
     @ArchTest

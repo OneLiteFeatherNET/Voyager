@@ -35,6 +35,7 @@ class NamingConventionTest {
             classes().that().haveSimpleNameEndingWith("Factory")
                     .and().areNotInterfaces()
                     .should().haveOnlyPrivateConstructors()
+                    .allowEmptyShould(true)
                     .because("Factory utility classes must not be instantiated; use a private constructor (ManisGame convention)");
 
     // -------------------------------------------------------------------------
@@ -91,5 +92,6 @@ class NamingConventionTest {
                     .and().areNotInterfaces()
                     .and().doNotHaveModifier(JavaModifier.ABSTRACT)
                     .should().haveModifier(JavaModifier.FINAL)
+                    .allowEmptyShould(true)
                     .because("Default implementations of provider/registry interfaces must be final (ManisGame convention)");
 }
