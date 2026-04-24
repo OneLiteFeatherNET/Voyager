@@ -14,7 +14,7 @@ dependencyResolutionManagement {
             version("jetbrains-annotations", "26.1.0")
             version("fawe-bom", "1.56")
             version("commons-geometry-euclidean", "1.0")
-            version("archunit", "1.3.0")
+            version("archunit", "1.4.2")
             version("run-paper", "3.0.2")
             version("shadow", "9.4.1")
             version("plugin-yml", "0.6.0")
