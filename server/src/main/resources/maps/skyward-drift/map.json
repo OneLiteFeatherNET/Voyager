@@ -1,0 +1,23 @@
+{
+  "uuid": {
+    "mostSigBits": 72057594037944320,
+    "leastSigBits": -9223372036854775807
+  },
+  "name": {
+    "namespace": "voyager",
+    "value": "skyward_drift"
+  },
+  "world": "skyward-drift",
+  "displayName": {
+    "component": "<aqua><bold>Skyward Drift</bold></aqua>"
+  },
+  "author": {
+    "component": "<gray>Drift (Design) & Alpha Build Team</gray>"
+  },
+  "portals": [],
+  "boostConfig": {
+    "burnDurationTicks": 24,
+    "maxSpeedBlocksPerTick": 3.2,
+    "cooldownMs": 3500
+  }
+}

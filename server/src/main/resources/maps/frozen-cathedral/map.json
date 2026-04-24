@@ -1,0 +1,23 @@
+{
+  "uuid": {
+    "mostSigBits": 216172782113800192,
+    "leastSigBits": -9223372036854775805
+  },
+  "name": {
+    "namespace": "voyager",
+    "value": "frozen_cathedral"
+  },
+  "world": "frozen-cathedral",
+  "displayName": {
+    "component": "<gradient:#E1F5FE:#80DEEA><bold>Frozen Cathedral</bold></gradient>"
+  },
+  "author": {
+    "component": "<gray>Drift (Design) & Alpha Build Team</gray>"
+  },
+  "portals": [],
+  "boostConfig": {
+    "burnDurationTicks": 24,
+    "maxSpeedBlocksPerTick": 3.6,
+    "cooldownMs": 2800
+  }
+}
