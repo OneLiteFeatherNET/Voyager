@@ -33,7 +33,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core")
     testImplementation("org.mockito:mockito-junit-jupiter")
 
-    hotswapAgent("org.hotswapagent:hotswap-agent:2.0.3")
+    hotswapAgent("org.hotswapagent:hotswap-agent:2.0.3") { isTransitive = false }
 }
 
 java {
@@ -81,7 +81,7 @@ tasks {
         jvmArgs(
             "-XX:+AllowEnhancedClassRedefinition",
             "-XX:HotswapAgent=external",
-            "-XX:+UseZGC",
+            "-XX:+UseG1GC",
             "-XX:+UseCompactObjectHeaders",
             "-Xms256M",
             "-Xmx512M",
