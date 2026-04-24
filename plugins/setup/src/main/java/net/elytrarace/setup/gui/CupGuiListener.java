@@ -83,7 +83,7 @@ public class CupGuiListener implements Listener {
             } else if (event.isLeftClick()) {
                 // Swap: click source, then click destination (simplified: just remove+readd at end for now)
                 // For a first version, shift-click removes, regular click does nothing special
-                player.sendActionBar(Component.text("Shift-click to remove, or use bottom section to add maps"));
+                player.sendActionBar(Component.translatable("gui.cup.editor.actionbar.hint"));
             }
         } else if (gui.isAvailableArea(slot)) {
             var map = gui.getAvailableMapAtSlot(slot);

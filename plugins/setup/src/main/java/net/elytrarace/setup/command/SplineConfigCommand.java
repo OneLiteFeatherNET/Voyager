@@ -4,7 +4,6 @@ import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.util.SetupGuard;
 import net.elytrarace.spline.SplineConfig;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
@@ -47,14 +46,14 @@ public class SplineConfigCommand {
             case "hard" -> SplineConfig.HARD;
             case "builder" -> SplineConfig.BUILDER;
             default -> {
-                player.sendMessage(Component.text("Unknown preset. Use: easy, medium, hard, builder", NamedTextColor.RED));
+                player.sendMessage(Component.translatable("spline.preset.unknown"));
                 yield null;
             }
         };
         if (config == null) return;
 
         previewManager.setConfig(player.getUniqueId(), config);
-        player.sendActionBar(Component.text("Spline preset: " + preset, NamedTextColor.GREEN));
+        player.sendActionBar(Component.translatable("spline.preset.set", Component.text(preset)));
     }
 
     public void handleSpacing(CommandContext<PlayerSource> context) {
@@ -69,7 +68,7 @@ public class SplineConfigCommand {
         previewManager.setConfig(player.getUniqueId(),
                 current.withParticles(spacing, current.particleSize(),
                         current.colorR(), current.colorG(), current.colorB()));
-        player.sendActionBar(Component.text("Particle spacing: " + spacing + " blocks", NamedTextColor.GREEN));
+        player.sendActionBar(Component.translatable("spline.spacing.set", Component.text(spacing)));
     }
 
     public void handleSize(CommandContext<PlayerSource> context) {
@@ -84,7 +83,7 @@ public class SplineConfigCommand {
         previewManager.setConfig(player.getUniqueId(),
                 current.withParticles(current.particleSpacing(), size,
                         current.colorR(), current.colorG(), current.colorB()));
-        player.sendActionBar(Component.text("Particle size: " + size, NamedTextColor.GREEN));
+        player.sendActionBar(Component.translatable("spline.size.set", Component.text(size)));
     }
 
     public void handleColor(CommandContext<PlayerSource> context) {
@@ -100,18 +99,20 @@ public class SplineConfigCommand {
         var current = previewManager.getConfig(player.getUniqueId());
         previewManager.setConfig(player.getUniqueId(),
                 current.withParticles(current.particleSpacing(), current.particleSize(), r, g, b));
-        player.sendActionBar(Component.text("Color: RGB(" + r + ", " + g + ", " + b + ")", NamedTextColor.GREEN));
+        player.sendActionBar(Component.translatable("spline.color.set",
+                Component.text(r), Component.text(g), Component.text(b)));
     }
 
     public void handleInfo(CommandContext<PlayerSource> context) {
         var player = context.sender().source();
         var config = previewManager.getConfig(player.getUniqueId());
 
-        player.sendMessage(Component.text("Spline Config:", NamedTextColor.GOLD));
-        player.sendMessage(Component.text("  Spacing: " + config.particleSpacing() + " blocks", NamedTextColor.GRAY));
-        player.sendMessage(Component.text("  Size: " + config.particleSize(), NamedTextColor.GRAY));
-        player.sendMessage(Component.text("  Color: RGB(" + config.colorR() + ", " + config.colorG() + ", " + config.colorB() + ")", NamedTextColor.GRAY));
-        player.sendMessage(Component.text("  Visibility: " + config.visibility(), NamedTextColor.GRAY));
+        player.sendMessage(Component.translatable("spline.info.header"));
+        player.sendMessage(Component.translatable("spline.info.spacing", Component.text(config.particleSpacing())));
+        player.sendMessage(Component.translatable("spline.info.size", Component.text(config.particleSize())));
+        player.sendMessage(Component.translatable("spline.info.color",
+                Component.text(config.colorR()), Component.text(config.colorG()), Component.text(config.colorB())));
+        player.sendMessage(Component.translatable("spline.info.visibility", Component.text(config.visibility().name())));
     }
 
     public static void register(PaperCommandManager<Source> commandManager, ParticlePreviewManager previewManager) {

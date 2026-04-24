@@ -106,7 +106,7 @@ public class SimpleElytraRace extends JavaPlugin {
         // In a real implementation, this would load a cup from a service
         // For now, we'll create a simple cup with a single map
         Key cupId = Key.key("elytrarace", "test_cup");
-        net.kyori.adventure.text.Component displayName = net.kyori.adventure.text.Component.text("Test Cup");
+        net.kyori.adventure.text.Component displayName = net.kyori.adventure.text.Component.translatable("game.init.test_cup");
         Key mapId = Key.key("elytrarace", "test_map");
 
         // Set the current cup

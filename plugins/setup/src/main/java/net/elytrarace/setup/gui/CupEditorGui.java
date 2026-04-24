@@ -3,8 +3,8 @@ package net.elytrarace.setup.gui;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.map.model.MapDTO;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -62,7 +63,7 @@ public class CupEditorGui implements InventoryHolder {
                 .toList();
 
         this.inventory = Bukkit.createInventory(this, SIZE,
-                Component.text("Edit Cup: ", NamedTextColor.DARK_GRAY).append(cup.displayName()));
+                GlobalTranslator.render(Component.translatable("gui.cup.editor.title", cup.displayName()), Locale.US));
         populate();
     }
 
@@ -77,7 +78,7 @@ public class CupEditorGui implements InventoryHolder {
         // Separator row (row 3)
         var separator = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         var sepMeta = separator.getItemMeta();
-        sepMeta.displayName(Component.text("───────────", NamedTextColor.DARK_GRAY)
+        sepMeta.displayName(Component.translatable("gui.cup.editor.separator")
                 .decoration(TextDecoration.ITALIC, false));
         separator.setItemMeta(sepMeta);
         for (int slot = SEPARATOR_ROW * 9; slot < (SEPARATOR_ROW + 1) * 9; slot++) {
@@ -106,16 +107,20 @@ public class CupEditorGui implements InventoryHolder {
 
         meta.displayName(map.displayName().decoration(TextDecoration.ITALIC, false));
         var lore = List.of(
-                Component.text("Position: #" + (positionInCup + 1) + " of " + totalMaps, NamedTextColor.GRAY)
+                Component.translatable("gui.cup.editor.item.position",
+                        Component.text(positionInCup + 1),
+                        Component.text(totalMaps))
                         .decoration(TextDecoration.ITALIC, false),
-                Component.text("World: " + map.world(), NamedTextColor.DARK_GRAY)
+                Component.translatable("gui.cup.editor.item.world",
+                        Component.text(map.world()))
                         .decoration(TextDecoration.ITALIC, false),
-                Component.text("Portals: " + map.portals().size(), NamedTextColor.GRAY)
+                Component.translatable("gui.cup.editor.item.portals",
+                        Component.text(map.portals().size()))
                         .decoration(TextDecoration.ITALIC, false),
                 Component.empty(),
-                Component.text("Click to swap position", NamedTextColor.YELLOW)
+                Component.translatable("gui.cup.editor.item.swap")
                         .decoration(TextDecoration.ITALIC, false),
-                Component.text("Shift-click to remove from cup", NamedTextColor.RED)
+                Component.translatable("gui.cup.editor.item.remove")
                         .decoration(TextDecoration.ITALIC, false)
         );
         meta.lore(lore);
@@ -129,12 +134,14 @@ public class CupEditorGui implements InventoryHolder {
 
         meta.displayName(map.displayName().decoration(TextDecoration.ITALIC, false));
         var lore = List.of(
-                Component.text("World: " + map.world(), NamedTextColor.DARK_GRAY)
+                Component.translatable("gui.cup.editor.item.world",
+                        Component.text(map.world()))
                         .decoration(TextDecoration.ITALIC, false),
-                Component.text("Portals: " + map.portals().size(), NamedTextColor.GRAY)
+                Component.translatable("gui.cup.editor.item.portals",
+                        Component.text(map.portals().size()))
                         .decoration(TextDecoration.ITALIC, false),
                 Component.empty(),
-                Component.text("Click to add to cup", NamedTextColor.GREEN)
+                Component.translatable("gui.cup.editor.available.add")
                         .decoration(TextDecoration.ITALIC, false)
         );
         meta.lore(lore);

@@ -4,6 +4,7 @@ import net.elytrarace.common.cup.model.FileCupDTO;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -14,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Chest GUI showing all cups. Click a cup to open its editor.
@@ -28,7 +30,7 @@ public class CupListGui implements InventoryHolder {
     public CupListGui(List<FileCupDTO> cups) {
         this.cupList = new ArrayList<>(cups);
         this.inventory = Bukkit.createInventory(this, SIZE,
-                Component.text("Cup Manager", NamedTextColor.DARK_GRAY));
+                GlobalTranslator.render(Component.translatable("gui.cup.title"), Locale.US));
         populate();
     }
 
@@ -48,10 +50,11 @@ public class CupListGui implements InventoryHolder {
         var lore = List.of(
                 Component.text(cup.name().asString(), NamedTextColor.DARK_GRAY)
                         .decoration(TextDecoration.ITALIC, false),
-                Component.text("Maps: " + cup.maps().size(), NamedTextColor.GRAY)
+                Component.translatable("gui.cup.item.maps_count",
+                        Component.text(cup.maps().size()))
                         .decoration(TextDecoration.ITALIC, false),
                 Component.empty(),
-                Component.text("Click to edit", NamedTextColor.YELLOW)
+                Component.translatable("gui.cup.item.click_to_edit")
                         .decoration(TextDecoration.ITALIC, false)
         );
         meta.lore(lore);

@@ -60,7 +60,7 @@ public record GamePortalDTO(int index,
     private static TextDisplay spawnTextDisplayForPortal(PortalDTO portal, World bukkitWorld) {
         Optional<LocationDTO> centerLocation = portal.locations().stream().filter(LocationDTO::center).findFirst();
         return centerLocation.map(locationDTO -> bukkitWorld.spawn(new Location(bukkitWorld, locationDTO.x(), locationDTO.y(), locationDTO.z()), TextDisplay.class, textDisplay -> {
-            textDisplay.text(Component.text("Portal " + portal.index()).color(portal.index() == 1 ? TextColor.color(0x00FF00) : TextColor.color(0xFF0000)));
+            textDisplay.text(Component.translatable("portal.display.label", Component.text(portal.index())).color(portal.index() == 1 ? TextColor.color(0x00FF00) : TextColor.color(0xFF0000)));
             textDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
             textDisplay.setBillboard(Display.Billboard.CENTER);
             textDisplay.setDisplayHeight(10);

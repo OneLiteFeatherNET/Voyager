@@ -3,8 +3,8 @@ package net.elytrarace.setup.gui;
 import net.elytrarace.common.map.model.LocationDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.SortedSet;
 
 /**
@@ -47,7 +48,7 @@ public class PortalManagerGui implements InventoryHolder {
         this.mapDisplayName = mapDisplayName;
         this.portalList = new ArrayList<>(portals);
         this.inventory = Bukkit.createInventory(this, SIZE,
-                Component.text("Portal Manager - ", NamedTextColor.DARK_GRAY).append(mapDisplayName));
+                GlobalTranslator.render(Component.translatable("gui.portal.title", mapDisplayName), Locale.US));
         populate();
     }
 
@@ -63,15 +64,16 @@ public class PortalManagerGui implements InventoryHolder {
         // Bottom row: info item in center
         var infoItem = new ItemStack(Material.BOOK);
         var infoMeta = infoItem.getItemMeta();
-        infoMeta.displayName(Component.text("Portal Manager", NamedTextColor.GOLD)
+        infoMeta.displayName(Component.translatable("gui.portal.info.item.name")
                 .decoration(TextDecoration.ITALIC, false));
         var infoLore = List.of(
-                Component.text(portalList.size() + " portals", NamedTextColor.GRAY)
+                Component.translatable("gui.portal.info.portal_count",
+                        Component.text(portalList.size()))
                         .decoration(TextDecoration.ITALIC, false),
                 Component.empty(),
-                Component.text("Left-click: Teleport to portal", NamedTextColor.WHITE)
+                Component.translatable("gui.portal.info.left_click")
                         .decoration(TextDecoration.ITALIC, false),
-                Component.text("Shift-click: Delete portal", NamedTextColor.RED)
+                Component.translatable("gui.portal.info.shift_click")
                         .decoration(TextDecoration.ITALIC, false)
         );
         infoMeta.lore(infoLore);
@@ -84,7 +86,8 @@ public class PortalManagerGui implements InventoryHolder {
         var item = new ItemStack(material);
         var meta = item.getItemMeta();
 
-        meta.displayName(Component.text("Portal #" + portal.index(), NamedTextColor.WHITE)
+        meta.displayName(Component.translatable("gui.portal.item.name",
+                Component.text(portal.index()))
                 .decoration(TextDecoration.ITALIC, false));
 
         var lore = new ArrayList<Component>();
@@ -94,19 +97,23 @@ public class PortalManagerGui implements InventoryHolder {
                 .filter(LocationDTO::center)
                 .findFirst()
                 .ifPresent(center -> lore.add(
-                        Component.text("Center: " + center.x() + ", " + center.y() + ", " + center.z(),
-                                NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                        Component.translatable("gui.portal.item.center",
+                                Component.text(center.x()),
+                                Component.text(center.y()),
+                                Component.text(center.z()))
+                                .decoration(TextDecoration.ITALIC, false)
                 ));
 
         // Vertex count
         long vertexCount = portal.locations().stream().filter(loc -> !loc.center()).count();
-        lore.add(Component.text("Vertices: " + vertexCount, NamedTextColor.GRAY)
+        lore.add(Component.translatable("gui.portal.item.vertices",
+                Component.text(vertexCount))
                 .decoration(TextDecoration.ITALIC, false));
 
         lore.add(Component.empty());
-        lore.add(Component.text("Left-click: Teleport", NamedTextColor.YELLOW)
+        lore.add(Component.translatable("gui.portal.item.left_click")
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Shift-click: Delete", NamedTextColor.RED)
+        lore.add(Component.translatable("gui.portal.item.shift_click")
                 .decoration(TextDecoration.ITALIC, false));
 
         meta.lore(lore);

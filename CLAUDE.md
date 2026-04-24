@@ -95,6 +95,7 @@ docker compose -f docker/mariadb/compose.yml up -d
 - Builder pattern for DTOs (e.g., `MapDTOBuilder`, `CupDTOBuilder`)
 - Components are named `*Component`, systems are named `*System`
 - Commits follow Conventional Commits (feat:, fix:, docs:, refactor:, test:, chore:, ci:) — no Co-Author line
+- User-facing strings use `Component.translatable("key", args)` backed by `.properties` files. Placeholders use MiniMessage `<arg:N>` syntax — never `{N}` (MessageFormat). The `{N}` form renders as literal text because `PluginTranslationRegistry` disables the MessageFormat path. See [docs/guides/how-to-add-a-translation.md](docs/guides/how-to-add-a-translation.md).
 
 ## Design Reference Rules (from ManisGame)
 

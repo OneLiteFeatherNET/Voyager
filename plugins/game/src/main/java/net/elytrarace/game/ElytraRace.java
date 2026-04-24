@@ -85,7 +85,8 @@ public class ElytraRace extends JavaPlugin {
         LanguageService
                 .create("elytrarace", Key.key("elytrarace", "language"), getDataFolder().toPath())
                 .loadLanguage()
-                .thenRun(() -> getLogger().info("Language has been loaded"));
+                .thenRun(() -> getLogger().info("Language has been loaded"))
+                .join();
         GameService gameService = GameService.create(this);
         gameService.init().thenRun(() -> getLogger().info("Game service has been initialized")).exceptionally(throwable -> {
             getComponentLogger().error(ElytraMarkers.EXCEPTION, "An error occurred while initializing the game service", throwable);

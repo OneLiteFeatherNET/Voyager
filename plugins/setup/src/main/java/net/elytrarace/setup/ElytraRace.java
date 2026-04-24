@@ -106,7 +106,8 @@ public class ElytraRace extends JavaPlugin {
         LanguageService
                 .create("elytrarace", Key.key("elytrarace", "language"), getDataFolder().toPath())
                 .loadLanguage()
-                .thenRun(() -> getLogger().info("Language has been loaded"));
+                .thenRun(() -> getLogger().info("Language has been loaded"))
+                .join();
         this.cupService = CupService.create(getDataPath());
         this.mapService = MapService.create(getDataPath());
         this.undoManager = new UndoManager();
