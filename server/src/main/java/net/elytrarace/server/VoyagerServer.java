@@ -1,5 +1,8 @@
 package net.elytrarace.server;
 
+import net.elytrarace.api.database.service.DatabaseConfig;
+import net.elytrarace.api.database.service.DatabaseInitializationException;
+import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.common.map.MapService;
@@ -57,15 +60,21 @@ public final class VoyagerServer {
     private final MapInstanceService mapInstanceService;
     private final GameOrchestrator gameOrchestrator;
     private final CupLoader cupLoader;
+    private final DatabaseService databaseService;
 
     public VoyagerServer() {
         this(
             Path.of(System.getProperty("VOYAGER_DATA_PATH", "run/data")),
-            Path.of(System.getProperty("VOYAGER_WORLDS_PATH", "run/worlds"))
+            Path.of(System.getProperty("VOYAGER_WORLDS_PATH", "run/worlds")),
+            DatabaseConfig.fromEnvironment()
         );
     }
 
     public VoyagerServer(Path dataPath, Path worldsPath) {
+        this(dataPath, worldsPath, DatabaseConfig.fromEnvironment());
+    }
+
+    public VoyagerServer(Path dataPath, Path worldsPath, DatabaseConfig dbConfig) {
         System.setProperty("minestom.chunk-view-distance", "32");
         System.setProperty("minestom.entity-view-distance", "32");
         this.server = MinecraftServer.init();
@@ -74,17 +83,29 @@ public final class VoyagerServer {
                 .loadLanguage()
                 .join();
 
+        // Initialize the persistence layer BEFORE any gameplay wiring so that a
+        // misconfigured DB fails fast and the caller in main() can System.exit(1).
+        this.databaseService = DatabaseService.create(dbConfig);
+        LOGGER.info("Connecting to database at {} as user '{}'", dbConfig.jdbcUrl(), dbConfig.username());
+        try {
+            this.databaseService.init();
+            LOGGER.info("Database connection established — repositories ready");
+        } catch (DatabaseInitializationException ex) {
+            LOGGER.error("Database initialization failed: {}", ex.getMessage(), ex);
+            throw ex;
+        }
+
         InstanceManager instanceManager = MinecraftServer.getInstanceManager();
         this.lobbyInstance = instanceManager.createInstanceContainer();
         this.lobbyInstance.setChunkSupplier(LightingChunk::new);
         this.lobbyInstance.setGenerator(unit -> unit.modifier().fillHeight(0, 1, Block.STONE));
 
         this.playerService = new PlayerServiceImpl(lobbyInstance);
-        this.playerEventHandler = new PlayerEventHandler(playerService, lobbyInstance);
+        this.playerEventHandler = new PlayerEventHandler(playerService, lobbyInstance, databaseService);
         this.playerEventHandler.register();
 
         this.mapInstanceService = new AnvilMapInstanceService(instanceManager);
-        this.gameOrchestrator = new GameOrchestrator(playerService, mapInstanceService, playerEventHandler);
+        this.gameOrchestrator = new GameOrchestrator(playerService, mapInstanceService, playerEventHandler, databaseService);
 
         // Wire the ECS entity manager into the event handler for firework boost support
         this.playerEventHandler.setEntityManager(gameOrchestrator.getEntityManager());
@@ -144,6 +165,10 @@ public final class VoyagerServer {
         return cupLoader;
     }
 
+    public DatabaseService getDatabaseService() {
+        return databaseService;
+    }
+
     public static void main(String[] args) {
         String host = args.length > 0 ? args[0] : DEFAULT_HOST;
         int port = DEFAULT_PORT;
@@ -155,12 +180,35 @@ public final class VoyagerServer {
             }
         }
 
-        var voyagerServer = new VoyagerServer();
+        VoyagerServer voyagerServer;
+        try {
+            voyagerServer = new VoyagerServer();
+        } catch (DatabaseInitializationException ex) {
+            LOGGER.error("Voyager server aborted: database is unreachable. "
+                    + "Check VOYAGER_DB_URL / VOYAGER_DB_USER / VOYAGER_DB_PASSWORD or start docker/mariadb/compose.yml.", ex);
+            System.exit(1);
+            return;
+        } catch (RuntimeException ex) {
+            LOGGER.error("Voyager server aborted during startup", ex);
+            System.exit(1);
+            return;
+        }
 
+        final VoyagerServer finalServer = voyagerServer;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             LOGGER.info("Shutting down Voyager server...");
-            MinecraftServer.stopCleanly();
-        }));
+            try {
+                MinecraftServer.stopCleanly();
+            } catch (RuntimeException ex) {
+                LOGGER.warn("Error while stopping Minestom cleanly", ex);
+            }
+            try {
+                finalServer.getDatabaseService().close();
+                LOGGER.info("Database connection pool closed");
+            } catch (RuntimeException ex) {
+                LOGGER.warn("Error while closing database connection pool", ex);
+            }
+        }, "voyager-shutdown"));
 
         voyagerServer.start(host, port);
     }

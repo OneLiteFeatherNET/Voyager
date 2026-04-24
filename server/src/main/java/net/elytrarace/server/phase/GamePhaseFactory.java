@@ -1,6 +1,7 @@
 package net.elytrarace.server.phase;
 
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.server.persistence.GameResultPersistenceService;
 import net.theevilreaper.xerus.api.phase.LinearPhaseSeries;
 import net.theevilreaper.xerus.api.phase.Phase;
 import org.jetbrains.annotations.Nullable;
@@ -28,26 +29,39 @@ public final class GamePhaseFactory {
      * @return a ready-to-start phase series
      */
     public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager) {
-        return createGamePhases(entityManager, null, null);
+        return createGamePhases(entityManager, null, null, null);
+    }
+
+    /**
+     * Creates a linear phase series without persistence hooks. Kept for tests and
+     * callers that do not run against a live database.
+     */
+    public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager,
+                                                            @Nullable Runnable onMapSwitch,
+                                                            @Nullable Runnable onGamePhaseFinished) {
+        return createGamePhases(entityManager, onMapSwitch, onGamePhaseFinished, null);
     }
 
     /**
      * Creates a linear phase series containing lobby, game, and end phases.
      *
-     * @param entityManager        the ECS entity manager driving the game loop
-     * @param onMapSwitch          callback invoked when the lobby phase ends, before the game phase starts;
-     *                             use this to trigger map loading and player teleportation
-     * @param onGamePhaseFinished  callback invoked when the game phase finishes (race duration expired
-     *                             or all rings passed); use this to advance to the next map or end phase
+     * @param entityManager           the ECS entity manager driving the game loop
+     * @param onMapSwitch             callback invoked when the lobby phase ends, before the game phase starts;
+     *                                use this to trigger map loading and player teleportation
+     * @param onGamePhaseFinished     callback invoked when the game phase finishes (race duration expired
+     *                                or all rings passed); use this to advance to the next map or end phase
+     * @param gameResultPersistence   persistence service used by the end phase to write final standings;
+     *                                may be {@code null} to disable persistence
      * @return a ready-to-start phase series
      */
     public static LinearPhaseSeries<Phase> createGamePhases(EntityManager entityManager,
                                                             @Nullable Runnable onMapSwitch,
-                                                            @Nullable Runnable onGamePhaseFinished) {
+                                                            @Nullable Runnable onGamePhaseFinished,
+                                                            @Nullable GameResultPersistenceService gameResultPersistence) {
         var lobby = new MinestomLobbyPhase(120, onMapSwitch);
         var game = new MinestomGamePhase(entityManager,
                 MinestomGamePhase.DEFAULT_RACE_DURATION_TICKS, onGamePhaseFinished);
-        var end = new MinestomEndPhase(100, entityManager);
+        var end = new MinestomEndPhase(100, entityManager, gameResultPersistence);
         return new LinearPhaseSeries<>("game-phases", List.of(lobby, game, end));
     }
 }

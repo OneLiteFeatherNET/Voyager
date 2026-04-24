@@ -2,8 +2,11 @@ package net.elytrarace.server.phase;
 
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.server.ecs.component.ActiveMapComponent;
+import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
+import net.elytrarace.server.persistence.GameResultPersistenceService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -41,17 +44,25 @@ public final class MinestomEndPhase extends TimedPhase {
 
     private final int endTicksValue;
     private final @Nullable EntityManager entityManager;
+    private final @Nullable GameResultPersistenceService persistenceService;
     private boolean finishing = false;
     private boolean suppressOnFinish = false;
 
     public MinestomEndPhase() {
-        this(DEFAULT_END_TICKS, null);
+        this(DEFAULT_END_TICKS, null, null);
     }
 
     public MinestomEndPhase(int endTicks, @Nullable EntityManager entityManager) {
+        this(endTicks, entityManager, null);
+    }
+
+    public MinestomEndPhase(int endTicks,
+                            @Nullable EntityManager entityManager,
+                            @Nullable GameResultPersistenceService persistenceService) {
         super("end", TimeUnit.SERVER_TICK, 20);
         this.endTicksValue = endTicks;
         this.entityManager = entityManager;
+        this.persistenceService = persistenceService;
         setEndTicks(0);
         setCurrentTicks(endTicks);
         setTickDirection(TickDirection.DOWN);
@@ -108,6 +119,29 @@ public final class MinestomEndPhase extends TimedPhase {
     }
 
     /**
+     * Ranks all player entities by {@link ScoreComponent#getTotal()} descending
+     * and applies position bonuses ({@code 50 / 30 / 20 / 10}). Pure and side-effect
+     * free on the input list — returns a new immutable list. Exposed as
+     * package-private for unit testing.
+     *
+     * @param entityManager source of player entities
+     * @return ranked list with bonuses applied (index 0 = 1st place)
+     */
+    static List<Entity> rankAndApplyBonuses(EntityManager entityManager) {
+        List<Entity> ranked = entityManager.getEntitiesWithComponent(ScoreComponent.class).stream()
+                .filter(e -> e.hasComponent(PlayerRefComponent.class))
+                .sorted(Comparator.<Entity, Integer>comparing(
+                        e -> e.getComponent(ScoreComponent.class).getTotal()).reversed())
+                .toList();
+
+        for (int i = 0; i < ranked.size(); i++) {
+            int bonus = i < POSITION_BONUSES.length ? POSITION_BONUSES[i] : DEFAULT_BONUS;
+            ranked.get(i).getComponent(ScoreComponent.class).setPositionBonus(bonus);
+        }
+        return ranked;
+    }
+
+    /**
      * Calculates position bonuses and displays the final scoreboard as title
      * overlays to all players. Scores are read from {@link ScoreComponent}.
      */
@@ -117,18 +151,8 @@ public final class MinestomEndPhase extends TimedPhase {
             return;
         }
 
-        // Collect player entities with scores and sort by total descending
-        List<Entity> ranked = entityManager.getEntitiesWithComponent(ScoreComponent.class).stream()
-                .filter(e -> e.hasComponent(PlayerRefComponent.class))
-                .sorted(Comparator.<Entity, Integer>comparing(
-                        e -> e.getComponent(ScoreComponent.class).getTotal()).reversed())
-                .toList();
-
-        // Apply position bonuses
-        for (int i = 0; i < ranked.size(); i++) {
-            int bonus = i < POSITION_BONUSES.length ? POSITION_BONUSES[i] : DEFAULT_BONUS;
-            ranked.get(i).getComponent(ScoreComponent.class).setPositionBonus(bonus);
-        }
+        List<Entity> ranked = rankAndApplyBonuses(entityManager);
+        persistResultsAsync(ranked);
 
         // Build scoreboard message and show to all players
         var scoreboardBuilder = Component.text()
@@ -160,5 +184,45 @@ public final class MinestomEndPhase extends TimedPhase {
         }
 
         LOGGER.info("Final scores displayed for {} players", ranked.size());
+    }
+
+    /**
+     * Dispatches persistence off the tick thread so a slow DB never stalls the
+     * game loop. Failures are swallowed inside the persistence service — this
+     * method never throws.
+     */
+    private void persistResultsAsync(List<Entity> ranked) {
+        if (persistenceService == null || entityManager == null || ranked.isEmpty()) {
+            return;
+        }
+        String cupName = resolveCupName();
+        String mapName = resolveMapName();
+        persistenceService.persistResults(cupName, mapName, ranked)
+                .whenComplete((v, ex) -> {
+                    if (ex != null) {
+                        LOGGER.error("Unexpected error while persisting game results", ex);
+                    } else {
+                        LOGGER.info("Persisted game results for cup '{}' map '{}' ({} entries)",
+                                cupName, mapName, ranked.size());
+                    }
+                });
+    }
+
+    private String resolveCupName() {
+        if (entityManager == null) return "unknown";
+        return entityManager.getEntitiesWithComponent(CupProgressComponent.class).stream()
+                .findFirst()
+                .map(e -> e.getComponent(CupProgressComponent.class).getCup().name())
+                .orElse("unknown");
+    }
+
+    private String resolveMapName() {
+        if (entityManager == null) return "unknown";
+        return entityManager.getEntitiesWithComponent(ActiveMapComponent.class).stream()
+                .findFirst()
+                .map(e -> e.getComponent(ActiveMapComponent.class).getCurrentMap())
+                .filter(m -> m != null)
+                .map(net.elytrarace.server.cup.MapDefinition::name)
+                .orElse("unknown");
     }
 }

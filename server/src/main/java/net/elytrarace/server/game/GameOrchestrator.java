@@ -1,9 +1,12 @@
 package net.elytrarace.server.game;
 
+import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.MapDefinition;
+import net.elytrarace.server.persistence.GameResultPersistenceService;
+import net.elytrarace.server.persistence.GameResultPersistenceServiceImpl;
 import net.elytrarace.server.ecs.GameEntityFactory;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
@@ -56,16 +59,43 @@ public final class GameOrchestrator {
     private final MapInstanceService mapInstanceService;
     private final PlayerEventHandler playerEventHandler;
     private final EntityManager entityManager;
+    private final GameResultPersistenceService gameResultPersistence;
 
     private Entity gameEntity;
     private LinearPhaseSeries<Phase> phaseSeries;
 
     public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
                             PlayerEventHandler playerEventHandler) {
+        this(playerService, mapInstanceService, playerEventHandler, (DatabaseService) null);
+    }
+
+    public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
+                            PlayerEventHandler playerEventHandler,
+                            DatabaseService databaseService) {
+        this(playerService, mapInstanceService, playerEventHandler,
+                buildPersistenceService(databaseService));
+    }
+
+    public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
+                            PlayerEventHandler playerEventHandler,
+                            GameResultPersistenceService gameResultPersistence) {
         this.playerService = Objects.requireNonNull(playerService, "playerService must not be null");
         this.mapInstanceService = Objects.requireNonNull(mapInstanceService, "mapInstanceService must not be null");
         this.playerEventHandler = Objects.requireNonNull(playerEventHandler, "playerEventHandler must not be null");
         this.entityManager = new EntityManager();
+        this.gameResultPersistence = gameResultPersistence;
+    }
+
+    private static GameResultPersistenceService buildPersistenceService(DatabaseService databaseService) {
+        if (databaseService == null) {
+            return null;
+        }
+        var playerRepo = databaseService.getElytraPlayerRepository().orElse(null);
+        var resultRepo = databaseService.getGameResultRepository().orElse(null);
+        if (playerRepo == null || resultRepo == null) {
+            return null;
+        }
+        return new GameResultPersistenceServiceImpl(playerRepo, resultRepo);
     }
 
     /**
@@ -113,7 +143,8 @@ public final class GameOrchestrator {
                 () -> advanceToNextMap().exceptionally(ex -> {
                     LOGGER.error("Failed to advance to next map", ex);
                     return null;
-                }));
+                }),
+                gameResultPersistence);
         phaseSeries.start();
 
         LOGGER.info("Game started with {} players", playerService.getOnlinePlayers().size());
@@ -198,7 +229,8 @@ public final class GameOrchestrator {
                 () -> advanceToNextMap().exceptionally(ex -> {
                     LOGGER.error("Failed to advance to next map", ex);
                     return null;
-                }));
+                }),
+                gameResultPersistence);
         phaseSeries.start(); // starts Lobby
 
         // 5. Immediately finish the new lobby via normal path

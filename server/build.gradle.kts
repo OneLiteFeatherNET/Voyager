@@ -19,6 +19,8 @@ dependencies {
     implementation(project(":shared:common"))
     implementation(project(":shared:database"))
     implementation(libs.geometry)
+    runtimeOnly(libs.bundles.hibernate)
+    runtimeOnly(libs.mariadb)
     runtimeOnly(libs.log4j2.core)
     runtimeOnly(libs.log4j2.slf4j2)
 
@@ -27,6 +29,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.27.7")
     testImplementation(libs.archunit.junit5)
+    testImplementation(platform("org.mockito:mockito-bom:5.20.0"))
+    testImplementation("org.mockito:mockito-core")
+    testImplementation("org.mockito:mockito-junit-jupiter")
 
     hotswapAgent("org.hotswapagent:hotswap-agent:2.0.3")
 }

@@ -1,8 +1,10 @@
 package net.elytrarace.server.player;
 
+import net.elytrarace.api.database.entity.ElytraPlayerEntity;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -65,4 +67,21 @@ public interface PlayerService {
      * @return the player if online, or empty
      */
     Optional<Player> getPlayer(UUID uuid);
+
+    /**
+     * Returns the cached persisted profile for a player, if one has been loaded.
+     *
+     * @param uuid the player's unique identifier
+     * @return the profile if loaded from the database, or {@code null}
+     */
+    @Nullable ElytraPlayerEntity getProfile(UUID uuid);
+
+    /**
+     * Caches a player's profile after async load from the database so game systems
+     * can access it synchronously on the tick thread.
+     *
+     * @param uuid    the player's unique identifier
+     * @param profile the loaded or freshly created profile ({@code null} if load failed)
+     */
+    void cacheProfile(UUID uuid, @Nullable ElytraPlayerEntity profile);
 }
