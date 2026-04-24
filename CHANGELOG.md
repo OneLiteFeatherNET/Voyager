@@ -1,3 +1,16 @@
+# [1.2.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.1.0...v1.2.0) (2026-03-31)
+
+
+### Bug Fixes
+
+* **server:** equip elytra and firework rockets after map teleport ([56b0e4e](https://github.com/OneLiteFeatherNET/Voyager/commit/56b0e4e312253350f343df7b7d21b3eeb04edf91))
+* **server:** light calculation, i18n loading, and lobby-to-map teleport ([993f86c](https://github.com/OneLiteFeatherNET/Voyager/commit/993f86c4ca8f4f5b80e47858a170a973ca1aaded))
+
+
+### Features
+
+* **server:** add runServerDev task for fast local iteration ([c7b95a9](https://github.com/OneLiteFeatherNET/Voyager/commit/c7b95a93caebabbe9d1ac73cfe77f7edaaefe3d0))
+
 # [1.1.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.0.0...v1.1.0) (2026-03-31)
 
 
