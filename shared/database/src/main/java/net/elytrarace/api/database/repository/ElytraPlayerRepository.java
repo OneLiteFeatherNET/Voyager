@@ -6,7 +6,7 @@ import org.hibernate.SessionFactory;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public sealed interface ElytraPlayerRepository permits ElytraPlayerRepositoryImpl {
+public interface ElytraPlayerRepository {
 
     /**
      * Retrieves an ElytraPlayer by its UUID

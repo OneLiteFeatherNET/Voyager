@@ -23,7 +23,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
  *   <li>Default* concrete classes must be declared {@code final}.</li>
  * </ul>
  */
-@AnalyzeClasses(packages = "net.elytrarace", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "net.elytrarace", importOptions = {ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludeJars.class})
 class NamingConventionTest {
 
     // -------------------------------------------------------------------------

@@ -198,6 +198,7 @@ class RingEffectSystemTest {
     void boostRingSendsVelocityToPlayer(Env env) {
         // Given
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = new Entity();
@@ -231,6 +232,7 @@ class RingEffectSystemTest {
     void slowRingSendsVelocityToPlayer(Env env) {
         // Given
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = new Entity();

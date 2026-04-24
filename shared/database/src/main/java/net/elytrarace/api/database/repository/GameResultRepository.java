@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public sealed interface GameResultRepository permits GameResultRepositoryImpl {
+public interface GameResultRepository {
 
     /**
      * Saves a game result to the database

@@ -13,6 +13,7 @@ class HudComponentTest {
     @Test
     void implementsComponent(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var hud = new HudComponent(player);
@@ -23,6 +24,7 @@ class HudComponentTest {
     @Test
     void cleanupDoesNotThrowWhenNoBossBar(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var hud = new HudComponent(player);
@@ -34,6 +36,7 @@ class HudComponentTest {
     @Test
     void cleanupIsIdempotent(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var hud = new HudComponent(player);
@@ -45,6 +48,7 @@ class HudComponentTest {
     @Test
     void canBeAddedToEntity(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = new net.elytrarace.common.ecs.Entity();

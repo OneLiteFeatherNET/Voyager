@@ -18,7 +18,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * <p>This guarantees that the shared modules remain platform-agnostic and
  * the server module is Minestom-only.
  */
-@AnalyzeClasses(packages = "net.elytrarace", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "net.elytrarace", importOptions = {ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludeJars.class})
 class LayerArchitectureTest {
 
     @ArchTest

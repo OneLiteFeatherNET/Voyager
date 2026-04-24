@@ -34,6 +34,7 @@ class FireworkBoostSystemTest {
     @Test
     void boostActivationAppliesVanillaFormulaImmediately(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, true);
@@ -54,6 +55,7 @@ class FireworkBoostSystemTest {
     @Test
     void boostWithExistingVelocityBlendsPreviousSpeed(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, true);
@@ -76,6 +78,7 @@ class FireworkBoostSystemTest {
     @Test
     void boostIgnoredWhenNotFlying(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, false);
@@ -93,6 +96,7 @@ class FireworkBoostSystemTest {
     @Test
     void boostIgnoredWhenOnCooldown(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, true);
@@ -109,6 +113,7 @@ class FireworkBoostSystemTest {
     @Test
     void noOpWhenNoRequest(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, true);
@@ -124,6 +129,7 @@ class FireworkBoostSystemTest {
     @Test
     void vanillaFormulaConvergesEachBurnTick(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, true);
@@ -146,6 +152,7 @@ class FireworkBoostSystemTest {
     @Test
     void burnCancelledWhenPlayerLands(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = buildEntity(player, true);
@@ -166,6 +173,7 @@ class FireworkBoostSystemTest {
     @Test
     void velocityIsCappedAtMaxSpeed(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         // Low cap so an already-fast player gets clamped
@@ -186,6 +194,7 @@ class FireworkBoostSystemTest {
     @Test
     void burnEndsAfterConfiguredDuration(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         // 3-tick burn: activation tick is the first burn tick, so 3 process() calls exhaust it

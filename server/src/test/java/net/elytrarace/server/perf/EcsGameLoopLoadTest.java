@@ -186,6 +186,12 @@ class EcsGameLoopLoadTest {
         em.addSystem(new SplineVisualizationSystem());
         em.addSystem(new ScoreDisplaySystem());
 
+        // Pre-load all chunks that spawn positions will fall into before creating players
+        for (int i = 0; i < playerCount; i++) {
+            int cx = Math.floorDiv((int) (i * 3), 16);
+            instance.loadChunk(cx, 0).join();
+        }
+
         // Spawn N player entities at distinct positions so they do not collide with each other
         List<Player> players = new ArrayList<>(playerCount);
         for (int i = 0; i < playerCount; i++) {
