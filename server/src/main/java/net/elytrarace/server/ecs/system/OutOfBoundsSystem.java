@@ -124,6 +124,7 @@ public class OutOfBoundsSystem implements net.elytrarace.common.ecs.System {
 
         flight.setVelocity(Vec.ZERO);
         flight.setPreviousPosition(null);
+        player.setVelocity(Vec.ZERO);
 
         player.teleport(spawnPos).thenRun(() -> playerService.equipForRace(player));
     }

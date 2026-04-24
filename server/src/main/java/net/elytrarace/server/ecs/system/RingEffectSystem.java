@@ -3,6 +3,7 @@ package net.elytrarace.server.ecs.system;
 import net.elytrarace.common.ecs.Component;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
@@ -26,6 +27,11 @@ import java.util.Set;
  *   <li>{@code CHECKPOINT} — marks the checkpoint as passed in {@link RingTrackerComponent}</li>
  *   <li>{@code BONUS} — no additional effect (extra points already awarded)</li>
  * </ul>
+ * <p>
+ * When a {@code BOOST} or {@code SLOW} effect changes the server-tracked velocity, the
+ * updated velocity is sent to the client via {@code player.setVelocity()}. Ring boosts
+ * are external forces (vanilla-equivalent to knockback or firework boosts), so the client
+ * must be notified — unlike normal elytra flight, which is client-authoritative.
  */
 public class RingEffectSystem implements net.elytrarace.common.ecs.System {
 
@@ -51,9 +57,20 @@ public class RingEffectSystem implements net.elytrarace.common.ecs.System {
         var flight = entity.getComponent(ElytraFlightComponent.class);
         var tracker = entity.getComponent(RingTrackerComponent.class);
 
+        Vec velocityBeforeEffects = flight.getVelocity();
+
         RingEffectComponent.PendingEffect effect;
         while ((effect = effects.pollEffect()) != null) {
             applyEffect(effect.type(), flight, tracker);
+        }
+
+        // Send modified velocity to client — ring effects are external forces.
+        // Only send if velocity actually changed and player ref is available.
+        if (!flight.getVelocity().equals(velocityBeforeEffects)
+                && entity.hasComponent(PlayerRefComponent.class)) {
+            entity.getComponent(PlayerRefComponent.class)
+                    .getPlayer()
+                    .setVelocity(flight.getVelocity().mul(20.0));
         }
     }
 

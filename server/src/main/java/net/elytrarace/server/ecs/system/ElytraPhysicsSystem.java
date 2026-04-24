@@ -10,23 +10,30 @@ import net.minestom.server.coordinate.Vec;
 import java.util.Set;
 
 /**
- * Advances server-side elytra flight physics each tick and pushes the result to the client.
+ * Tracks server-side elytra flight velocity each tick for use by other systems, but does
+ * NOT push the velocity to the client.
  * <p>
- * The server is authoritative over elytra velocity. Each tick:
+ * Vanilla Minecraft is client-authoritative for normal elytra flight — the server only
+ * sends velocity packets for external forces (firework boosts, ring boosts, knockback).
+ * Pushing velocity to the client every tick causes constant client-side reconciliation,
+ * which produces the "wrong feel". This system therefore computes the next velocity
+ * server-side (so downstream systems like {@link FireworkBoostSystem} and
+ * {@link RingEffectSystem} have accurate inputs for their boost formulas), but leaves
+ * the client's own elytra physics simulation untouched.
+ * <p>
+ * Each tick:
  * <ol>
  *   <li>The current server-tracked velocity ({@link ElytraFlightComponent#getVelocity()}) is
  *       advanced by one tick of vanilla elytra physics via
  *       {@link ElytraPhysics#computeNextVelocity(Vec, double, double)}.</li>
- *   <li>The result is stored back and sent to the client via {@code player.setVelocity()}
- *       so the client's simulation stays in sync.</li>
+ *   <li>The result is stored back into the component for later systems to read.</li>
  *   <li>The player's current position is stored as {@code previousPosition} so that
  *       {@link RingCollisionSystem} (which runs before this system) can compute the
  *       accurate flight segment used for ring intersection tests.</li>
  * </ol>
  * <p>
- * {@link FireworkBoostSystem} runs <em>after</em> this system and may override the sent
- * velocity for the current tick when a boost burn is active — the boost formula is applied
- * on top of the physics-computed velocity, matching the vanilla execution order.
+ * {@link FireworkBoostSystem} runs <em>after</em> this system and sends velocity to the
+ * client only during boost ticks — matching vanilla's external-force pattern.
  */
 public class ElytraPhysicsSystem implements net.elytrarace.common.ecs.System {
 
@@ -49,15 +56,9 @@ public class ElytraPhysicsSystem implements net.elytrarace.common.ecs.System {
         flight.setPitch(pos.pitch());
         flight.setYaw(pos.yaw());
 
-        // Store current position for ring collision detection (read by RingCollisionSystem
-        // in the PREVIOUS tick's check, before this update overwrites it).
         flight.setPreviousPosition(pos);
 
-        // Advance server-tracked velocity by one vanilla elytra physics tick.
         Vec nextVel = ElytraPhysics.computeNextVelocity(flight.getVelocity(), pos.pitch(), pos.yaw());
         flight.setVelocity(nextVel);
-
-        // Push to client — server is authoritative for elytra physics.
-        player.setVelocity(nextVel.mul(20.0));
     }
 }
