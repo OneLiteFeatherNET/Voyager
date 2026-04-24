@@ -32,8 +32,6 @@ public record DatabaseConfig(
     public static final String DEFAULT_JDBC_URL = "jdbc:mariadb://localhost:3306/voyager-project";
     /** Default user matching {@code docker/mariadb/compose.yml}. */
     public static final String DEFAULT_USERNAME = "voyager-project";
-    /** Default password matching {@code docker/mariadb/compose.yml}. */
-    public static final String DEFAULT_PASSWORD = "voyager-project";
     /** Conservative pool default suitable for a single-node game server. */
     public static final int DEFAULT_POOL_SIZE = 10;
     /** Default schema action: {@code update} for dev, should be {@code validate} in production. */
@@ -67,7 +65,7 @@ public record DatabaseConfig(
         return new DatabaseConfig(
                 lookup("VOYAGER_DB_URL", DEFAULT_JDBC_URL),
                 lookup("VOYAGER_DB_USER", DEFAULT_USERNAME),
-                lookup("VOYAGER_DB_PASSWORD", DEFAULT_PASSWORD),
+                lookup("VOYAGER_DB_PASSWORD", ""),
                 parseInt(lookup("VOYAGER_DB_POOL_SIZE", String.valueOf(DEFAULT_POOL_SIZE)), DEFAULT_POOL_SIZE),
                 lookup("VOYAGER_DB_HBM2DDL", DEFAULT_HBM2DDL),
                 Boolean.parseBoolean(lookup("VOYAGER_DB_SHOW_SQL", "false"))

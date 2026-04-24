@@ -28,7 +28,7 @@ class DatabaseConfigTest {
         DatabaseConfig config = DatabaseConfig.fromEnvironment();
         assertThat(config.jdbcUrl()).isEqualTo("jdbc:mariadb://localhost:3306/voyager-project");
         assertThat(config.username()).isEqualTo("voyager-project");
-        assertThat(config.password()).isEqualTo("voyager-project");
+        assertThat(config.password()).isEmpty();
         assertThat(config.poolSize()).isEqualTo(10);
         assertThat(config.hbm2ddlAction()).isEqualTo("update");
         assertThat(config.showSql()).isFalse();
