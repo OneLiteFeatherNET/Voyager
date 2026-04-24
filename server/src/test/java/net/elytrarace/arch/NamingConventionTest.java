@@ -1,6 +1,7 @@
 package net.elytrarace.arch;
 
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -88,7 +89,7 @@ class NamingConventionTest {
     static final ArchRule default_providers_must_be_final =
             classes().that().haveSimpleNameStartingWith("Default")
                     .and().areNotInterfaces()
-                    .and().areNotAbstract()
+                    .and().doNotHaveModifier(JavaModifier.ABSTRACT)
                     .should().beFinal()
                     .because("Default implementations of provider/registry interfaces must be final (ManisGame convention)");
 }
