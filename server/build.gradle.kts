@@ -47,6 +47,7 @@ tasks {
     }
     test {
         useJUnitPlatform()
+        systemProperty("minestom.inside-test", "true")
         testLogging {
             events("passed", "skipped", "failed")
         }

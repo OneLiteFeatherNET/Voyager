@@ -16,7 +16,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
  * <p>Every rule is evaluated against production classes only
  * ({@link ImportOption.DoNotIncludeTests}).
  */
-@AnalyzeClasses(packages = "net.elytrarace", importOptions = {ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludeJars.class})
+@AnalyzeClasses(packages = "net.elytrarace", importOptions = ImportOption.DoNotIncludeTests.class)
 class EcsArchitectureTest {
 
     @ArchTest
