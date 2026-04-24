@@ -35,16 +35,22 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' && github.event_name == 'pull_request' }}
 
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew build -x test
+        env:
+          ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
+          ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
+
+      - name: Test
+        run: ./gradlew test
         env:
           ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
           ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
 
       - name: Upload JaCoCo reports
-        if: always() && matrix.os == 'ubuntu-latest'
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: jacoco-reports
+          name: jacoco-reports-${{ matrix.os }}
           path: '**/build/reports/jacoco/**'
           retention-days: 14
           if-no-files-found: ignore

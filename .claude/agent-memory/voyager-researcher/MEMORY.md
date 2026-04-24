@@ -1,0 +1,4 @@
+- [Elytra Physics Reference](elytra_physics.md) — Vanilla elytra tick() formula, firework boost math, Minestom behavior
+- [Minestom Velocity and Elytra API](minestom_velocity_and_elytra.md) — setVelocity is blocks/SECOND, Player skips movementTick physics, no firework entity rider boost
+- [HotswapAgent + JBR 25](hotswap_agent_jbr.md) — Coordinates org.hotswapagent:hotswap-agent:2.0.3, JBR 25 required for structural redefinition, Gradle JavaExec pattern
+- [PM Agent Methodology](pm_agent_methodology.md) — Scrumban recommendation, Compass vs Project-Manager ownership split, `gh` CLI limitations for Projects v2/milestones

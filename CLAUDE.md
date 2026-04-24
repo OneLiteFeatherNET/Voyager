@@ -60,6 +60,9 @@ Game-specific components are in `plugins/game/src/.../components/` (GameState, P
 ### Phase System
 Game phases (Lobby → Preparation → Game → End) are managed via `shared/phase`. Phases have start/finish lifecycle with callbacks. `LinearPhaseSeries` chains phases sequentially.
 
+### Elytra velocity authority
+Normal elytra flight is client-authoritative, matching vanilla Minecraft. `ElytraPhysicsSystem` runs the vanilla formula every tick to keep a server-tracked velocity for ring collision and boost math, but it does NOT call `player.setVelocity()`. Velocity is only sent to the client for external forces: firework boost burns (`FireworkBoostSystem`), ring `BOOST`/`SLOW` effects (`RingEffectSystem`), and out-of-bounds resets (`OutOfBoundsSystem`). See [ADR-0002](docs/decisions/0002-elytra-flight-client-authority.md) and [docs/elytra-physics-reference.md](docs/elytra-physics-reference.md) §7.
+
 ### Data Flow
 Map and cup definitions are stored as JSON files (via `GsonFileHandler`). The setup plugin uses a conversation-based wizard to create these configs. The game plugin loads them at runtime through `MapService`/`CupService`.
 
@@ -261,6 +264,7 @@ Each agent has a codename (persona) used in agent-to-agent references; invoke vi
 
 | Codename | Agent ID | When to use |
 |---|---|---|
+| Flightplan | `voyager-project-manager` | Sprint planning, WIP, velocity, risk register, release checklists, dependency graph |
 | Atlas | `voyager-architect` | Architecture decisions, system design, module boundaries |
 | Helix | `voyager-minestom-expert` | Any Minestom API code, instance management, events |
 | Bedrock | `voyager-minecraft-expert` | Vanilla mechanics, elytra physics, protocol, collision |
