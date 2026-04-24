@@ -1,3 +1,16 @@
+# [1.3.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.2.0...v1.3.0) (2026-04-24)
+
+
+### Bug Fixes
+
+* **build:** update foojay to 1.0.0, fix hotswap GC and agent resolution ([#154](https://github.com/OneLiteFeatherNET/Voyager/issues/154)) ([0199260](https://github.com/OneLiteFeatherNET/Voyager/commit/0199260727fef22703afefcfbcbd2a4c55519a23))
+* **ci:** use RELEASE_TOKEN to bypass protected branch in semantic-release ([#152](https://github.com/OneLiteFeatherNET/Voyager/issues/152)) ([c492fac](https://github.com/OneLiteFeatherNET/Voyager/commit/c492fac84d28d6ac7cccf1c8733384cc0c21e24f)), closes [#151](https://github.com/OneLiteFeatherNET/Voyager/issues/151)
+
+
+### Features
+
+* **server:** Sprint 1 - game loop wiring, elytra physics, firework boost & CI fixes ([#107](https://github.com/OneLiteFeatherNET/Voyager/issues/107)) ([58f6278](https://github.com/OneLiteFeatherNET/Voyager/commit/58f62783243d1141c84f38b54fa3d6b27ae4fa79)), closes [#93](https://github.com/OneLiteFeatherNET/Voyager/issues/93) [#96](https://github.com/OneLiteFeatherNET/Voyager/issues/96) [#95](https://github.com/OneLiteFeatherNET/Voyager/issues/95) [#98](https://github.com/OneLiteFeatherNET/Voyager/issues/98) [#99](https://github.com/OneLiteFeatherNET/Voyager/issues/99) [#97](https://github.com/OneLiteFeatherNET/Voyager/issues/97)
+
 # [1.2.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.1.0...v1.2.0) (2026-03-31)
 
 
