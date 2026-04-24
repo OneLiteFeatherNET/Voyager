@@ -1,0 +1,3 @@
+- [docs-structure](docs_structure.md) — layout of docs/ in the Voyager repo and which directories currently exist
+- [ecs-system-registration](ecs_system_registration.md) — canonical steps and ordering rules for registering a new ECS system in GameOrchestrator
+- [elytra-authority-model](elytra_authority_model.md) — client-authority model for elytra flight; which systems actually push velocity to the client, and the blocks/tick vs blocks/second unit boundary

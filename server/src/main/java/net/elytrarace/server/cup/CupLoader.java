@@ -3,11 +3,13 @@ package net.elytrarace.server.cup;
 import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
+import net.elytrarace.common.guide.GuidePointStore;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.map.model.FileMapDTO;
 import net.elytrarace.common.map.model.LocationDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.elytrarace.server.physics.Ring;
+import net.elytrarace.server.physics.RingType;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import org.jetbrains.annotations.NotNull;
@@ -17,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -31,11 +34,13 @@ public final class CupLoader {
 
     private final CupService cupService;
     private final MapService mapService;
+    private final GuidePointStore guidePointStore;
     private final Path worldsPath;
 
-    public CupLoader(@NotNull CupService cupService, @NotNull MapService mapService, @NotNull Path worldsPath) {
+    public CupLoader(@NotNull CupService cupService, @NotNull MapService mapService, @NotNull Path dataPath, @NotNull Path worldsPath) {
         this.cupService = cupService;
         this.mapService = mapService;
+        this.guidePointStore = new GuidePointStore(dataPath);
         this.worldsPath = worldsPath;
     }
 
@@ -102,9 +107,26 @@ public final class CupLoader {
                 .toList();
 
         var spawnPos = deriveSpawn(portals);
-        LOGGER.info("  Map '{}' — {} rings, spawn {}", dto.name().asString(), rings.size(), spawnPos);
+        var boostConfig = convertBoostConfig(dto);
+        var guidePoints = guidePointStore.getGuidePoints(dto.world());
+        LOGGER.info("  Map '{}' — {} rings, {} guide points, spawn {}, boost {}", dto.name().asString(), rings.size(), guidePoints.size(), spawnPos, boostConfig);
 
-        return Optional.of(new MapDefinition(dto.name().asString(), worldDir, rings, spawnPos));
+        return Optional.of(new MapDefinition(dto.name().asString(), worldDir, rings, spawnPos, boostConfig, guidePoints));
+    }
+
+    /**
+     * Reads boost config from the map DTO, falling back field-by-field to {@link BoostConfig#DEFAULT}.
+     * Any absent JSON field is {@code null} after Gson deserialisation.
+     */
+    private BoostConfig convertBoostConfig(@NotNull FileMapDTO dto) {
+        var raw = dto.boostConfig();
+        if (raw == null) {
+            return BoostConfig.DEFAULT;
+        }
+        int    burn     = raw.burnDurationTicks()     != null ? raw.burnDurationTicks()     : BoostConfig.DEFAULT.burnDurationTicks();
+        double maxSpeed = raw.maxSpeedBlocksPerTick() != null ? raw.maxSpeedBlocksPerTick() : BoostConfig.DEFAULT.maxSpeedBlocksPerTick();
+        long   cooldown = raw.cooldownMs()            != null ? raw.cooldownMs()            : BoostConfig.DEFAULT.cooldownMs();
+        return new BoostConfig(burn, maxSpeed, cooldown);
     }
 
     /**
@@ -113,7 +135,7 @@ public final class CupLoader {
      * The radius is the max distance from center to any edge location.
      * The normal is computed from edge vectors when possible; defaults to (0,0,1).
      */
-    private Ring convertPortalToRing(@NotNull PortalDTO portal) {
+    Ring convertPortalToRing(@NotNull PortalDTO portal) {
         var locations = portal.locations();
 
         var centerLoc = locations.stream()
@@ -134,8 +156,28 @@ public final class CupLoader {
                 .orElse(3.0);
 
         var normal = computeNormal(center, edgePoints);
+        var ringType = resolveRingType(portal);
 
-        return new Ring(center, normal, radius, DEFAULT_RING_POINTS);
+        return new Ring(center, normal, radius, DEFAULT_RING_POINTS, ringType);
+    }
+
+    /**
+     * Resolves the {@link RingType} from a portal's raw type string.
+     * Falls back to {@link RingType#STANDARD} when the portal is untyped (legacy data)
+     * or carries an unrecognised value; unrecognised values are logged as a warning so
+     * typos in map JSON are visible during startup.
+     */
+    private RingType resolveRingType(@NotNull PortalDTO portal) {
+        var rawType = portal.type();
+        if (rawType == null || rawType.isBlank()) {
+            return RingType.STANDARD;
+        }
+        try {
+            return RingType.valueOf(rawType.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Portal #{} has unknown ring type '{}' — falling back to STANDARD", portal.index(), rawType);
+            return RingType.STANDARD;
+        }
     }
 
     /**

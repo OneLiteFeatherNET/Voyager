@@ -10,13 +10,30 @@ import net.minestom.server.coordinate.Vec;
 import java.util.Set;
 
 /**
- * Applies elytra flight physics each tick.
+ * Tracks server-side elytra flight velocity each tick for use by other systems, but does
+ * NOT push the velocity to the client.
  * <p>
- * Reads the player's current pitch and yaw, computes the next velocity via
- * {@link ElytraPhysics}, updates the {@link ElytraFlightComponent}, and
- * applies the resulting velocity to the Minestom player.
+ * Vanilla Minecraft is client-authoritative for normal elytra flight — the server only
+ * sends velocity packets for external forces (firework boosts, ring boosts, knockback).
+ * Pushing velocity to the client every tick causes constant client-side reconciliation,
+ * which produces the "wrong feel". This system therefore computes the next velocity
+ * server-side (so downstream systems like {@link FireworkBoostSystem} and
+ * {@link RingEffectSystem} have accurate inputs for their boost formulas), but leaves
+ * the client's own elytra physics simulation untouched.
  * <p>
- * Only processes entities that are currently flying.
+ * Each tick:
+ * <ol>
+ *   <li>The current server-tracked velocity ({@link ElytraFlightComponent#getVelocity()}) is
+ *       advanced by one tick of vanilla elytra physics via
+ *       {@link ElytraPhysics#computeNextVelocity(Vec, double, double)}.</li>
+ *   <li>The result is stored back into the component for later systems to read.</li>
+ *   <li>The player's current position is stored as {@code previousPosition} so that
+ *       {@link RingCollisionSystem} (which runs before this system) can compute the
+ *       accurate flight segment used for ring intersection tests.</li>
+ * </ol>
+ * <p>
+ * {@link FireworkBoostSystem} runs <em>after</em> this system and sends velocity to the
+ * client only during boost ticks — matching vanilla's external-force pattern.
  */
 public class ElytraPhysicsSystem implements net.elytrarace.common.ecs.System {
 
@@ -34,16 +51,14 @@ public class ElytraPhysicsSystem implements net.elytrarace.common.ecs.System {
             return;
         }
 
-        // Read current orientation from the player
-        flight.setPitch(playerRef.getPlayer().getPosition().pitch());
-        flight.setYaw(playerRef.getPlayer().getPosition().yaw());
+        var player = playerRef.getPlayer();
+        var pos = player.getPosition();
+        flight.setPitch(pos.pitch());
+        flight.setYaw(pos.yaw());
 
-        // Compute new velocity
-        Vec newVelocity = ElytraPhysics.computeNextVelocity(
-                flight.getVelocity(), flight.getPitch(), flight.getYaw());
-        flight.setVelocity(newVelocity);
+        flight.setPreviousPosition(pos);
 
-        // Apply velocity to the Minestom player
-        playerRef.getPlayer().setVelocity(newVelocity);
+        Vec nextVel = ElytraPhysics.computeNextVelocity(flight.getVelocity(), pos.pitch(), pos.yaw());
+        flight.setVelocity(nextVel);
     }
 }

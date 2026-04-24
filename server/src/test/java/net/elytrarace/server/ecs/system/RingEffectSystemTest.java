@@ -3,16 +3,21 @@ package net.elytrarace.server.ecs.system;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.physics.RingType;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.testing.Env;
+import net.minestom.testing.EnvTest;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+@EnvTest
 class RingEffectSystemTest {
 
     private static final float DELTA_TIME = 1.0f / 20.0f;
@@ -186,5 +191,73 @@ class RingEffectSystemTest {
                 RingTrackerComponent.class,
                 ScoreComponent.class
         );
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("BOOST ring sends updated velocity to Minestom player when PlayerRefComponent is present")
+    void boostRingSendsVelocityToPlayer(Env env) {
+        // Given
+        var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
+        var player = env.createPlayer(instance, new Pos(0, 60, 0));
+
+        var entity = new Entity();
+        var flight = new ElytraFlightComponent();
+        flight.setFlying(true);
+        flight.setVelocity(new Vec(0, 0, 10));
+        entity.addComponent(flight);
+        entity.addComponent(new RingEffectComponent());
+        entity.addComponent(new RingTrackerComponent());
+        entity.addComponent(new ScoreComponent());
+        entity.addComponent(new PlayerRefComponent(player.getUuid(), player));
+
+        var effects = entity.getComponent(RingEffectComponent.class);
+        effects.addEffect(RingType.BOOST, 1);
+
+        var em = new EntityManager();
+        em.addSystem(new RingEffectSystem());
+        em.addEntity(entity);
+
+        // When
+        em.update(1.0f / 20.0f);
+
+        // Then — ECS velocity is multiplied by BOOST_MULTIPLIER (1.5)
+        assertThat(flight.getVelocity().z()).isCloseTo(15.0, within(0.001));
+        // And — the Minestom player receives the velocity (blocks/tick * 20 = blocks/sec)
+        assertThat(player.getVelocity().z()).isCloseTo(300.0, within(0.01));
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("SLOW ring sends updated velocity to Minestom player when PlayerRefComponent is present")
+    void slowRingSendsVelocityToPlayer(Env env) {
+        // Given
+        var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
+        var player = env.createPlayer(instance, new Pos(0, 60, 0));
+
+        var entity = new Entity();
+        var flight = new ElytraFlightComponent();
+        flight.setFlying(true);
+        flight.setVelocity(new Vec(0, 0, 10));
+        entity.addComponent(flight);
+        entity.addComponent(new RingEffectComponent());
+        entity.addComponent(new RingTrackerComponent());
+        entity.addComponent(new ScoreComponent());
+        entity.addComponent(new PlayerRefComponent(player.getUuid(), player));
+
+        var effects = entity.getComponent(RingEffectComponent.class);
+        effects.addEffect(RingType.SLOW, 1);
+
+        var em = new EntityManager();
+        em.addSystem(new RingEffectSystem());
+        em.addEntity(entity);
+
+        // When
+        em.update(1.0f / 20.0f);
+
+        // Then — ECS velocity is halved by SLOW_MULTIPLIER (0.5)
+        assertThat(flight.getVelocity().z()).isCloseTo(5.0, within(0.001));
+        // And — the Minestom player receives the velocity (blocks/tick * 20 = blocks/sec)
+        assertThat(player.getVelocity().z()).isCloseTo(100.0, within(0.01));
     }
 }

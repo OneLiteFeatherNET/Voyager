@@ -6,6 +6,7 @@ import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
+import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
@@ -14,6 +15,7 @@ import net.elytrarace.server.physics.Ring;
 import net.elytrarace.server.physics.RingCollisionDetector;
 import net.elytrarace.server.physics.RingType;
 import net.minestom.server.coordinate.Vec;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Set;
@@ -25,6 +27,8 @@ import java.util.Set;
  * computes the predicted position (prevPos + velocity) and checks for a passthrough
  * using {@link RingCollisionDetector}. On a hit, the ring is marked as passed and
  * the corresponding points are added to the player's {@link ScoreComponent}.
+ * Ring-pass feedback (actionbar flash + sound) is sent via {@link HudComponent}
+ * when present on the entity.
  * <p>
  * Requires a game entity with an {@link ActiveMapComponent} to be present in the
  * {@link EntityManager} in order to know which rings to check against.
@@ -62,36 +66,44 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
         List<Ring> rings = map.rings();
         var pos = playerRef.getPlayer().getPosition();
         Vec currentPos = new Vec(pos.x(), pos.y(), pos.z());
-        Vec prevPos = currentPos.sub(flight.getVelocity());
 
-        for (int i = 0; i < rings.size(); i++) {
-            if (tracker.hasPassed(i)) {
-                continue;
+        // Use actual stored previous position rather than velocity subtraction,
+        // since flight.velocity is now server-tracked (not position delta).
+        var prevPosStored = flight.getPreviousPosition();
+        if (prevPosStored == null) {
+            return; // first tick after teleport, no previous position yet
+        }
+        Vec prevPos = new Vec(prevPosStored.x(), prevPosStored.y(), prevPosStored.z());
+
+        int nextIndex = tracker.passedCount();
+        if (nextIndex >= rings.size()) {
+            return;
+        }
+
+        Ring ring = rings.get(nextIndex);
+        if (RingCollisionDetector.checkPassthrough(ring, prevPos, currentPos)) {
+            tracker.markPassed(nextIndex);
+            score.addRingPoints(ring.points());
+
+            if (ring.type() == RingType.CHECKPOINT) {
+                tracker.markCheckpointPassed(nextIndex);
             }
 
-            Ring ring = rings.get(i);
-            if (RingCollisionDetector.checkPassthrough(ring, prevPos, currentPos)) {
-                tracker.markPassed(i);
-                score.addRingPoints(ring.points());
+            if (entity.hasComponent(RingEffectComponent.class)) {
+                entity.getComponent(RingEffectComponent.class).addEffect(ring.type(), 1);
+            }
 
-                if (ring.type() == RingType.CHECKPOINT) {
-                    tracker.markCheckpointPassed(i);
-                }
-
-                // Queue the ring effect if the entity has a RingEffectComponent
-                if (entity.hasComponent(RingEffectComponent.class)) {
-                    var effects = entity.getComponent(RingEffectComponent.class);
-                    effects.addEffect(ring.type(), 1);
-                }
+            var hud = entity.getComponent(HudComponent.class);
+            if (hud != null) {
+                hud.showRingPassed(ring.points());
             }
         }
     }
 
-    private MapDefinition findActiveMap() {
+    private @Nullable MapDefinition findActiveMap() {
         for (Entity entity : entityManager.getEntities()) {
             if (entity.hasComponent(ActiveMapComponent.class)) {
-                ActiveMapComponent activeMap = entity.getComponent(ActiveMapComponent.class);
-                return activeMap.getCurrentMap();
+                return entity.getComponent(ActiveMapComponent.class).getCurrentMap();
             }
         }
         return null;

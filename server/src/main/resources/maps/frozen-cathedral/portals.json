@@ -1,0 +1,122 @@
+[
+  {
+    "index": 0,
+    "locations": [
+      { "x": 0,   "y": 140, "z": 0,   "center": true  },
+      { "x": 4,   "y": 140, "z": 0,   "center": false },
+      { "x": -4,  "y": 140, "z": 0,   "center": false },
+      { "x": 0,   "y": 144, "z": 0,   "center": false },
+      { "x": 0,   "y": 136, "z": 0,   "center": false }
+    ]
+  },
+  {
+    "index": 1,
+    "locations": [
+      { "x": 0,   "y": 135, "z": 25,  "center": true  },
+      { "x": 3,   "y": 135, "z": 25,  "center": false },
+      { "x": -3,  "y": 135, "z": 25,  "center": false },
+      { "x": 0,   "y": 138, "z": 25,  "center": false },
+      { "x": 0,   "y": 132, "z": 25,  "center": false }
+    ]
+  },
+  {
+    "index": 2,
+    "locations": [
+      { "x": 0,   "y": 125, "z": 50,  "center": true  },
+      { "x": 3,   "y": 125, "z": 50,  "center": false },
+      { "x": -3,  "y": 125, "z": 50,  "center": false },
+      { "x": 0,   "y": 128, "z": 50,  "center": false },
+      { "x": 0,   "y": 122, "z": 50,  "center": false }
+    ]
+  },
+  {
+    "index": 3,
+    "locations": [
+      { "x": -8,  "y": 130, "z": 75,  "center": true  },
+      { "x": -5,  "y": 130, "z": 75,  "center": false },
+      { "x": -11, "y": 130, "z": 75,  "center": false },
+      { "x": -8,  "y": 133, "z": 75,  "center": false },
+      { "x": -8,  "y": 127, "z": 75,  "center": false }
+    ]
+  },
+  {
+    "index": 4,
+    "locations": [
+      { "x": -20, "y": 145, "z": 100, "center": true  },
+      { "x": -17, "y": 145, "z": 100, "center": false },
+      { "x": -23, "y": 145, "z": 100, "center": false },
+      { "x": -20, "y": 148, "z": 100, "center": false },
+      { "x": -20, "y": 142, "z": 100, "center": false }
+    ]
+  },
+  {
+    "index": 5,
+    "locations": [
+      { "x": -15, "y": 160, "z": 120, "center": true  },
+      { "x": -13, "y": 160, "z": 120, "center": false },
+      { "x": -17, "y": 160, "z": 120, "center": false },
+      { "x": -15, "y": 162, "z": 120, "center": false },
+      { "x": -15, "y": 158, "z": 120, "center": false }
+    ]
+  },
+  {
+    "index": 6,
+    "locations": [
+      { "x": 0,   "y": 170, "z": 140, "center": true  },
+      { "x": 5,   "y": 170, "z": 140, "center": false },
+      { "x": -5,  "y": 170, "z": 140, "center": false },
+      { "x": 0,   "y": 175, "z": 140, "center": false },
+      { "x": 0,   "y": 165, "z": 140, "center": false }
+    ]
+  },
+  {
+    "index": 7,
+    "locations": [
+      { "x": 20,  "y": 155, "z": 165, "center": true  },
+      { "x": 23,  "y": 155, "z": 165, "center": false },
+      { "x": 17,  "y": 155, "z": 165, "center": false },
+      { "x": 20,  "y": 158, "z": 165, "center": false },
+      { "x": 20,  "y": 152, "z": 165, "center": false }
+    ]
+  },
+  {
+    "index": 8,
+    "locations": [
+      { "x": 25,  "y": 135, "z": 190, "center": true  },
+      { "x": 28,  "y": 135, "z": 190, "center": false },
+      { "x": 22,  "y": 135, "z": 190, "center": false },
+      { "x": 25,  "y": 138, "z": 190, "center": false },
+      { "x": 25,  "y": 132, "z": 190, "center": false }
+    ]
+  },
+  {
+    "index": 9,
+    "locations": [
+      { "x": 15,  "y": 120, "z": 215, "center": true  },
+      { "x": 18,  "y": 120, "z": 215, "center": false },
+      { "x": 12,  "y": 120, "z": 215, "center": false },
+      { "x": 15,  "y": 123, "z": 215, "center": false },
+      { "x": 15,  "y": 117, "z": 215, "center": false }
+    ]
+  },
+  {
+    "index": 10,
+    "locations": [
+      { "x": 0,   "y": 110, "z": 240, "center": true  },
+      { "x": 4,   "y": 110, "z": 240, "center": false },
+      { "x": -4,  "y": 110, "z": 240, "center": false },
+      { "x": 0,   "y": 114, "z": 240, "center": false },
+      { "x": 0,   "y": 106, "z": 240, "center": false }
+    ]
+  },
+  {
+    "index": 11,
+    "locations": [
+      { "x": -10, "y": 105, "z": 265, "center": true  },
+      { "x": -5,  "y": 105, "z": 265, "center": false },
+      { "x": -15, "y": 105, "z": 265, "center": false },
+      { "x": -10, "y": 110, "z": 265, "center": false },
+      { "x": -10, "y": 100, "z": 265, "center": false }
+    ]
+  }
+]

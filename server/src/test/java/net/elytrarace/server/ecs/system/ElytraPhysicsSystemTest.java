@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnvTest
-@org.junit.jupiter.api.Disabled("Requires full Minestom player support - run manually")
 class ElytraPhysicsSystemTest {
 
     @Test
     void velocityIsUpdatedWhenFlying(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = new Entity();
@@ -40,6 +40,7 @@ class ElytraPhysicsSystemTest {
     @Test
     void notFlyingSkipsPhysics(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entity = new Entity();
@@ -68,6 +69,7 @@ class ElytraPhysicsSystemTest {
     @Test
     void entityManagerOnlyProcessesMatchingEntities(Env env) {
         var instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
         var player = env.createPlayer(instance, new Pos(0, 60, 0));
 
         var entityManager = new EntityManager();

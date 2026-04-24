@@ -1,0 +1,25 @@
+[
+  {
+    "name": {
+      "namespace": "voyager",
+      "value": "alpha_cup"
+    },
+    "displayName": {
+      "component": "<gradient:#4FC3F7:#FFB74D><bold>First Flight Cup</bold></gradient>"
+    },
+    "maps": [
+      {
+        "mostSigBits": 72057594037944320,
+        "leastSigBits": -9223372036854775807
+      },
+      {
+        "mostSigBits": 144115188075872256,
+        "leastSigBits": -9223372036854775806
+      },
+      {
+        "mostSigBits": 216172782113800192,
+        "leastSigBits": -9223372036854775805
+      }
+    ]
+  }
+]

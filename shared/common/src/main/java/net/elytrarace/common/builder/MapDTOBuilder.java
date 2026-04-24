@@ -166,7 +166,7 @@ public sealed interface MapDTOBuilder {
         }
 
         public @NotNull MapDTO build() {
-            return new FileMapDTO(uuid, name, world, displayName, author, portals);
+            return new FileMapDTO(uuid, name, world, displayName, author, portals, null);
         }
     }
 }

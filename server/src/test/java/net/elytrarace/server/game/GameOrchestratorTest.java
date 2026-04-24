@@ -13,6 +13,7 @@ import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
 import net.elytrarace.server.ecs.system.ScoreDisplaySystem;
 import net.elytrarace.server.physics.Ring;
+import net.elytrarace.server.player.PlayerEventHandler;
 import net.elytrarace.server.player.PlayerServiceImpl;
 import net.elytrarace.server.world.MapInstanceService;
 import net.minestom.server.coordinate.Pos;
@@ -45,8 +46,7 @@ class GameOrchestratorTest {
     @Test
     void startGameCreatesGameEntity(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
 
@@ -59,8 +59,7 @@ class GameOrchestratorTest {
     @Test
     void startGameRegistersSystems(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
 
@@ -74,9 +73,8 @@ class GameOrchestratorTest {
     @Test
     void startGameCreatesPlayerEntities(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
         var player = env.createPlayer(instance, new Pos(0, 42, 0));
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
 
@@ -101,8 +99,7 @@ class GameOrchestratorTest {
     @Test
     void startGameStartsPhaseSeries(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
 
@@ -113,8 +110,7 @@ class GameOrchestratorTest {
     @Test
     void cupProgressStartsAtFirstMap(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
 
@@ -128,9 +124,7 @@ class GameOrchestratorTest {
     @Test
     void loadNextMapSetsActiveMapComponent(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var mapService = stubMapService(env);
-        var orchestrator = new GameOrchestrator(playerService, mapService);
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
         orchestrator.loadNextMap().join();
@@ -144,8 +138,7 @@ class GameOrchestratorTest {
     @Test
     void loadNextMapThrowsWhenNoGameRunning(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         assertThatThrownBy(orchestrator::loadNextMap)
                 .isInstanceOf(IllegalStateException.class)
@@ -155,8 +148,7 @@ class GameOrchestratorTest {
     @Test
     void advanceToNextMapProgressesCup(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
         orchestrator.advanceToNextMap().join();
@@ -169,13 +161,18 @@ class GameOrchestratorTest {
     @Test
     void ecsUpdateProcessesEntitiesWithoutError(Env env) {
         var instance = (InstanceContainer) env.createFlatInstance();
-        var playerService = new PlayerServiceImpl(instance);
-        var orchestrator = new GameOrchestrator(playerService, stubMapService(env));
+        var orchestrator = createOrchestrator(env, instance);
 
         orchestrator.startGame(createTestCup());
 
         // Running one ECS update tick should not throw
         orchestrator.getEntityManager().update(1.0f / 20.0f);
+    }
+
+    private static GameOrchestrator createOrchestrator(Env env, InstanceContainer instance) {
+        var playerService = new PlayerServiceImpl(instance);
+        var eventHandler = new PlayerEventHandler(playerService, instance);
+        return new GameOrchestrator(playerService, stubMapService(env), eventHandler);
     }
 
     /**

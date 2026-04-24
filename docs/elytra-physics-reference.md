@@ -1,8 +1,8 @@
-# Elytra Flight Physics: Complete Reference for Server-Side Implementation
+# Elytra flight physics reference
 
-This document serves as a technical reference for implementing elytra flight physics
-in Minestom (without vanilla code). All formulas are based on decompiled vanilla code
-(Snapshot 15w41b/15w42a, verified up to 1.21.x) and the Minecraft Wiki.
+This document is the technical reference for elytra flight on the Voyager Minestom server. It covers the vanilla formulas, Voyager's client-authority model, velocity unit conventions, and the packets the server actually sends. All formulas are based on decompiled vanilla code (Snapshot 15w41b/15w42a, verified up to 1.21.x) and the Minecraft Wiki.
+
+For the decision record behind the authority model, see [ADR-0002: Elytra flight uses client authority for normal movement](decisions/0002-elytra-flight-client-authority.md).
 
 ---
 
@@ -448,78 +448,92 @@ function decodeVelocity(rawShort) -> double:
 // Maximum representable speed: 32767/8000 = 4.096 blocks/tick = 81.9 blocks/second
 ```
 
-### 6.4 Synchronization Strategy for Minestom
+### 6.4 Voyager synchronization strategy
+
+Voyager does not push velocity to the client every tick. Normal elytra flight is client-authoritative, matching vanilla. The server runs the formula every tick to keep a server-tracked velocity for ring collision and boost math, but only sends `Entity Velocity` packets when an external force changes the motion.
 
 ```pseudocode
-// Recommended server-side implementation:
-
-function onPlayerStartElytraFlying(player):
-    // 1. Validation: Does the player have an elytra equipped?
-    if !hasElytraEquipped(player): return
-    // 2. Validation: Is the player in the air with enough fall height?
-    if player.isOnGround OR player.fallDistance < 1.0: return
-    // 3. Set elytra flag
-    player.setFallFlying(true)
-    // 4. Send metadata packet to all players
-    broadcastEntityMetadata(player, index=0, bit=0x80, value=true)
-
 function onServerTick():
-    for each player in flyingPlayers:
-        // 1. Receive client position and rotation (serverbound)
-        //    -> Player Position/Rotation packets
-        // 2. Calculate server-side physics
-        elytraPhysicsTick(player)
-        // 3. Send calculated velocity to client (every 1-5 ticks)
-        if player.ticksSinceLastVelocityUpdate >= VELOCITY_SYNC_INTERVAL:
-            sendEntityVelocity(player, player.velocity)
-            player.ticksSinceLastVelocityUpdate = 0
-        // 4. Validate position (anti-cheat)
-        validatePlayerPosition(player)
+    for each flying player:
+        // Update the server-tracked velocity so RingCollisionSystem and
+        // FireworkBoostSystem have accurate inputs. Do NOT call setVelocity().
+        flight.velocity = elytraPhysicsTick(flight.velocity, pitch, yaw)
+        flight.previousPosition = player.position
 
-// VELOCITY_SYNC_INTERVAL:
-// - 1 tick:  Precise, but high bandwidth
-// - 3 ticks: Good compromise
-// - 5 ticks: Economical, but noticeable lag
+        // Velocity is sent to the client only by the systems below.
 ```
 
-### 6.5 Anti-Cheat Considerations
+The systems that send velocity to the client are listed in [Section 7](#7-client-authority-model).
 
-```
-- The vanilla server allows a maximum of 80 ticks of floating before kick
-- Elytra flight must be marked as allowed "floating"
-- Check speed upper limit (>81.9 blocks/s is suspicious)
-- Validate firework boost time window
-```
+### 6.5 Anti-cheat considerations
+
+- Vanilla allows a maximum of 80 ticks of floating before it kicks the player. Elytra flight must be marked as allowed floating.
+- Treat sustained speed above 81.9 blocks per second as suspicious.
+- Validate firework boost time windows against `BoostConfig.burnDurationTicks`.
+- Because Voyager trusts the client for normal flight, a modified client can desync for the duration of a flight. The server still owns ring-collision decisions and boost activation, so a desync cannot be used to skip checkpoints or extend boost duration.
 
 ---
 
-## 7. Summary of the Physics Pipeline
+## 7. Client authority model
 
-```
-Every Tick (50ms):
+Vanilla Minecraft runs elytra flight on the client. The server re-simulates the same formula to stay approximately in sync, but it only sends `Entity Velocity` packets for *external* forces — fireworks, knockback, explosions. Voyager adopts the same split. [ADR-0002](decisions/0002-elytra-flight-client-authority.md) records the decision.
 
-1. INPUT:     Client sends position + rotation
-2. VALIDATE:  Check if elytra flight is active and valid
-3. PHYSICS:   Calculate elytra physics:
-              a) Gravity + lift
-              b) Downward glide -> convert to forward motion
-              c) Upward pitch -> altitude from speed
-              d) Direction alignment
-              e) Drag/friction
-4. BOOST:     If firework active: add boost
-5. COLLISION: Check collisions with world
-              -> Calculate damage on impact
-6. RING:      Ring passthrough detection
-              -> Check line segment P0->P1 against ring
-7. POSITION:  New position = old position + velocity
-8. SYNC:      Send velocity packet to client (periodically)
-              Update metadata if needed
-9. DAMAGE:    Durability update every 20 ticks
-```
+### 7.1 Responsibilities
+
+| Concern | Owner | Notes |
+|---|---|---|
+| Player position during normal flight | Client | Reported to the server through position packets |
+| Velocity applied during normal flight | Client | Server tracks a parallel value with the same formula |
+| Ring intersection tests | Server | Uses the server-tracked `previousPosition` and `velocity` for the flight segment |
+| Firework boost impulse | Server | Computed on the tick thread, sent as `Entity Velocity` |
+| Ring `BOOST` and `SLOW` multipliers | Server | Applied to the tracked velocity, sent as `Entity Velocity` when the value changes |
+| Out-of-bounds reset | Server | Sends `Vec.ZERO` before teleporting the player back to spawn |
+
+### 7.2 Drift between server and client velocity
+
+The server-tracked velocity is driven by the same `ElytraPhysics.computeNextVelocity` function the vanilla client runs, so the two values start each tick with the same inputs. They can still drift because:
+
+- The server reads pitch and yaw from the last received position packet, which can lag the client by one tick.
+- Packet loss and latency reorder the inputs.
+- A modified client can simulate a different formula.
+
+Drift is bounded by the matching formula but is not zero. Ring placement and checkpoint tolerances must not rely on sub-block precision on server-tracked position.
+
+### 7.3 When velocity is sent to the client
+
+The server sends `Entity Velocity` to a player only through one of the following paths:
+
+| Trigger | System | Payload |
+|---|---|---|
+| Firework boost burn tick | `FireworkBoostSystem` | `newVel × 20` on every tick the burn counter is above zero |
+| Ring `BOOST` collision | `RingEffectSystem` | `velocity × 1.5 × 20` when a `BOOST` ring fires and the post-effect velocity differs from the pre-effect velocity |
+| Ring `SLOW` collision | `RingEffectSystem` | `velocity × 0.5 × 20` under the same change guard |
+| Out-of-bounds reset | `OutOfBoundsSystem.resetPlayer` | `Vec.ZERO`, sent before the teleport completes |
+
+No other path in the server module pushes velocity for flying players. `ElytraPhysicsSystem` explicitly does not call `player.setVelocity`.
 
 ---
 
-## 8. Sources
+## 8. Velocity unit conventions
+
+Elytra code mixes two unit systems. The server tracker and the boost formula use blocks per tick; Minestom's `Player.setVelocity` uses blocks per second. Every path that hands velocity from the tracker to the client multiplies by `20.0`.
+
+| API | Unit | Notes |
+|---|---|---|
+| `ElytraFlightComponent.getVelocity` / `setVelocity` | blocks per tick | Server-tracked velocity |
+| `ElytraPhysics.computeNextVelocity` | blocks per tick in, blocks per tick out | Stateless per-tick formula |
+| `ElytraPhysics.applyFireworkBoost` | blocks per tick in, blocks per tick out | Applied by `FireworkBoostSystem` |
+| `Player.setVelocity` (Minestom) | blocks per second | Convert by multiplying the per-tick value by `20.0` |
+| `Entity Velocity` packet wire format | 1/8000 blocks per tick (short) | Encoded by Minestom when `setVelocity` is called |
+| `BoostConfig.speedBlocksPerTick` | blocks per tick | Capped per map |
+| `BoostConfig.maxSpeedBlocksPerTick` | blocks per tick | Magnitude clamp in `FireworkBoostSystem` |
+| `RingEffectSystem.BOOST_MULTIPLIER` / `SLOW_MULTIPLIER` | dimensionless | Applied to the server-tracked per-tick velocity |
+
+To send the server-tracked velocity to the client, always use `flight.getVelocity().mul(20.0)`. To read the wire format in a packet capture, divide the short by 8000.
+
+---
+
+## 9. Sources
 
 - Decompiled Elytra Code (Snapshot 15w41b): https://gist.github.com/samsartor/a7ec457aca23a7f3f120
 - Minecraft Wiki - Elytra: https://minecraft.wiki/w/Elytra

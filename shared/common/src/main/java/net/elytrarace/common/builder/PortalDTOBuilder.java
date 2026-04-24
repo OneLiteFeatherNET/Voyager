@@ -51,6 +51,14 @@ public sealed interface PortalDTOBuilder {
     PortalDTOBuilder locations(@NotNull LocationDTO... locations);
 
     /**
+     * Sets the portal type as a raw string (e.g. "STANDARD", "BOOST"). May be {@code null}
+     * to indicate an untyped portal; consumers then fall back to their own default.
+     * @param type the portal type identifier, or {@code null}
+     * @return the builder
+     */
+    PortalDTOBuilder type(String type);
+
+    /**
      * Builds the portal
      * @return the portal
      */
@@ -62,6 +70,7 @@ public sealed interface PortalDTOBuilder {
     final class PortalDTOBuilderImpl implements PortalDTOBuilder {
         private int index;
         private List<LocationDTO> locations = List.of();
+        private String type;
 
         public PortalDTOBuilder index(int index) {
             this.index = index;
@@ -78,8 +87,13 @@ public sealed interface PortalDTOBuilder {
             return this;
         }
 
+        public PortalDTOBuilder type(String type) {
+            this.type = type;
+            return this;
+        }
+
         public @NotNull FilePortalDTO build() {
-            return new FilePortalDTO(index, locations);
+            return new FilePortalDTO(index, locations, type);
         }
     }
 }

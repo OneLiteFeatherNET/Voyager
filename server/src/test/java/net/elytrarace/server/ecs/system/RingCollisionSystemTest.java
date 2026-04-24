@@ -50,15 +50,13 @@ class RingCollisionSystemTest {
         var entityManager = setupEntityManager(map);
 
         var instance = env.createFlatInstance();
-        // Player positioned so that prevPos (pos - velocity) is behind the ring
-        // and currentPos is past the ring
+        // Player at z=2, previousPosition at z=-2 → segment crosses ring at z=0
         var player = env.createPlayer(instance, new Pos(0, 60, 2));
 
         var playerEntity = new Entity();
         var flight = new ElytraFlightComponent();
         flight.setFlying(true);
-        // Velocity of 4 blocks/tick along Z means prevPos = (0, 60, -2)
-        flight.setVelocity(new Vec(0, 0, 4));
+        flight.setPreviousPosition(new Pos(0, 60, -2));
         playerEntity.addComponent(flight);
         playerEntity.addComponent(new PlayerRefComponent(player.getUuid(), player));
 
@@ -87,7 +85,7 @@ class RingCollisionSystemTest {
         var playerEntity = new Entity();
         var flight = new ElytraFlightComponent();
         flight.setFlying(true);
-        flight.setVelocity(new Vec(0, 0, 4));
+        flight.setPreviousPosition(new Pos(0, 60, -2));
         playerEntity.addComponent(flight);
         playerEntity.addComponent(new PlayerRefComponent(player.getUuid(), player));
 
@@ -106,20 +104,20 @@ class RingCollisionSystemTest {
     }
 
     @Test
-    void multipleRingsCanBePassedInOneTick(Env env) {
-        // Two rings close together, both passed in a single high-velocity tick
+    void secondRingIsIgnoredUntilFirstIsPassed(Env env) {
+        // Ring 0 at origin, ring 1 at z=10. Player segment crosses ring 1 but NOT ring 0.
         var map = new MapDefinition("TestMap", Path.of("/tmp/test"),
                 List.of(RING_AT_ORIGIN, RING_AT_Z10), new Pos(0, 60, -20));
         var entityManager = setupEntityManager(map);
 
         var instance = env.createFlatInstance();
-        // Player at z=15, velocity=30 means prevPos at z=-15 -- passes both rings
-        var player = env.createPlayer(instance, new Pos(0, 60, 15));
+        // Player at z=14, previousPosition at z=6 → crosses ring 1 (z=10) but not ring 0 (z=0)
+        var player = env.createPlayer(instance, new Pos(0, 60, 14));
 
         var playerEntity = new Entity();
         var flight = new ElytraFlightComponent();
         flight.setFlying(true);
-        flight.setVelocity(new Vec(0, 0, 30));
+        flight.setPreviousPosition(new Pos(0, 60, 6));
         playerEntity.addComponent(flight);
         playerEntity.addComponent(new PlayerRefComponent(player.getUuid(), player));
 
@@ -132,9 +130,10 @@ class RingCollisionSystemTest {
         entityManager.addEntity(playerEntity);
         entityManager.update(1.0f / 20.0f);
 
-        assertThat(tracker.hasPassed(0)).isTrue();
-        assertThat(tracker.hasPassed(1)).isTrue();
-        assertThat(score.getRingPoints()).isEqualTo(35); // 10 + 25
+        // Ring 1 must NOT be counted because ring 0 was not passed first
+        assertThat(tracker.hasPassed(0)).isFalse();
+        assertThat(tracker.hasPassed(1)).isFalse();
+        assertThat(score.getRingPoints()).isZero();
     }
 
     @Test
@@ -144,13 +143,13 @@ class RingCollisionSystemTest {
         var entityManager = setupEntityManager(map);
 
         var instance = env.createFlatInstance();
-        // Player far away from the ring
+        // Player far off to the side — segment clearly misses the ring
         var player = env.createPlayer(instance, new Pos(100, 60, 2));
 
         var playerEntity = new Entity();
         var flight = new ElytraFlightComponent();
         flight.setFlying(true);
-        flight.setVelocity(new Vec(0, 0, 4));
+        flight.setPreviousPosition(new Pos(100, 60, -2));
         playerEntity.addComponent(flight);
         playerEntity.addComponent(new PlayerRefComponent(player.getUuid(), player));
 
@@ -179,7 +178,7 @@ class RingCollisionSystemTest {
         var playerEntity = new Entity();
         var flight = new ElytraFlightComponent();
         flight.setFlying(false); // Not flying
-        flight.setVelocity(new Vec(0, 0, 4));
+        flight.setPreviousPosition(new Pos(0, 60, -2));
         playerEntity.addComponent(flight);
         playerEntity.addComponent(new PlayerRefComponent(player.getUuid(), player));
 
@@ -188,6 +187,32 @@ class RingCollisionSystemTest {
 
         var score = new ScoreComponent();
         playerEntity.addComponent(score);
+
+        entityManager.addEntity(playerEntity);
+        entityManager.update(1.0f / 20.0f);
+
+        assertThat(tracker.passedCount()).isZero();
+    }
+
+    @Test
+    void noPreviousPositionSkipsCollisionOnFirstTick(Env env) {
+        var map = new MapDefinition("TestMap", Path.of("/tmp/test"),
+                List.of(RING_AT_ORIGIN), new Pos(0, 60, -10));
+        var entityManager = setupEntityManager(map);
+
+        var instance = env.createFlatInstance();
+        var player = env.createPlayer(instance, new Pos(0, 60, 2));
+
+        var playerEntity = new Entity();
+        var flight = new ElytraFlightComponent();
+        flight.setFlying(true);
+        // previousPosition is null (first tick after teleport) → should not detect ring
+        playerEntity.addComponent(flight);
+        playerEntity.addComponent(new PlayerRefComponent(player.getUuid(), player));
+
+        var tracker = new RingTrackerComponent();
+        playerEntity.addComponent(tracker);
+        playerEntity.addComponent(new ScoreComponent());
 
         entityManager.addEntity(playerEntity);
         entityManager.update(1.0f / 20.0f);

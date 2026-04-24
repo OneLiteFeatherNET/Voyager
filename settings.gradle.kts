@@ -14,6 +14,7 @@ dependencyResolutionManagement {
             version("jetbrains-annotations", "26.1.0")
             version("fawe-bom", "1.56")
             version("commons-geometry-euclidean", "1.0")
+            version("archunit", "1.3.0")
             version("run-paper", "3.0.2")
             version("shadow", "9.4.1")
             version("plugin-yml", "0.6.0")
@@ -37,6 +38,7 @@ dependencyResolutionManagement {
             library("fawe.core", "com.fastasyncworldedit", "FastAsyncWorldEdit-Core").withoutVersion()
             library("fawe.bukkit", "com.fastasyncworldedit", "FastAsyncWorldEdit-Bukkit").withoutVersion()
             library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
+            library("archunit.junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
             // Logging — Log4j2 as SLF4J 2.x provider (Minestom ships SLF4J 2.x API)
             version("log4j2", "2.24.3")

@@ -1,0 +1,2 @@
+- [ECS migration doc pattern](project_ecs_migration_pattern.md) — thread-ownership table + pre/post comparison + ordering justification for Netty→ECS migrations
+- [Authority-model divergence pattern](project_authority_divergence_pattern.md) — 5-finding skeleton (vanilla authority, platform API, player movement, drift algebra, external-force carve-out) for client/server authority switches

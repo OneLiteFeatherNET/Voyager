@@ -1,0 +1,23 @@
+{
+  "uuid": {
+    "mostSigBits": 144115188075872256,
+    "leastSigBits": -9223372036854775806
+  },
+  "name": {
+    "namespace": "voyager",
+    "value": "nether_sprint"
+  },
+  "world": "nether-sprint",
+  "displayName": {
+    "component": "<gradient:#D84315:#FFEE58><bold>Nether Sprint</bold></gradient>"
+  },
+  "author": {
+    "component": "<gray>Drift (Design) & Alpha Build Team</gray>"
+  },
+  "portals": [],
+  "boostConfig": {
+    "burnDurationTicks": 28,
+    "maxSpeedBlocksPerTick": 3.5,
+    "cooldownMs": 3000
+  }
+}

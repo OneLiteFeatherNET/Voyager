@@ -117,9 +117,9 @@ final class MapProvider {
                     portalsOpt.ifPresent(list -> list.forEach(portals::add));
                 }
 
-                // Reconstruct full map with portals
+                // Reconstruct full map with portals (boostConfig carried over from deserialized map)
                 var fullMap = new FileMapDTO(map.uuid(), map.name(), map.world(),
-                        map.displayName(), map.author(), portals);
+                        map.displayName(), map.author(), portals, map.boostConfig());
                 this.maps.add(fullMap);
             });
         } catch (IOException e) {
@@ -150,7 +150,7 @@ final class MapProvider {
 
         // Save map metadata (without portals to keep files separate)
         var mapWithoutPortals = new FileMapDTO(map.uuid(), map.name(), map.world(),
-                map.displayName(), map.author(), new TreeSet<>());
+                map.displayName(), map.author(), new TreeSet<>(), map.boostConfig());
         this.fileHandler.save(worldDir.resolve(MAP_FILE), mapWithoutPortals, TypeToken.get(FileMapDTO.class));
 
         // Save portals separately

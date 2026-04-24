@@ -1,5 +1,6 @@
 package net.elytrarace.server.player;
 
+import net.elytrarace.api.database.entity.ElytraPlayerEntity;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
@@ -7,6 +8,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +17,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Default implementation of {@link PlayerService}.
@@ -29,6 +33,7 @@ public final class PlayerServiceImpl implements PlayerService {
     public static final Pos LOBBY_SPAWN = new Pos(0, 2, 0);
 
     private final InstanceContainer lobbyInstance;
+    private final ConcurrentMap<UUID, ElytraPlayerEntity> profileCache = new ConcurrentHashMap<>();
 
     /**
      * Creates a new player service backed by the given lobby instance.
@@ -49,7 +54,23 @@ public final class PlayerServiceImpl implements PlayerService {
     @Override
     public void onPlayerLeave(Player player) {
         LOGGER.info("Player {} ({}) left the server", player.getUsername(), player.getUuid());
-        // Future: remove from active game session, persist stats, etc.
+        profileCache.remove(player.getUuid());
+    }
+
+    @Override
+    public @Nullable ElytraPlayerEntity getProfile(UUID uuid) {
+        Objects.requireNonNull(uuid, "uuid must not be null");
+        return profileCache.get(uuid);
+    }
+
+    @Override
+    public void cacheProfile(UUID uuid, @Nullable ElytraPlayerEntity profile) {
+        Objects.requireNonNull(uuid, "uuid must not be null");
+        if (profile == null) {
+            profileCache.remove(uuid);
+        } else {
+            profileCache.put(uuid, profile);
+        }
     }
 
     @Override
@@ -70,7 +91,7 @@ public final class PlayerServiceImpl implements PlayerService {
 
         player.getInventory().clear();
         player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
-        player.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, 16));
+        player.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, 1));
 
         LOGGER.debug("Equipped player {} with elytra and firework rockets", player.getUsername());
     }
