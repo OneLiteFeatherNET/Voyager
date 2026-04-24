@@ -90,6 +90,6 @@ class NamingConventionTest {
             classes().that().haveSimpleNameStartingWith("Default")
                     .and().areNotInterfaces()
                     .and().doNotHaveModifier(JavaModifier.ABSTRACT)
-                    .should().beFinal()
+                    .should().haveModifier(JavaModifier.FINAL)
                     .because("Default implementations of provider/registry interfaces must be final (ManisGame convention)");
 }
