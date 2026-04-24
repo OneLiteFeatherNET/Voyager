@@ -38,7 +38,7 @@ class DatabaseConfigTest {
     void systemPropertiesOverrideDefaults() {
         System.setProperty("VOYAGER_DB_URL", "jdbc:mariadb://db.prod:3306/voyager");
         System.setProperty("VOYAGER_DB_USER", "prod-user");
-        System.setProperty("VOYAGER_DB_PASSWORD", "s3cret");
+        System.setProperty("VOYAGER_DB_PASSWORD", "test-db-password");
         System.setProperty("VOYAGER_DB_POOL_SIZE", "25");
         System.setProperty("VOYAGER_DB_HBM2DDL", "validate");
         System.setProperty("VOYAGER_DB_SHOW_SQL", "true");
@@ -46,7 +46,7 @@ class DatabaseConfigTest {
         DatabaseConfig config = DatabaseConfig.fromEnvironment();
         assertThat(config.jdbcUrl()).isEqualTo("jdbc:mariadb://db.prod:3306/voyager");
         assertThat(config.username()).isEqualTo("prod-user");
-        assertThat(config.password()).isEqualTo("s3cret");
+        assertThat(config.password()).isEqualTo("test-db-password");
         assertThat(config.poolSize()).isEqualTo(25);
         assertThat(config.hbm2ddlAction()).isEqualTo("validate");
         assertThat(config.showSql()).isTrue();
