@@ -6,7 +6,7 @@ Voyager is a Minecraft elytra racing minigame — think Mario Kart, but you're f
 
 ## The Experiment
 
-This entire project is being designed, architected, implemented, and documented by a team of **22 specialized AI agents** working together through [Claude Code](https://claude.ai/code). Every line of code, every architecture decision, every physics formula, and every piece of documentation was produced through human-AI collaboration.
+This entire project is being designed, architected, implemented, and documented by a team of **24 specialized AI agents** working together through [Claude Code](https://claude.ai/code). Every line of code, every architecture decision, every physics formula, and every piece of documentation was produced through human-AI collaboration.
 
 **This is a prototype for a new way of building games:**
 - A human game designer directs the vision
@@ -16,11 +16,37 @@ This entire project is being designed, architected, implemented, and documented 
 
 We're continuing this approach and want to see how far it can go. Can a team of AI agents, guided by a human, build a polished, competitive Minecraft minigame? That's what we're finding out.
 
+## Current Status
+
+**Alpha v0.1 — in progress.** The core gameplay loop is complete and functional. We are currently wiring persistence, tests, and deployment for the first closed playtest.
+
+| Feature | Status |
+|---|---|
+| Elytra physics (server-authoritative, vanilla formulas) | ✅ Done |
+| Ring collision detection (sequential, AABB line-segment) | ✅ Done |
+| Cup progression (multi-map sequences) | ✅ Done |
+| Scoring — ring points + position bonuses | ✅ Done |
+| Firework boost mechanic (vanilla formula, per-map config) | ✅ Done |
+| HUD — actionbar, BossBar, titles | ✅ Done |
+| Phase system — Lobby → Game → End | ✅ Done |
+| Async Anvil world loading | ✅ Done |
+| Setup plugin (map/cup/ring editor) | ✅ Done |
+| Database persistence (player profiles + race results) | 🔧 Alpha v0.1 |
+| Live standings scoreboard | 🔧 Alpha v0.1 |
+| CloudNet v4 deployment | 🔧 Alpha v0.1 |
+| Spectator mode | 📋 Beta v0.2 |
+| Persistent leaderboards | 📋 Beta v0.2 |
+| Anti-cheat | 📋 Beta v0.2 |
+| Replay system | 📋 Release v1.0 |
+
+**[→ Full Roadmap on GitHub Projects](https://github.com/orgs/OneLiteFeatherNET/projects/19)**
+
 ## The Agent Team
 
 | Agent | Role |
 |---|---|
 | **Product Manager** | Organizes tickets, plans milestones, leads the team |
+| **Project Manager** | Sprint planning, velocity, WIP limits, release checklists |
 | **Architect** | Designs system boundaries, enforces architecture rules |
 | **Game Psychologist** | Ensures every feature maximizes player retention and fun |
 | **Game Designer** | Designs gameplay loops, balancing, and player feedback |
@@ -30,7 +56,7 @@ We're continuing this approach and want to see how far it can go. Can a team of 
 | **Math & Physics** | Writes collision algorithms and ensures numerical stability |
 | **Senior Backend** | Writes clean service and repository code |
 | **Senior ECS** | Builds the Entity-Component-System game loop |
-| **Senior Testing** | Ensures 80%+ test coverage with JUnit 5 |
+| **Senior Testing** | Ensures test coverage with JUnit 5 |
 | **Database Expert** | Designs Hibernate entities and optimizes queries |
 | **Java Performance** | Tunes JVM, GC, and ensures 20 TPS under load |
 | **DevOps** | CI/CD, Docker, CloudNet deployment |
@@ -40,6 +66,7 @@ We're continuing this approach and want to see how far it can go. Can a team of 
 | **Paper Expert** | Maintains the setup plugin that stays on Paper |
 | **Junior Creative** | Brings wild ideas and quick prototypes |
 | **Junior Frontend** | Builds scoreboards, BossBars, and sound design |
+| **Social Media** | Community posts, announcements, changelogs |
 | **Skill Creator** | Builds reusable slash-command workflows |
 | **Agent Architect** | Creates and improves the agents themselves |
 
@@ -67,8 +94,8 @@ shared/common/       ECS framework, services, utilities (platform-agnostic)
 shared/phase/        Game phase lifecycle (Lobby → Game → End)
 shared/conversation-api/  Player prompt system (platform-agnostic)
 shared/database/     Hibernate persistence layer
-docs/                Architecture decisions, research papers, ADRs
-.claude/agents/      The 22 AI agent definitions
+docs/                Architecture decisions, research papers, ADRs, design specs
+.claude/agents/      The 24 AI agent definitions
 .claude/skills/      Reusable slash-command workflows
 ```
 
@@ -84,12 +111,21 @@ docker compose -f docker/mariadb/compose.yml up -d
 # Build the standalone server
 ./gradlew :server:shadowJar
 
-# Run it
+# Run it (DB required — set VOYAGER_DB_URL, VOYAGER_DB_USER, VOYAGER_DB_PASSWORD or use Docker defaults)
 java -jar server/build/libs/*.jar
 
 # Run tests
 ./gradlew test
 ```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `VOYAGER_DB_URL` | `jdbc:mariadb://localhost:3306/voyager-project` | MariaDB connection URL |
+| `VOYAGER_DB_USER` | `voyager-project` | Database username |
+| `VOYAGER_DB_PASSWORD` | *(required)* | Database password |
+| `VOYAGER_DB_POOL_SIZE` | `10` | HikariCP connection pool size |
 
 ## Branch Strategy and Releases
 
