@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.5.0...v1.6.0) (2026-04-25)
+
+
+### Features
+
+* **skills:** add create-issue slash-command skill ([#165](https://github.com/OneLiteFeatherNET/Voyager/issues/165)) ([2d23eb6](https://github.com/OneLiteFeatherNET/Voyager/commit/2d23eb6f13a5cc78876ee34c4f41c862aaa96276))
+
 # [1.5.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.4.0...v1.5.0) (2026-04-25)
 
 
