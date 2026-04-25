@@ -2,8 +2,10 @@ package net.elytrarace.server.phase;
 
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
+import net.elytrarace.server.ecs.component.GameModeComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.persistence.GameResultPersistenceService;
@@ -30,15 +32,14 @@ import java.util.List;
  * finishes, the server is stopped.
  * <p>
  * Final scores are read from {@link ScoreComponent} on player entities in the
- * {@link EntityManager}. Position bonuses (1st: 50, 2nd: 30, 3rd: 20, rest: 10)
- * are applied and displayed as a title overlay.
+ * {@link EntityManager}. In {@link GameMode#RACE} mode, position bonuses are
+ * applied directly from ECS state (1st: +10, 2nd: +6, 3rd: +3, rest: +1).
+ * In {@link GameMode#PRACTICE} mode (and any other) no position bonus is added.
  */
 public final class MinestomEndPhase extends TimedPhase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MinestomEndPhase.class);
     private static final int DEFAULT_END_TICKS = 100;
-    private static final int[] POSITION_BONUSES = {50, 30, 20};
-    private static final int DEFAULT_BONUS = 10;
 
     private final int endTicksValue;
     private final @Nullable EntityManager entityManager;
@@ -118,9 +119,9 @@ public final class MinestomEndPhase extends TimedPhase {
 
     /**
      * Ranks all player entities by {@link ScoreComponent#getTotal()} descending
-     * and applies position bonuses ({@code 50 / 30 / 20 / 10}). Pure and side-effect
-     * free on the input list — returns a new immutable list. Exposed as
-     * package-private for unit testing.
+     * and applies position bonuses in {@link GameMode#RACE}. The mode is read
+     * from the {@link GameModeComponent} attached to the game entity; if no mode
+     * is attached, RACE behaviour is used as the default.
      *
      * @param entityManager source of player entities
      * @return ranked list with bonuses applied (index 0 = 1st place)
@@ -132,11 +133,28 @@ public final class MinestomEndPhase extends TimedPhase {
                         e -> e.getComponent(ScoreComponent.class).getTotal()).reversed())
                 .toList();
 
-        for (int i = 0; i < ranked.size(); i++) {
-            int bonus = i < POSITION_BONUSES.length ? POSITION_BONUSES[i] : DEFAULT_BONUS;
-            ranked.get(i).getComponent(ScoreComponent.class).setPositionBonus(bonus);
+        GameMode mode = findGameMode(entityManager);
+        if (mode == null || mode == GameMode.RACE) {
+            applyPositionBonuses(ranked);
         }
         return ranked;
+    }
+
+    private static @Nullable GameMode findGameMode(EntityManager entityManager) {
+        for (Entity entity : entityManager.getEntities()) {
+            if (entity.hasComponent(GameModeComponent.class)) {
+                return entity.getComponent(GameModeComponent.class).mode();
+            }
+        }
+        return null; // null → default to RACE behaviour
+    }
+
+    private static void applyPositionBonuses(List<Entity> ranked) {
+        int[] bonuses = {10, 6, 3};
+        for (int i = 0; i < ranked.size(); i++) {
+            int bonus = i < bonuses.length ? bonuses[i] : 1;
+            ranked.get(i).getComponent(ScoreComponent.class).addPositionBonus(bonus);
+        }
     }
 
     /**

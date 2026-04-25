@@ -3,6 +3,8 @@ package net.elytrarace.server.phase;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
+import net.elytrarace.server.ecs.component.CupProgressComponent;
+import net.elytrarace.server.ecs.component.ElapsedTimeComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.minestom.server.utils.time.TimeUnit;
 import net.theevilreaper.xerus.api.phase.TickingPhase;
@@ -37,6 +39,9 @@ public final class MinestomGamePhase extends TickingPhase {
      */
     public static final int DEFAULT_RACE_DURATION_TICKS = 6000;
 
+    /** Milliseconds per tick at 20 TPS. */
+    private static final long MS_PER_TICK = 50L;
+
     private final EntityManager entityManager;
     private final int raceDurationTicks;
     private Runnable onGamePhaseFinished;
@@ -66,6 +71,7 @@ public final class MinestomGamePhase extends TickingPhase {
 
     @Override
     public void onUpdate() {
+        updateElapsedTime();          // set timer BEFORE systems process it
         entityManager.update(TICK_DELTA);
         elapsedTicks++;
 
@@ -74,10 +80,24 @@ public final class MinestomGamePhase extends TickingPhase {
             finish();
             return;
         }
-
         if (allPlayersFinished()) {
             LOGGER.info("All players have passed all rings after {} ticks", elapsedTicks);
             finish();
+        }
+    }
+
+    /**
+     * Publishes the current race time to the game entity so any system processing
+     * player entities this tick sees a consistent elapsed-time value. Must run
+     * BEFORE {@link EntityManager#update(float)} on the same tick.
+     */
+    private void updateElapsedTime() {
+        long elapsedMs = (long) elapsedTicks * MS_PER_TICK;
+        for (Entity entity : entityManager.getEntities()) {
+            if (entity.hasComponent(CupProgressComponent.class)) {
+                entity.addComponent(new ElapsedTimeComponent(elapsedMs));
+                return;
+            }
         }
     }
 

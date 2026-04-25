@@ -1,14 +1,18 @@
 package net.elytrarace.server.game;
 
+import net.elytrarace.api.database.repository.MapRecordRepository;
 import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.common.game.scoring.MedalBrackets;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.persistence.GameResultPersistenceService;
 import net.elytrarace.server.persistence.GameResultPersistenceServiceImpl;
 import net.elytrarace.server.ecs.GameEntityFactory;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
+import net.elytrarace.server.ecs.component.BracketConfigComponent;
+import net.elytrarace.server.ecs.component.MapRecordComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.FireworkBoostComponent;
@@ -17,9 +21,11 @@ import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
+import net.elytrarace.server.ecs.system.CompletionDetectionSystem;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.FireworkBoostSystem;
 import net.elytrarace.server.ecs.system.OutOfBoundsSystem;
+import net.elytrarace.server.ecs.system.LandingResetSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
 import net.elytrarace.server.ecs.system.RingEffectSystem;
 import net.elytrarace.server.ecs.system.RingVisualizationSystem;
@@ -38,6 +44,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
 import net.theevilreaper.xerus.api.phase.LinearPhaseSeries;
 import net.theevilreaper.xerus.api.phase.Phase;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +68,7 @@ public final class GameOrchestrator {
     private final PlayerEventHandler playerEventHandler;
     private final EntityManager entityManager;
     private final GameResultPersistenceService gameResultPersistence;
+    private final @Nullable MapRecordRepository mapRecordRepository;
 
     private Entity gameEntity;
     private LinearPhaseSeries<Phase> phaseSeries;
@@ -74,17 +82,26 @@ public final class GameOrchestrator {
                             PlayerEventHandler playerEventHandler,
                             DatabaseService databaseService) {
         this(playerService, mapInstanceService, playerEventHandler,
-                buildPersistenceService(databaseService));
+                buildPersistenceService(databaseService),
+                databaseService != null ? databaseService.getMapRecordRepository().orElse(null) : null);
     }
 
     public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
                             PlayerEventHandler playerEventHandler,
                             GameResultPersistenceService gameResultPersistence) {
+        this(playerService, mapInstanceService, playerEventHandler, gameResultPersistence, null);
+    }
+
+    public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
+                            PlayerEventHandler playerEventHandler,
+                            GameResultPersistenceService gameResultPersistence,
+                            @Nullable MapRecordRepository mapRecordRepository) {
         this.playerService = Objects.requireNonNull(playerService, "playerService must not be null");
         this.mapInstanceService = Objects.requireNonNull(mapInstanceService, "mapInstanceService must not be null");
         this.playerEventHandler = Objects.requireNonNull(playerEventHandler, "playerEventHandler must not be null");
         this.entityManager = new EntityManager();
         this.gameResultPersistence = gameResultPersistence;
+        this.mapRecordRepository = mapRecordRepository;
     }
 
     private static GameResultPersistenceService buildPersistenceService(DatabaseService databaseService) {
@@ -111,23 +128,29 @@ public final class GameOrchestrator {
         Objects.requireNonNull(cup, "cup must not be null");
         LOGGER.info("Starting game for cup '{}' with {} maps", cup.name(), cup.maps().size());
 
-        // Create game entity with cup progress and active map tracking
+        // Create game entity with cup progress and active map tracking. Mode is
+        // attached via GameModeComponent so phases and systems can branch on it
+        // without depending on a strategy abstraction.
         gameEntity = GameEntityFactory.createGameEntity(cup);
         gameEntity.addComponent(new GameModeComponent(cup.mode()));
         entityManager.addEntity(gameEntity);
 
         // Register ECS systems — order matters:
         // 1. RingCollisionSystem reads previousPosition from the LAST tick (before physics updates it)
-        // 2. ElytraPhysicsSystem advances server-tracked velocity and updates previousPosition
-        // 3. FireworkBoostSystem overrides velocity with boost formula when burning
+        // 2. CompletionDetectionSystem classifies finish times once all rings are passed
+        // 3. ElytraPhysicsSystem syncs isFlying from player.isGliding(), advances velocity
+        // 4. LandingResetSystem detects flying→notFlying, resets rings/score for unfinished players
+        // 5. FireworkBoostSystem overrides velocity with boost formula when burning
         entityManager.addSystem(new RingCollisionSystem(entityManager));
+        entityManager.addSystem(new CompletionDetectionSystem(entityManager, mapRecordRepository));
         entityManager.addSystem(new ElytraPhysicsSystem());
+        entityManager.addSystem(new LandingResetSystem());
         entityManager.addSystem(new FireworkBoostSystem());
         entityManager.addSystem(new OutOfBoundsSystem(entityManager, playerService));
         entityManager.addSystem(new RingEffectSystem());
         entityManager.addSystem(new RingVisualizationSystem(entityManager));
         entityManager.addSystem(new SplineVisualizationSystem());
-        entityManager.addSystem(new ScoreDisplaySystem());
+        entityManager.addSystem(new ScoreDisplaySystem(entityManager));
 
         // Create player entities for all currently online players
         for (Player player : playerService.getOnlinePlayers()) {
@@ -271,6 +294,25 @@ public final class GameOrchestrator {
             activeMap.setMapInstance(instance);
             activeMap.setCurrentMap(mapDef);
 
+            // Reset bracket config and clear any previous map's in-session record.
+            gameEntity.addComponent(new BracketConfigComponent(MedalBrackets.DEFAULT));
+            gameEntity.removeComponent(MapRecordComponent.class);
+
+            // Seed the in-session record from the DB (if any), so the first
+            // finisher is classified relative to the all-time best rather than
+            // always receiving DIAMOND on a map where a fast record already exists.
+            String cupName = cupProgress.getCup().name();
+            if (mapRecordRepository != null) {
+                mapRecordRepository.getRecordTime(cupName, mapDef.name())
+                        .thenAccept(opt -> opt.ifPresent(recordMs ->
+                                gameEntity.addComponent(new MapRecordComponent(recordMs))))
+                        .exceptionally(ex -> {
+                            LOGGER.warn("Failed to load map record for ({}, {}): {}",
+                                    cupName, mapDef.name(), ex.getMessage());
+                            return null;
+                        });
+            }
+
             // Push per-map boost config into each player's ECS component
             for (Entity entity : entityManager.getEntities()) {
                 var boostComp = entity.getComponent(FireworkBoostComponent.class);
@@ -292,7 +334,6 @@ public final class GameOrchestrator {
             }
 
             // Show HUD elements via each player's HudComponent
-            String cupName = cupProgress.getCup().name();
             int mapIndex = cupProgress.getCurrentMapIndex() + 1;
             int totalMaps = cupProgress.totalMaps();
             for (Entity entity : entityManager.getEntities()) {

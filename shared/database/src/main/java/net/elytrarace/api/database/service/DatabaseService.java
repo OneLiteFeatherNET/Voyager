@@ -2,6 +2,7 @@ package net.elytrarace.api.database.service;
 
 import net.elytrarace.api.database.repository.ElytraPlayerRepository;
 import net.elytrarace.api.database.repository.GameResultRepository;
+import net.elytrarace.api.database.repository.MapRecordRepository;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,6 +46,11 @@ public sealed interface DatabaseService permits DatabaseServiceImpl {
      * @return The GameResultRepository if it was initialized
      */
     Optional<GameResultRepository> getGameResultRepository();
+
+    /**
+     * @return The MapRecordRepository if it was initialized
+     */
+    Optional<MapRecordRepository> getMapRecordRepository();
 
     /**
      * Creates a database service configured via an external {@code hibernate.cfg.xml}

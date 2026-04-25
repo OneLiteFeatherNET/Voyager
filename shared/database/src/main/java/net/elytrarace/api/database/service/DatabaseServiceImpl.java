@@ -2,7 +2,9 @@ package net.elytrarace.api.database.service;
 
 import net.elytrarace.api.database.repository.ElytraPlayerRepository;
 import net.elytrarace.api.database.repository.GameResultRepository;
+import net.elytrarace.api.database.repository.MapRecordRepository;
 import net.elytrarace.common.utils.ThreadHelper;
+import org.flywaydb.core.Flyway;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
@@ -20,6 +22,7 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     private volatile SessionFactory sessionFactory;
     private volatile ElytraPlayerRepository elytraPlayerRepository;
     private volatile GameResultRepository gameResultRepository;
+    private volatile MapRecordRepository mapRecordRepository;
     private volatile boolean initialized;
 
     DatabaseServiceImpl(@NotNull Path rootPath) {
@@ -35,9 +38,18 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     @Override
     public void init() {
         try {
+            // Flyway is the sole DDL authority (ADR-0011). Run all pending
+            // migrations BEFORE Hibernate boots so a `validate` SessionFactory
+            // sees the up-to-date schema. Skipped when no DatabaseConfig is
+            // present (legacy file-based hibernate.cfg.xml path) — that flow
+            // does not expose JDBC credentials to us programmatically.
+            if (config != null) {
+                runFlywayMigrations(config);
+            }
             this.sessionFactory = syncThreadForServiceLoader(this::createSessionFactory);
             this.elytraPlayerRepository = ElytraPlayerRepository.createInstance(sessionFactory);
             this.gameResultRepository = GameResultRepository.createInstance(sessionFactory);
+            this.mapRecordRepository = MapRecordRepository.createInstance(sessionFactory);
             // Fail-fast connection probe: grab a session immediately so a bad pool or
             // unreachable DB surfaces during init() rather than on the first async call.
             sessionFactory.inSession(session -> session.doWork(connection -> {
@@ -60,6 +72,7 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
         this.initialized = false;
         this.elytraPlayerRepository = null;
         this.gameResultRepository = null;
+        this.mapRecordRepository = null;
     }
 
     @Override
@@ -77,6 +90,21 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
             }
         }
         this.sessionFactory = null;
+    }
+
+    /**
+     * Applies all pending Flyway migrations from {@code classpath:db/migration}.
+     * Uses {@code baselineOnMigrate=true} so existing databases that pre-date
+     * Flyway adoption are stamped as baseline and the V1 backfill is skipped.
+     */
+    private static void runFlywayMigrations(DatabaseConfig config) {
+        Flyway.configure(DatabaseServiceImpl.class.getClassLoader())
+                .dataSource(config.jdbcUrl(), config.username(), config.password())
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .baselineVersion("1")
+                .load()
+                .migrate();
     }
 
     private SessionFactory createSessionFactory() {
@@ -118,5 +146,10 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     @Override
     public Optional<GameResultRepository> getGameResultRepository() {
         return Optional.ofNullable(this.gameResultRepository);
+    }
+
+    @Override
+    public Optional<MapRecordRepository> getMapRecordRepository() {
+        return Optional.ofNullable(this.mapRecordRepository);
     }
 }

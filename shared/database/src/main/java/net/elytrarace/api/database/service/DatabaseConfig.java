@@ -34,7 +34,15 @@ public record DatabaseConfig(
     public static final String DEFAULT_USERNAME = "voyager-project";
     /** Conservative pool default suitable for a single-node game server. */
     public static final int DEFAULT_POOL_SIZE = 10;
-    /** Default schema action: {@code update} for dev, should be {@code validate} in production. */
+    /**
+     * Default schema action for local development: {@code update}.
+     * <p>
+     * Production and staging deployments MUST override this to {@code validate}
+     * via the {@code VOYAGER_DB_HBM2DDL} environment variable. Per ADR-0011,
+     * Flyway is the sole DDL authority and Hibernate only verifies that the
+     * live schema matches the entity model. Letting {@code update} run in
+     * production risks silent, unaudited DDL on top of Flyway-managed tables.
+     */
     public static final String DEFAULT_HBM2DDL = "update";
 
     public DatabaseConfig {

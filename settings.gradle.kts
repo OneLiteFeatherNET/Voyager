@@ -10,6 +10,7 @@ dependencyResolutionManagement {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
             version("minestom", "2026.04.13-1.21.11")
             version("hibernate", "7.3.0.Final")
+            version("flyway", "10.21.0")
             version("mariadb-client", "3.5.7")
             version("jetbrains-annotations", "26.1.0")
             version("fawe-bom", "1.56")
@@ -32,6 +33,8 @@ dependencyResolutionManagement {
             library("xerus", "net.theevilreaper", "xerus").withoutVersion()
             library("hibernate.core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")
             library("hibernate.hikaricp", "org.hibernate.orm", "hibernate-hikaricp").versionRef("hibernate")
+            library("flyway.core", "org.flywaydb", "flyway-core").versionRef("flyway")
+            library("flyway.mysql", "org.flywaydb", "flyway-mysql").versionRef("flyway")
             library("mariadb", "org.mariadb.jdbc", "mariadb-java-client").versionRef("mariadb-client")
             library("jetbrains.annotations", "org.jetbrains", "annotations").versionRef("jetbrains-annotations")
             library("fawe.bom", "com.intellectualsites.bom","bom-newest").versionRef("fawe-bom")
@@ -46,6 +49,7 @@ dependencyResolutionManagement {
             library("log4j2.slf4j2", "org.apache.logging.log4j", "log4j-slf4j2-impl").versionRef("log4j2")
 
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
+            bundle("flyway", listOf("flyway.core", "flyway.mysql"))
             bundle("fawe", listOf("fawe.core", "fawe.bukkit"))
 
             plugin("run-paper", "xyz.jpenilla.run-paper").versionRef("run-paper")

@@ -95,7 +95,7 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
 
             var hud = entity.getComponent(HudComponent.class);
             if (hud != null) {
-                hud.showRingPassed(ring.points());
+                hud.showRingPassed(tracker.passedCount(), rings.size());
             }
         }
     }

@@ -79,6 +79,8 @@ public final class GameResultPersistenceServiceImpl implements GameResultPersist
         int ringPoints = score.getRingPoints();
         int positionBonus = score.getPositionBonus();
         int totalPoints = score.getTotal();
+        // DNF maps to NULL in the database; ScoreComponent#NOT_FINISHED is the in-memory sentinel.
+        Long completionTimeMs = score.hasFinished() ? score.getCompletionTimeMs() : null;
 
         return playerRepository.getElytraPlayerById(playerId)
                 .thenCompose(existing -> {
@@ -105,6 +107,7 @@ public final class GameResultPersistenceServiceImpl implements GameResultPersist
                                 playerEntity, cupName, mapName,
                                 ringPoints, positionBonus, totalPoints,
                                 placement, playedAt);
+                        result.setCompletionTimeMs(completionTimeMs);
                         return gameResultRepository.saveResult(result);
                     });
                 })

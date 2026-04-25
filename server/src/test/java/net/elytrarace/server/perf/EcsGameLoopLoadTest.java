@@ -184,7 +184,7 @@ class EcsGameLoopLoadTest {
         em.addSystem(new RingEffectSystem());
         em.addSystem(new RingVisualizationSystem(em));
         em.addSystem(new SplineVisualizationSystem());
-        em.addSystem(new ScoreDisplaySystem());
+        em.addSystem(new ScoreDisplaySystem(em));
 
         // Pre-load all chunks that spawn positions will fall into before creating players
         for (int i = 0; i < playerCount; i++) {

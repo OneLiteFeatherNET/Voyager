@@ -19,18 +19,20 @@ import java.util.List;
  * @param boostConfig    firework boost settings for this map; defaults to {@link BoostConfig#DEFAULT}
  * @param guidePoints    optional guide points for shaping the ideal racing line between rings
  */
-public record MapDefinition(String name, Path worldDirectory, List<Ring> rings, Pos spawnPos, BoostConfig boostConfig, List<GuidePointDTO> guidePoints) {
+public record MapDefinition(String name, Path worldDirectory, List<Ring> rings, Pos spawnPos,
+                            BoostConfig boostConfig, List<GuidePointDTO> guidePoints) {
+
     public MapDefinition {
         rings = List.copyOf(rings);
         guidePoints = List.copyOf(guidePoints);
     }
 
-    /** Convenience constructor using the default boost configuration. */
+    /** Convenience constructor using the default boost configuration and no guide points. */
     public MapDefinition(String name, Path worldDirectory, List<Ring> rings, Pos spawnPos) {
         this(name, worldDirectory, rings, spawnPos, BoostConfig.DEFAULT, List.of());
     }
 
-    /** Convenience constructor with boost config but no guide points. */
+    /** Convenience constructor with boost config and no guide points. */
     public MapDefinition(String name, Path worldDirectory, List<Ring> rings, Pos spawnPos, BoostConfig boostConfig) {
         this(name, worldDirectory, rings, spawnPos, boostConfig, List.of());
     }
