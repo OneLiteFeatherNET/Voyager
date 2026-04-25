@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.7.0...v1.8.0) (2026-04-25)
+
+
+### Features
+
+* **scoring:** Zeit-Bracket scoring strategy for Race Mode ([#168](https://github.com/OneLiteFeatherNET/Voyager/issues/168)) ([#178](https://github.com/OneLiteFeatherNET/Voyager/issues/178)) ([bdf3a24](https://github.com/OneLiteFeatherNET/Voyager/commit/bdf3a246cc4886118a6b9187510f9347f5bcff46))
+
 # [1.7.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.6.2...v1.7.0) (2026-04-25)
 
 
