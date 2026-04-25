@@ -7,7 +7,7 @@ dependencies {
     compileOnly("net.kyori:adventure-text-minimessage:4.21.0")
     compileOnly("org.slf4j:slf4j-api:2.0.17")
     compileOnly("org.jetbrains:annotations:26.1.0")
-    compileOnly("org.apache.commons:commons-lang3:3.17.0")
+    compileOnly("org.apache.commons:commons-lang3:3.20.0")
     compileOnly("com.google.guava:guava:33.6.0-jre")
 }
 
