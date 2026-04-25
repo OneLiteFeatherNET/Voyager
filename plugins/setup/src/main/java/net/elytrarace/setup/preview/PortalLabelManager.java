@@ -3,7 +3,7 @@ package net.elytrarace.setup.preview;
 import net.elytrarace.common.map.model.LocationDTO;
 import net.elytrarace.common.map.model.PortalDTO;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.translation.GlobalTranslator;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
@@ -38,7 +38,8 @@ public final class PortalLabelManager {
                     center.x() + 0.5, center.y() + 1.5, center.z() + 0.5);
 
             var textDisplay = world.spawn(location, TextDisplay.class, display -> {
-                display.text(Component.text("Portal #" + portal.index(), NamedTextColor.WHITE));
+                display.text(GlobalTranslator.render(
+                        Component.translatable("portal.label.name", Component.text(portal.index())), Locale.US));
                 display.setBillboard(Display.Billboard.CENTER);
                 display.setSeeThrough(true);
                 display.setShadowed(true);

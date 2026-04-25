@@ -5,7 +5,6 @@ import net.minestom.server.command.builder.Command;
 import net.minestom.server.entity.Player;
 import net.minestom.server.MinecraftServer;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +32,7 @@ public final class DevStartCommand extends Command {
                 triggerMapLoad(null);
                 return;
             }
-            player.sendMessage(Component.text("[dev] Skipping lobby — loading map now...", NamedTextColor.YELLOW));
+            player.sendMessage(Component.translatable("dev.skip_lobby"));
             triggerMapLoad(player);
         });
     }
@@ -44,12 +43,14 @@ public final class DevStartCommand extends Command {
                 if (err != null) {
                     LOGGER.error("[dev-start] Failed to start game", err);
                     if (source != null) {
-                        source.sendMessage(Component.text("[dev] Start failed: " + err.getMessage(), NamedTextColor.RED));
+                        source.sendMessage(Component.translatable(
+                                "dev.start_failed",
+                                Component.text(String.valueOf(err.getMessage()))));
                     }
                 } else {
                     LOGGER.info("[dev-start] Game started successfully");
                     MinecraftServer.getConnectionManager().getOnlinePlayers().forEach(p ->
-                        p.sendMessage(Component.text("[dev] Game started! Fly through the rings.", NamedTextColor.GREEN))
+                        p.sendMessage(Component.translatable("dev.game_started"))
                     );
                 }
             });

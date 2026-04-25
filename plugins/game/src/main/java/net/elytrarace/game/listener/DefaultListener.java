@@ -12,7 +12,6 @@ import net.elytrarace.game.phase.PreparationPhase;
 import net.elytrarace.game.service.GameService;
 import net.elytrarace.game.util.ElytraMetadata;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.apache.commons.geometry.euclidean.threed.Vector3D;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -164,11 +163,11 @@ public class DefaultListener implements Listener {
         var cup = this.gameService.getCurrentCup().filter(ResolvedCupDTO.class::isInstance).orElse(null);
         if (cup == null) return;
         if (currentPhase instanceof LobbyPhase) {
-            event.motd(Component.text("CUP: ").append(cup.displayName()));
+            event.motd(Component.translatable("game.motd.cup", Component.translatable("plugin.prefix"), cup.displayName()));
             return;
         }
         if (currentPhase instanceof GamePhase) {
-            event.motd(Component.text("IN-GAME").color(NamedTextColor.RED));
+            event.motd(Component.translatable("game.motd.ingame"));
         }
     }
 

@@ -1,7 +1,6 @@
 package net.elytrarace.setup.testfly;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -103,15 +102,17 @@ public final class TestflyManager {
 
     private void showResults(Player player, TestflySession session) {
         player.sendMessage(Component.empty());
-        player.sendMessage(Component.text("TEST FLY RESULTS", NamedTextColor.GOLD));
-        player.sendMessage(Component.text("Time:    " + session.elapsedFormatted(), NamedTextColor.WHITE));
-        player.sendMessage(Component.text("Portals: " + session.hitCount() + "/" + session.totalPortals() + " hit",
-                NamedTextColor.GREEN));
+        player.sendMessage(Component.translatable("testfly.results.header"));
+        player.sendMessage(Component.translatable("testfly.results.time",
+                Component.text(session.elapsedFormatted())));
+        player.sendMessage(Component.translatable("testfly.results.portals",
+                Component.text(session.hitCount()),
+                Component.text(session.totalPortals())));
 
         var missed = session.missedPortalIndices();
         if (!missed.isEmpty()) {
-            player.sendMessage(Component.text("Missed:  #" + String.join(", #",
-                    missed.stream().map(String::valueOf).toList()), NamedTextColor.RED));
+            player.sendMessage(Component.translatable("testfly.results.missed",
+                    Component.text(String.join(", #", missed.stream().map(String::valueOf).toList()))));
         }
         player.sendMessage(Component.empty());
     }

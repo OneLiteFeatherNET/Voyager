@@ -11,6 +11,6 @@ public record ValidationIssue(Severity severity, Component message) {
             case WARNING -> NamedTextColor.YELLOW;
             case ERROR -> NamedTextColor.RED;
         };
-        return Component.text("[" + severity.name() + "] ", color).append(message);
+        return Component.translatable("validation.issue.prefix", Component.text(severity.name())).color(color).append(message);
     }
 }

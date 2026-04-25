@@ -83,7 +83,7 @@ public class WizardManager {
                         Component.text(total),
                         Component.translatable(step.titleKey())
                 )
-                .append(Component.text(" — "))
+                .append(Component.translatable("wizard.bar.separator"))
                 .append(Component.translatable(step.hintKey()));
     }
 }

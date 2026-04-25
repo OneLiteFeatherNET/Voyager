@@ -17,6 +17,7 @@ import net.elytrarace.server.world.AnvilMapInstanceService;
 import net.elytrarace.server.world.MapInstanceService;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.adventure.MinestomAdventure;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.LightingChunk;
@@ -78,6 +79,7 @@ public final class VoyagerServer {
         System.setProperty("minestom.chunk-view-distance", "32");
         System.setProperty("minestom.entity-view-distance", "32");
         this.server = MinecraftServer.init();
+        MinestomAdventure.AUTOMATIC_COMPONENT_TRANSLATION = true;
 
         LanguageService.create("elytrarace", Key.key("voyager", "lang"), dataPath)
                 .loadLanguage()

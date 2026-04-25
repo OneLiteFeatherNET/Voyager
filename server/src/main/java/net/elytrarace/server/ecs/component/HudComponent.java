@@ -37,14 +37,10 @@ public class HudComponent implements Component {
      * @param currentPoints     accumulated ring points
      */
     public void updateActionbar(double speedBlocksPerSec, int currentPoints) {
-        player.sendActionBar(
-                net.kyori.adventure.text.Component.text("Speed: ", NamedTextColor.WHITE)
-                        .append(net.kyori.adventure.text.Component.text(
-                                String.format("%.1f", speedBlocksPerSec), NamedTextColor.WHITE))
-                        .append(net.kyori.adventure.text.Component.text(
-                                " m/s | Points: ", NamedTextColor.WHITE))
-                        .append(net.kyori.adventure.text.Component.text(
-                                currentPoints, NamedTextColor.WHITE)));
+        player.sendActionBar(net.kyori.adventure.text.Component.translatable(
+                "hud.actionbar",
+                net.kyori.adventure.text.Component.text(String.format("%.1f", speedBlocksPerSec)),
+                net.kyori.adventure.text.Component.text(currentPoints)));
     }
 
     /**
@@ -60,7 +56,11 @@ public class HudComponent implements Component {
         }
         float progress = (float) currentMap / totalMaps;
         cupProgressBar = BossBar.bossBar(
-                net.kyori.adventure.text.Component.text(cupName + " - Map " + currentMap + "/" + totalMaps),
+                net.kyori.adventure.text.Component.translatable(
+                        "hud.cup_progress",
+                        net.kyori.adventure.text.Component.text(cupName),
+                        net.kyori.adventure.text.Component.text(currentMap),
+                        net.kyori.adventure.text.Component.text(totalMaps)),
                 progress,
                 BossBar.Color.BLUE,
                 BossBar.Overlay.PROGRESS);
@@ -89,12 +89,18 @@ public class HudComponent implements Component {
      * @param seconds remaining seconds (0 → "GO!")
      */
     public void showCountdown(int seconds) {
-        var color = seconds <= 1 ? NamedTextColor.RED
-                : seconds <= 2 ? NamedTextColor.YELLOW
-                : NamedTextColor.GREEN;
-        var text = seconds > 0 ? String.valueOf(seconds) : "GO!";
+        net.kyori.adventure.text.Component titleComponent;
+        if (seconds > 0) {
+            var color = seconds <= 1 ? NamedTextColor.RED
+                    : seconds <= 2 ? NamedTextColor.YELLOW
+                    : NamedTextColor.GREEN;
+            titleComponent = net.kyori.adventure.text.Component.text(
+                    String.valueOf(seconds), color, TextDecoration.BOLD);
+        } else {
+            titleComponent = net.kyori.adventure.text.Component.translatable("hud.countdown.go");
+        }
         player.showTitle(Title.title(
-                net.kyori.adventure.text.Component.text(text, color, TextDecoration.BOLD),
+                titleComponent,
                 net.kyori.adventure.text.Component.empty(),
                 Title.Times.times(
                         Duration.ZERO,
@@ -108,8 +114,9 @@ public class HudComponent implements Component {
      * @param points points awarded for the ring
      */
     public void showRingPassed(int points) {
-        player.sendActionBar(
-                net.kyori.adventure.text.Component.text("+" + points, NamedTextColor.GREEN, TextDecoration.BOLD));
+        player.sendActionBar(net.kyori.adventure.text.Component.translatable(
+                "hud.ring_passed",
+                net.kyori.adventure.text.Component.text(points)));
         player.playSound(Sound.sound(
                 SoundEvent.ENTITY_EXPERIENCE_ORB_PICKUP,
                 Sound.Source.MASTER,

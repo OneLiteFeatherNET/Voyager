@@ -8,8 +8,6 @@ import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
 import net.elytrarace.server.persistence.GameResultPersistenceService;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
@@ -154,31 +152,32 @@ public final class MinestomEndPhase extends TimedPhase {
         List<Entity> ranked = rankAndApplyBonuses(entityManager);
         persistResultsAsync(ranked);
 
-        // Build scoreboard message and show to all players
         var scoreboardBuilder = Component.text()
-                .append(Component.text("Final Results", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.translatable("end.final_results"))
                 .append(Component.newline());
 
         for (int i = 0; i < ranked.size(); i++) {
             var ref = ranked.get(i).getComponent(PlayerRefComponent.class);
             var score = ranked.get(i).getComponent(ScoreComponent.class);
-            var color = i == 0 ? NamedTextColor.GOLD : i == 1 ? NamedTextColor.GRAY : NamedTextColor.WHITE;
             scoreboardBuilder
-                    .append(Component.text("#" + (i + 1) + " ", color, TextDecoration.BOLD))
-                    .append(Component.text(ref.getPlayer().getUsername(), color))
-                    .append(Component.text(" — " + score.getTotal() + " pts", NamedTextColor.WHITE))
+                    .append(Component.translatable(
+                            "end.score_line",
+                            Component.text(i + 1),
+                            Component.text(ref.getPlayer().getUsername()),
+                            Component.text(score.getTotal())))
                     .append(Component.newline());
         }
 
         var scoreboard = scoreboardBuilder.build();
         for (Player player : MinecraftServer.getConnectionManager().getOnlinePlayers()) {
             player.showTitle(Title.title(
-                    Component.text("Race Complete!", NamedTextColor.GOLD, TextDecoration.BOLD),
+                    Component.translatable("end.race_complete"),
                     ranked.isEmpty() ? Component.empty()
-                            : Component.text("Winner: " +
-                                    ranked.getFirst().getComponent(PlayerRefComponent.class)
-                                            .getPlayer().getUsername(),
-                                    NamedTextColor.GREEN),
+                            : Component.translatable(
+                                    "end.winner",
+                                    Component.text(ranked.getFirst()
+                                            .getComponent(PlayerRefComponent.class)
+                                            .getPlayer().getUsername())),
                     Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(500))));
             player.sendMessage(scoreboard);
         }

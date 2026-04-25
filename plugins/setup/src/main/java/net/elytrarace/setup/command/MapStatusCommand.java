@@ -5,8 +5,6 @@ import net.elytrarace.common.map.MapService;
 import net.elytrarace.setup.preview.ParticlePreviewManager;
 import net.elytrarace.setup.util.SetupGuard;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.incendo.cloud.context.CommandContext;
 import org.incendo.cloud.paper.PaperCommandManager;
 import org.incendo.cloud.paper.util.sender.PlayerSource;
@@ -50,20 +48,17 @@ public class MapStatusCommand {
         boolean splinePreview = previewManager.hasSplinePreview(player.getUniqueId());
 
         player.sendMessage(Component.empty());
-        player.sendMessage(Component.text("Map Status", NamedTextColor.GOLD, TextDecoration.BOLD));
-        player.sendMessage(status("Map", map.name().asString()));
-        player.sendMessage(Component.text("  Display: ", NamedTextColor.GRAY).append(map.displayName()));
-        player.sendMessage(status("World", map.world()));
-        player.sendMessage(status("Portals", String.valueOf(portalCount)));
-        player.sendMessage(status("Guide Points", String.valueOf(guideCount)));
-        player.sendMessage(status("Portal Preview", portalPreview ? "ON" : "OFF"));
-        player.sendMessage(status("Spline Preview", splinePreview ? "ON" : "OFF"));
+        player.sendMessage(Component.translatable("map.status.header"));
+        player.sendMessage(Component.translatable("map.status.map", Component.text(map.name().asString())));
+        player.sendMessage(Component.translatable("map.status.display", map.displayName()));
+        player.sendMessage(Component.translatable("map.status.world", Component.text(map.world())));
+        player.sendMessage(Component.translatable("map.status.portals", Component.text(portalCount)));
+        player.sendMessage(Component.translatable("map.status.guide_points", Component.text(guideCount)));
+        player.sendMessage(Component.translatable("map.status.portal_preview",
+                Component.text(portalPreview ? "ON" : "OFF")));
+        player.sendMessage(Component.translatable("map.status.spline_preview",
+                Component.text(splinePreview ? "ON" : "OFF")));
         player.sendMessage(Component.empty());
-    }
-
-    private static Component status(String label, String value) {
-        return Component.text("  " + label + ": ", NamedTextColor.GRAY)
-                .append(Component.text(value, NamedTextColor.WHITE));
     }
 
     public static void register(PaperCommandManager<Source> commandManager, MapService mapService,
