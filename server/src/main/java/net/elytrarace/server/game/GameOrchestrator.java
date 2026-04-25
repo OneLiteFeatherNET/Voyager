@@ -334,7 +334,6 @@ public final class GameOrchestrator {
             }
 
             // Show HUD elements via each player's HudComponent
-            String cupName = cupProgress.getCup().name();
             int mapIndex = cupProgress.getCurrentMapIndex() + 1;
             int totalMaps = cupProgress.totalMaps();
             for (Entity entity : entityManager.getEntities()) {

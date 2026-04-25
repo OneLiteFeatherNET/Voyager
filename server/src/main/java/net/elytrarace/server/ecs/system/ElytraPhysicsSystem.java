@@ -47,12 +47,14 @@ public class ElytraPhysicsSystem implements net.elytrarace.common.ecs.System {
         var flight = entity.getComponent(ElytraFlightComponent.class);
         var playerRef = entity.getComponent(PlayerRefComponent.class);
 
-        if (!flight.isFlying()) {
-            return;
+        var player = playerRef.getPlayer();
+        // Minestom does not expose isGliding(); use isOnGround() as the landing proxy.
+        // When the server confirms the player has touched down, clear the flying flag so
+        // LandingResetSystem detects the transition and resets per-map state.
+        if (player.isOnGround()) {
+            flight.setFlying(false);
         }
 
-        var player = playerRef.getPlayer();
-        flight.setFlying(player.isGliding());
         if (!flight.isFlying()) {
             return;
         }

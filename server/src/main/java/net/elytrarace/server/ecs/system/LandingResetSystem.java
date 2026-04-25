@@ -17,7 +17,7 @@ import java.util.UUID;
  * <p>
  * Landing is defined as the flying flag transitioning from {@code true} to
  * {@code false}. {@link ElytraPhysicsSystem} syncs this flag from
- * {@code player.isGliding()} every tick, so it always reflects the real state.
+ * {@code player.isOnGround()} every tick, so it reflects the server-confirmed ground state.
  * <p>
  * Reset is skipped for players who have already finished the map
  * ({@link ScoreComponent#hasFinished()}), so a legitimate finish does not wipe
