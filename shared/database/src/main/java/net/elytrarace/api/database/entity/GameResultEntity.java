@@ -78,18 +78,35 @@ public class GameResultEntity {
     @Column(name = "medal_tier", nullable = true, length = 16)
     private @Nullable MedalTier medalTier;
 
+    /**
+     * Wall-clock map completion time in milliseconds.
+     * {@code null} represents a DNF (did-not-finish): the player never crossed
+     * the final ring before the map ended. Used by Race Mode tie-breakers and
+     * personal-best logic; see Epic #168.
+     */
+    @Column(name = "completion_time_ms", nullable = true)
+    private @Nullable Long completionTimeMs;
+
     public GameResultEntity() {
     }
 
     public GameResultEntity(ElytraPlayerEntity player, String cupName, String mapName, int ringPoints,
                             int positionBonus, int totalPoints, int placement, LocalDateTime playedAt) {
         this(player, cupName, mapName, ringPoints, positionBonus, totalPoints, placement, playedAt,
-                GameMode.RACE, null);
+                GameMode.RACE, null, null);
     }
 
     public GameResultEntity(ElytraPlayerEntity player, String cupName, String mapName, int ringPoints,
                             int positionBonus, int totalPoints, int placement, LocalDateTime playedAt,
                             GameMode gameMode, @Nullable MedalTier medalTier) {
+        this(player, cupName, mapName, ringPoints, positionBonus, totalPoints, placement, playedAt,
+                gameMode, medalTier, null);
+    }
+
+    public GameResultEntity(ElytraPlayerEntity player, String cupName, String mapName, int ringPoints,
+                            int positionBonus, int totalPoints, int placement, LocalDateTime playedAt,
+                            GameMode gameMode, @Nullable MedalTier medalTier,
+                            @Nullable Long completionTimeMs) {
         this.player = player;
         this.cupName = cupName;
         this.mapName = mapName;
@@ -100,6 +117,7 @@ public class GameResultEntity {
         this.playedAt = playedAt;
         this.gameMode = gameMode;
         this.medalTier = medalTier;
+        this.completionTimeMs = completionTimeMs;
     }
 
     public Long getId() {
@@ -184,5 +202,13 @@ public class GameResultEntity {
 
     public void setMedalTier(@Nullable MedalTier medalTier) {
         this.medalTier = medalTier;
+    }
+
+    public @Nullable Long getCompletionTimeMs() {
+        return completionTimeMs;
+    }
+
+    public void setCompletionTimeMs(@Nullable Long completionTimeMs) {
+        this.completionTimeMs = completionTimeMs;
     }
 }

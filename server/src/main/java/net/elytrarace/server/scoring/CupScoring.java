@@ -1,7 +1,8 @@
 package net.elytrarace.server.scoring;
 
+import net.elytrarace.common.game.scoring.MedalTier;
+
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,15 @@ import java.util.UUID;
 
 /**
  * Aggregates player scores across multiple maps within a cup.
+ *
+ * <p>Each call to {@link #addMapResult(List)} stores an immutable snapshot of one
+ * map's final ranking. {@link #getCupRanking()} sums {@code totalPoints} per
+ * player across every recorded map and returns the players sorted by that sum.
+ *
+ * <p>For display purposes the aggregated entry also carries the player's best
+ * (lowest) completion time across all completed maps. The medal tier on the
+ * aggregated entry is intentionally {@code null} — medals only make sense per
+ * map, not for a whole cup.
  */
 public final class CupScoring {
 
@@ -24,23 +34,25 @@ public final class CupScoring {
     }
 
     /**
-     * Returns the overall cup ranking by summing each player's totalPoints
-     * across all completed maps, sorted in descending order.
+     * Returns the overall cup ranking by summing each player's {@code totalPoints}
+     * across all completed maps, sorted in descending order. The aggregated entry
+     * also surfaces the player's best completion time across all maps for display.
      *
      * @return an unmodifiable list of aggregated player scores
      */
     public List<PlayerScore> getCupRanking() {
-        Map<UUID, Integer> aggregated = new HashMap<>();
+        Map<UUID, Aggregate> aggregated = new HashMap<>();
         for (List<PlayerScore> mapScores : mapResults) {
             for (PlayerScore score : mapScores) {
-                aggregated.merge(score.playerId(), score.totalPoints(), Integer::sum);
+                aggregated.computeIfAbsent(score.playerId(), Aggregate::new).accept(score);
             }
         }
-        return aggregated.entrySet().stream()
-                .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
-                // Aggregated scores only carry totalPoints; per-map ringPoints and positionBonus
-                // are not meaningful after summation across maps, so they are set to 0.
-                .map(entry -> new PlayerScore(entry.getKey(), 0, 0, entry.getValue()))
+        return aggregated.values().stream()
+                .sorted((a, b) -> Integer.compare(b.totalPoints, a.totalPoints))
+                // Per-map ringPoints and positionBonus are not meaningful after summation
+                // across maps, so they are set to 0. The best completion time is preserved
+                // for display; medalTier stays null because medals are per-map only.
+                .map(agg -> new PlayerScore(agg.playerId, 0, 0, agg.totalPoints, agg.bestTimeMs, null))
                 .toList();
     }
 
@@ -51,5 +63,32 @@ public final class CupScoring {
      */
     public int getCompletedMaps() {
         return mapResults.size();
+    }
+
+    /**
+     * Mutable accumulator used while folding scores into the cup ranking.
+     * Tracks total points and the best (lowest, non-DNF) completion time.
+     */
+    private static final class Aggregate {
+
+        private final UUID playerId;
+        private int totalPoints;
+        private long bestTimeMs = PlayerScore.DNF_TIME;
+
+        private Aggregate(UUID playerId) {
+            this.playerId = playerId;
+        }
+
+        private void accept(PlayerScore score) {
+            totalPoints += score.totalPoints();
+            long candidate = score.completionTimeMs();
+            boolean candidateValid = candidate >= 0 && score.medalTier() != MedalTier.DNF;
+            if (!candidateValid) {
+                return;
+            }
+            if (bestTimeMs == PlayerScore.DNF_TIME || candidate < bestTimeMs) {
+                bestTimeMs = candidate;
+            }
+        }
     }
 }

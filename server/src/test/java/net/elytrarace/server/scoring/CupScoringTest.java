@@ -33,7 +33,7 @@ class CupScoringTest {
     @Test
     void addMapResult_increasesCompletedMaps() {
         UUID player = UUID.randomUUID();
-        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60)));
+        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60, PlayerScore.DNF_TIME, null)));
 
         assertThat(cupScoring.getCompletedMaps()).isEqualTo(1);
     }
@@ -41,9 +41,9 @@ class CupScoringTest {
     @Test
     void addMultipleMapResults_completedMapsMatchCount() {
         UUID player = UUID.randomUUID();
-        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60)));
-        cupScoring.addMapResult(List.of(new PlayerScore(player, 20, 30, 50)));
-        cupScoring.addMapResult(List.of(new PlayerScore(player, 5, 20, 25)));
+        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60, PlayerScore.DNF_TIME, null)));
+        cupScoring.addMapResult(List.of(new PlayerScore(player, 20, 30, 50, PlayerScore.DNF_TIME, null)));
+        cupScoring.addMapResult(List.of(new PlayerScore(player, 5, 20, 25, PlayerScore.DNF_TIME, null)));
 
         assertThat(cupScoring.getCompletedMaps()).isEqualTo(3);
     }
@@ -55,14 +55,14 @@ class CupScoringTest {
 
         // Map 1: player1=80, player2=50
         cupScoring.addMapResult(List.of(
-                new PlayerScore(player1, 30, 50, 80),
-                new PlayerScore(player2, 20, 30, 50)
+                new PlayerScore(player1, 30, 50, 80, PlayerScore.DNF_TIME, null),
+                new PlayerScore(player2, 20, 30, 50, PlayerScore.DNF_TIME, null)
         ));
 
         // Map 2: player1=40, player2=90
         cupScoring.addMapResult(List.of(
-                new PlayerScore(player1, 10, 30, 40),
-                new PlayerScore(player2, 40, 50, 90)
+                new PlayerScore(player1, 10, 30, 40, PlayerScore.DNF_TIME, null),
+                new PlayerScore(player2, 40, 50, 90, PlayerScore.DNF_TIME, null)
         ));
 
         List<PlayerScore> ranking = cupScoring.getCupRanking();
@@ -83,9 +83,9 @@ class CupScoringTest {
         UUID player3 = UUID.randomUUID();
 
         cupScoring.addMapResult(List.of(
-                new PlayerScore(player1, 5, 10, 15),
-                new PlayerScore(player2, 20, 30, 50),
-                new PlayerScore(player3, 10, 20, 30)
+                new PlayerScore(player1, 5, 10, 15, PlayerScore.DNF_TIME, null),
+                new PlayerScore(player2, 20, 30, 50, PlayerScore.DNF_TIME, null),
+                new PlayerScore(player3, 10, 20, 30, PlayerScore.DNF_TIME, null)
         ));
 
         List<PlayerScore> ranking = cupScoring.getCupRanking();
@@ -102,13 +102,13 @@ class CupScoringTest {
 
         // Map 1: both players
         cupScoring.addMapResult(List.of(
-                new PlayerScore(player1, 30, 50, 80),
-                new PlayerScore(player2, 20, 30, 50)
+                new PlayerScore(player1, 30, 50, 80, PlayerScore.DNF_TIME, null),
+                new PlayerScore(player2, 20, 30, 50, PlayerScore.DNF_TIME, null)
         ));
 
         // Map 2: only player2
         cupScoring.addMapResult(List.of(
-                new PlayerScore(player2, 40, 50, 90)
+                new PlayerScore(player2, 40, 50, 90, PlayerScore.DNF_TIME, null)
         ));
 
         List<PlayerScore> ranking = cupScoring.getCupRanking();
@@ -126,7 +126,7 @@ class CupScoringTest {
     void getCupRanking_singlePlayerSingleMap() {
         UUID player = UUID.randomUUID();
 
-        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60)));
+        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60, PlayerScore.DNF_TIME, null)));
 
         List<PlayerScore> ranking = cupScoring.getCupRanking();
 
@@ -138,13 +138,13 @@ class CupScoringTest {
     @Test
     void getCupRanking_returnsUnmodifiableList() {
         UUID player = UUID.randomUUID();
-        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60)));
+        cupScoring.addMapResult(List.of(new PlayerScore(player, 10, 50, 60, PlayerScore.DNF_TIME, null)));
 
         List<PlayerScore> ranking = cupScoring.getCupRanking();
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 UnsupportedOperationException.class,
-                () -> ranking.add(new PlayerScore(UUID.randomUUID(), 0, 0, 0))
+                () -> ranking.add(new PlayerScore(UUID.randomUUID(), 0, 0, 0, PlayerScore.DNF_TIME, null))
         );
     }
 }

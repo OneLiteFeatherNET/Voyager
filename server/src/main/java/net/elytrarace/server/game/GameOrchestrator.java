@@ -17,6 +17,9 @@ import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
+import net.elytrarace.server.ecs.component.ScoringStrategyComponent;
+import net.elytrarace.server.scoring.ScoringStrategy;
+import net.elytrarace.server.scoring.ScoringStrategyFactory;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.FireworkBoostSystem;
 import net.elytrarace.server.ecs.system.OutOfBoundsSystem;
@@ -111,9 +114,13 @@ public final class GameOrchestrator {
         Objects.requireNonNull(cup, "cup must not be null");
         LOGGER.info("Starting game for cup '{}' with {} maps", cup.name(), cup.maps().size());
 
-        // Create game entity with cup progress and active map tracking
+        // Create game entity with cup progress, active map tracking, and the
+        // mode-specific scoring strategy. Systems and phases read the strategy
+        // from the game entity to stay decoupled from GameMode branching.
         gameEntity = GameEntityFactory.createGameEntity(cup);
         gameEntity.addComponent(new GameModeComponent(cup.mode()));
+        ScoringStrategy scoring = ScoringStrategyFactory.create(cup.mode());
+        gameEntity.addComponent(new ScoringStrategyComponent(scoring));
         entityManager.addEntity(gameEntity);
 
         // Register ECS systems — order matters:
@@ -220,8 +227,12 @@ public final class GameOrchestrator {
                     entityManager.removeEntity(e);
                 });
 
-        // 3. Reset cup progress to first map
+        // 3. Reset cup progress to first map and clear strategy state
         gameEntity.getComponent(CupProgressComponent.class).reset();
+        var strategyComp = gameEntity.getComponent(ScoringStrategyComponent.class);
+        if (strategyComp != null) {
+            strategyComp.strategy().reset();
+        }
 
         // 4. Recreate phase series with fresh phases
         phaseSeries = GamePhaseFactory.createGamePhases(entityManager,

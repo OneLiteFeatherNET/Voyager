@@ -3,7 +3,7 @@ package net.elytrarace.server.game;
 import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.CupFlowService;
-import net.elytrarace.server.scoring.ScoringService;
+import net.elytrarace.server.scoring.ScoringStrategy;
 import net.minestom.server.coordinate.Vec;
 
 import java.util.Collections;
@@ -24,12 +24,12 @@ public final class GameSession {
     private final CupDefinition cup;
     private final GameMode mode;
     private final CupFlowService cupFlow;
-    private final ScoringService scoring;
+    private final ScoringStrategy scoring;
     private final Set<UUID> players = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Vec> playerVelocities = new ConcurrentHashMap<>();
     private final Set<String> passedRings = ConcurrentHashMap.newKeySet();
 
-    public GameSession(UUID sessionId, CupDefinition cup, CupFlowService cupFlow, ScoringService scoring) {
+    public GameSession(UUID sessionId, CupDefinition cup, CupFlowService cupFlow, ScoringStrategy scoring) {
         this.sessionId = sessionId;
         this.cup = cup;
         this.mode = cup.mode();
@@ -53,7 +53,7 @@ public final class GameSession {
         return cupFlow;
     }
 
-    public ScoringService getScoring() {
+    public ScoringStrategy getScoring() {
         return scoring;
     }
 

@@ -2,6 +2,7 @@ package net.elytrarace.server.ecs.system;
 
 import net.elytrarace.common.ecs.Component;
 import net.elytrarace.common.ecs.Entity;
+import net.elytrarace.common.game.scoring.MedalTier;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
@@ -13,14 +14,15 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Updates each player's actionbar HUD with their current speed and score.
+ * Updates each player's actionbar HUD with their current speed and score, and
+ * appends the medal tier once they have completed the map.
  * <p>
  * Only updates while the player is actively flying to avoid spamming the
- * actionbar during lobby or end phases. Throttled to every 4 ticks (5 Hz)
- * and only re-sends when displayed values change, to prevent visual flickering.
+ * actionbar during lobby or end phases. Throttled to every 4 ticks (5 Hz) and
+ * only re-sends when the displayed values change, to prevent visual flickering.
  * <p>
- * All rendering is delegated to {@link HudComponent#updateActionbar} so that
- * formatting logic lives in one place.
+ * All rendering is delegated to {@link HudComponent} so that formatting logic
+ * lives in one place.
  */
 public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
 
@@ -55,16 +57,22 @@ public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
 
         double speedBps = flight.getSpeedBlocksPerSecond();
         int totalScore = score.getTotal();
+        MedalTier medalTier = score.hasFinished() ? score.getMedalTier() : null;
 
-        // Only re-send if values changed (speed rounded to 1 decimal + score)
+        // Only re-send if values changed (speed rounded to 1 decimal + score + medal ordinal)
         long speedKey = Math.round(speedBps * 10);
-        long displayHash = (speedKey << 32) | (totalScore & 0xFFFFFFFFL);
+        long medalKey = medalTier == null ? 0xFFL : (medalTier.ordinal() & 0xFFL);
+        long displayHash = (medalKey << 56) | (speedKey << 32) | (totalScore & 0xFFFFFFFFL);
         Long previous = lastDisplayHash.get(entityId);
         if (previous != null && previous == displayHash) {
             return;
         }
         lastDisplayHash.put(entityId, displayHash);
 
-        hud.updateActionbar(speedBps, totalScore);
+        if (medalTier != null) {
+            hud.updateActionbarWithMedal(speedBps, totalScore, medalTier);
+        } else {
+            hud.updateActionbar(speedBps, totalScore);
+        }
     }
 }

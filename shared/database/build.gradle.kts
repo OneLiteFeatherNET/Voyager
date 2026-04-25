@@ -3,6 +3,7 @@ plugins {
 }
 dependencies {
     implementation(libs.bundles.hibernate)
+    implementation(libs.bundles.flyway)
     implementation(libs.mariadb)
     implementation(libs.jetbrains.annotations)
     implementation(project(":shared:common"))

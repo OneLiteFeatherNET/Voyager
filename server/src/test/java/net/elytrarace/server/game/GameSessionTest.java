@@ -3,7 +3,8 @@ package net.elytrarace.server.game;
 import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.CupFlowServiceImpl;
-import net.elytrarace.server.scoring.ScoringServiceImpl;
+import net.elytrarace.server.scoring.ScoringStrategy;
+import net.elytrarace.server.scoring.ScoringStrategyFactory;
 import net.minestom.server.coordinate.Vec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,11 +20,12 @@ class GameSessionTest {
 
     @BeforeEach
     void setUp() {
+        ScoringStrategy scoring = ScoringStrategyFactory.create(GameMode.RACE);
         session = new GameSession(
                 UUID.randomUUID(),
                 new CupDefinition("Test Cup", GameMode.RACE, List.of()),
                 new CupFlowServiceImpl(),
-                new ScoringServiceImpl()
+                scoring
         );
     }
 

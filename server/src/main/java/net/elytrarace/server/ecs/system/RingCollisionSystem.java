@@ -11,9 +11,11 @@ import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingEffectComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
+import net.elytrarace.server.ecs.component.ScoringStrategyComponent;
 import net.elytrarace.server.physics.Ring;
 import net.elytrarace.server.physics.RingCollisionDetector;
 import net.elytrarace.server.physics.RingType;
+import net.elytrarace.server.scoring.ScoringStrategy;
 import net.minestom.server.coordinate.Vec;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,7 +85,13 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
         Ring ring = rings.get(nextIndex);
         if (RingCollisionDetector.checkPassthrough(ring, prevPos, currentPos)) {
             tracker.markPassed(nextIndex);
+            // Local ECS score keeps the HUD/display fast; the strategy holds the
+            // authoritative score used for ranking and persistence.
             score.addRingPoints(ring.points());
+            ScoringStrategy strategy = findScoringStrategy();
+            if (strategy != null) {
+                strategy.onRingPassed(playerRef.getPlayerId(), ring);
+            }
 
             if (ring.type() == RingType.CHECKPOINT) {
                 tracker.markCheckpointPassed(nextIndex);
@@ -104,6 +112,15 @@ public class RingCollisionSystem implements net.elytrarace.common.ecs.System {
         for (Entity entity : entityManager.getEntities()) {
             if (entity.hasComponent(ActiveMapComponent.class)) {
                 return entity.getComponent(ActiveMapComponent.class).getCurrentMap();
+            }
+        }
+        return null;
+    }
+
+    private @Nullable ScoringStrategy findScoringStrategy() {
+        for (Entity entity : entityManager.getEntities()) {
+            if (entity.hasComponent(ScoringStrategyComponent.class)) {
+                return entity.getComponent(ScoringStrategyComponent.class).strategy();
             }
         }
         return null;

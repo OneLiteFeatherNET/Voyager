@@ -6,7 +6,10 @@ import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
+import net.elytrarace.server.ecs.component.ScoringStrategyComponent;
 import net.elytrarace.server.persistence.GameResultPersistenceService;
+import net.elytrarace.server.scoring.PlayerScore;
+import net.elytrarace.server.scoring.ScoringStrategy;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.MinecraftServer;
@@ -19,8 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * End phase for the Minestom server.
@@ -118,14 +125,61 @@ public final class MinestomEndPhase extends TimedPhase {
 
     /**
      * Ranks all player entities by {@link ScoreComponent#getTotal()} descending
-     * and applies position bonuses ({@code 50 / 30 / 20 / 10}). Pure and side-effect
-     * free on the input list — returns a new immutable list. Exposed as
-     * package-private for unit testing.
+     * and applies position bonuses.
+     * <p>
+     * If a {@link ScoringStrategy} is attached to the game entity, the strategy
+     * is the source of truth: {@link ScoringStrategy#applyMapResults()} runs
+     * first, then position bonuses and medal tiers are propagated back into the
+     * {@link ScoreComponent} so the HUD reflects what the strategy decided.
+     * Without a strategy (legacy unit-test path) the fallback applies the
+     * historical {@code 50 / 30 / 20 / 10} bonuses directly on ECS state.
      *
-     * @param entityManager source of player entities
+     * @param entityManager source of player entities and the strategy component
      * @return ranked list with bonuses applied (index 0 = 1st place)
      */
     static List<Entity> rankAndApplyBonuses(EntityManager entityManager) {
+        ScoringStrategy strategy = findStrategy(entityManager);
+        if (strategy != null) {
+            strategy.applyMapResults();
+            return rankFromStrategy(entityManager, strategy);
+        }
+        return rankWithLegacyBonuses(entityManager);
+    }
+
+    /**
+     * Applies the ranking decided by the strategy to the ECS entities, copying
+     * position bonuses and medal tiers into each {@link ScoreComponent}.
+     */
+    private static List<Entity> rankFromStrategy(EntityManager entityManager, ScoringStrategy strategy) {
+        Map<UUID, Entity> byPlayer = new HashMap<>();
+        for (Entity entity : entityManager.getEntitiesWithComponent(ScoreComponent.class)) {
+            if (entity.hasComponent(PlayerRefComponent.class)) {
+                byPlayer.put(entity.getComponent(PlayerRefComponent.class).getPlayerId(), entity);
+            }
+        }
+
+        List<PlayerScore> ranking = strategy.getRanking();
+        List<Entity> ranked = new ArrayList<>(ranking.size());
+        for (PlayerScore ps : ranking) {
+            Entity entity = byPlayer.get(ps.playerId());
+            if (entity == null) {
+                continue;
+            }
+            ScoreComponent score = entity.getComponent(ScoreComponent.class);
+            score.setPositionBonus(ps.positionBonus());
+            if (ps.medalTier() != null) {
+                score.setMedalTier(ps.medalTier());
+            }
+            ranked.add(entity);
+        }
+        return List.copyOf(ranked);
+    }
+
+    /**
+     * Legacy ranking path used when no {@link ScoringStrategy} is attached
+     * (unit tests that build entities directly).
+     */
+    private static List<Entity> rankWithLegacyBonuses(EntityManager entityManager) {
         List<Entity> ranked = entityManager.getEntitiesWithComponent(ScoreComponent.class).stream()
                 .filter(e -> e.hasComponent(PlayerRefComponent.class))
                 .sorted(Comparator.<Entity, Integer>comparing(
@@ -137,6 +191,15 @@ public final class MinestomEndPhase extends TimedPhase {
             ranked.get(i).getComponent(ScoreComponent.class).setPositionBonus(bonus);
         }
         return ranked;
+    }
+
+    private static @Nullable ScoringStrategy findStrategy(EntityManager entityManager) {
+        for (Entity entity : entityManager.getEntities()) {
+            if (entity.hasComponent(ScoringStrategyComponent.class)) {
+                return entity.getComponent(ScoringStrategyComponent.class).strategy();
+            }
+        }
+        return null;
     }
 
     /**

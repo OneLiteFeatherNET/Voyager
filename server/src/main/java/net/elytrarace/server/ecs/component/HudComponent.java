@@ -1,6 +1,7 @@
 package net.elytrarace.server.ecs.component;
 
 import net.elytrarace.common.ecs.Component;
+import net.elytrarace.common.game.scoring.MedalTier;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -41,6 +42,22 @@ public class HudComponent implements Component {
                 "hud.actionbar",
                 net.kyori.adventure.text.Component.text(String.format("%.1f", speedBlocksPerSec)),
                 net.kyori.adventure.text.Component.text(currentPoints)));
+    }
+
+    /**
+     * Sends the speed/score actionbar line with the player's earned medal tier
+     * appended. Use this once the player has crossed the last ring on the map.
+     *
+     * @param speedBlocksPerSec current speed in blocks per second
+     * @param currentPoints     accumulated ring points
+     * @param medalTier         tier earned for the just-finished map
+     */
+    public void updateActionbarWithMedal(double speedBlocksPerSec, int currentPoints, MedalTier medalTier) {
+        player.sendActionBar(net.kyori.adventure.text.Component.translatable(
+                "hud.actionbar.medal",
+                net.kyori.adventure.text.Component.text(String.format("%.1f", speedBlocksPerSec)),
+                net.kyori.adventure.text.Component.text(currentPoints),
+                net.kyori.adventure.text.Component.text(medalTier.name())));
     }
 
     /**
