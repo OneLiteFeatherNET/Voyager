@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.6.1...v1.6.2) (2026-04-25)
+
+
+### Bug Fixes
+
+* **deps:** update minestom to v2026.04.13-1.21.11 (minor) ([#161](https://github.com/OneLiteFeatherNET/Voyager/issues/161)) ([b307727](https://github.com/OneLiteFeatherNET/Voyager/commit/b307727587e941e649486b3958cfa9ec4879413d))
+
 ## [1.6.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.6.0...v1.6.1) (2026-04-25)
 
 
