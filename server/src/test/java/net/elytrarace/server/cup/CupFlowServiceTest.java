@@ -1,5 +1,6 @@
 package net.elytrarace.server.cup;
 
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.physics.Ring;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -28,7 +29,7 @@ class CupFlowServiceTest {
         var map2 = new MapDefinition("Map 2", Path.of("world2"), List.of(ring), spawn);
         var map3 = new MapDefinition("Map 3", Path.of("world3"), List.of(ring), spawn);
 
-        cup = new CupDefinition("Test Cup", List.of(map1, map2, map3));
+        cup = new CupDefinition("Test Cup", GameMode.RACE, List.of(map1, map2, map3));
     }
 
     @Test
@@ -103,7 +104,7 @@ class CupFlowServiceTest {
 
     @Test
     void startCupWithEmptyMapsThrows() {
-        var emptyCup = new CupDefinition("Empty", List.of());
+        var emptyCup = new CupDefinition("Empty", GameMode.RACE, List.of());
 
         assertThatThrownBy(() -> service.startCup(emptyCup))
                 .isInstanceOf(IllegalArgumentException.class);

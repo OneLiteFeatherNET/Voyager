@@ -5,7 +5,7 @@ dependencies {
     implementation(libs.bundles.hibernate)
     implementation(libs.mariadb)
     implementation(libs.jetbrains.annotations)
-    compileOnly(project(":shared:common"))
+    implementation(project(":shared:common"))
 
     testImplementation(platform("org.junit:junit-bom:5.14.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
