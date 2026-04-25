@@ -2,15 +2,10 @@ package net.elytrarace.server.phase;
 
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
-import net.elytrarace.common.game.scoring.MedalBrackets;
-import net.elytrarace.server.cup.MapDefinition;
-import java.time.Duration;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
-import net.elytrarace.server.ecs.component.PlayerRefComponent;
+import net.elytrarace.server.ecs.component.CupProgressComponent;
+import net.elytrarace.server.ecs.component.ElapsedTimeComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
-import net.elytrarace.server.ecs.component.ScoreComponent;
-import net.elytrarace.server.ecs.component.ScoringStrategyComponent;
-import net.elytrarace.server.scoring.ScoringStrategy;
 import net.minestom.server.utils.time.TimeUnit;
 import net.theevilreaper.xerus.api.phase.TickingPhase;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +46,6 @@ public final class MinestomGamePhase extends TickingPhase {
     private final int raceDurationTicks;
     private Runnable onGamePhaseFinished;
     private int elapsedTicks;
-    private int startTick;
     private boolean finishing = false;
 
     public MinestomGamePhase(EntityManager entityManager) {
@@ -70,7 +64,6 @@ public final class MinestomGamePhase extends TickingPhase {
     public void onStart() {
         finishing = false;
         elapsedTicks = 0;
-        startTick = 0;
         super.onStart();
         LOGGER.info("Game phase started — ECS loop running every tick, race duration {} ticks",
                 raceDurationTicks);
@@ -78,17 +71,15 @@ public final class MinestomGamePhase extends TickingPhase {
 
     @Override
     public void onUpdate() {
+        updateElapsedTime();          // set timer BEFORE systems process it
         entityManager.update(TICK_DELTA);
         elapsedTicks++;
-
-        recordCompletions();
 
         if (elapsedTicks >= raceDurationTicks) {
             LOGGER.info("Race duration expired after {} ticks", elapsedTicks);
             finish();
             return;
         }
-
         if (allPlayersFinished()) {
             LOGGER.info("All players have passed all rings after {} ticks", elapsedTicks);
             finish();
@@ -96,72 +87,18 @@ public final class MinestomGamePhase extends TickingPhase {
     }
 
     /**
-     * Snapshots the completion time for any player that crossed the last ring on
-     * this tick and notifies the {@link ScoringStrategy} so it can classify the
-     * run against the map's medal brackets.
-     * <p>
-     * The check is idempotent — once {@link ScoreComponent#hasFinished()} is
-     * true, the same player is skipped for the remainder of the phase.
+     * Publishes the current race time to the game entity so any system processing
+     * player entities this tick sees a consistent elapsed-time value. Must run
+     * BEFORE {@link EntityManager#update(float)} on the same tick.
      */
-    private void recordCompletions() {
-        MapDefinition map = findCurrentMap();
-        if (map == null) {
-            return;
-        }
-        int totalRings = map.rings().size();
-        if (totalRings <= 0) {
-            return;
-        }
-        ScoringStrategy scoring = findScoringStrategy();
-        // Brackets are pure multipliers; the reference duration lives on the
-        // MapDefinition and is anchored by the strategy when it classifies the
-        // run. Default multipliers cover the standard 1.00/1.10/1.25/1.50 spread.
-        MedalBrackets brackets = MedalBrackets.DEFAULT;
-
-        long elapsedMs = (long) (elapsedTicks - startTick) * MS_PER_TICK;
-
-        for (Entity entity : entityManager.getEntitiesWithComponent(RingTrackerComponent.class)) {
-            if (!entity.hasComponent(ScoreComponent.class) || !entity.hasComponent(PlayerRefComponent.class)) {
-                continue;
-            }
-            ScoreComponent score = entity.getComponent(ScoreComponent.class);
-            if (score.hasFinished()) {
-                continue;
-            }
-            RingTrackerComponent tracker = entity.getComponent(RingTrackerComponent.class);
-            if (tracker.passedCount() < totalRings) {
-                continue;
-            }
-            score.setCompletionTimeMs(elapsedMs);
-            if (scoring != null) {
-                scoring.onMapCompleted(
-                        entity.getComponent(PlayerRefComponent.class).getPlayerId(),
-                        elapsedMs,
-                        brackets,
-                        Duration.ofMillis(map.referenceDurationMs()));
-            }
-            LOGGER.info("Player {} finished the map in {} ms",
-                    entity.getComponent(PlayerRefComponent.class).getPlayer().getUsername(),
-                    elapsedMs);
-        }
-    }
-
-    private @Nullable MapDefinition findCurrentMap() {
+    private void updateElapsedTime() {
+        long elapsedMs = (long) elapsedTicks * MS_PER_TICK;
         for (Entity entity : entityManager.getEntities()) {
-            if (entity.hasComponent(ActiveMapComponent.class)) {
-                return entity.getComponent(ActiveMapComponent.class).getCurrentMap();
+            if (entity.hasComponent(CupProgressComponent.class)) {
+                entity.addComponent(new ElapsedTimeComponent(elapsedMs));
+                return;
             }
         }
-        return null;
-    }
-
-    private @Nullable ScoringStrategy findScoringStrategy() {
-        for (Entity entity : entityManager.getEntities()) {
-            if (entity.hasComponent(ScoringStrategyComponent.class)) {
-                return entity.getComponent(ScoringStrategyComponent.class).strategy();
-            }
-        }
-        return null;
     }
 
     @Override

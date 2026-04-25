@@ -11,10 +11,12 @@ import org.jetbrains.annotations.Nullable;
  * The fields are written by different actors:
  * <ul>
  *   <li>{@code ringPoints} — incremented by {@link net.elytrarace.server.ecs.system.RingCollisionSystem}</li>
- *   <li>{@code positionBonus} — set by the end phase after applying the {@link net.elytrarace.server.scoring.ScoringStrategy}</li>
- *   <li>{@code completionTimeMs} — set by {@link net.elytrarace.server.phase.MinestomGamePhase} when the player
+ *   <li>{@code positionBonus} — set by {@link net.elytrarace.server.phase.MinestomEndPhase}
+ *       after ranking players by total score (RACE mode only)</li>
+ *   <li>{@code completionTimeMs} — set by {@code CompletionDetectionSystem} when the player
  *       crosses the last ring</li>
- *   <li>{@code medalTier} — set by the end phase when the strategy classifies the player's run</li>
+ *   <li>{@code medalTier} — set by {@code CompletionDetectionSystem} when the run is
+ *       classified against the map's bracket configuration</li>
  * </ul>
  */
 public class ScoreComponent implements Component {
@@ -48,6 +50,10 @@ public class ScoreComponent implements Component {
 
     public void setPositionBonus(int positionBonus) {
         this.positionBonus = positionBonus;
+    }
+
+    public void addPositionBonus(int bonus) {
+        this.positionBonus += bonus;
     }
 
     /**

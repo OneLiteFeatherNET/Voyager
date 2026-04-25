@@ -2,14 +2,13 @@ package net.elytrarace.server.phase;
 
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
+import net.elytrarace.server.ecs.component.GameModeComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
-import net.elytrarace.server.ecs.component.ScoringStrategyComponent;
 import net.elytrarace.server.persistence.GameResultPersistenceService;
-import net.elytrarace.server.scoring.PlayerScore;
-import net.elytrarace.server.scoring.ScoringStrategy;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.MinecraftServer;
@@ -22,12 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * End phase for the Minestom server.
@@ -37,15 +32,14 @@ import java.util.UUID;
  * finishes, the server is stopped.
  * <p>
  * Final scores are read from {@link ScoreComponent} on player entities in the
- * {@link EntityManager}. Position bonuses (1st: 50, 2nd: 30, 3rd: 20, rest: 10)
- * are applied and displayed as a title overlay.
+ * {@link EntityManager}. In {@link GameMode#RACE} mode, position bonuses are
+ * applied directly from ECS state (1st: +10, 2nd: +6, 3rd: +3, rest: +1).
+ * In {@link GameMode#PRACTICE} mode (and any other) no position bonus is added.
  */
 public final class MinestomEndPhase extends TimedPhase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MinestomEndPhase.class);
     private static final int DEFAULT_END_TICKS = 100;
-    private static final int[] POSITION_BONUSES = {50, 30, 20};
-    private static final int DEFAULT_BONUS = 10;
 
     private final int endTicksValue;
     private final @Nullable EntityManager entityManager;
@@ -125,81 +119,42 @@ public final class MinestomEndPhase extends TimedPhase {
 
     /**
      * Ranks all player entities by {@link ScoreComponent#getTotal()} descending
-     * and applies position bonuses.
-     * <p>
-     * If a {@link ScoringStrategy} is attached to the game entity, the strategy
-     * is the source of truth: {@link ScoringStrategy#applyMapResults()} runs
-     * first, then position bonuses and medal tiers are propagated back into the
-     * {@link ScoreComponent} so the HUD reflects what the strategy decided.
-     * Without a strategy (legacy unit-test path) the fallback applies the
-     * historical {@code 50 / 30 / 20 / 10} bonuses directly on ECS state.
+     * and applies position bonuses in {@link GameMode#RACE}. The mode is read
+     * from the {@link GameModeComponent} attached to the game entity; if no mode
+     * is attached, RACE behaviour is used as the default.
      *
-     * @param entityManager source of player entities and the strategy component
+     * @param entityManager source of player entities
      * @return ranked list with bonuses applied (index 0 = 1st place)
      */
     static List<Entity> rankAndApplyBonuses(EntityManager entityManager) {
-        ScoringStrategy strategy = findStrategy(entityManager);
-        if (strategy != null) {
-            strategy.applyMapResults();
-            return rankFromStrategy(entityManager, strategy);
-        }
-        return rankWithLegacyBonuses(entityManager);
-    }
-
-    /**
-     * Applies the ranking decided by the strategy to the ECS entities, copying
-     * position bonuses and medal tiers into each {@link ScoreComponent}.
-     */
-    private static List<Entity> rankFromStrategy(EntityManager entityManager, ScoringStrategy strategy) {
-        Map<UUID, Entity> byPlayer = new HashMap<>();
-        for (Entity entity : entityManager.getEntitiesWithComponent(ScoreComponent.class)) {
-            if (entity.hasComponent(PlayerRefComponent.class)) {
-                byPlayer.put(entity.getComponent(PlayerRefComponent.class).getPlayerId(), entity);
-            }
-        }
-
-        List<PlayerScore> ranking = strategy.getRanking();
-        List<Entity> ranked = new ArrayList<>(ranking.size());
-        for (PlayerScore ps : ranking) {
-            Entity entity = byPlayer.get(ps.playerId());
-            if (entity == null) {
-                continue;
-            }
-            ScoreComponent score = entity.getComponent(ScoreComponent.class);
-            score.setPositionBonus(ps.positionBonus());
-            if (ps.medalTier() != null) {
-                score.setMedalTier(ps.medalTier());
-            }
-            ranked.add(entity);
-        }
-        return List.copyOf(ranked);
-    }
-
-    /**
-     * Legacy ranking path used when no {@link ScoringStrategy} is attached
-     * (unit tests that build entities directly).
-     */
-    private static List<Entity> rankWithLegacyBonuses(EntityManager entityManager) {
         List<Entity> ranked = entityManager.getEntitiesWithComponent(ScoreComponent.class).stream()
                 .filter(e -> e.hasComponent(PlayerRefComponent.class))
                 .sorted(Comparator.<Entity, Integer>comparing(
                         e -> e.getComponent(ScoreComponent.class).getTotal()).reversed())
                 .toList();
 
-        for (int i = 0; i < ranked.size(); i++) {
-            int bonus = i < POSITION_BONUSES.length ? POSITION_BONUSES[i] : DEFAULT_BONUS;
-            ranked.get(i).getComponent(ScoreComponent.class).setPositionBonus(bonus);
+        GameMode mode = findGameMode(entityManager);
+        if (mode == null || mode == GameMode.RACE) {
+            applyPositionBonuses(ranked);
         }
         return ranked;
     }
 
-    private static @Nullable ScoringStrategy findStrategy(EntityManager entityManager) {
+    private static @Nullable GameMode findGameMode(EntityManager entityManager) {
         for (Entity entity : entityManager.getEntities()) {
-            if (entity.hasComponent(ScoringStrategyComponent.class)) {
-                return entity.getComponent(ScoringStrategyComponent.class).strategy();
+            if (entity.hasComponent(GameModeComponent.class)) {
+                return entity.getComponent(GameModeComponent.class).mode();
             }
         }
-        return null;
+        return null; // null → default to RACE behaviour
+    }
+
+    private static void applyPositionBonuses(List<Entity> ranked) {
+        int[] bonuses = {10, 6, 3};
+        for (int i = 0; i < ranked.size(); i++) {
+            int bonus = i < bonuses.length ? bonuses[i] : 1;
+            ranked.get(i).getComponent(ScoreComponent.class).addPositionBonus(bonus);
+        }
     }
 
     /**

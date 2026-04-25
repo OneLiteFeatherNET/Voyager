@@ -71,7 +71,10 @@ public final class GameLoopSystem {
                 if (!session.hasPassedRing(playerId, i)
                         && RingCollisionDetector.checkPassthrough(ring, prevPos, currPos)) {
                     session.markRingPassed(playerId, i);
-                    session.getScoring().onRingPassed(playerId, ring);
+                    // Scoring is handled by ECS systems (RingCollisionSystem,
+                    // CompletionDetectionSystem) when the game runs through the
+                    // EntityManager loop. This legacy class remains only for the
+                    // unit-tested helper math.
                 }
             }
         }

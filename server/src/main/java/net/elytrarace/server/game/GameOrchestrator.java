@@ -3,12 +3,14 @@ package net.elytrarace.server.game;
 import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
+import net.elytrarace.common.game.scoring.MedalBrackets;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.persistence.GameResultPersistenceService;
 import net.elytrarace.server.persistence.GameResultPersistenceServiceImpl;
 import net.elytrarace.server.ecs.GameEntityFactory;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
+import net.elytrarace.server.ecs.component.BracketConfigComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.FireworkBoostComponent;
@@ -17,9 +19,7 @@ import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
-import net.elytrarace.server.ecs.component.ScoringStrategyComponent;
-import net.elytrarace.server.scoring.ScoringStrategy;
-import net.elytrarace.server.scoring.ScoringStrategyFactory;
+import net.elytrarace.server.ecs.system.CompletionDetectionSystem;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.FireworkBoostSystem;
 import net.elytrarace.server.ecs.system.OutOfBoundsSystem;
@@ -44,6 +44,7 @@ import net.theevilreaper.xerus.api.phase.Phase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -114,20 +115,20 @@ public final class GameOrchestrator {
         Objects.requireNonNull(cup, "cup must not be null");
         LOGGER.info("Starting game for cup '{}' with {} maps", cup.name(), cup.maps().size());
 
-        // Create game entity with cup progress, active map tracking, and the
-        // mode-specific scoring strategy. Systems and phases read the strategy
-        // from the game entity to stay decoupled from GameMode branching.
+        // Create game entity with cup progress and active map tracking. Mode is
+        // attached via GameModeComponent so phases and systems can branch on it
+        // without depending on a strategy abstraction.
         gameEntity = GameEntityFactory.createGameEntity(cup);
         gameEntity.addComponent(new GameModeComponent(cup.mode()));
-        ScoringStrategy scoring = ScoringStrategyFactory.create(cup.mode());
-        gameEntity.addComponent(new ScoringStrategyComponent(scoring));
         entityManager.addEntity(gameEntity);
 
         // Register ECS systems — order matters:
         // 1. RingCollisionSystem reads previousPosition from the LAST tick (before physics updates it)
-        // 2. ElytraPhysicsSystem advances server-tracked velocity and updates previousPosition
-        // 3. FireworkBoostSystem overrides velocity with boost formula when burning
+        // 2. CompletionDetectionSystem classifies finish times once all rings are passed
+        // 3. ElytraPhysicsSystem advances server-tracked velocity and updates previousPosition
+        // 4. FireworkBoostSystem overrides velocity with boost formula when burning
         entityManager.addSystem(new RingCollisionSystem(entityManager));
+        entityManager.addSystem(new CompletionDetectionSystem(entityManager));
         entityManager.addSystem(new ElytraPhysicsSystem());
         entityManager.addSystem(new FireworkBoostSystem());
         entityManager.addSystem(new OutOfBoundsSystem(entityManager, playerService));
@@ -227,12 +228,8 @@ public final class GameOrchestrator {
                     entityManager.removeEntity(e);
                 });
 
-        // 3. Reset cup progress to first map and clear strategy state
+        // 3. Reset cup progress to first map
         gameEntity.getComponent(CupProgressComponent.class).reset();
-        var strategyComp = gameEntity.getComponent(ScoringStrategyComponent.class);
-        if (strategyComp != null) {
-            strategyComp.strategy().reset();
-        }
 
         // 4. Recreate phase series with fresh phases
         phaseSeries = GamePhaseFactory.createGamePhases(entityManager,
@@ -281,6 +278,12 @@ public final class GameOrchestrator {
             var activeMap = gameEntity.getComponent(ActiveMapComponent.class);
             activeMap.setMapInstance(instance);
             activeMap.setCurrentMap(mapDef);
+
+            // Update bracket config for the new map so CompletionDetectionSystem
+            // classifies finish times against the right reference duration.
+            gameEntity.addComponent(new BracketConfigComponent(
+                    MedalBrackets.DEFAULT,
+                    Duration.ofMillis(mapDef.referenceDurationMs())));
 
             // Push per-map boost config into each player's ECS component
             for (Entity entity : entityManager.getEntities()) {
