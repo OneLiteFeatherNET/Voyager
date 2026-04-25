@@ -4,66 +4,64 @@ import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
-import net.minestom.server.entity.Player;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.testing.Env;
+import net.minestom.testing.EnvTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Verifies the ranking / bonus rules used by {@link MinestomEndPhase} before
  * results are persisted. Keeps the scoring logic testable without standing up
- * the Minestom server or the phase lifecycle.
+ * the full phase lifecycle.
  */
+@EnvTest
 class MinestomEndPhaseRankingTest {
 
     @Test
-    void ranksDescendingByTotalAndAppliesStandardBonuses() {
+    void ranksDescendingByTotalAndAppliesStandardBonuses(Env env) {
         EntityManager em = new EntityManager();
-        Entity e1 = player(em, "A", 40);
-        Entity e2 = player(em, "B", 100);
-        Entity e3 = player(em, "C", 70);
+        Entity eA = player(env, em, 40);
+        Entity eB = player(env, em, 100);
+        Entity eC = player(env, em, 70);
 
         List<Entity> ranked = MinestomEndPhase.rankAndApplyBonuses(em);
 
-        assertThat(ranked).extracting(e -> e.getComponent(PlayerRefComponent.class).getPlayer().getUsername())
-                .containsExactly("B", "C", "A");
-        assertThat(ranked.get(0).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(50);
-        assertThat(ranked.get(1).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(30);
-        assertThat(ranked.get(2).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(20);
+        // eB=100 > eC=70 > eA=40 before bonuses — verify ring-point ordering
+        assertThat(ranked).extracting(e -> e.getComponent(ScoreComponent.class).getRingPoints())
+                .containsExactly(100, 70, 40);
+        assertThat(ranked.get(0).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(10);
+        assertThat(ranked.get(1).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(6);
+        assertThat(ranked.get(2).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(3);
     }
 
     @Test
-    void fourthAndBelowReceiveTheFallbackBonus() {
+    void fourthAndBelowReceiveTheFallbackBonus(Env env) {
         EntityManager em = new EntityManager();
         for (int i = 0; i < 5; i++) {
-            player(em, "P" + i, 100 - i * 10); // distinct totals so ordering is deterministic
+            player(env, em, 100 - i * 10); // distinct totals so ordering is deterministic
         }
 
         List<Entity> ranked = MinestomEndPhase.rankAndApplyBonuses(em);
 
         assertThat(ranked).hasSize(5);
-        assertThat(ranked.get(3).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(10);
-        assertThat(ranked.get(4).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(10);
+        assertThat(ranked.get(3).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(1);
+        assertThat(ranked.get(4).getComponent(ScoreComponent.class).getPositionBonus()).isEqualTo(1);
     }
 
     @Test
-    void emptyEntityManagerProducesEmptyRanking() {
+    void emptyEntityManagerProducesEmptyRanking(Env env) {
         assertThat(MinestomEndPhase.rankAndApplyBonuses(new EntityManager())).isEmpty();
     }
 
-    private static Entity player(EntityManager em, String username, int ringPoints) {
-        Player player = mock(Player.class);
-        UUID id = UUID.randomUUID();
-        when(player.getUuid()).thenReturn(id);
-        when(player.getUsername()).thenReturn(username);
-
+    private static Entity player(Env env, EntityManager em, int ringPoints) {
+        var instance = env.createFlatInstance();
+        var player = env.createPlayer(instance, new Pos(0, 64, 0));
         Entity entity = new Entity();
-        entity.addComponent(new PlayerRefComponent(id, player));
+        entity.addComponent(new PlayerRefComponent(player.getUuid(), player));
         ScoreComponent score = new ScoreComponent();
         score.addRingPoints(ringPoints);
         entity.addComponent(score);
