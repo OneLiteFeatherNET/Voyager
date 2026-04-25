@@ -2,18 +2,34 @@ package net.elytrarace.api.database.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import net.elytrarace.common.game.mode.GameMode;
+import net.elytrarace.common.game.scoring.MedalTier;
+import org.hibernate.annotations.ColumnDefault;
+import org.jetbrains.annotations.Nullable;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "game_results")
+@Table(
+        name = "game_results",
+        indexes = {
+                // "my last 10 races/practices" — most-recent-first lookup per player+mode.
+                // playedAt is the existing finish timestamp on this table.
+                @Index(name = "idx_game_results_player_mode_played",
+                        columnList = "player_id, game_mode, playedAt DESC")
+        }
+)
 public class GameResultEntity {
 
     @Id
@@ -45,11 +61,35 @@ public class GameResultEntity {
     @Column(nullable = false)
     private LocalDateTime playedAt;
 
+    /**
+     * Discriminator between competitive races and solo practice runs.
+     * STRING enum mapping: stable across enum reordering and human-readable in DB dumps.
+     * Defaults to {@link GameMode#RACE} so existing rows remain valid after the column is added.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "game_mode", nullable = false, length = 16)
+    @ColumnDefault("'RACE'")
+    private GameMode gameMode = GameMode.RACE;
+
+    /**
+     * Medal tier earned in a practice run; {@code null} for race results.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "medal_tier", nullable = true, length = 16)
+    private @Nullable MedalTier medalTier;
+
     public GameResultEntity() {
     }
 
     public GameResultEntity(ElytraPlayerEntity player, String cupName, String mapName, int ringPoints,
                             int positionBonus, int totalPoints, int placement, LocalDateTime playedAt) {
+        this(player, cupName, mapName, ringPoints, positionBonus, totalPoints, placement, playedAt,
+                GameMode.RACE, null);
+    }
+
+    public GameResultEntity(ElytraPlayerEntity player, String cupName, String mapName, int ringPoints,
+                            int positionBonus, int totalPoints, int placement, LocalDateTime playedAt,
+                            GameMode gameMode, @Nullable MedalTier medalTier) {
         this.player = player;
         this.cupName = cupName;
         this.mapName = mapName;
@@ -58,6 +98,8 @@ public class GameResultEntity {
         this.totalPoints = totalPoints;
         this.placement = placement;
         this.playedAt = playedAt;
+        this.gameMode = gameMode;
+        this.medalTier = medalTier;
     }
 
     public Long getId() {
@@ -126,5 +168,21 @@ public class GameResultEntity {
 
     public void setPlayedAt(LocalDateTime playedAt) {
         this.playedAt = playedAt;
+    }
+
+    public GameMode getGameMode() {
+        return gameMode;
+    }
+
+    public void setGameMode(GameMode gameMode) {
+        this.gameMode = gameMode;
+    }
+
+    public @Nullable MedalTier getMedalTier() {
+        return medalTier;
+    }
+
+    public void setMedalTier(@Nullable MedalTier medalTier) {
+        this.medalTier = medalTier;
     }
 }

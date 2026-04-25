@@ -1,5 +1,6 @@
 package net.elytrarace.server.ecs.component;
 
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.physics.Ring;
@@ -22,7 +23,7 @@ class CupProgressComponentTest {
 
     @Test
     void initialStateIsFirstMap() {
-        var cup = new CupDefinition("Test Cup", List.of(map("map1"), map("map2")));
+        var cup = new CupDefinition("Test Cup", GameMode.RACE, List.of(map("map1"), map("map2")));
         var progress = new CupProgressComponent(cup);
 
         assertThat(progress.getCurrentMapIndex()).isZero();
@@ -34,7 +35,7 @@ class CupProgressComponentTest {
 
     @Test
     void advanceMovesToNextMap() {
-        var cup = new CupDefinition("Test Cup", List.of(map("map1"), map("map2"), map("map3")));
+        var cup = new CupDefinition("Test Cup", GameMode.RACE, List.of(map("map1"), map("map2"), map("map3")));
         var progress = new CupProgressComponent(cup);
 
         progress.advance();
@@ -46,7 +47,7 @@ class CupProgressComponentTest {
 
     @Test
     void advancePastLastMapMarksCupComplete() {
-        var cup = new CupDefinition("Test Cup", List.of(map("map1")));
+        var cup = new CupDefinition("Test Cup", GameMode.RACE, List.of(map("map1")));
         var progress = new CupProgressComponent(cup);
 
         progress.advance();
@@ -57,7 +58,7 @@ class CupProgressComponentTest {
 
     @Test
     void cupReferenceIsPreserved() {
-        var cup = new CupDefinition("Grand Prix", List.of(map("a"), map("b")));
+        var cup = new CupDefinition("Grand Prix", GameMode.RACE, List.of(map("a"), map("b")));
         var progress = new CupProgressComponent(cup);
 
         assertThat(progress.getCup()).isSameAs(cup);

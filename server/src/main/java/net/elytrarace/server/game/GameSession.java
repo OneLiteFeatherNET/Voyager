@@ -1,5 +1,6 @@
 package net.elytrarace.server.game;
 
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.CupFlowService;
 import net.elytrarace.server.scoring.ScoringService;
@@ -21,6 +22,7 @@ public final class GameSession {
 
     private final UUID sessionId;
     private final CupDefinition cup;
+    private final GameMode mode;
     private final CupFlowService cupFlow;
     private final ScoringService scoring;
     private final Set<UUID> players = ConcurrentHashMap.newKeySet();
@@ -30,8 +32,13 @@ public final class GameSession {
     public GameSession(UUID sessionId, CupDefinition cup, CupFlowService cupFlow, ScoringService scoring) {
         this.sessionId = sessionId;
         this.cup = cup;
+        this.mode = cup.mode();
         this.cupFlow = cupFlow;
         this.scoring = scoring;
+    }
+
+    public GameMode getMode() {
+        return mode;
     }
 
     public UUID getSessionId() {

@@ -1,5 +1,6 @@
 package net.elytrarace.server.game;
 
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.CupFlowServiceImpl;
 import net.elytrarace.server.scoring.ScoringServiceImpl;
@@ -20,7 +21,7 @@ class GameSessionTest {
     void setUp() {
         session = new GameSession(
                 UUID.randomUUID(),
-                new CupDefinition("Test Cup", List.of()),
+                new CupDefinition("Test Cup", GameMode.RACE, List.of()),
                 new CupFlowServiceImpl(),
                 new ScoringServiceImpl()
         );

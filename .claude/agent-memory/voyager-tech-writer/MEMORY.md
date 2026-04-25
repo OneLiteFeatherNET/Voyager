@@ -2,3 +2,4 @@
 - [ecs-system-registration](ecs_system_registration.md) — canonical steps and ordering rules for registering a new ECS system in GameOrchestrator
 - [elytra-authority-model](elytra_authority_model.md) — client-authority model for elytra flight; which systems actually push velocity to the client, and the blocks/tick vs blocks/second unit boundary
 - [gamemode-and-scoring-decisions](gamemode-and-scoring-decisions.md) — ADRs 0003/0004/0005: Race bracket scoring, Practice Mode redesign, GameMode enum
+- [adr-0011-flyway](adr-0011-flyway.md) — ADR-0011: Flyway as sole DDL authority, Hibernate set to validate, baseline V1__initial_schema.sql

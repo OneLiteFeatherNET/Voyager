@@ -3,6 +3,7 @@ package net.elytrarace.server.cup;
 import net.elytrarace.common.cup.CupService;
 import net.elytrarace.common.cup.model.FileCupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.common.guide.GuidePointStore;
 import net.elytrarace.common.map.MapService;
 import net.elytrarace.common.map.model.FileMapDTO;
@@ -13,6 +14,7 @@ import net.elytrarace.server.physics.RingType;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,8 +78,9 @@ public final class CupLoader {
                 return Optional.empty();
             }
 
-            LOGGER.info("Loaded cup '{}' with {} maps", cupDTO.name().asString(), maps.size());
-            return Optional.of(new CupDefinition(cupDTO.name().asString(), maps));
+            GameMode mode = resolveMode(cupDTO);
+            LOGGER.info("Loaded cup '{}' (mode={}) with {} maps", cupDTO.name().asString(), mode.dslKey(), maps.size());
+            return Optional.of(new CupDefinition(cupDTO.name().asString(), mode, maps));
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -87,6 +90,33 @@ public final class CupLoader {
             LOGGER.error("Failed to resolve maps for cup '{}'", cupDTO.name().asString(), e.getCause());
             return Optional.empty();
         }
+    }
+
+    /**
+     * Resolves the {@link GameMode} for a cup. The current {@link FileCupDTO} schema
+     * does not yet carry a mode field, so this returns {@link GameMode#RACE} as the
+     * default. When the DTO is extended in a future epic, the raw value should be
+     * passed through {@link #parseMode(String, String)} so unknown values fall back
+     * to RACE consistently.
+     */
+    private GameMode resolveMode(@NotNull FileCupDTO cupDTO) {
+        return parseMode(null, cupDTO.name().asString());
+    }
+
+    /**
+     * Parses an optional raw mode string, falling back to {@link GameMode#RACE}
+     * when the value is absent, blank, or unrecognised.
+     */
+    private GameMode parseMode(@Nullable String rawMode, @NotNull String cupName) {
+        if (rawMode == null || rawMode.isBlank()) {
+            return GameMode.RACE;
+        }
+        GameMode resolved = GameMode.byName(rawMode);
+        if (resolved == null) {
+            LOGGER.warn("Cup '{}' has unknown mode '{}' — falling back to RACE", cupName, rawMode);
+            return GameMode.RACE;
+        }
+        return resolved;
     }
 
     /**

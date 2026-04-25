@@ -12,6 +12,7 @@ import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.FireworkBoostComponent;
+import net.elytrarace.server.ecs.component.GameModeComponent;
 import net.elytrarace.server.ecs.component.HudComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
@@ -112,6 +113,7 @@ public final class GameOrchestrator {
 
         // Create game entity with cup progress and active map tracking
         gameEntity = GameEntityFactory.createGameEntity(cup);
+        gameEntity.addComponent(new GameModeComponent(cup.mode()));
         entityManager.addEntity(gameEntity);
 
         // Register ECS systems — order matters:
@@ -136,6 +138,7 @@ public final class GameOrchestrator {
         // - onMapSwitch: loadNextMap() is triggered when lobby ends
         // - onGamePhaseFinished: advance to next map or let series proceed to end phase
         phaseSeries = GamePhaseFactory.createGamePhases(entityManager,
+                cup.mode(),
                 () -> loadNextMap().exceptionally(ex -> {
                     LOGGER.error("Failed to load first map after lobby", ex);
                     return null;
@@ -222,6 +225,7 @@ public final class GameOrchestrator {
 
         // 4. Recreate phase series with fresh phases
         phaseSeries = GamePhaseFactory.createGamePhases(entityManager,
+                gameEntity.getComponent(GameModeComponent.class).mode(),
                 () -> loadNextMap().exceptionally(ex -> {
                     LOGGER.error("Failed to load map after lobby", ex);
                     return null;

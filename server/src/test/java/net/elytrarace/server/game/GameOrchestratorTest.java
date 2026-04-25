@@ -1,6 +1,7 @@
 package net.elytrarace.server.game;
 
 import net.elytrarace.common.ecs.Entity;
+import net.elytrarace.common.game.mode.GameMode;
 import net.elytrarace.server.cup.CupDefinition;
 import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
@@ -40,7 +41,7 @@ class GameOrchestratorTest {
     private static CupDefinition createTestCup() {
         var map1 = new MapDefinition("Map1", Path.of("/tmp/map1"), List.of(TEST_RING), new Pos(0, 60, 0));
         var map2 = new MapDefinition("Map2", Path.of("/tmp/map2"), List.of(TEST_RING), new Pos(0, 60, 0));
-        return new CupDefinition("TestCup", List.of(map1, map2));
+        return new CupDefinition("TestCup", GameMode.RACE, List.of(map1, map2));
     }
 
     @Test
