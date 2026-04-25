@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.3.0...v1.4.0) (2026-04-25)
+
+
+### Features
+
+* **i18n:** P0 — migrate all in-game strings to Component.translatable() ([#159](https://github.com/OneLiteFeatherNET/Voyager/issues/159)) ([ea04435](https://github.com/OneLiteFeatherNET/Voyager/commit/ea04435c57392617ab41490a2b531320cfa05b81))
+
 # [1.3.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.2.0...v1.3.0) (2026-04-24)
 
 
