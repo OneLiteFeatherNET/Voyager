@@ -1,20 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    ":semanticCommitsDisabled"
-  ],
-  "ignoreDeps": [],
-  "labels": [
-    "Renovate"
-  ],
-  "rebaseWhen": "conflicted",
-  "packageRules": [
-    {
-      "matchUpdateTypes": [
-        "patch"
-      ],
-      "automerge": true
-    }
+    "github>OneLiteFeatherNET/renovate:default(OneLiteFeatherNET/voyager-maintainers)",
+    "github>OneLiteFeatherNET/renovate:minestom",
+    "github>OneLiteFeatherNET/renovate:paper"
   ]
 }
