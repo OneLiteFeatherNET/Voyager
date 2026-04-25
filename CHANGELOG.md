@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.6.2...v1.7.0) (2026-04-25)
+
+
+### Features
+
+* **game:** introduce GameMode enum and thread through session/orchestrator ([#176](https://github.com/OneLiteFeatherNET/Voyager/issues/176)) ([bb94461](https://github.com/OneLiteFeatherNET/Voyager/commit/bb94461c95802f0c4a20b9d468a62db13b3e225b)), closes [#167](https://github.com/OneLiteFeatherNET/Voyager/issues/167) [#167](https://github.com/OneLiteFeatherNET/Voyager/issues/167) [#103](https://github.com/OneLiteFeatherNET/Voyager/issues/103) [#103](https://github.com/OneLiteFeatherNET/Voyager/issues/103)
+
 ## [1.6.2](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.6.1...v1.6.2) (2026-04-25)
 
 
