@@ -1,13 +1,7 @@
 package net.elytrarace.game.service;
 
 import net.elytrarace.api.database.service.DatabaseService;
-import net.elytrarace.api.phase.EventRegistrar;
-import net.elytrarace.api.phase.LinearPhaseSeries;
-import net.elytrarace.api.phase.Phase;
-import net.elytrarace.api.phase.PhaseScheduler;
 import net.elytrarace.common.cup.CupService;
-import net.elytrarace.game.platform.BukkitEventRegistrar;
-import net.elytrarace.game.platform.BukkitPhaseScheduler;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
 import net.elytrarace.common.ecs.Entity;
@@ -19,13 +13,8 @@ import net.elytrarace.game.components.GameStateComponent;
 import net.elytrarace.game.listener.DefaultListener;
 import net.elytrarace.game.model.GameMapDTO;
 import net.elytrarace.game.model.GameSession;
-import net.elytrarace.game.phase.EndPhase;
-import net.elytrarace.game.phase.GamePhase;
-import net.elytrarace.game.phase.LobbyPhase;
-import net.elytrarace.game.phase.PreparationPhase;
 import net.elytrarace.game.system.CupSystem;
 import net.elytrarace.game.system.GameStateSystem;
-import net.elytrarace.game.system.PhaseSystem;
 import net.elytrarace.game.util.ElytraMarkers;
 import net.elytrarace.game.util.PluginInstanceHolder;
 import net.kyori.adventure.text.Component;
@@ -50,27 +39,17 @@ class GameServiceImpl implements GameService {
     private static final ComponentLogger LOGGER = ComponentLogger.logger(GameServiceImpl.class);
     private volatile static boolean DEV_MODE = Boolean.parseBoolean(System.getProperty("ELYTRACERACE_DEV", "true"));
 
-    private LinearPhaseSeries<Phase> elytraPhase = new LinearPhaseSeries<>();
     private final CupService cupService;
     private final MapService mapService;
     private volatile DatabaseService databaseService;
     private PaperCommandManager<Source> commandManager;
     private ElytraRace plugin;
-    private final PhaseScheduler phaseScheduler;
-    private final EventRegistrar eventRegistrar;
     private volatile GameSession gameSession = new GameSession(UUID.randomUUID(), null, null);
 
     public GameServiceImpl(ElytraRace plugin) {
         this.plugin = plugin;
-        this.phaseScheduler = new BukkitPhaseScheduler(plugin);
-        this.eventRegistrar = new BukkitEventRegistrar(plugin);
         this.cupService = CupService.create(plugin.getDataPath());
         this.mapService = MapService.create(plugin.getDataPath());
-        this.elytraPhase.add(new PreparationPhase(this));
-        this.elytraPhase.add(new LobbyPhase(this));
-        this.elytraPhase.add(new GamePhase(this));
-        this.elytraPhase.add(new EndPhase(phaseScheduler, eventRegistrar));
-        this.elytraPhase.start();
         this.commandManager = PaperCommandManager.builder(PaperSimpleSenderMapper.simpleSenderMapper()).executionCoordinator(ExecutionCoordinator.asyncCoordinator()).buildOnEnable(getPlugin());
     }
 
@@ -207,58 +186,7 @@ class GameServiceImpl implements GameService {
     }
 
     private void handleForceStart(CommandContext<PlayerSource> context) {
-        Player player = context.sender().source();
-        var newTime = DEV_MODE ? 5 : 20;
-
-        // Get the entity manager
-        EntityManager entityManager = PluginInstanceHolder.getEntityManager();
-
-        // Find the PhaseSystem
-        PhaseSystem phaseSystem = null;
-        for (net.elytrarace.common.ecs.System system : entityManager.getSystems()) {
-            if (system instanceof PhaseSystem) {
-                phaseSystem = (PhaseSystem) system;
-                break;
-            }
-        }
-
-        // If we couldn't find the PhaseSystem, log an error and fall back to the old approach
-        if (phaseSystem == null) {
-            LOGGER.error(ElytraMarkers.ECS, "No PhaseSystem found, falling back to old approach");
-            Phase currentPhase = this.getElytraPhase().getCurrentPhase();
-            if (currentPhase instanceof LobbyPhase lp) {
-                lp.setCurrentTicks(newTime);
-                player.sendMessage(Component.translatable("phase.lobby.force", Component.translatable("plugin.prefix"), Component.text(newTime)));
-            }
-            return;
-        }
-
-        // Find the game state entity
-        var gameStateEntities = entityManager.getEntitiesWithComponent(GameStateComponent.class);
-        if (gameStateEntities.isEmpty()) {
-            LOGGER.error(ElytraMarkers.ECS, "No game state entity found, falling back to old approach");
-            Phase currentPhase = this.getElytraPhase().getCurrentPhase();
-            if (currentPhase instanceof LobbyPhase lp) {
-                lp.setCurrentTicks(newTime);
-                player.sendMessage(Component.translatable("phase.lobby.force", Component.translatable("plugin.prefix"), Component.text(newTime)));
-            }
-            return;
-        }
-
-        Entity gameStateEntity = gameStateEntities.iterator().next();
-
-        // Use the PhaseSystem to force start
-        boolean success = phaseSystem.forceStart(gameStateEntity, player, newTime);
-
-        // If the PhaseSystem couldn't force start, fall back to the old approach
-        if (!success) {
-            LOGGER.error(ElytraMarkers.ECS, "PhaseSystem couldn't force start, falling back to old approach");
-            Phase currentPhase = this.getElytraPhase().getCurrentPhase();
-            if (currentPhase instanceof LobbyPhase lp) {
-                lp.setCurrentTicks(newTime);
-                player.sendMessage(Component.translatable("phase.lobby.force", Component.translatable("plugin.prefix"), Component.text(newTime)));
-            }
-        }
+        LOGGER.error(ElytraMarkers.ECS, "Force start is not supported in this version");
     }
 
     private void registerListeners() {
@@ -348,21 +276,6 @@ class GameServiceImpl implements GameService {
     @Override
     public ElytraRace getPlugin() {
         return plugin;
-    }
-
-    @Override
-    public PhaseScheduler getPhaseScheduler() {
-        return phaseScheduler;
-    }
-
-    @Override
-    public EventRegistrar getEventRegistrar() {
-        return eventRegistrar;
-    }
-
-    @Override
-    public LinearPhaseSeries<Phase> getElytraPhase() {
-        return elytraPhase;
     }
 
     @Nullable

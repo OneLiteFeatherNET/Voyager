@@ -4,14 +4,10 @@ import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
 import net.elytrarace.common.language.LanguageService;
 import net.elytrarace.game.components.GameStateComponent;
-import net.elytrarace.game.components.PhaseComponent;
-import net.elytrarace.game.platform.BukkitEventRegistrar;
-import net.elytrarace.game.platform.BukkitPhaseScheduler;
 import net.elytrarace.game.service.GameService;
 import net.elytrarace.game.system.CollisionSystem;
 import net.elytrarace.game.system.CupSystem;
 import net.elytrarace.game.system.GameStateSystem;
-import net.elytrarace.game.system.PhaseSystem;
 import net.elytrarace.game.system.PlayerUpdateSystem;
 import net.elytrarace.game.system.SplineSystem;
 import net.elytrarace.game.util.ElytraMarkers;
@@ -30,7 +26,6 @@ public class ElytraRace extends JavaPlugin {
 
     private EntityManager entityManager;
     private PlayerUpdateSystem playerUpdateSystem;
-    private PhaseSystem phaseSystem;
     private CupSystem cupSystem;
     private SplineSystem splineSystem;
 
@@ -51,9 +46,6 @@ public class ElytraRace extends JavaPlugin {
         Entity gameStateEntity = new Entity();
         gameStateEntity.addComponent(GameStateComponent.create());
 
-        // Add phase component to game state entity
-        gameStateEntity.addComponent(PhaseComponent.create(new BukkitPhaseScheduler(this), new BukkitEventRegistrar(this)));
-
         // Add the entity to the entity manager
         entityManager.addEntity(gameStateEntity);
 
@@ -63,9 +55,6 @@ public class ElytraRace extends JavaPlugin {
 
         playerUpdateSystem = new PlayerUpdateSystem();
         entityManager.addSystem(playerUpdateSystem);
-
-        phaseSystem = new PhaseSystem();
-        entityManager.addSystem(phaseSystem);
 
         cupSystem = new CupSystem();
         entityManager.addSystem(cupSystem);

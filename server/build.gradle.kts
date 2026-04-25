@@ -15,7 +15,6 @@ dependencies {
     implementation(libs.minecraft.minestom)
     implementation(libs.aves)
     implementation(libs.xerus)
-    implementation(project(":shared:phase"))
     implementation(project(":shared:common"))
     implementation(project(":shared:database"))
     implementation(libs.geometry)

@@ -2,17 +2,9 @@ package net.elytrarace.game.listener;
 
 import net.elytrarace.api.database.entity.ElytraPlayerEntity;
 import net.elytrarace.api.database.service.DatabaseService;
-import net.elytrarace.api.phase.LinearPhaseSeries;
-import net.elytrarace.api.phase.Phase;
 import net.elytrarace.common.cup.model.ResolvedCupDTO;
-import net.elytrarace.game.phase.EndPhase;
-import net.elytrarace.game.phase.GamePhase;
-import net.elytrarace.game.phase.LobbyPhase;
-import net.elytrarace.game.phase.PreparationPhase;
 import net.elytrarace.game.service.GameService;
-import net.elytrarace.game.util.ElytraMetadata;
 import net.kyori.adventure.text.Component;
-import org.apache.commons.geometry.euclidean.threed.Vector3D;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
@@ -98,49 +90,15 @@ public class DefaultListener implements Listener {
         }
         if (event.getTo().getY() > event.getTo().getWorld().getMaxHeight()) {
             event.getPlayer().teleportAsync(event.getPlayer().getWorld().getSpawnLocation());
-            return;
-        }
-        var player = event.getPlayer();
-        var elytraPhase = this.gameService.getElytraPhase();
-        if (elytraPhase == null) return;
-        var currentPhase = elytraPhase.getCurrentPhase();
-        if (currentPhase == null) return;
-        if (currentPhase instanceof GamePhase) {
-            if (player.hasMetadata(ElytraMetadata.LAST_POSITIONS)) {
-                var metdata = player.getMetadata(ElytraMetadata.LAST_POSITIONS);
-                var lastPositions = (Vector3D[]) metdata.getFirst().value();
-                if (lastPositions == null) return;
-                System.arraycopy(lastPositions, 0, lastPositions, 1, lastPositions.length - 1);
-                lastPositions[0] = Vector3D.of(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
-            }
         }
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        LinearPhaseSeries<Phase> elytraPhase = this.gameService.getElytraPhase();
-        if (elytraPhase == null) return;
-        var currentPhase = elytraPhase.getCurrentPhase();
-        if (currentPhase == null) return;
-        if (currentPhase.isRunning() && currentPhase instanceof LobbyPhase lobbyPhase) {
-            event.getPlayer().teleportAsync(lobbyPhase.getLobbyLocation());
-            event.joinMessage(Component.translatable("phase.lobby.player.join", Component.translatable("plugin.prefix"), event.getPlayer().displayName(), Component.text(1)));
-        }
     }
 
     @EventHandler
     public void onPlayerLogin(PlayerLoginEvent event) {
-        LinearPhaseSeries<Phase> elytraPhase = this.gameService.getElytraPhase();
-        if (elytraPhase == null) return;
-        var currentPhase = elytraPhase.getCurrentPhase();
-        if (currentPhase == null) return;
-        if (currentPhase.isRunning() && (currentPhase instanceof GamePhase || currentPhase instanceof EndPhase || currentPhase instanceof PreparationPhase)){
-            event.disallow(PlayerLoginEvent.Result.KICK_OTHER, Component.empty());
-            return;
-        }
-        if (currentPhase.isRunning() && currentPhase instanceof LobbyPhase lobbyPhase) {
-            event.getPlayer().teleportAsync(lobbyPhase.getLobbyLocation());
-        }
         DatabaseService databaseService = this.gameService.getDatabaseService();
         if (databaseService == null) return;
         databaseService.getElytraPlayerRepository()
@@ -156,19 +114,9 @@ public class DefaultListener implements Listener {
 
     @EventHandler
     public void onServerListPing(ServerListPingEvent event) {
-        var elytraPhase = this.gameService.getElytraPhase();
-        if (elytraPhase == null) return;
-        var currentPhase = elytraPhase.getCurrentPhase();
-        if (currentPhase == null) return;
         var cup = this.gameService.getCurrentCup().filter(ResolvedCupDTO.class::isInstance).orElse(null);
         if (cup == null) return;
-        if (currentPhase instanceof LobbyPhase) {
-            event.motd(Component.translatable("game.motd.cup", Component.translatable("plugin.prefix"), cup.displayName()));
-            return;
-        }
-        if (currentPhase instanceof GamePhase) {
-            event.motd(Component.translatable("game.motd.ingame"));
-        }
+        event.motd(Component.translatable("game.motd.cup", Component.translatable("plugin.prefix"), cup.displayName()));
     }
 
     @EventHandler
