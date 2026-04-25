@@ -38,11 +38,10 @@ Tests use JUnit 5 with MockBukkit (plugins) or Minestom Testing (server) for API
 
 ## Module Structure
 
-- **`server`** — Standalone Minestom game server. Handles gameplay, physics, scoring, cup flow, and UI. Entry point: `net.elytrarace.server.VoyagerServer` (own `main()`). Depends on `shared/common`, `shared/phase`, `shared/database`.
+- **`server`** — Standalone Minestom game server. Handles gameplay, physics, scoring, cup flow, and UI. Entry point: `net.elytrarace.server.VoyagerServer` (own `main()`). Depends on `shared/common`, `shared/database`.
 - **`plugins/game`** — Legacy Paper game plugin (`ElytraRace-Game`). Being replaced by `server`. Entry point: `net.elytrarace.game.ElytraRace`
 - **`plugins/setup`** — Setup plugin (`ElytraRace-Setup`) for map/cup/portal configuration via in-game conversations. Depends on FastAsyncWorldEdit. Entry point: `net.elytrarace.setup.ElytraRace`
 - **`shared/common`** — Shared utilities: ECS framework, map/cup services, file handling (Gson-based JSON), language/i18n, spline math, builders (Bukkit-frei)
-- **`shared/phase`** — Phase lifecycle framework (Phase -> TimedPhase/TickedPhase, with LinearPhaseSeries/CyclicPhaseSeries collections) (Bukkit-frei)
 - **`shared/conversation-api`** — Player conversation/prompt system, plattform-agnostisch (Bukkit-frei)
 - **`shared/database`** — Hibernate ORM + HikariCP + MariaDB persistence layer for player data
 
@@ -58,7 +57,7 @@ The game uses a custom ECS pattern in `shared/common` (`net.elytrarace.common.ec
 Game-specific components are in `plugins/game/src/.../components/` (GameState, Phase, Cup, Map, World, Spline, Session). Systems are in `.../system/` (CollisionSystem, PhaseSystem, CupSystem, etc.).
 
 ### Phase System
-Game phases (Lobby → Preparation → Game → End) are managed via `shared/phase`. Phases have start/finish lifecycle with callbacks. `LinearPhaseSeries` chains phases sequentially.
+Game phases (Lobby → Preparation → Game → End) are managed via [Xerus](https://github.com/OneLiteFeatherNET/Xerus) (`net.theevilreaper.xerus.api.phase.*`). Phases have start/finish lifecycle with callbacks. `LinearPhaseSeries` chains phases sequentially.
 
 ### Elytra velocity authority
 Normal elytra flight is client-authoritative, matching vanilla Minecraft. `ElytraPhysicsSystem` runs the vanilla formula every tick to keep a server-tracked velocity for ring collision and boost math, but it does NOT call `player.setVelocity()`. Velocity is only sent to the client for external forces: firework boost burns (`FireworkBoostSystem`), ring `BOOST`/`SLOW` effects (`RingEffectSystem`), and out-of-bounds resets (`OutOfBoundsSystem`). See [ADR-0002](docs/decisions/0002-elytra-flight-client-authority.md) and [docs/elytra-physics-reference.md](docs/elytra-physics-reference.md) §7.

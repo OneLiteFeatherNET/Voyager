@@ -56,7 +56,6 @@ dependencyResolutionManagement {
 }
 
 include("shared:conversation-api")
-include("shared:phase")
 include("shared:database")
 include("shared:common")
 include("shared:spline")

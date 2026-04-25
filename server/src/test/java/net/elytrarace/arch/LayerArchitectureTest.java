@@ -10,7 +10,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 /**
  * Architecture rules enforcing platform-layer isolation:
  * <ul>
- *   <li>{@code shared/common} and {@code shared/phase} must never reference Minestom.</li>
+ *   <li>{@code shared/common} must never reference Minestom.</li>
  *   <li>{@code shared/common} must never reference Paper/Bukkit.</li>
  *   <li>{@code server} must never reference Paper/Bukkit.</li>
  * </ul>
@@ -26,12 +26,6 @@ class LayerArchitectureTest {
             noClasses().that().resideInAPackage("net.elytrarace.common..")
                     .should().dependOnClassesThat().resideInAPackage("net.minestom..")
                     .because("shared/common must stay platform-agnostic — no Minestom imports allowed");
-
-    @ArchTest
-    static final ArchRule shared_phase_must_not_use_minestom =
-            noClasses().that().resideInAPackage("net.elytrarace.api.phase..")
-                    .should().dependOnClassesThat().resideInAPackage("net.minestom..")
-                    .because("shared/phase must stay platform-agnostic — no Minestom imports allowed");
 
     @ArchTest
     static final ArchRule server_must_not_use_paper =

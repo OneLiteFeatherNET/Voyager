@@ -1,10 +1,6 @@
 package net.elytrarace.game.service;
 
 import net.elytrarace.api.database.service.DatabaseService;
-import net.elytrarace.api.phase.EventRegistrar;
-import net.elytrarace.api.phase.LinearPhaseSeries;
-import net.elytrarace.api.phase.Phase;
-import net.elytrarace.api.phase.PhaseScheduler;
 import net.elytrarace.common.cup.model.CupDTO;
 import net.elytrarace.game.ElytraRace;
 import net.elytrarace.game.model.GameMapDTO;
@@ -37,12 +33,6 @@ public interface GameService {
     Optional<GameMapDTO> getCurrentMap();
 
     ElytraRace getPlugin();
-
-    PhaseScheduler getPhaseScheduler();
-
-    EventRegistrar getEventRegistrar();
-
-    LinearPhaseSeries<Phase> getElytraPhase();
 
     DatabaseService getDatabaseService();
 
