@@ -23,6 +23,7 @@ import net.elytrarace.server.ecs.system.CompletionDetectionSystem;
 import net.elytrarace.server.ecs.system.ElytraPhysicsSystem;
 import net.elytrarace.server.ecs.system.FireworkBoostSystem;
 import net.elytrarace.server.ecs.system.OutOfBoundsSystem;
+import net.elytrarace.server.ecs.system.LandingResetSystem;
 import net.elytrarace.server.ecs.system.RingCollisionSystem;
 import net.elytrarace.server.ecs.system.RingEffectSystem;
 import net.elytrarace.server.ecs.system.RingVisualizationSystem;
@@ -125,11 +126,13 @@ public final class GameOrchestrator {
         // Register ECS systems — order matters:
         // 1. RingCollisionSystem reads previousPosition from the LAST tick (before physics updates it)
         // 2. CompletionDetectionSystem classifies finish times once all rings are passed
-        // 3. ElytraPhysicsSystem advances server-tracked velocity and updates previousPosition
-        // 4. FireworkBoostSystem overrides velocity with boost formula when burning
+        // 3. ElytraPhysicsSystem syncs isFlying from player.isGliding(), advances velocity
+        // 4. LandingResetSystem detects flying→notFlying, resets rings/score for unfinished players
+        // 5. FireworkBoostSystem overrides velocity with boost formula when burning
         entityManager.addSystem(new RingCollisionSystem(entityManager));
         entityManager.addSystem(new CompletionDetectionSystem(entityManager));
         entityManager.addSystem(new ElytraPhysicsSystem());
+        entityManager.addSystem(new LandingResetSystem());
         entityManager.addSystem(new FireworkBoostSystem());
         entityManager.addSystem(new OutOfBoundsSystem(entityManager, playerService));
         entityManager.addSystem(new RingEffectSystem());

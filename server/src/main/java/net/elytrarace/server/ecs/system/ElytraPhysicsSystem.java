@@ -52,6 +52,11 @@ public class ElytraPhysicsSystem implements net.elytrarace.common.ecs.System {
         }
 
         var player = playerRef.getPlayer();
+        flight.setFlying(player.isGliding());
+        if (!flight.isFlying()) {
+            return;
+        }
+
         var pos = player.getPosition();
         flight.setPitch(pos.pitch());
         flight.setYaw(pos.yaw());

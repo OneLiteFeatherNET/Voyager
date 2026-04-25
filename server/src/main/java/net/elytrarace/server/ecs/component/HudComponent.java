@@ -157,6 +157,11 @@ public class HudComponent implements Component {
                 1.5f));
     }
 
+    /** Clears the actionbar immediately (sends an empty component). */
+    public void clearActionbar() {
+        player.sendActionBar(net.kyori.adventure.text.Component.empty());
+    }
+
     /** Hides the boss bar. Call before removing the entity. */
     public void cleanup() {
         if (cupProgressBar != null) {

@@ -53,6 +53,10 @@ public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
     public void process(Entity entity, float deltaTime) {
         var flight = entity.getComponent(ElytraFlightComponent.class);
         if (!flight.isFlying()) {
+            // Clear cached state so the next takeoff renders immediately
+            UUID cleared = entity.getId();
+            tickCounters.remove(cleared);
+            lastDisplayHash.remove(cleared);
             return;
         }
 
