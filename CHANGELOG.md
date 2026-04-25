@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.4.0...v1.5.0) (2026-04-25)
+
+
+### Features
+
+* **skills:** add 8 new Claude Code slash-command skills ([#164](https://github.com/OneLiteFeatherNET/Voyager/issues/164))  ([8f404af](https://github.com/OneLiteFeatherNET/Voyager/commit/8f404af505f19b8f86b9c4dadba5ab4079bfb61f))
+
 # [1.4.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.3.0...v1.4.0) (2026-04-25)
 
 
