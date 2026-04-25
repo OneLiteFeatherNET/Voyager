@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.6.0...v1.6.1) (2026-04-25)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.tngtech.archunit:archunit-junit5 to v1.4.2 ([#158](https://github.com/OneLiteFeatherNET/Voyager/issues/158)) ([f21f6aa](https://github.com/OneLiteFeatherNET/Voyager/commit/f21f6aa5132dddf7e5cf9b4d81a585abc48c0410))
+
 # [1.6.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.5.0...v1.6.0) (2026-04-25)
 
 
