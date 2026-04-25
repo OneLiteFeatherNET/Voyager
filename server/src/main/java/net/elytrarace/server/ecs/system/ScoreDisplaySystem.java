@@ -9,6 +9,7 @@ import net.elytrarace.server.ecs.component.BracketConfigComponent;
 import net.elytrarace.server.ecs.component.ElapsedTimeComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.HudComponent;
+import net.elytrarace.server.ecs.component.MapRecordComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
@@ -97,7 +98,7 @@ public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
 
     /**
      * Projects the finish time based on current pace and maps it to a bracket.
-     * Returns DIAMOND when no data is available yet (early in the race).
+     * Returns DIAMOND when no record exists yet or insufficient data is available.
      */
     private MedalTier computePace(long elapsedMs, int passed, int total) {
         if (passed <= 0 || total <= 0) {
@@ -105,14 +106,24 @@ public class ScoreDisplaySystem implements net.elytrarace.common.ecs.System {
         }
         long projectedMs = elapsedMs * total / passed;
 
+        BracketConfigComponent config = null;
+        MapRecordComponent record = null;
         for (Entity e : entityManager.getEntities()) {
-            if (e.hasComponent(BracketConfigComponent.class)) {
-                var config = e.getComponent(BracketConfigComponent.class);
-                return config.brackets().classify(
-                        Duration.ofMillis(projectedMs), config.reference());
+            if (config == null && e.hasComponent(BracketConfigComponent.class)) {
+                config = e.getComponent(BracketConfigComponent.class);
             }
+            if (record == null && e.hasComponent(MapRecordComponent.class)) {
+                record = e.getComponent(MapRecordComponent.class);
+            }
+            if (config != null && record != null) break;
         }
-        return MedalTier.GOLD;
+
+        if (record == null) {
+            // No reference time yet — first run or map with no history
+            return MedalTier.DIAMOND;
+        }
+        var brackets = config != null ? config.brackets() : net.elytrarace.common.game.scoring.MedalBrackets.DEFAULT;
+        return brackets.classify(Duration.ofMillis(projectedMs), Duration.ofMillis(record.recordTimeMs()));
     }
 
     private long findElapsedMs() {

@@ -10,6 +10,7 @@ import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.BracketConfigComponent;
 import net.elytrarace.server.ecs.component.ElapsedTimeComponent;
 import net.elytrarace.server.ecs.component.GameModeComponent;
+import net.elytrarace.server.ecs.component.MapRecordComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
@@ -48,6 +49,7 @@ class ScoringServiceTest {
     /**
      * Builds a game entity that holds the map, elapsed time, bracket config, and game mode.
      * The caller controls elapsed time and game mode to drive bracket classification.
+     * A {@link MapRecordComponent} seeded with {@code REFERENCE} simulates an existing DB record.
      */
     private Entity buildGameEntity(MapDefinition map, long elapsedMs, GameMode mode) {
         var activeMap = new ActiveMapComponent();
@@ -56,7 +58,8 @@ class ScoringServiceTest {
         return new Entity()
                 .addComponent(activeMap)
                 .addComponent(new ElapsedTimeComponent(elapsedMs))
-                .addComponent(new BracketConfigComponent(MedalBrackets.DEFAULT, REFERENCE))
+                .addComponent(new BracketConfigComponent(MedalBrackets.DEFAULT))
+                .addComponent(new MapRecordComponent(REFERENCE.toMillis()))
                 .addComponent(new GameModeComponent(mode));
     }
 

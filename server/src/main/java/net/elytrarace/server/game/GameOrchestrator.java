@@ -1,5 +1,6 @@
 package net.elytrarace.server.game;
 
+import net.elytrarace.api.database.repository.MapRecordRepository;
 import net.elytrarace.api.database.service.DatabaseService;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
@@ -11,6 +12,7 @@ import net.elytrarace.server.persistence.GameResultPersistenceServiceImpl;
 import net.elytrarace.server.ecs.GameEntityFactory;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.BracketConfigComponent;
+import net.elytrarace.server.ecs.component.MapRecordComponent;
 import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.FireworkBoostComponent;
@@ -42,10 +44,10 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
 import net.theevilreaper.xerus.api.phase.LinearPhaseSeries;
 import net.theevilreaper.xerus.api.phase.Phase;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -66,6 +68,7 @@ public final class GameOrchestrator {
     private final PlayerEventHandler playerEventHandler;
     private final EntityManager entityManager;
     private final GameResultPersistenceService gameResultPersistence;
+    private final @Nullable MapRecordRepository mapRecordRepository;
 
     private Entity gameEntity;
     private LinearPhaseSeries<Phase> phaseSeries;
@@ -79,17 +82,26 @@ public final class GameOrchestrator {
                             PlayerEventHandler playerEventHandler,
                             DatabaseService databaseService) {
         this(playerService, mapInstanceService, playerEventHandler,
-                buildPersistenceService(databaseService));
+                buildPersistenceService(databaseService),
+                databaseService != null ? databaseService.getMapRecordRepository().orElse(null) : null);
     }
 
     public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
                             PlayerEventHandler playerEventHandler,
                             GameResultPersistenceService gameResultPersistence) {
+        this(playerService, mapInstanceService, playerEventHandler, gameResultPersistence, null);
+    }
+
+    public GameOrchestrator(PlayerService playerService, MapInstanceService mapInstanceService,
+                            PlayerEventHandler playerEventHandler,
+                            GameResultPersistenceService gameResultPersistence,
+                            @Nullable MapRecordRepository mapRecordRepository) {
         this.playerService = Objects.requireNonNull(playerService, "playerService must not be null");
         this.mapInstanceService = Objects.requireNonNull(mapInstanceService, "mapInstanceService must not be null");
         this.playerEventHandler = Objects.requireNonNull(playerEventHandler, "playerEventHandler must not be null");
         this.entityManager = new EntityManager();
         this.gameResultPersistence = gameResultPersistence;
+        this.mapRecordRepository = mapRecordRepository;
     }
 
     private static GameResultPersistenceService buildPersistenceService(DatabaseService databaseService) {
@@ -130,7 +142,7 @@ public final class GameOrchestrator {
         // 4. LandingResetSystem detects flying→notFlying, resets rings/score for unfinished players
         // 5. FireworkBoostSystem overrides velocity with boost formula when burning
         entityManager.addSystem(new RingCollisionSystem(entityManager));
-        entityManager.addSystem(new CompletionDetectionSystem(entityManager));
+        entityManager.addSystem(new CompletionDetectionSystem(entityManager, mapRecordRepository));
         entityManager.addSystem(new ElytraPhysicsSystem());
         entityManager.addSystem(new LandingResetSystem());
         entityManager.addSystem(new FireworkBoostSystem());
@@ -282,11 +294,24 @@ public final class GameOrchestrator {
             activeMap.setMapInstance(instance);
             activeMap.setCurrentMap(mapDef);
 
-            // Update bracket config for the new map so CompletionDetectionSystem
-            // classifies finish times against the right reference duration.
-            gameEntity.addComponent(new BracketConfigComponent(
-                    MedalBrackets.DEFAULT,
-                    Duration.ofMillis(mapDef.referenceDurationMs())));
+            // Reset bracket config and clear any previous map's in-session record.
+            gameEntity.addComponent(new BracketConfigComponent(MedalBrackets.DEFAULT));
+            gameEntity.removeComponent(MapRecordComponent.class);
+
+            // Seed the in-session record from the DB (if any), so the first
+            // finisher is classified relative to the all-time best rather than
+            // always receiving DIAMOND on a map where a fast record already exists.
+            String cupName = cupProgress.getCup().name();
+            if (mapRecordRepository != null) {
+                mapRecordRepository.getRecordTime(cupName, mapDef.name())
+                        .thenAccept(opt -> opt.ifPresent(recordMs ->
+                                gameEntity.addComponent(new MapRecordComponent(recordMs))))
+                        .exceptionally(ex -> {
+                            LOGGER.warn("Failed to load map record for ({}, {}): {}",
+                                    cupName, mapDef.name(), ex.getMessage());
+                            return null;
+                        });
+            }
 
             // Push per-map boost config into each player's ECS component
             for (Entity entity : entityManager.getEntities()) {

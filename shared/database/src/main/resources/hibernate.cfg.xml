@@ -6,5 +6,6 @@
     <session-factory>
         <mapping class="net.elytrarace.api.database.entity.ElytraPlayerEntity" />
         <mapping class="net.elytrarace.api.database.entity.GameResultEntity" />
+        <mapping class="net.elytrarace.api.database.entity.MapRecordEntity" />
     </session-factory>
 </hibernate-configuration>

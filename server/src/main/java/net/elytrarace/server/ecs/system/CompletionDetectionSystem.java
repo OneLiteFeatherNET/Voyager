@@ -1,5 +1,6 @@
 package net.elytrarace.server.ecs.system;
 
+import net.elytrarace.api.database.repository.MapRecordRepository;
 import net.elytrarace.common.ecs.Component;
 import net.elytrarace.common.ecs.Entity;
 import net.elytrarace.common.ecs.EntityManager;
@@ -9,9 +10,11 @@ import net.elytrarace.common.game.scoring.MedalTier;
 import net.elytrarace.server.cup.MapDefinition;
 import net.elytrarace.server.ecs.component.ActiveMapComponent;
 import net.elytrarace.server.ecs.component.BracketConfigComponent;
+import net.elytrarace.server.ecs.component.CupProgressComponent;
 import net.elytrarace.server.ecs.component.ElapsedTimeComponent;
 import net.elytrarace.server.ecs.component.ElytraFlightComponent;
 import net.elytrarace.server.ecs.component.GameModeComponent;
+import net.elytrarace.server.ecs.component.MapRecordComponent;
 import net.elytrarace.server.ecs.component.PlayerRefComponent;
 import net.elytrarace.server.ecs.component.RingTrackerComponent;
 import net.elytrarace.server.ecs.component.ScoreComponent;
@@ -21,36 +24,51 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Detects when a player has completed the active map (passed every ring) and
  * stamps their {@link ScoreComponent} with the completion time, medal tier, and
- * RACE-mode bracket bonus.
+ * bracket bonus.
+ * <p>
+ * Scoring is record-relative:
+ * <ul>
+ *   <li>The first player to ever finish a (cup, map) combination becomes the record holder
+ *       and receives DIAMOND regardless of their absolute time.</li>
+ *   <li>Any subsequent finisher faster than the current in-session record also receives
+ *       DIAMOND and becomes the new in-session record holder.</li>
+ *   <li>All other finishers are classified relative to the current record via
+ *       {@link MedalBrackets#classify(Duration, Duration)}.</li>
+ * </ul>
+ * The in-session record is stored in {@link MapRecordComponent} on the game entity.
+ * When {@link MapRecordRepository} is available, each finish triggers an async UPSERT
+ * (only persisted if the time is faster than the existing DB record).
  * <p>
  * The system is idempotent: it short-circuits once {@link ScoreComponent#hasFinished()}
- * is true, so running it multiple ticks per player has no observable effect.
- * It also degrades gracefully if optional game-entity components
- * ({@link ElapsedTimeComponent}, {@link BracketConfigComponent},
- * {@link GameModeComponent}) are missing, falling back to safe defaults and
- * logging at WARN level.
+ * is true.
  */
 public class CompletionDetectionSystem implements net.elytrarace.common.ecs.System {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionDetectionSystem.class);
 
     private static final int POINTS_DIAMOND = 60;
-    private static final int POINTS_GOLD = 45;
-    private static final int POINTS_SILVER = 30;
-    private static final int POINTS_BRONZE = 15;
-    private static final int POINTS_FINISH = 5;
-    private static final int POINTS_DNF = 0;
-
-    private static final Duration FALLBACK_REFERENCE = Duration.ofMinutes(3);
+    private static final int POINTS_GOLD    = 45;
+    private static final int POINTS_SILVER  = 30;
+    private static final int POINTS_BRONZE  = 15;
+    private static final int POINTS_FINISH  = 5;
+    private static final int POINTS_DNF     = 0;
 
     private final EntityManager entityManager;
+    private final @Nullable MapRecordRepository mapRecordRepository;
 
     public CompletionDetectionSystem(EntityManager entityManager) {
+        this(entityManager, null);
+    }
+
+    public CompletionDetectionSystem(EntityManager entityManager,
+                                     @Nullable MapRecordRepository mapRecordRepository) {
         this.entityManager = entityManager;
+        this.mapRecordRepository = mapRecordRepository;
     }
 
     @Override
@@ -60,60 +78,50 @@ public class CompletionDetectionSystem implements net.elytrarace.common.ecs.Syst
 
     @Override
     public void process(Entity entity, float deltaTime) {
-        // If the entity carries flight info, require active flight to count completion.
-        // Players still on the ground or pre-launch should not finish a race.
-        if (entity.hasComponent(ElytraFlightComponent.class)) {
-            ElytraFlightComponent flight = entity.getComponent(ElytraFlightComponent.class);
-            if (!flight.isFlying()) {
-                return;
-            }
+        if (entity.hasComponent(ElytraFlightComponent.class)
+                && !entity.getComponent(ElytraFlightComponent.class).isFlying()) {
+            return;
         }
 
         var playerRef = entity.getComponent(PlayerRefComponent.class);
-        var tracker = entity.getComponent(RingTrackerComponent.class);
-        var score = entity.getComponent(ScoreComponent.class);
+        var tracker   = entity.getComponent(RingTrackerComponent.class);
+        var score     = entity.getComponent(ScoreComponent.class);
 
         ActiveMapComponent activeMap = findGameComponent(ActiveMapComponent.class);
-        if (activeMap == null) {
-            return;
-        }
+        if (activeMap == null) return;
         MapDefinition map = activeMap.getCurrentMap();
-        if (map == null) {
-            return;
-        }
+        if (map == null) return;
         int totalRings = map.rings().size();
-        if (totalRings == 0) {
-            return;
-        }
+        if (totalRings == 0) return;
 
-        if (tracker.passedCount() < totalRings) {
-            return;
-        }
-        if (score.hasFinished()) {
-            return;
-        }
+        if (tracker.passedCount() < totalRings) return;
+        if (score.hasFinished()) return;
 
-        // Player just finished this tick.
         long elapsedMs = readElapsedMs();
-        BracketConfigComponent config = findGameComponent(BracketConfigComponent.class);
-        MedalBrackets brackets;
-        Duration reference;
-        if (config == null) {
-            LOGGER.warn("No BracketConfigComponent on game entity — falling back to MedalBrackets.DEFAULT and {}",
-                    FALLBACK_REFERENCE);
-            brackets = MedalBrackets.DEFAULT;
-            reference = FALLBACK_REFERENCE;
-        } else {
-            brackets = config.brackets();
-            reference = config.reference();
-        }
+        MedalBrackets brackets = readBrackets();
 
-        GameMode mode = readGameMode();
+        // Classify relative to current record (or award DIAMOND to first finisher).
+        Entity gameEntity = findGameEntityWithActiveMap();
+        MapRecordComponent currentRecord = gameEntity != null
+                ? gameEntity.getComponent(MapRecordComponent.class) : null;
+
+        MedalTier tier;
+        if (currentRecord == null || elapsedMs <= currentRecord.recordTimeMs()) {
+            // First finisher or new record — always DIAMOND
+            tier = MedalTier.DIAMOND;
+            if (gameEntity != null) {
+                gameEntity.addComponent(new MapRecordComponent(elapsedMs));
+            }
+        } else {
+            tier = brackets.classify(
+                    Duration.ofMillis(elapsedMs),
+                    Duration.ofMillis(currentRecord.recordTimeMs()));
+        }
 
         score.setCompletionTimeMs(elapsedMs);
-        MedalTier tier = brackets.classify(Duration.ofMillis(elapsedMs), reference);
         score.setMedalTier(tier);
 
+        GameMode mode = readGameMode();
         int bracketPts = 0;
         if (mode == GameMode.RACE) {
             bracketPts = bracketPointsFor(tier);
@@ -122,6 +130,20 @@ public class CompletionDetectionSystem implements net.elytrarace.common.ecs.Syst
 
         LOGGER.info("Player {} completed the map in {} ms — {} (bracket points: {})",
                 playerRef.getPlayer().getUsername(), elapsedMs, tier, bracketPts);
+
+        persistRecord(playerRef.getPlayerId(), elapsedMs);
+    }
+
+    private void persistRecord(UUID holderId, long elapsedMs) {
+        if (mapRecordRepository == null) return;
+        String cupName = readCupName();
+        String mapName = readMapName();
+        if (cupName == null || mapName == null) return;
+        mapRecordRepository.saveOrUpdateRecord(cupName, mapName, holderId, elapsedMs)
+                .exceptionally(ex -> {
+                    LOGGER.warn("Failed to persist map record for ({}, {}): {}", cupName, mapName, ex.getMessage());
+                    return null;
+                });
     }
 
     private long readElapsedMs() {
@@ -133,6 +155,11 @@ public class CompletionDetectionSystem implements net.elytrarace.common.ecs.Syst
         return elapsed.elapsedMs();
     }
 
+    private MedalBrackets readBrackets() {
+        BracketConfigComponent config = findGameComponent(BracketConfigComponent.class);
+        return config != null ? config.brackets() : MedalBrackets.DEFAULT;
+    }
+
     private GameMode readGameMode() {
         GameModeComponent modeComp = findGameComponent(GameModeComponent.class);
         if (modeComp == null) {
@@ -142,10 +169,30 @@ public class CompletionDetectionSystem implements net.elytrarace.common.ecs.Syst
         return modeComp.mode();
     }
 
+    private @Nullable String readCupName() {
+        CupProgressComponent prog = findGameComponent(CupProgressComponent.class);
+        return prog != null ? prog.getCup().name() : null;
+    }
+
+    private @Nullable String readMapName() {
+        ActiveMapComponent activeMap = findGameComponent(ActiveMapComponent.class);
+        if (activeMap == null || activeMap.getCurrentMap() == null) return null;
+        return activeMap.getCurrentMap().name();
+    }
+
     private <T extends Component> @Nullable T findGameComponent(Class<T> componentClass) {
-        for (Entity gameEntity : entityManager.getEntities()) {
-            if (gameEntity.hasComponent(componentClass)) {
-                return gameEntity.getComponent(componentClass);
+        for (Entity e : entityManager.getEntities()) {
+            if (e.hasComponent(componentClass)) {
+                return e.getComponent(componentClass);
+            }
+        }
+        return null;
+    }
+
+    private @Nullable Entity findGameEntityWithActiveMap() {
+        for (Entity e : entityManager.getEntities()) {
+            if (e.hasComponent(ActiveMapComponent.class)) {
+                return e;
             }
         }
         return null;
@@ -154,11 +201,11 @@ public class CompletionDetectionSystem implements net.elytrarace.common.ecs.Syst
     private static int bracketPointsFor(MedalTier tier) {
         return switch (tier) {
             case DIAMOND -> POINTS_DIAMOND;
-            case GOLD -> POINTS_GOLD;
-            case SILVER -> POINTS_SILVER;
-            case BRONZE -> POINTS_BRONZE;
-            case FINISH -> POINTS_FINISH;
-            case DNF -> POINTS_DNF;
+            case GOLD    -> POINTS_GOLD;
+            case SILVER  -> POINTS_SILVER;
+            case BRONZE  -> POINTS_BRONZE;
+            case FINISH  -> POINTS_FINISH;
+            case DNF     -> POINTS_DNF;
         };
     }
 }

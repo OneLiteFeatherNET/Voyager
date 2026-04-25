@@ -2,6 +2,7 @@ package net.elytrarace.api.database.service;
 
 import net.elytrarace.api.database.repository.ElytraPlayerRepository;
 import net.elytrarace.api.database.repository.GameResultRepository;
+import net.elytrarace.api.database.repository.MapRecordRepository;
 import net.elytrarace.common.utils.ThreadHelper;
 import org.flywaydb.core.Flyway;
 import org.hibernate.SessionFactory;
@@ -21,6 +22,7 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     private volatile SessionFactory sessionFactory;
     private volatile ElytraPlayerRepository elytraPlayerRepository;
     private volatile GameResultRepository gameResultRepository;
+    private volatile MapRecordRepository mapRecordRepository;
     private volatile boolean initialized;
 
     DatabaseServiceImpl(@NotNull Path rootPath) {
@@ -47,6 +49,7 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
             this.sessionFactory = syncThreadForServiceLoader(this::createSessionFactory);
             this.elytraPlayerRepository = ElytraPlayerRepository.createInstance(sessionFactory);
             this.gameResultRepository = GameResultRepository.createInstance(sessionFactory);
+            this.mapRecordRepository = MapRecordRepository.createInstance(sessionFactory);
             // Fail-fast connection probe: grab a session immediately so a bad pool or
             // unreachable DB surfaces during init() rather than on the first async call.
             sessionFactory.inSession(session -> session.doWork(connection -> {
@@ -69,6 +72,7 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
         this.initialized = false;
         this.elytraPlayerRepository = null;
         this.gameResultRepository = null;
+        this.mapRecordRepository = null;
     }
 
     @Override
@@ -142,5 +146,10 @@ final class DatabaseServiceImpl implements DatabaseService, ThreadHelper {
     @Override
     public Optional<GameResultRepository> getGameResultRepository() {
         return Optional.ofNullable(this.gameResultRepository);
+    }
+
+    @Override
+    public Optional<MapRecordRepository> getMapRecordRepository() {
+        return Optional.ofNullable(this.mapRecordRepository);
     }
 }
