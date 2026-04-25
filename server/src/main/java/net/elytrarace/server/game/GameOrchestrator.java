@@ -135,7 +135,7 @@ public final class GameOrchestrator {
         entityManager.addSystem(new RingEffectSystem());
         entityManager.addSystem(new RingVisualizationSystem(entityManager));
         entityManager.addSystem(new SplineVisualizationSystem());
-        entityManager.addSystem(new ScoreDisplaySystem());
+        entityManager.addSystem(new ScoreDisplaySystem(entityManager));
 
         // Create player entities for all currently online players
         for (Player player : playerService.getOnlinePlayers()) {

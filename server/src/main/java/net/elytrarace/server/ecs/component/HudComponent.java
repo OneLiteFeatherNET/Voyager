@@ -4,7 +4,9 @@ import net.elytrarace.common.ecs.Component;
 import net.elytrarace.common.game.scoring.MedalTier;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.sound.Sound;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import net.minestom.server.entity.Player;
@@ -24,6 +26,8 @@ import java.time.Duration;
  */
 public class HudComponent implements Component {
 
+    private static final TextColor BRONZE_COLOR = TextColor.color(0xCD7F32);
+
     private final Player player;
     private BossBar cupProgressBar;
 
@@ -32,38 +36,48 @@ public class HudComponent implements Component {
     }
 
     /**
-     * Sends the speed/score actionbar line.
+     * Sends the live race actionbar: speed, ring progress, elapsed time, and the
+     * bracket tier the player is currently on pace for (projected finish bracket).
      *
-     * @param speedBlocksPerSec current speed in blocks per second
-     * @param currentPoints     accumulated ring points
+     * @param speedBlocksPerSec current speed in blocks/s
+     * @param passed            rings passed so far
+     * @param total             total rings on this map
+     * @param elapsedMs         race time elapsed in milliseconds
+     * @param pace              projected bracket if the player finished right now
      */
-    public void updateActionbar(double speedBlocksPerSec, int currentPoints) {
+    public void updateActionbar(double speedBlocksPerSec, int passed, int total,
+                                long elapsedMs, MedalTier pace) {
+        net.kyori.adventure.text.Component timeAndPace = buildTimeAndPace(elapsedMs, pace);
         player.sendActionBar(net.kyori.adventure.text.Component.translatable(
                 "hud.actionbar",
                 net.kyori.adventure.text.Component.text(String.format("%.1f", speedBlocksPerSec)),
-                net.kyori.adventure.text.Component.text(currentPoints)));
+                net.kyori.adventure.text.Component.text(passed),
+                net.kyori.adventure.text.Component.text(total),
+                timeAndPace));
     }
 
     /**
-     * Sends the speed/score actionbar line with the player's earned medal tier
-     * appended. Use this once the player has crossed the last ring on the map.
+     * Sends the post-finish actionbar: speed, medal tier earned, and finish time.
+     * Replaces the race actionbar once {@link ScoreComponent#hasFinished()} is true.
      *
-     * @param speedBlocksPerSec current speed in blocks per second
-     * @param currentPoints     accumulated ring points
-     * @param medalTier         tier earned for the just-finished map
+     * @param speedBlocksPerSec current speed in blocks/s
+     * @param medal             medal tier earned on this map
+     * @param finishMs          map completion time in milliseconds
      */
-    public void updateActionbarWithMedal(double speedBlocksPerSec, int currentPoints, MedalTier medalTier) {
+    public void updateActionbarFinished(double speedBlocksPerSec, MedalTier medal, long finishMs) {
+        net.kyori.adventure.text.Component medalComponent = net.kyori.adventure.text.Component
+                .text(medal.name(), tierColor(medal), TextDecoration.BOLD);
         player.sendActionBar(net.kyori.adventure.text.Component.translatable(
-                "hud.actionbar.medal",
+                "hud.actionbar.finished",
                 net.kyori.adventure.text.Component.text(String.format("%.1f", speedBlocksPerSec)),
-                net.kyori.adventure.text.Component.text(currentPoints),
-                net.kyori.adventure.text.Component.text(medalTier.name())));
+                medalComponent,
+                net.kyori.adventure.text.Component.text(formatTime(finishMs))));
     }
 
     /**
      * Shows or replaces the cup-progress boss bar.
      *
-     * @param cupName   current cup name
+     * @param cupName    current cup name
      * @param currentMap 1-based map index
      * @param totalMaps  total maps in the cup
      */
@@ -126,14 +140,16 @@ public class HudComponent implements Component {
     }
 
     /**
-     * Shows ring-pass feedback: green "+N" actionbar and experience-orb sound.
+     * Shows ring-pass feedback: "Ring X/N!" in the actionbar and a pickup sound.
      *
-     * @param points points awarded for the ring
+     * @param passed rings passed so far (including this one)
+     * @param total  total rings on the map
      */
-    public void showRingPassed(int points) {
+    public void showRingPassed(int passed, int total) {
         player.sendActionBar(net.kyori.adventure.text.Component.translatable(
                 "hud.ring_passed",
-                net.kyori.adventure.text.Component.text(points)));
+                net.kyori.adventure.text.Component.text(passed),
+                net.kyori.adventure.text.Component.text(total)));
         player.playSound(Sound.sound(
                 SoundEvent.ENTITY_EXPERIENCE_ORB_PICKUP,
                 Sound.Source.MASTER,
@@ -147,5 +163,27 @@ public class HudComponent implements Component {
             player.hideBossBar(cupProgressBar);
             cupProgressBar = null;
         }
+    }
+
+    private static net.kyori.adventure.text.Component buildTimeAndPace(long elapsedMs, MedalTier pace) {
+        TextColor color = tierColor(pace);
+        return net.kyori.adventure.text.Component.text(
+                formatTime(elapsedMs) + " [" + pace.name() + "]", color);
+    }
+
+    static TextColor tierColor(MedalTier tier) {
+        return switch (tier) {
+            case DIAMOND -> NamedTextColor.AQUA;
+            case GOLD    -> NamedTextColor.GOLD;
+            case SILVER  -> NamedTextColor.GRAY;
+            case BRONZE  -> BRONZE_COLOR;
+            case FINISH, DNF -> NamedTextColor.RED;
+        };
+    }
+
+    static String formatTime(long elapsedMs) {
+        long seconds = elapsedMs / 1000;
+        long tenths  = (elapsedMs % 1000) / 100;
+        return String.format("%d:%02d.%d", seconds / 60, seconds % 60, tenths);
     }
 }
