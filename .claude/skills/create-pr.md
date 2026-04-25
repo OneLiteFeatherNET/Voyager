@@ -1,6 +1,6 @@
 ---
 name: create-pr
-description: Create a GitHub PR targeting main with the correct PR template, a Conventional Commits title, and the project referral footer.
+description: Create a GitHub PR targeting main with labels, milestone, project assignment, related issue references, a Conventional Commits title, and the project referral footer.
 ---
 
 # Create PR
@@ -82,9 +82,54 @@ Generated with [Claude Code](https://claude.ai/referral/m5Ak2Sa7aQ)
 gh pr create --base main --title "<type(scope): description>" --body "<full body from step 6>"
 ```
 
-8. Display the PR URL returned by `gh pr create` so the user can open it immediately.
+8. Add labels. Fetch available labels first, then pick all that apply:
+```bash
+gh label list --repo OneLiteFeatherNET/Voyager
+```
+Label mapping by Conventional Commits type:
+- `feat:` → `enhancement`
+- `fix:` → `bug`
+- `docs:` → `documentation`
+- `chore:` / `ci:` → `technic`
+- `refactor:` / `test:` → `cleanup` or `testing`
+- Always add domain labels if applicable: `gameplay`, `database`, `infrastructure`, `setup`
+- Add priority labels if known: `P0`, `P1`, `P2`
+```bash
+gh pr edit <number> --add-label "<label1>,<label2>"
+```
+
+9. Assign the correct milestone. Fetch available milestones first:
+```bash
+gh api repos/OneLiteFeatherNET/Voyager/milestones --jq '.[] | "\(.number)\t\(.title)"'
+```
+Pick the earliest active milestone the PR contributes to (e.g. `Alpha v0.1` before `Beta v0.2`):
+```bash
+gh pr edit <number> --milestone "<milestone title>"
+```
+
+10. Add the PR to the Voyager Roadmap project (project ID 19):
+```bash
+gh project item-add 19 --owner OneLiteFeatherNET --url "<pr-url>"
+```
+
+11. Find related open issues and reference them in the PR body. Search for issues whose topic overlaps with the changes:
+```bash
+gh issue list --repo OneLiteFeatherNET/Voyager --state open --limit 50
+```
+- If this PR **closes** an issue, add `Closes #N` to the PR body (GitHub will auto-close it on merge).
+- If this PR **supports but does not close** an issue, add a "Related issues" section with plain `#N` references and a one-line explanation of the relationship.
+- If no issues are related, omit the section entirely — do not add empty placeholders.
+
+Update the PR body with the issue references:
+```bash
+gh pr edit <number> --body "<updated body with issue references>"
+```
+
+12. Display the final PR URL so the user can open it immediately.
 
 ## Output
 
 - The URL of the newly created PR.
+- Labels, milestone, and project applied.
+- Any related issues referenced in the body.
 - A reminder to tick off the checklist items in the PR description on GitHub.
