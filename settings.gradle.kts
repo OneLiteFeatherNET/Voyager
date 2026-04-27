@@ -27,7 +27,7 @@ dependencyResolutionManagement {
             library("minecraft.cloud.minestom", "org.incendo", "cloud-minestom").version("2.0.0-SNAPSHOT")
 
             // OneLiteFeather Libraries (via aonyx-bom)
-            version("aonyx-bom", "0.7.0")
+            version("aonyx-bom", "0.7.1")
             library("aonyx.bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("xerus", "net.theevilreaper", "xerus").withoutVersion()
