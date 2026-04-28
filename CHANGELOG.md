@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.0...v1.8.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.onelitefeather:aonyx-bom to v0.7.1 ([#181](https://github.com/OneLiteFeatherNET/Voyager/issues/181)) ([248cdc1](https://github.com/OneLiteFeatherNET/Voyager/commit/248cdc1a7d3ff3f49c9246dd39b0edcb89783022))
+
 # [1.8.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.7.0...v1.8.0) (2026-04-25)
 
 
