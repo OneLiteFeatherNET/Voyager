@@ -9,7 +9,7 @@ dependencyResolutionManagement {
         create("libs") {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
             version("minestom", "2026.04.13-1.21.11")
-            version("hibernate", "7.3.0.Final")
+            version("hibernate", "7.3.3.Final")
             version("flyway", "10.21.0")
             version("mariadb-client", "3.5.7")
             version("jetbrains-annotations", "26.1.0")
