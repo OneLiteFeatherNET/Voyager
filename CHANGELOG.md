@@ -1,3 +1,10 @@
+## [1.8.5](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.4...v1.8.5) (2026-06-15)
+
+
+### Bug Fixes
+
+* **deps:** update junit-framework monorepo to v6 ([#207](https://github.com/OneLiteFeatherNET/Voyager/issues/207)) ([8a93649](https://github.com/OneLiteFeatherNET/Voyager/commit/8a93649671c1f9e0763475107c81a6def76af178))
+
 ## [1.8.4](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.3...v1.8.4) (2026-06-15)
 
 
