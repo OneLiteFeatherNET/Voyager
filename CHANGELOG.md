@@ -1,3 +1,10 @@
+## [1.8.4](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.3...v1.8.4) (2026-06-15)
+
+
+### Bug Fixes
+
+* **deps:** update mariadb-client to v3.5.9 ([#183](https://github.com/OneLiteFeatherNET/Voyager/issues/183)) ([247bb5b](https://github.com/OneLiteFeatherNET/Voyager/commit/247bb5bc383ad7277c33cf838620a953a06a46ad))
+
 ## [1.8.3](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.2...v1.8.3) (2026-05-25)
 
 
