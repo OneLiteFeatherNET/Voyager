@@ -1,3 +1,10 @@
+## [1.8.6](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.5...v1.8.6) (2026-06-15)
+
+
+### Bug Fixes
+
+* **deps:** update flyway to v12 ([#206](https://github.com/OneLiteFeatherNET/Voyager/issues/206)) ([ecc33e1](https://github.com/OneLiteFeatherNET/Voyager/commit/ecc33e1e49476890f6396c19cd5b8069415181be))
+
 ## [1.8.5](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.4...v1.8.5) (2026-06-15)
 
 
