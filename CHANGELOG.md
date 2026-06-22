@@ -1,3 +1,10 @@
+## [1.8.7](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.6...v1.8.7) (2026-06-22)
+
+
+### Bug Fixes
+
+* **deps:** update hibernate-orm monorepo to v7.3.9.final ([#193](https://github.com/OneLiteFeatherNET/Voyager/issues/193)) ([fa00b29](https://github.com/OneLiteFeatherNET/Voyager/commit/fa00b2936e2f56cb18c5012888a0322c9184d2d1))
+
 ## [1.8.6](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.5...v1.8.6) (2026-06-15)
 
 
