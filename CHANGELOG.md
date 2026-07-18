@@ -1,3 +1,10 @@
+## [1.8.8](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.7...v1.8.8) (2026-07-18)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.mockito:mockito-bom to v5.23.0 ([#160](https://github.com/OneLiteFeatherNET/Voyager/issues/160)) ([b239baa](https://github.com/OneLiteFeatherNET/Voyager/commit/b239baa0edfab70265f5e6725ecca684f6c0140a))
+
 ## [1.8.7](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.6...v1.8.7) (2026-06-22)
 
 
