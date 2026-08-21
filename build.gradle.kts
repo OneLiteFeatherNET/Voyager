@@ -2,6 +2,8 @@ plugins {
     id("java")
 }
 
+version = "1.8.8" // x-release-please-version
+
 group = "net.onelitefeather"
 // version is managed by semantic-release via gradle.properties
 
@@ -26,4 +28,10 @@ subprojects {
             }
         }
     }
+}
+
+// gradle.properties used to carry the version, which Gradle applies to every
+// project in the build. The version now lives above, so pass it down explicitly.
+allprojects {
+    version = rootProject.version
 }
