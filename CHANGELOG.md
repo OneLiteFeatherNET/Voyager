@@ -1,3 +1,10 @@
+## [1.8.9](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.8...v1.8.9) (2026-08-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.incendo:cloud-paper to v2.0.0 ([#219](https://github.com/OneLiteFeatherNET/Voyager/issues/219)) ([6c4d5ed](https://github.com/OneLiteFeatherNET/Voyager/commit/6c4d5edb5ed74510c35eddafc4b78de6aa0ef918))
+
 ## [1.8.8](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.7...v1.8.8) (2026-07-18)
 
 
