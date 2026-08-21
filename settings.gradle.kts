@@ -23,7 +23,7 @@ dependencyResolutionManagement {
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
             library("minecraft.minestom", "net.minestom", "minestom").versionRef("minestom")
             library("minecraft.minestom.testing", "net.minestom", "testing").versionRef("minestom")
-            library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0-SNAPSHOT")
+            library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0")
             library("minecraft.cloud.minestom", "org.incendo", "cloud-minestom").version("2.0.0-SNAPSHOT")
 
             // OneLiteFeather Libraries (via aonyx-bom)
