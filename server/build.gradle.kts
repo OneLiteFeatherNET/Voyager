@@ -24,7 +24,7 @@ dependencies {
     runtimeOnly(libs.log4j2.slf4j2)
 
     testImplementation(libs.minecraft.minestom.testing)
-    testImplementation(platform("org.junit:junit-bom:6.1.0"))
+    testImplementation(platform("org.junit:junit-bom:6.1.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.27.7")
     testImplementation(libs.archunit.junit5)
