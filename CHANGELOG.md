@@ -1,3 +1,10 @@
+## [1.8.10](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.9...v1.8.10) (2026-08-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.junit:junit-bom to v6.1.1 ([#220](https://github.com/OneLiteFeatherNET/Voyager/issues/220)) ([9591bd7](https://github.com/OneLiteFeatherNET/Voyager/commit/9591bd7800354dea0c4faedbefecc8cc0beb9ec2))
+
 ## [1.8.9](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.8...v1.8.9) (2026-08-21)
 
 
