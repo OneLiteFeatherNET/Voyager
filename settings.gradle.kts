@@ -11,7 +11,7 @@ dependencyResolutionManagement {
             version("minestom", "2026.04.13-1.21.11")
             version("hibernate", "7.3.9.Final")
             version("flyway", "12.8.1")
-            version("mariadb-client", "3.5.9")
+            version("mariadb-client", "3.5.10")
             version("jetbrains-annotations", "26.1.0")
             version("fawe-bom", "1.56")
             version("commons-geometry-euclidean", "1.0")
