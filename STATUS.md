@@ -125,7 +125,7 @@ Done when: the old tree is gone and every module is on Java 25.
 | # | Question | Blocks | Needed by |
 |---|---|---|---|
 | 1 | FastAsyncWorldEdit has no Minestom equivalent | All of E6 | Before E6 is planned |
-| 2 | Does `air_drag_modifier` alter the 26.2 elytra drag path? | Correctness of E2 | Before E2 closes |
+| 2 | ~~Does `air_drag_modifier` alter the 26.2 elytra drag path?~~ **Answered: no.** See [`docs/reference/elytra-physics-26.2.md`](docs/reference/elytra-physics-26.2.md) | — | Closed 2026-09-09 |
 | 3 | Does the CloudNet wrapper propagate node environment variables to every service? | Where DB credentials can live | Before E5 |
 | 4 | Which CloudNet RC does the organisation pin? | E4.10 coordinates | Before E4 |
 | 5 | Is `voyager-cloudnet-bridge` needed for post-cup lobby routing? | Whether a ninth module exists | During E4 planning |
@@ -139,9 +139,10 @@ Done when: the old tree is gone and every module is on Java 25.
 
 ## In progress
 
-- **Paper 26.2 decompile.** Paper `main` targets `mcVersion=26.2`, `channel=STABLE`. A shallow clone
-  plus paperweight produces Mojmap-named sources for `LivingEntity.travel()`, which is the
-  authoritative answer to open question 2 and the reference for the E2 port.
+- ~~Paper 26.2 decompile~~ — **done**. Verified reference written to
+  [`docs/reference/elytra-physics-26.2.md`](docs/reference/elytra-physics-26.2.md). It corrects four
+  claims in the existing reference and documents three fidelity traps that would pass a formula
+  review and fail a trace comparison.
 
 ## Notes to resolve
 
