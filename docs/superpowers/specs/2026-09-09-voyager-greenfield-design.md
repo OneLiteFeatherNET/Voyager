@@ -39,6 +39,7 @@ These were decided with the project owner before this document was written.
 | D7 | Target Minecraft 26.2 now, follow to 26.3 later | Minestom `2026.08.28-26.2` is released; 26.3 has no Minestom build yet |
 | D8 | Domain-oriented module cut (eight modules) | Makes the physics core independently testable and confines Minestom to one module |
 | D9 | Existing ADRs are not binding for the new stack | They describe the old design; several are accepted but never implemented |
+| D10 | `io.airlift:guice:10` for dependency injection, annotations confined to the composition roots | Upstream Guice runs on Java 25 but is unmaintained; the fork drops ASM and `Unsafe` entirely |
 
 ### Non-goals
 
@@ -172,6 +173,42 @@ two of which still use `sourceCompatibility` instead of a toolchain.
 
 The version catalog stays programmatic in `settings.gradle.kts`, per project convention.
 `gradle/libs.versions.toml` is not used.
+
+### Dependency injection
+
+`io.airlift:guice:10`, pinned exactly. Package names are unchanged (`com.google.inject.*`); the fork
+is a coordinate move, not an API change.
+
+Upstream `com.google.inject:guice:7.0.0` was evaluated and rejected — but not for the reason usually
+given. It **does** run on Java 25: the `Unsupported class file major version 69` that ASM raises is
+caught inside `LineNumbers` and logged once as a warning, so only source locations in error messages
+degrade. The same holds for JDK 26 and `Unsafe`: `UnsafeClassDefiner` catches the failure and falls
+back to `ChildClassDefiner`, costing the fast hidden-class definer rather than the process. The
+rejection is a maintenance judgement: no release since 2023-05-12, two open Java-25 issues whose
+every comment is from a non-maintainer, and a master branch still pinning ASM 9.5.
+
+The fork removes both failure modes at the root — line numbers come from the JDK's own
+`java.lang.classfile` API, and there is no `HiddenClassDefiner` because there is no bytecode
+generation. It is exercised in production by Trino on JDK 25. The cost is that **AOP is removed**;
+`bindInterceptor` throws. Voyager does not intercept — ECS systems are registered explicitly — so
+this is a non-cost here, and a fitness rule keeps it that way.
+
+**DI annotations do not appear outside the composition roots.** Domain classes in `voyager-physics`,
+`voyager-race` and `voyager-persistence` have ordinary constructors and no `@Inject`, no
+`@Singleton`, no `jakarta.inject` import at all. Wiring happens in explicit `@Provides` methods in
+Guice modules that live in `voyager-server` and `voyager-setup`. This keeps every domain class
+constructible with `new` in a test, keeps the container swappable, and means a decision to drop DI
+later touches two modules rather than eight.
+
+`Stage.PRODUCTION` is mandatory: eager singletons and upfront error checking mean a wiring mistake
+fails at boot rather than lazily initialising something inside the tick loop.
+
+`Multibinder` is **not** used for the ECS system pipeline. Its iteration order is documented as
+consistent only within a single module, and system order in a fixed-step simulation is a correctness
+property, not a detail. The pipeline is bound as an explicit ordered `List`.
+
+Fitness rules: no class outside the composition roots may reference `com.google.inject..` or
+`jakarta.inject..`; no code may call `bindInterceptor`; `voyager-api` references neither.
 
 ### Java 25 usage
 
@@ -1210,6 +1247,7 @@ CI, Release Please and Renovate are untouched.
 | Minecraft 26.3 ships during the rebuild | Possible double migration | Minestom is confined to `voyager-platform`; re-check `releases.atom` at E4 |
 | Vanilla 26.2 recording setup is more work than estimated | E2 slips, and E2 gates everything | Prototype the recorder before committing to E2 scope |
 | Server-side recording lacks the client's internal velocity | Some divergence classes invisible | Accepted: position sequence is what production measures too |
+| `io.airlift:guice` is a single-vendor fork aligned to Trino's needs | Abandonment would force a DI migration | Annotations confined to two composition roots, so a swap touches two modules; pin the exact version and re-check before a JDK 26 migration |
 | The 2023 Kotlin production database may hold player history worth importing | Records and profiles silently lost at cut-over | Dump and inspect the live schema; plan the import before E5 completes, not during cut-over |
 
 ## Evidence
