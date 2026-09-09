@@ -40,6 +40,8 @@ These were decided with the project owner before this document was written.
 | D8 | Domain-oriented module cut (eight modules) | Makes the physics core independently testable and confines Minestom to one module |
 | D9 | Existing ADRs are not binding for the new stack | They describe the old design; several are accepted but never implemented |
 | D10 | `io.airlift:guice:10` for dependency injection, annotations confined to the composition roots | Upstream Guice runs on Java 25 but is unmaintained; the fork drops ASM and `Unsafe` entirely |
+| D11 | No legacy data import; the rebuild starts with an empty database | Greenfield means greenfield — player history from the 2023 build is not carried over |
+| D12 | `CLAUDE.md` is superseded by this specification | It describes a tree that no longer matches reality; the design rules live here now |
 
 ### Non-goals
 
@@ -1234,6 +1236,11 @@ A fresh ADR series starting at `0001` for the new stack; existing ADRs move to
 not patched — it has not been updated since the commit that created it and is
 substantially inaccurate.
 
+`CLAUDE.md` is rewritten rather than patched, and the rewrite lands in **E1** rather than at
+cut-over: it is the file every contributor and every agent reads first, and leaving it describing a
+tree that is being deleted is worse than having no file. Until it is rewritten, this specification is
+the authority — including for the ten design rules, which it carries forward in full.
+
 CI, Release Please and Renovate are untouched.
 
 ## Risks and open questions
@@ -1248,7 +1255,6 @@ CI, Release Please and Renovate are untouched.
 | Vanilla 26.2 recording setup is more work than estimated | E2 slips, and E2 gates everything | Prototype the recorder before committing to E2 scope |
 | Server-side recording lacks the client's internal velocity | Some divergence classes invisible | Accepted: position sequence is what production measures too |
 | `io.airlift:guice` is a single-vendor fork aligned to Trino's needs | Abandonment would force a DI migration | Annotations confined to two composition roots, so a swap touches two modules; pin the exact version and re-check before a JDK 26 migration |
-| The 2023 Kotlin production database may hold player history worth importing | Records and profiles silently lost at cut-over | Dump and inspect the live schema; plan the import before E5 completes, not during cut-over |
 
 ## Evidence
 
