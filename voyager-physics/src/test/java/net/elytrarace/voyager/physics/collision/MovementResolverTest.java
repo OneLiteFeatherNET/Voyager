@@ -52,6 +52,17 @@ class MovementResolverTest {
         return region -> all.stream().filter(region::intersects).toList();
     }
 
+    /**
+     * Candidates in exactly the given order, regardless of the queried region. Vanilla's snap guard
+     * is positional — it fires on the candidate <em>after</em> the one that shrank the distance —
+     * so iteration order is part of any fixture that exercises it, and {@link #filtering} sorts
+     * nothing.
+     */
+    private static CollisionSpace inOrder(Aabb... blocks) {
+        List<Aabb> all = List.of(blocks);
+        return region -> all;
+    }
+
     @Test
     void emptySpaceAllowsTheWholeMovement() {
         MovementResult result =
@@ -395,5 +406,80 @@ class MovementResolverTest {
 
         assertThat(result.allowedMovement().z()).isEqualTo(0.0);
         assertThat(result.zCollision()).isTrue();
+    }
+
+    // --- Fix-Runde 3: Shapes.collide's sub-1.0E-7 snap. ---
+
+    /**
+     * {@code Shapes.collide}'s {@code Math.abs(distance) < 1.0E-7} guard sits <em>inside</em> the
+     * loop over shapes, so an empty list never reaches it and the distance comes back untouched. It
+     * is not a blanket "snap small movements to zero": a resolver that checked the guard before the
+     * loop — the obvious misreading — would return {@code 0.0} here and freeze an entity drifting
+     * through open air at sub-{@code 1.0E-7} speed.
+     *
+     * <p>{@code 5e-8} is under the guard's threshold and over zero, so {@code resolve}'s
+     * {@code lengthSquared() == 0.0} short-circuit does not swallow it either.
+     */
+    @Test
+    void aSubEpsilonMovementWithNoCandidatesPassesThroughUnchanged() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(5.0e-8, 0, 0), CollisionSpace.empty());
+
+        assertThat(result.allowedMovement().x()).isEqualTo(5.0e-8);
+        assertThat(result.xCollision()).isFalse();
+        assertThat(result.horizontalCollision()).isFalse();
+    }
+
+    /**
+     * The other half of the guard's position: once an earlier candidate has clamped the remaining
+     * distance under {@code 1.0E-7}, the next candidate turns it into exactly {@code 0.0} rather
+     * than leaving the residual.
+     *
+     * <p>The wall's near face sits {@code 5e-8} beyond the box's own ({@code 0.3 + 5e-8}), so it
+     * clamps {@code dx = 1.0} to {@code 5e-8} — over zero, under the threshold. The floor is the
+     * second candidate and does not overlap the box on Y at all ({@code y in [9, 10]} against a box
+     * whose feet are at {@code 10}), which is the point: Vanilla's guard runs before
+     * {@code shape.collide}, and the perpendicular-axis test lives <em>inside</em>
+     * {@code shape.collide}, so a candidate this clamp would otherwise skip still triggers the snap.
+     * A guard placed after the overlap test instead would leave {@code 5e-8} here.
+     *
+     * <p>{@code xCollision} is true because the flag compares the requested {@code 1.0} against the
+     * final {@code 0.0} — {@code Entity.move} never sees the {@code 5e-8} intermediate.
+     */
+    @Test
+    void aClampLeavingLessThanTheSnapEpsilonReturnsExactlyZero() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(1.0, 0, 0),
+                inOrder(
+                        new Aabb(new Vec3(0.3 + 5.0e-8, -64, -64), new Vec3(1.3, 64, 64)),
+                        new Aabb(new Vec3(-64, 9, -64), new Vec3(64, 10, 64))));
+
+        assertThat(result.allowedMovement().x()).isEqualTo(0.0);
+        assertThat(result.xCollision()).isTrue();
+    }
+
+    /**
+     * The same snap, with a requested movement small enough that zeroing it stays inside
+     * {@code Mth.equal}'s window. {@code Entity.move:760} compares the requested movement against
+     * the final one and nothing in between, so the {@code 5e-6} requested here against a final
+     * {@code 0.0} is {@code Mth.equal} — no horizontal collision is reported, even though a wall
+     * stopped the movement dead. The vertical flag would report it, being exact; the horizontal
+     * pair does not. That asymmetry is Vanilla's, not this port's.
+     *
+     * <p>Same two candidates as {@link #aClampLeavingLessThanTheSnapEpsilonReturnsExactlyZero}, and
+     * the wall is still inside the swept region: {@code 0.3 + 5e-8} is well short of the region's
+     * {@code 0.3 + 5e-6 + SWEEP_EPSILON} edge.
+     */
+    @Test
+    void aSnapToZeroBelowTheHorizontalToleranceReportsNoCollision() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(5.0e-6, 0, 0),
+                inOrder(
+                        new Aabb(new Vec3(0.3 + 5.0e-8, -64, -64), new Vec3(1.3, 64, 64)),
+                        new Aabb(new Vec3(-64, 9, -64), new Vec3(64, 10, 64))));
+
+        assertThat(result.allowedMovement().x()).isEqualTo(0.0);
+        assertThat(result.xCollision()).isFalse();
+        assertThat(result.horizontalCollision()).isFalse();
     }
 }

@@ -311,14 +311,45 @@ negative), keeping whichever of that limit and the requested distance is smaller
 before the overlap test, which is the `VoxelShape` equivalent of the strict comparisons in
 `AABB.intersects` documented below.
 
-**Finding — Vanilla snaps a sub-`1.0E-7` residual to exactly zero; the rebuild's `MovementResolver`
-passes it through.** Both `Shapes.collide:236` and `VoxelShape.collideX:261` return `0.0` outright
-when `Math.abs(distance) < 1.0E-7`, before any shape is consulted. Note the position of the check in
-`Shapes.collide`: it sits *inside* the loop, so an empty shape list returns the distance unchanged —
-the snap only happens when there is at least one shape in range. `MovementResolver` has no
-equivalent, so a movement of, say, `5e-8` against a nearby block travels `5e-8` in the rebuild and
-`0.0` in Vanilla. This is recorded rather than fixed: it changes behaviour, and calibrating it
-belongs with the real traces.
+**Vanilla snaps a sub-`1.0E-7` remaining distance to exactly zero, and the guard's position is the
+whole of its behaviour.** `Shapes.collide:236` returns `0.0` when `Math.abs(distance) < 1.0E-7`, but
+the check sits *inside* the loop, evaluated once per shape against the distance as clamped so far.
+Two consequences follow, and they pull in opposite directions:
+
+- With an **empty** shape list the loop body never runs, so even a `5e-8` movement passes through
+  untouched. (`collideWithShapes:1246` short-circuits an empty list before this anyway.) This is not
+  a blanket "snap small movements to zero"; reading it as one — hoisting the check above the loop —
+  would freeze an entity drifting through open air.
+- Once an earlier shape has clamped the remaining distance under `1.0E-7`, the **next** shape makes
+  the result exactly `0.0`, not the residual. Because the guard runs before `shape.collide`, and the
+  perpendicular-axis overlap test lives *inside* `shape.collide`
+  (`VoxelShape.collideX:263-268`, the `findIndex` calls), any remaining shape triggers it — including
+  one the clamp would otherwise have skipped for not overlapping on this axis.
+
+`VoxelShape.collideX:261` repeats the same guard at the top of `shape.collide`. Against a distance
+the outer guard has already accepted it can never fire, so it is redundant.
+
+`MovementResolver`'s three per-axis clamps now carry this guard in the same position — at the top of
+the candidate loop, before the overlap test. Pinned by
+`MovementResolverTest.aSubEpsilonMovementWithNoCandidatesPassesThroughUnchanged` and
+`aClampLeavingLessThanTheSnapEpsilonReturnsExactlyZero`.
+
+**Which flag does the snap report?** The source settles it, and the answer is that the snap is never
+visible to the flags in its own right. `Entity.move:760-762` compares the requested movement against
+the final one and nothing in between, so what the flags see is `|requested - 0.0|`:
+
+- A snap after a large clamp (requested `1.0`, clamped to `5e-8`, snapped to `0.0`) is `1.0` away
+  from the request, well over `Mth.equal`'s `1.0E-5F` — an ordinary horizontal collision.
+- A snap of a movement that was *itself* under `1.0E-5` (requested `5e-6`, snapped to `0.0`) is
+  `Mth.equal` to the request, so **no** horizontal collision is reported even though a block stopped
+  the movement dead. Pinned by
+  `MovementResolverTest.aSnapToZeroBelowTheHorizontalToleranceReportsNoCollision`.
+- The same case on Y *is* reported, `verticalCollision` being exact (`delta.y != movement.y`). Note
+  that `verticalCollisionBelow` reads `delta.y < 0.0` — `delta` is the *requested* movement here,
+  `movement` the collided one (`:786` passes the collided vector to `restituteMovementAfterCollisions`,
+  and `setPos` is fed `pos.add(movement)`) — so a snapped-to-zero descent still counts as landing.
+
+The `1.0E-7` guard therefore never needs a flag of its own; it is a clamp like any other.
 
 ### Restitution
 

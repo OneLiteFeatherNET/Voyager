@@ -23,11 +23,10 @@ import java.util.List;
  * is considered; among those, the movement is clamped to the nearest surface in the direction of
  * travel.
  *
- * <p><b>Vanilla's sub-{@code 1.0E-7} snap is not implemented.</b> {@code Shapes.collide} and
- * {@code VoxelShape.collideX} both return {@code 0.0} outright when
- * {@code Math.abs(distance) < 1.0E-7}, before consulting any shape — so a movement smaller than that
- * against a nearby block travels its full (tiny) distance here and exactly zero in Vanilla. See the
- * finding recorded alongside the transcription in the reference document.
+ * <p>Each per-axis clamp carries Vanilla's sub-{@code 1.0E-7} snap, in the position
+ * {@code Shapes.collide} puts it — <em>inside</em> the candidate loop, checked against the
+ * progressively clamped distance before each candidate is consulted. See
+ * {@link #SNAP_TO_ZERO_EPSILON}.
  *
  * <p><b>Step-up is not implemented.</b> Vanilla's {@code collide} also nudges the box upward by up
  * to {@code maxUpStep()} so an entity can climb a slab-height ledge without stopping, but that
@@ -70,6 +69,52 @@ public abstract class MovementResolver {
      * {@code verticalCollision}) is exact.
      */
     private static final float HORIZONTAL_EQUALITY_EPSILON = 1.0e-5F;
+
+    /**
+     * Vanilla's snap-to-zero threshold, transcribed from {@code Shapes.collide}
+     * ({@code net/minecraft/world/phys/shapes/Shapes.java:234}):
+     *
+     * <pre>{@code
+     * public static double collide(final Direction.Axis axis, final AABB moving, final Iterable<VoxelShape> shapes, double distance) {
+     *     for (VoxelShape shape : shapes) {
+     *         if (Math.abs(distance) < 1.0E-7) {
+     *             return 0.0;
+     *         }
+     *
+     *         distance = shape.collide(axis, moving, distance);
+     *     }
+     *
+     *     return distance;
+     * }
+     * }</pre>
+     *
+     * <p>The guard's <em>position</em> is the whole of its behaviour, and each clamp below
+     * reproduces it: it sits at the top of the loop body, so it is checked once per candidate
+     * against the distance as clamped so far, and never at all when there are no candidates. Two
+     * consequences follow, and both are pinned by tests:
+     *
+     * <ul>
+     *   <li>With an empty candidate list the loop body never runs, so a movement of {@code 5e-8}
+     *       through empty space travels its full {@code 5e-8}. This is not a blanket "snap small
+     *       movements to zero".</li>
+     *   <li>Once an earlier candidate has clamped the remaining distance to under {@code 1.0E-7} in
+     *       magnitude, the next candidate makes the result exactly {@code 0.0} — not the residual.
+     *       Because the guard precedes the perpendicular-axis overlap test (Vanilla performs that
+     *       test inside {@code shape.collide}, which the guard short-circuits), <em>any</em>
+     *       remaining candidate triggers it, including one that does not overlap on this axis at
+     *       all.</li>
+     * </ul>
+     *
+     * <p>{@code VoxelShape.collideX:261} repeats the same guard at the top of {@code shape.collide};
+     * against the distance the outer guard has already accepted it can never fire, so it is not
+     * transcribed separately.
+     *
+     * <p>The flags are unaffected by where the snap happens: {@code Entity.move} compares the
+     * <em>requested</em> movement against the <em>final</em> one, never an intermediate, so a snap
+     * is only reported as a horizontal collision when the requested movement itself exceeded
+     * {@link #HORIZONTAL_EQUALITY_EPSILON}.
+     */
+    private static final double SNAP_TO_ZERO_EPSILON = 1.0e-7;
 
     private MovementResolver() {
     }
@@ -144,6 +189,11 @@ public abstract class MovementResolver {
     private static double clampY(Aabb box, List<Aabb> candidates, double dy) {
         double result = dy;
         for (Aabb other : candidates) {
+            // Shapes.collide's guard, in its own position: before the candidate is consulted, and
+            // therefore before the overlap test Vanilla performs inside shape.collide.
+            if (Math.abs(result) < SNAP_TO_ZERO_EPSILON) {
+                return 0.0;
+            }
             if (!overlapsStrict(other.max().x(), other.min().x(), box.min().x(), box.max().x())
                     || !overlapsStrict(other.max().z(), other.min().z(), box.min().z(), box.max().z())) {
                 continue;
@@ -166,6 +216,11 @@ public abstract class MovementResolver {
     private static double clampX(Aabb box, List<Aabb> candidates, double dx) {
         double result = dx;
         for (Aabb other : candidates) {
+            // Shapes.collide's guard, in its own position: before the candidate is consulted, and
+            // therefore before the overlap test Vanilla performs inside shape.collide.
+            if (Math.abs(result) < SNAP_TO_ZERO_EPSILON) {
+                return 0.0;
+            }
             if (!overlapsStrict(other.max().y(), other.min().y(), box.min().y(), box.max().y())
                     || !overlapsStrict(other.max().z(), other.min().z(), box.min().z(), box.max().z())) {
                 continue;
@@ -188,6 +243,11 @@ public abstract class MovementResolver {
     private static double clampZ(Aabb box, List<Aabb> candidates, double dz) {
         double result = dz;
         for (Aabb other : candidates) {
+            // Shapes.collide's guard, in its own position: before the candidate is consulted, and
+            // therefore before the overlap test Vanilla performs inside shape.collide.
+            if (Math.abs(result) < SNAP_TO_ZERO_EPSILON) {
+                return 0.0;
+            }
             if (!overlapsStrict(other.max().x(), other.min().x(), box.min().x(), box.max().x())
                     || !overlapsStrict(other.max().y(), other.min().y(), box.min().y(), box.max().y())) {
                 continue;
