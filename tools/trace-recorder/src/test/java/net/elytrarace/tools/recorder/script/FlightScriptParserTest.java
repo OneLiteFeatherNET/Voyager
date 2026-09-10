@@ -96,4 +96,28 @@ class FlightScriptParserTest {
 
         assertThat(script.inputAt(1).pitch()).isEqualTo(13.333334f);
     }
+
+    @Test
+    void rampInterpolatesYawAcrossItsOwnRange() {
+        // yaw and pitch ramp over different ranges so a mismatched or dropped yaw interpolation
+        // (e.g. reusing the pitch value, or the range's start value for every tick) cannot hide
+        // behind values that happen to coincide.
+        FlightScript script = FlightScriptParser.parse("ramp 5 yaw=100..200 pitch=0..40");
+
+        assertThat(script.inputAt(0).yaw()).isEqualTo(100.0f);
+        assertThat(script.inputAt(2).yaw()).isEqualTo(150.0f);
+        assertThat(script.inputAt(4).yaw()).isEqualTo(200.0f);
+    }
+
+    @Test
+    void boostInheritsThePreviousYawAsWellAsPitch() {
+        FlightScript script = FlightScriptParser.parse("""
+                hold 2 yaw=45 pitch=-5
+                boost
+                """);
+
+        assertThat(script.inputAt(2).yaw()).isEqualTo(45.0f);
+        assertThat(script.inputAt(2).pitch()).isEqualTo(-5.0f);
+        assertThat(script.inputAt(2).igniteFirework()).isTrue();
+    }
 }
