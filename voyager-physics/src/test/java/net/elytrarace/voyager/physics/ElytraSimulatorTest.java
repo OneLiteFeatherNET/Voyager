@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.physics.CollisionSpace;
 import net.elytrarace.voyager.api.physics.FlightInput;
 import net.elytrarace.voyager.api.physics.FlightState;
 import net.elytrarace.voyager.api.math.Aabb;
+import net.elytrarace.voyager.physics.math.MinecraftMath;
 import net.elytrarace.voyager.physics.step.ElytraStep;
 import org.junit.jupiter.api.Test;
 
@@ -236,5 +237,139 @@ class ElytraSimulatorTest {
         FlightState result = ElytraSimulator.tick(state, input, wallAt(44.84999542915344));
 
         assertThat(result.velocity().x()).isEqualTo(0.0);
+    }
+
+    // --- Fix-Runde 2: the X terms, which every fixture above collapses to zero at yaw 0. ---
+
+    /**
+     * At yaw 0 {@code MinecraftMath.sin(-0.0f)} returns exactly {@code 0.0f}, so {@code lookAngle.x}
+     * is exactly zero and every X contribution in the pipeline vanishes: the {@code lookAngle.x}
+     * terms of {@code DOWNWARD_GLIDE} and {@code UPWARD_PITCH_BOOST}, and the {@code lookAngle.x}
+     * half of the firework impulse, are all multiplied by zero. Every other numeric fixture in this
+     * class, in {@code ElytraStepTest} and in {@code TraceReplayTest} runs at yaw 0, so flipping the
+     * sign of either of those two step terms — or changing the impulse's {@code 1.5} to {@code 1.4}
+     * — leaves all of them green.
+     *
+     * <p>This fixture runs at pitch {@code -20}, yaw {@code 37}: none of {@code sin(realYRot)},
+     * {@code cos(realYRot)}, {@code sin(realXRot)} or {@code cos(realXRot)} is {@code 0} or
+     * {@code ±1} there, so no term degenerates. The entering velocity has a horizontal speed of
+     * exactly {@code 1.0} and a negative {@code y}, so {@code DOWNWARD_GLIDE}'s guard
+     * ({@code movement.y < 0}) and {@code UPWARD_PITCH_BOOST}'s ({@code leanAngle < 0}) both fire.
+     *
+     * <p>Expected values come from {@link #vanillaUpdateFallFlyingMovement}, a transcription of the
+     * source quoted in {@code docs/reference/elytra-physics-26.2.md} written in plain {@code double}
+     * arithmetic and reading nothing from the production pipeline. The literals below were produced
+     * by that transcription, not by running {@link ElytraSimulator} and recording its output; they
+     * are asserted alongside it so that editing the transcription cannot silently move the target.
+     * Measured against this fixture, flipping {@code DOWNWARD_GLIDE}'s {@code lookAngle.x} sign
+     * moves the resulting {@code x} by {@code 1.20e-2}, flipping {@code UPWARD_PITCH_BOOST}'s by
+     * {@code 1.47e-2}.
+     */
+    @Test
+    void theXTermsOfEveryStepArePinnedAtANonZeroYaw() {
+        FlightState state = new FlightState(new Vec3(0, 100, 0), ENTERING_VELOCITY, YAW, PITCH, false);
+        FlightInput input = new FlightInput(YAW, PITCH, false, 0, DEFAULT_GRAVITY);
+
+        FlightState result = ElytraSimulator.tick(state, input, CollisionSpace.empty());
+
+        Vec3 expected = vanillaUpdateFallFlyingMovement(ENTERING_VELOCITY, PITCH, YAW, DEFAULT_GRAVITY);
+        assertThat(expected.x()).isCloseTo(0.47634234574166134, within(1.0e-15));
+        assertThat(expected.y()).isCloseTo(-0.0705936213721782, within(1.0e-15));
+        assertThat(expected.z()).isCloseTo(0.7901148825981188, within(1.0e-15));
+
+        assertThat(result.velocity().x()).isCloseTo(expected.x(), within(1.0e-12));
+        assertThat(result.velocity().y()).isCloseTo(expected.y(), within(1.0e-12));
+        assertThat(result.velocity().z()).isCloseTo(expected.z(), within(1.0e-12));
+        assertThat(result.position().x()).isCloseTo(expected.x(), within(1.0e-12));
+        assertThat(result.position().z()).isCloseTo(expected.z(), within(1.0e-12));
+    }
+
+    /**
+     * The same rotation as {@link #theXTermsOfEveryStepArePinnedAtANonZeroYaw}, with the firework
+     * impulse active. The impulse's {@code lookAngle.x * 1.5} term is the one every yaw-0 fixture
+     * multiplies by zero: at this yaw, changing that {@code 1.5} to {@code 1.4} moves the entering
+     * {@code x} by {@code 2.83e-2} and the resulting {@code x} by {@code 2.54e-2}.
+     */
+    @Test
+    void theFireworkImpulsesXTermIsPinnedAtANonZeroYaw() {
+        FlightState state = new FlightState(new Vec3(0, 100, 0), ENTERING_VELOCITY, YAW, PITCH, false);
+        FlightInput boosting = new FlightInput(YAW, PITCH, true, 1, DEFAULT_GRAVITY);
+
+        FlightState result = ElytraSimulator.tick(state, boosting, CollisionSpace.empty());
+
+        Vec3 boosted = vanillaFireworkImpulse(ENTERING_VELOCITY, vanillaLookAngle(PITCH, YAW));
+        assertThat(boosted.x()).isCloseTo(-0.18065171241760258, within(1.0e-15));
+
+        Vec3 expected = vanillaUpdateFallFlyingMovement(boosted, PITCH, YAW, DEFAULT_GRAVITY);
+        assertThat(expected.x()).isCloseTo(-0.21599867432561282, within(1.0e-15));
+        assertThat(expected.y()).isCloseTo(0.25454496876292027, within(1.0e-15));
+        assertThat(expected.z()).isCloseTo(0.9977951010981996, within(1.0e-15));
+
+        assertThat(result.velocity().x()).isCloseTo(expected.x(), within(1.0e-12));
+        assertThat(result.velocity().y()).isCloseTo(expected.y(), within(1.0e-12));
+        assertThat(result.velocity().z()).isCloseTo(expected.z(), within(1.0e-12));
+    }
+
+    // --- An independent transcription of Vanilla 26.2, used only by the two fixtures above. ---
+    //
+    // Transcribed from the source quoted in docs/reference/elytra-physics-26.2.md
+    // (LivingEntity.updateFallFlyingMovement, Entity.calculateViewVector, FireworkRocketEntity.tick)
+    // in plain double arithmetic. It calls nothing in net.elytrarace.voyager.physics except
+    // MinecraftMath, whose table and DEG_TO_RAD are pinned independently by MinecraftMathTest — so a
+    // mutation anywhere in ElytraStep, StepContext, ViewVector or ElytraSimulator cannot move both
+    // sides of the comparison together.
+
+    private static final float PITCH = -20.0f;
+    private static final float YAW = 37.0f;
+    private static final Vec3 ENTERING_VELOCITY = new Vec3(0.6, -0.1, 0.8);
+
+    /** {@code Entity.calculateViewVector(xRot, yRot)}. */
+    private static Vec3 vanillaLookAngle(float xRot, float yRot) {
+        float realXRot = xRot * MinecraftMath.DEG_TO_RAD;
+        float realYRot = -yRot * MinecraftMath.DEG_TO_RAD;
+        float yCos = MinecraftMath.cos(realYRot);
+        float ySin = MinecraftMath.sin(realYRot);
+        float xCos = MinecraftMath.cos(realXRot);
+        float xSin = MinecraftMath.sin(realXRot);
+        return new Vec3(ySin * xCos, -xSin, yCos * xCos);
+    }
+
+    /** {@code FireworkRocketEntity.tick()}'s impulse on the entity it is attached to. */
+    private static Vec3 vanillaFireworkImpulse(Vec3 movement, Vec3 lookAngle) {
+        return new Vec3(
+                movement.x() + (lookAngle.x() * 0.1 + (lookAngle.x() * 1.5 - movement.x()) * 0.5),
+                movement.y() + (lookAngle.y() * 0.1 + (lookAngle.y() * 1.5 - movement.y()) * 0.5),
+                movement.z() + (lookAngle.z() * 0.1 + (lookAngle.z() * 1.5 - movement.z()) * 0.5));
+    }
+
+    /** {@code LivingEntity.updateFallFlyingMovement(movement)}. */
+    private static Vec3 vanillaUpdateFallFlyingMovement(Vec3 movement, float pitch, float yaw, double gravity) {
+        Vec3 lookAngle = vanillaLookAngle(pitch, yaw);
+        float leanAngle = pitch * MinecraftMath.DEG_TO_RAD;
+        double lookHorLength = Math.sqrt(lookAngle.x() * lookAngle.x() + lookAngle.z() * lookAngle.z());
+        double moveHorLength = Math.sqrt(movement.x() * movement.x() + movement.z() * movement.z());
+        double liftForce = Math.cos(leanAngle) * Math.cos(leanAngle);
+
+        double x = movement.x();
+        double y = movement.y() + gravity * (-1.0 + liftForce * 0.75);
+        double z = movement.z();
+
+        if (y < 0.0 && lookHorLength > 0.0) {
+            double convert = y * -0.1 * liftForce;
+            x += lookAngle.x() * convert / lookHorLength;
+            z += lookAngle.z() * convert / lookHorLength;
+            y += convert;
+        }
+        if (leanAngle < 0.0F && lookHorLength > 0.0) {
+            double convert = moveHorLength * -MinecraftMath.sin(leanAngle) * 0.04;
+            x += -lookAngle.x() * convert / lookHorLength;
+            z += -lookAngle.z() * convert / lookHorLength;
+            y += convert * 3.2;
+        }
+        if (lookHorLength > 0.0) {
+            x += (lookAngle.x() / lookHorLength * moveHorLength - x) * 0.1;
+            z += (lookAngle.z() / lookHorLength * moveHorLength - z) * 0.1;
+        }
+        return new Vec3(x * 0.99F, y * 0.98F, z * 0.99F);
     }
 }

@@ -242,9 +242,12 @@ class ElytraStepTest {
         // Minor 5. At pitch -90 the table's look vector is exactly (0, 1, 0): lookHorLength is
         // exactly 0.0 and Vanilla's `lookHorLength > 0.0` guard must skip DOWNWARD_GLIDE,
         // UPWARD_PITCH_BOOST and DIRECTION_ALIGNMENT rather than divide by zero (Vec3's compact
-        // constructor rejects the resulting NaN/Infinity). At +90 the table leaves a residual
-        // 1.22e-16, the guard does NOT fire there, and the division is meant to explode exactly as
-        // it does in Vanilla - that case is intentionally left untouched.
+        // constructor rejects the resulting NaN/Infinity). At +90 the guard does NOT fire: the
+        // table leaves lookAngle.z at a residual 1.22e-16, so lookHorLength is that same 1.22e-16
+        // rather than zero. The divisions there stay finite - both lookAngle.x and lookAngle.z are
+        // xCos scaled by ySin and yCos, and lookHorLength is |xCos| scaled by sqrt(ySin^2+yCos^2),
+        // so the quotients come out at 0.0 and 1.0, not at infinity. That case needs no guard and
+        // is intentionally left untouched.
         Vec3 velocity = new Vec3(0.0, -0.5, 1.0);
         StepContext ctx = context(velocity, -90.0f, 0.0f);
 
