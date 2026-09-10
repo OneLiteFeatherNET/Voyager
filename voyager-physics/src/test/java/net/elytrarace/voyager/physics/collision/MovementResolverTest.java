@@ -206,4 +206,25 @@ class MovementResolverTest {
         assertThat(result.allowedMovement().z()).isCloseTo(4.7, within(1.0e-9));
         assertThat(result.horizontalCollision()).isTrue();
     }
+
+    /**
+     * Every clamp distance elsewhere in this suite is either exactly {@code 0.0} or at least
+     * {@code 0.1} — nothing falls inside {@code (0, 1e-5)}, Vanilla's {@code Mth.equal} tolerance on
+     * {@code horizontalCollision}. A resolver whose tolerance check silently regressed to an exact
+     * {@code ==} would still pass every other test here. This one requests {@code dx = 4.700005}
+     * against the wall at {@code x = 5..6}: the wall clamps it to {@code 4.7} exactly (same
+     * derivation as {@link #aWallStopsHorizontalMovementAndReportsIt}: {@code box.max.x() (0.3) <=
+     * other.min.x() (5)}, {@code limit = 5 - 0.3 = 4.7}), leaving a requested-vs-achieved difference
+     * of exactly {@code 5e-6} — under Vanilla's {@code 1.0E-5F} — so {@code horizontalCollision} must
+     * stay false even though the movement was, in fact, clamped.
+     */
+    @Test
+    void aClampWellUnderVanillasToleranceIsNotReportedAsACollision() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(4.700005, 0, 0),
+                filtering(new Aabb(new Vec3(5, -64, -64), new Vec3(6, 64, 64))));
+
+        assertThat(result.allowedMovement().x()).isCloseTo(4.7, within(1.0e-9));
+        assertThat(result.horizontalCollision()).isFalse();
+    }
 }
