@@ -49,6 +49,15 @@ public record TraceFixture(Metadata metadata, List<Tick> ticks) {
      * What a replay needs to know about a recording beyond the samples themselves. {@code gravity}
      * is the entity's effective gravity attribute at record time — a replay that assumes a fixed
      * default silently diverges whenever the recording used a different value.
+     *
+     * <p>{@code worldSlice} must be present, even when empty: a genuine free-flight recording
+     * serializes it as {@code []}, and this constructor accepts that. A <em>missing</em> field — one
+     * that never made it into the JSON at all — deserializes to {@code null} and is rejected instead
+     * of silently defaulting to an empty world. E2a's own {@code TraceMetadata} has no lenient path
+     * either ({@code List.copyOf(worldSlice)} on a {@code null} throws); mirroring E2a's field names
+     * without mirroring that strictness would mean a recording whose world slice failed to serialize
+     * replays as free flight and diverges on every collision tick, with nothing in the report
+     * pointing at the fixture as the actual cause.
      */
     public record Metadata(
             String minecraftVersion,
@@ -72,7 +81,12 @@ public record TraceFixture(Metadata metadata, List<Tick> ticks) {
                 throw new InvalidTraceFixtureException(
                         "formatVersion must be >= 1, was %s".formatted(formatVersion));
             }
-            worldSlice = worldSlice == null ? List.of() : List.copyOf(worldSlice);
+            if (worldSlice == null) {
+                throw new InvalidTraceFixtureException(
+                        "worldSlice must not be missing; an empty world must be recorded as [], "
+                                + "not an absent field");
+            }
+            worldSlice = List.copyOf(worldSlice);
         }
     }
 

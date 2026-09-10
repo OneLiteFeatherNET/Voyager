@@ -14,4 +14,8 @@ public final class InvalidTraceFixtureException extends RuntimeException {
     public InvalidTraceFixtureException(String message) {
         super(message);
     }
+
+    public InvalidTraceFixtureException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

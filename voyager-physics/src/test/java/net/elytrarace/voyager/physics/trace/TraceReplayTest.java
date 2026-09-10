@@ -139,6 +139,10 @@ class TraceReplayTest {
 
         TraceFixture fixture = generateFixture(fallingSeed, constantInputs(15, 0.0f, 0.0f), floor, worldSlice);
 
+        // Otherwise a change to the seed (e.g. a shallower fall) silently turns this into a
+        // duplicate of the free-flight test above, without ever having exercised collision at all.
+        assertThat(fixture.ticks().getLast().onGround()).isTrue();
+
         ReplayReport report = TraceReplay.replay(fixture);
 
         assertThat(report.isClean()).isTrue();
@@ -221,15 +225,14 @@ class TraceReplayTest {
 
     // ---- cumulative error is independent of the per-tick bound ------------------------------
 
-    @Test
-    void cumulativeErrorIsReportedSeparatelyFromPerTickError() {
-        TraceFixture clean = generateFixture(seed(), constantInputs(20, 0.0f, -20.0f), FREE_FLIGHT, List.of());
-
-        ReplayReport clean1 = TraceReplay.replay(clean);
-        assertThat(clean1.cumulativeError()).isEqualTo(0.0);
-        assertThat(clean1.firstDivergingTickError()).isEqualTo(0.0);
-    }
-
+    /**
+     * A replay that never exceeds the per-tick bound (so {@code firstDivergingTick} and {@code
+     * firstDivergingTickError} stay at their empty/zero defaults) can still exceed the cumulative
+     * one from the sum of many small, individually-tolerated errors — proving the two figures are
+     * tracked independently rather than one being derived from the other. A test that only replays
+     * a clean fixture and finds both at {@code 0.0} cannot tell these apart from a single field
+     * duplicated under two names; this one can, because only one of them trips.
+     */
     @Test
     void aReplayStayingUnderThePerTickBoundButOverTheCumulativeBoundIsStillReported() {
         int tickCount = 25;
@@ -246,12 +249,50 @@ class TraceReplayTest {
         ReplayReport report = TraceReplay.replay(perturbed, perTickThreshold, cumulativeThreshold);
 
         assertThat(report.firstDivergingTick()).isEmpty();
+        assertThat(report.firstDivergingTickError()).isEqualTo(0.0);
         assertThat(report.cumulativeThresholdExceeded()).isTrue();
         assertThat(report.cumulativeError()).isGreaterThan(cumulativeThreshold);
         assertThat(report.isClean()).isFalse();
     }
 
-    // ---- naming the diverging step -----------------------------------------------------------
+    // ---- naming the diverging step: the ordinary case names none ----------------------------
+
+    /**
+     * A real recorder (E2a Task 2) never writes anything but the entity's actual post-tick
+     * velocity — the value a correct simulation produces after {@code DRAG}, the last step. This
+     * builds a fixture in exactly that shape: the recorded velocity at the perturbed tick is the
+     * real simulated final velocity plus a small, direction-agnostic offset, not any step's raw
+     * intermediate output. Per {@link TraceReplay#replay}'s javadoc, this is the case attribution
+     * cannot resolve — the recorded value stays closest to {@code DRAG}'s own output, so there is no
+     * earlier step meaningfully closer to blame instead. The tick is still correctly flagged as
+     * diverging (via position error) and the residual is still reported; only the step name is
+     * withheld, honestly, instead of defaulting to {@code DRAG} every time.
+     */
+    @Test
+    void aRealisticallyShapedDivergenceReportsNoStepBecauseTheFormatCannotSayWhichOne() {
+        TraceFixture clean = generateFixture(seed(), constantInputs(10, 0.0f, -20.0f), FREE_FLIGHT, List.of());
+        int perturbedTick = 4;
+
+        TraceFixture.Tick original = clean.ticks().get(perturbedTick);
+        Vec3 recordedVelocity = new Vec3(original.velX() + 0.01, original.velY() + 0.01, original.velZ() - 0.01);
+        TraceFixture.Tick replacement = withVelocity(withPosition(original, 0.25), recordedVelocity);
+        TraceFixture perturbed = withTick(clean, perturbedTick, replacement);
+
+        ReplayReport report = TraceReplay.replay(perturbed, 1.0E-9, 1000.0);
+
+        assertThat(report.firstDivergingTick()).hasValue(perturbedTick);
+        assertThat(report.divergingStep()).isEmpty();
+        assertThat(report.firstDivergingTickVelocityResidual()).isGreaterThan(0.0);
+    }
+
+    // ---- naming the diverging step: the mechanism, exercised directly ------------------------
+    //
+    // The two tests below construct a recorded velocity equal to an intermediate step's exact raw
+    // output — a shape no recorder can produce, since a recording only ever samples the entity's
+    // actual post-tick (post-DRAG) velocity. They exist to pin the attribution mechanism's own
+    // logic directly (which step gets named when one genuinely is closer than DRAG), the way a
+    // unit test exercises a branch a realistic input may take years to hit on its own. The test
+    // above is the one proving what happens on input shaped like a real recording.
 
     @Test
     void theDivergingStepIsAttributableToWhicheverStepTheRecordedVelocityStoppedMatching() {
@@ -323,6 +364,32 @@ class TraceReplayTest {
     }
 
     @Test
+    void aFixtureWhoseMetadataIsMissingItsWorldSliceFailsWithADomainException() {
+        assertThatThrownBy(() -> new TraceFixture.Metadata("26.2", "synthetic", GRAVITY, 1, null))
+                .isInstanceOf(InvalidTraceFixtureException.class)
+                .hasMessageContaining("worldSlice");
+    }
+
+    /**
+     * A missing {@code worldSlice} key deserializes to {@code null}, same as leaving it out of a
+     * hand-built {@link TraceFixture.Metadata}. An explicit {@code []} must still be accepted — that
+     * is a genuine free-flight recording, not a malformed one.
+     */
+    @Test
+    void loadingJsonWithAMissingWorldSliceFieldFailsWithADomainExceptionNotSilentlyEmptyWorld() {
+        String json = """
+                {"metadata":{"minecraftVersion":"26.2","profile":"p","gravity":0.08,"formatVersion":1},
+                 "ticks":[{"index":0,"posX":0,"posY":0,"posZ":0,"velX":0,"velY":0,"velZ":0,
+                           "yaw":0,"pitch":0,"onGround":false,"fireworkBoostActive":false,
+                           "fireworkTicksRemaining":0}]}
+                """;
+
+        assertThatThrownBy(() -> TraceFixtureLoader.fromJson(json))
+                .isInstanceOf(InvalidTraceFixtureException.class)
+                .hasMessageContaining("worldSlice");
+    }
+
+    @Test
     void loadingBlankJsonFailsWithADomainException() {
         assertThatThrownBy(() -> TraceFixtureLoader.fromJson("")).isInstanceOf(InvalidTraceFixtureException.class);
         assertThatThrownBy(() -> TraceFixtureLoader.fromJson(null)).isInstanceOf(InvalidTraceFixtureException.class);
@@ -337,6 +404,61 @@ class TraceReplayTest {
     @Test
     void loadingJsonMissingEveryFieldFailsWithADomainExceptionNotANullPointerException() {
         assertThatThrownBy(() -> TraceFixtureLoader.fromJson("{}"))
+                .isInstanceOf(InvalidTraceFixtureException.class)
+                .hasMessage("a trace fixture must carry metadata");
+    }
+
+    /**
+     * Reproduces the exact defect the reviewer measured: without unwrapping Gson's own wrapper
+     * exception, this surfaced as {@code "fixture JSON could not be parsed: Failed to invoke
+     * constructor '...Metadata(...)' with args [26.2, p, -1.0, 1, []]"} — the actual reason
+     * ({@code "gravity must be finite and > 0, was -1.0"}) discarded along with its stack. A loader
+     * whose only job is diagnosing broken fixtures cannot lose that message; this pins that the
+     * original {@link TraceFixture.Metadata} validation message survives unchanged, and that when a
+     * message is rebuilt instead (the JSON-syntax-error path), the original exception is at least
+     * chained as the cause rather than discarded.
+     */
+    @Test
+    void loadingJsonThatFailsFixtureValidationPreservesTheOriginalValidationMessage() {
+        String json = """
+                {"metadata":{"minecraftVersion":"26.2","profile":"p","gravity":-1.0,"formatVersion":1,"worldSlice":[]},
+                 "ticks":[{"index":0,"posX":0,"posY":0,"posZ":0,"velX":0,"velY":0,"velZ":0,
+                           "yaw":0,"pitch":0,"onGround":false,"fireworkBoostActive":false,
+                           "fireworkTicksRemaining":0}]}
+                """;
+
+        assertThatThrownBy(() -> TraceFixtureLoader.fromJson(json))
+                .isInstanceOf(InvalidTraceFixtureException.class)
+                .hasMessage("gravity must be finite and > 0, was -1.0");
+    }
+
+    @Test
+    void loadingSyntacticallyInvalidJsonChainsTheOriginalExceptionAsTheCause() {
+        assertThatThrownBy(() -> TraceFixtureLoader.fromJson("{ this is not json"))
+                .isInstanceOf(InvalidTraceFixtureException.class)
+                .hasMessageContaining("fixture JSON could not be parsed")
+                .cause().isNotNull();
+    }
+
+    // ---- TraceReplay validates its own arguments, not just the fixture ------------------------
+
+    @Test
+    void replayingWithANonFiniteThresholdFailsWithADomainExceptionRatherThanSilentlyReportingClean() {
+        TraceFixture clean = generateFixture(seed(), constantInputs(5, 0.0f, -20.0f), FREE_FLIGHT, List.of());
+
+        assertThatThrownBy(() -> TraceReplay.replay(clean, Double.NaN, 1000.0))
+                .isInstanceOf(InvalidTraceFixtureException.class);
+        assertThatThrownBy(() -> TraceReplay.replay(clean, 0.01, Double.NaN))
+                .isInstanceOf(InvalidTraceFixtureException.class);
+    }
+
+    @Test
+    void replayingWithANegativeThresholdFailsWithADomainException() {
+        TraceFixture clean = generateFixture(seed(), constantInputs(5, 0.0f, -20.0f), FREE_FLIGHT, List.of());
+
+        assertThatThrownBy(() -> TraceReplay.replay(clean, -0.01, 1000.0))
+                .isInstanceOf(InvalidTraceFixtureException.class);
+        assertThatThrownBy(() -> TraceReplay.replay(clean, 0.01, -1000.0))
                 .isInstanceOf(InvalidTraceFixtureException.class);
     }
 

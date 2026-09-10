@@ -38,6 +38,13 @@ public abstract class TraceReplay {
     /** The default cumulative position-error bound, in blocks, summed across the whole replay. */
     public static final double DEFAULT_CUMULATIVE_THRESHOLD = 1.0E-4;
 
+    /**
+     * How much closer an earlier step's output must be to the recorded velocity than the last
+     * step's own output before that earlier step is treated as a genuine candidate rather than
+     * floating-point noise around a tie. See {@link #attributeDivergingStep}.
+     */
+    private static final double STEP_ATTRIBUTION_TOLERANCE = 1.0E-9;
+
     private TraceReplay() {
     }
 
@@ -57,6 +64,14 @@ public abstract class TraceReplay {
         if (fixture == null) {
             throw new InvalidTraceFixtureException("fixture must not be null");
         }
+        if (!Double.isFinite(perTickThreshold) || perTickThreshold < 0.0) {
+            throw new InvalidTraceFixtureException(
+                    "perTickThreshold must be finite and >= 0, was %s".formatted(perTickThreshold));
+        }
+        if (!Double.isFinite(cumulativeThreshold) || cumulativeThreshold < 0.0) {
+            throw new InvalidTraceFixtureException(
+                    "cumulativeThreshold must be finite and >= 0, was %s".formatted(cumulativeThreshold));
+        }
 
         List<TraceFixture.Tick> ticks = fixture.ticks();
         TraceFixture.Tick seed = ticks.get(0);
@@ -72,6 +87,7 @@ public abstract class TraceReplay {
 
         OptionalInt firstDivergingTick = OptionalInt.empty();
         double firstDivergingTickError = 0.0;
+        double firstDivergingTickVelocityResidual = 0.0;
         Optional<ElytraStep> divergingStep = Optional.empty();
         double cumulativeError = 0.0;
 
@@ -94,30 +110,65 @@ public abstract class TraceReplay {
             if (firstDivergingTick.isEmpty() && error > perTickThreshold) {
                 firstDivergingTick = OptionalInt.of(i);
                 firstDivergingTickError = error;
-                divergingStep = Optional.of(mostDivergentStep(trace, recorded));
+                firstDivergingTickVelocityResidual = velocityResidual(trace, recorded);
+                divergingStep = attributeDivergingStep(trace, recorded);
             }
         }
 
         return new ReplayReport(
                 firstDivergingTick,
                 firstDivergingTickError,
+                firstDivergingTickVelocityResidual,
                 divergingStep,
                 cumulativeError,
                 cumulativeError > cumulativeThreshold);
     }
 
     /**
-     * The fixture format carries one recorded velocity per tick, not a per-step breakdown — {@link
-     * TickTrace}'s own javadoc notes that even the firework boost cannot be attributed to a single
-     * step from {@code velocityAfter} alone. This walks the steps in Vanilla's order and finds the
-     * one whose simulated output sits closest to the recorded velocity; the step immediately after
-     * it is where the simulated chain stops tracking the recording, and is reported as the
-     * divergence's source. A tick whose closest match is already the last step reports that last
-     * step, since there is no later step left to blame instead.
+     * The distance between the recorded velocity and the simulated velocity after the last step
+     * ({@link ElytraStep#DRAG}) — the tick's overall velocity error, before any attempt at
+     * attributing it to a particular step. Exposed on {@link ReplayReport} so a reader can judge for
+     * themselves how much weight {@link ReplayReport#divergingStep()} deserves: a large residual
+     * with no attributed step still says something went wrong, even though this format cannot say
+     * where.
      */
-    private static ElytraStep mostDivergentStep(TickTrace trace, TraceFixture.Tick recorded) {
+    private static double velocityResidual(TickTrace trace, TraceFixture.Tick recorded) {
+        List<ElytraStep> steps = ElytraStep.stepsInOrder();
+        Vec3 lastStepVelocity = trace.velocityAfter().get(steps.get(steps.size() - 1));
+        Vec3 recordedVelocity = new Vec3(recorded.velX(), recorded.velY(), recorded.velZ());
+        return lastStepVelocity.minus(recordedVelocity).length();
+    }
+
+    /**
+     * Attempts to attribute a tick's divergence to one {@link ElytraStep}, and is honest about how
+     * rarely that attempt can succeed.
+     *
+     * <p>The fixture format carries exactly one recorded velocity per tick — the entity's actual
+     * post-tick delta movement, i.e. the value that a correct simulation produces after {@code DRAG}
+     * runs, the last of the five steps (see E2a's {@code TraceTick} in {@code
+     * docs/superpowers/plans/2026-09-10-e2a-trace-recorder.md}, Task 2, and {@link
+     * TraceFixture.Tick}'s own javadoc). That shape makes step-level attribution meaningful only in
+     * a narrow case: when the recorded velocity sits closer to some <em>earlier</em> step's raw
+     * output than it does to {@code DRAG}'s own output. That can only happen when the divergence is
+     * large relative to the distances between consecutive steps' outputs — for example, a bug
+     * confined to {@code DRAG} itself, where the four earlier steps still compute the correct
+     * trajectory and one of them, unaffected by the bug, ends up closer to the recording than
+     * {@code DRAG}'s wrong answer does.
+     *
+     * <p>In the ordinary case — a real recording, and a port that is correct or nearly so — the
+     * recorded velocity sits closest to {@code DRAG}'s own output, exactly because that is what it
+     * is measuring. Comparing distances then, correctly, finds {@code DRAG} closest to itself, and
+     * there is no earlier step to blame instead: the residual, whatever its size, is not
+     * attributable to any single step from this data alone. This method reports {@link
+     * Optional#empty()} in that case rather than naming {@code DRAG} by default, because doing the
+     * latter would silently turn "the format cannot say" into "the last step is always at fault," an
+     * answer indistinguishable from a real defect. See {@link #velocityResidual} for the number a
+     * caller can still read when attribution comes back empty.
+     */
+    private static Optional<ElytraStep> attributeDivergingStep(TickTrace trace, TraceFixture.Tick recorded) {
         Vec3 recordedVelocity = new Vec3(recorded.velX(), recorded.velY(), recorded.velZ());
         List<ElytraStep> steps = ElytraStep.stepsInOrder();
+        int lastIndex = steps.size() - 1;
 
         int closestIndex = 0;
         double closestDistance = Double.POSITIVE_INFINITY;
@@ -130,8 +181,14 @@ public abstract class TraceReplay {
             }
         }
 
-        int divergingIndex = Math.min(closestIndex + 1, steps.size() - 1);
-        return steps.get(divergingIndex);
+        double lastStepDistance = trace.velocityAfter().get(steps.get(lastIndex)).minus(recordedVelocity).length();
+        if (lastStepDistance - closestDistance <= STEP_ATTRIBUTION_TOLERANCE) {
+            // The recorded velocity is within tolerance of DRAG's own output — the ordinary case.
+            // No step is meaningfully closer, so there is nothing to attribute.
+            return Optional.empty();
+        }
+
+        return Optional.of(steps.get(closestIndex + 1));
     }
 
     /**
@@ -141,8 +198,14 @@ public abstract class TraceReplay {
      *     per-tick threshold, empty if none did
      * @param firstDivergingTickError the position error at {@code firstDivergingTick}, {@code 0.0}
      *     when it is empty
-     * @param divergingStep the step whose simulated velocity best explains where the chain stopped
-     *     matching the recording at {@code firstDivergingTick}, empty when it is empty
+     * @param firstDivergingTickVelocityResidual the distance between the recorded velocity and the
+     *     simulated velocity after the last step at {@code firstDivergingTick}, {@code 0.0} when it
+     *     is empty. Meaningful on its own even when {@code divergingStep} is empty — see {@link
+     *     #attributeDivergingStep}.
+     * @param divergingStep the step whose output was meaningfully closer to the recorded velocity
+     *     than the last step's own output, at {@code firstDivergingTick} — empty whenever no step
+     *     meets that bar, which is the ordinary case for a real recording (see {@link
+     *     #attributeDivergingStep}), and always empty when {@code firstDivergingTick} is empty
      * @param cumulativeError the sum of every tick's position error across the whole replay
      * @param cumulativeThresholdExceeded {@code true} when {@code cumulativeError} exceeded the
      *     cumulative threshold, independently of whether any single tick exceeded the per-tick one
@@ -150,6 +213,7 @@ public abstract class TraceReplay {
     public record ReplayReport(
             OptionalInt firstDivergingTick,
             double firstDivergingTickError,
+            double firstDivergingTickVelocityResidual,
             Optional<ElytraStep> divergingStep,
             double cumulativeError,
             boolean cumulativeThresholdExceeded) {
