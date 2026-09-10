@@ -9,3 +9,16 @@ dependencies {
     testImplementation(project(":voyager-api"))
     testImplementation(libs.archunit.junit5)
 }
+
+tasks.test {
+    // Only the rebuild's modules. The tree being replaced does not satisfy this rule and is
+    // deliberately not held to it; it is deleted at E7.
+    systemProperty(
+        "voyager.sourceRoots",
+        rootProject.subprojects
+            .filter { it.name.startsWith("voyager-") }
+            .map { it.projectDir.resolve("src/main/java") }
+            .filter { it.isDirectory }
+            .joinToString(File.pathSeparator) { it.absolutePath }
+    )
+}
