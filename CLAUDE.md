@@ -46,11 +46,25 @@ rebuild reaches a flyable build with a green Vanilla trace suite.
 ./gradlew build                    # Everything, both trees
 ./gradlew :voyager-api:test        # The rebuild's API module
 ./gradlew :voyager-fitness:test    # Architecture rules over the whole rebuild
-./gradlew :server:build            # The tree being replaced
 ```
 
-Tests use JUnit 6 with AssertJ. Architecture rules live in `voyager-fitness` and are declared with
-`allowEmptyShould(false)` — a rule that passes because it matched nothing is a defect, not a pass.
+The tree being replaced still has to build and still gets maintained until it is cut:
+
+```bash
+./gradlew :server:build            # Minestom game server
+./gradlew :server:shadowJar        # Fat JAR -> server/build/libs/server-<version>.jar
+./gradlew :server:runServer        # Build that JAR and run it from run/ (also runServerDev, -Debug, -Hotswap)
+./gradlew :plugins:setup:runServer # Paper 1.21.8 test server with FAWE and VoidGen downloaded
+```
+
+`java -jar server/build/libs/server-<version>.jar [host] [port]` runs the same JAR outside Gradle;
+both arguments are optional. `:plugins:game:shadowJar` and `:plugins:game:runServer` (Paper 1.21.5)
+exist too, but `plugins/game` is the Paper game plugin the Minestom `server` module already replaced.
+
+Tests use JUnit 6 with AssertJ across both trees. `server` adds Minestom Testing and Mockito;
+`plugins/setup` has plain JUnit tests; `plugins/game` has no tests at all. Architecture rules for the
+rebuild live in `voyager-fitness` and are declared with `allowEmptyShould(false)` — a rule that
+passes because it matched nothing is a defect, not a pass.
 
 ## Architecture
 
