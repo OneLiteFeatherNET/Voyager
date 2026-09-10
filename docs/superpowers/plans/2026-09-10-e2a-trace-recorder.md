@@ -684,12 +684,14 @@ class WorldSliceCollectorTest {
     void collectsTheFloorBlocksWithinTheRadius() {
         List<BlockBox> slice = WorldSliceCollector.collect(List.of(at(0, 0.5, 1.5, 0.5)), 1.0, FLOOR);
 
-        // x and z in [-1, 1] around block 0 -> 3 x 3 columns, all at y == 0
-        assertThat(slice).hasSize(9);
-        assertThat(slice).allSatisfy(box -> {
-            assertThat(box.minY()).isEqualTo(0.0);
-            assertThat(box.maxY()).isEqualTo(1.0);
-        });
+        // The window is named block by block, not counted. A count alone cannot tell
+        // [-1, 1] from [0, 2] -- both are three columns per axis -- and the floor is
+        // unbounded horizontally, so a shifted or asymmetric scan range would still
+        // find nine solid blocks and still report y == 0 for every one of them.
+        assertThat(slice).containsExactlyInAnyOrder(
+                new BlockBox(-1, 0, -1, 0, 1, 0), new BlockBox(-1, 0, 0, 0, 1, 1), new BlockBox(-1, 0, 1, 0, 1, 2),
+                new BlockBox(0, 0, -1, 1, 1, 0), new BlockBox(0, 0, 0, 1, 1, 1), new BlockBox(0, 0, 1, 1, 1, 2),
+                new BlockBox(1, 0, -1, 2, 1, 0), new BlockBox(1, 0, 0, 2, 1, 1), new BlockBox(1, 0, 1, 2, 1, 2));
     }
 
     @Test
@@ -718,6 +720,18 @@ class WorldSliceCollectorTest {
                 new BlockBox(0, 0, 0, 1, 1, 1),
                 new BlockBox(8, 0, 0, 9, 1, 1));
     }
+
+    @Test
+    void flooringNegativePositionsRoundsDownRatherThanTowardsZero() {
+        // Every other test sits at a positive coordinate, where Math.floor and an int
+        // cast agree. They disagree below zero: (int) -0.5 is 0, Math.floor(-0.5) is -1.
+        // Recordings fly through negative coordinates, so the wrong one shifts the whole
+        // slice by a block on that side of the origin and the replay resolves the wrong
+        // collisions.
+        List<BlockBox> slice = WorldSliceCollector.collect(List.of(at(0, -0.5, 0.5, -3.25)), 0.0, FLOOR);
+
+        assertThat(slice).containsExactly(new BlockBox(-1, 0, -4, 0, 1, -3));
+    }
 }
 ```
 
@@ -730,12 +744,12 @@ Expected: FAIL — `package net.elytrarace.tools.recorder.world does not exist`.
 
 `WorldSliceCollector` is an `abstract` utility with a private constructor and `@ApiStatus.Internal`. `collect` walks every tick, floors its position to block coordinates, scans the cube of blocks within `ceil(radius)` on each axis, asks the `SolidBlockSource`, and emits a unit `BlockBox` per solid block. Results are deduplicated by block coordinate and returned as an unmodifiable list.
 
-Note the coordinate mapping the tests pin: a position of `0.5` floors to block `0`, whose box spans `0.0` to `1.0`. A radius of `0.0` therefore yields exactly the column the entity is over.
+Note the coordinate mapping the tests pin: a position of `0.5` floors to block `0`, whose box spans `0.0` to `1.0`. A radius of `0.0` therefore yields exactly the column the entity is over. Flooring is `Math.floor`, never an `int` cast -- they agree only above zero, and a recording crosses the origin.
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `./gradlew :tools:trace-recorder:test`
-Expected: PASS, 20 tests.
+Expected: PASS -- the module's whole suite, with the six new tests among them.
 
 - [ ] **Step 5: Commit**
 
