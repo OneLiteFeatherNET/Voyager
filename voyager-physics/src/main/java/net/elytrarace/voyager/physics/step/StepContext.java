@@ -28,7 +28,7 @@ public record StepContext(
         Vec3 lookAngle = ViewVector.of(pitch, yaw);
         float leanAngle = pitch * MinecraftMath.DEG_TO_RAD;
         double lookHorLength = Math.sqrt(lookAngle.x() * lookAngle.x() + lookAngle.z() * lookAngle.z());
-        double moveHorLength = Math.hypot(velocity.x(), velocity.z());
+        double moveHorLength = Math.sqrt(velocity.x() * velocity.x() + velocity.z() * velocity.z());
         double liftForce = MinecraftMath.square(Math.cos(leanAngle));
         return new StepContext(lookAngle, leanAngle, lookHorLength, moveHorLength, gravity, liftForce);
     }

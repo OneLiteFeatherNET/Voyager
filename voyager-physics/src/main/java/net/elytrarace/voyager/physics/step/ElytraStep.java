@@ -3,6 +3,10 @@ package net.elytrarace.voyager.physics.step;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.physics.math.MinecraftMath;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Vanilla's {@code updateFallFlyingMovement}, decomposed into its five named steps, in Vanilla's
  * order.
@@ -15,11 +19,15 @@ import net.elytrarace.voyager.physics.math.MinecraftMath;
  */
 public enum ElytraStep {
 
-    /** {@code velocity.add(0.0, gravity * (-1.0 + liftForce * 0.75), 0.0)}. */
+    /**
+     * {@code velocity.add(0.0, gravity * (-1.0 + liftForce * 0.75), 0.0)}. The {@code + 0.0} on x
+     * and z is not a no-op: Vanilla's {@code Vec3.add} normalizes a {@code -0.0} component to
+     * {@code +0.0}, and a trace comparison using {@code Double.equals} would see the difference.
+     */
     GRAVITY_AND_LIFT((velocity, context) -> new Vec3(
-            velocity.x(),
+            velocity.x() + 0.0,
             velocity.y() + context.gravity() * (-1.0 + context.liftForce() * 0.75),
-            velocity.z())),
+            velocity.z() + 0.0)),
 
     /**
      * Converts sink into forward motion, scaled by {@code liftForce}, while descending and looking
@@ -73,6 +81,7 @@ public enum ElytraStep {
             velocity.x() * 0.99F, velocity.y() * 0.98F, velocity.z() * 0.99F));
 
     private static final ElytraStep[] VALUES = values();
+    private static final List<ElytraStep> STEPS_IN_ORDER = Collections.unmodifiableList(Arrays.asList(VALUES));
 
     private final FlightStep step;
 
@@ -82,5 +91,13 @@ public enum ElytraStep {
 
     public FlightStep step() {
         return step;
+    }
+
+    /**
+     * The steps in Vanilla's order, without allocating a new array on every call the way {@link
+     * #values()} does.
+     */
+    public static List<ElytraStep> stepsInOrder() {
+        return STEPS_IN_ORDER;
     }
 }
