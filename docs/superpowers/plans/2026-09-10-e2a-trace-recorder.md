@@ -916,11 +916,14 @@ class TraceCollectorTest {
         // radius or the recorded path. These three pin both: the radius reaches the collector
         // (one column at 0.0, nine at 1.0) and the slice follows the position that was
         // actually recorded rather than the origin.
-        assertThat(recordOneTickAt(0.5, 1.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
+        // posY is 0.5, not 1.5: at radius 0.0 the scan window is the single block the entity
+        // is over, so a position at y=1.5 floors to block y=1 and can never reach a floor at
+        // y == 0. The same slip broke two of Task 4's fixtures.
+        assertThat(recordOneTickAt(0.5, 0.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
                 .containsExactly(new BlockBox(0, 0, 0, 1, 1, 1));
-        assertThat(recordOneTickAt(0.5, 1.5, 0.5).finish(FLOOR, 1.0).metadata().worldSlice())
+        assertThat(recordOneTickAt(0.5, 0.5, 0.5).finish(FLOOR, 1.0).metadata().worldSlice())
                 .hasSize(9);
-        assertThat(recordOneTickAt(8.5, 1.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
+        assertThat(recordOneTickAt(8.5, 0.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
                 .containsExactly(new BlockBox(8, 0, 0, 9, 1, 1));
     }
 }
