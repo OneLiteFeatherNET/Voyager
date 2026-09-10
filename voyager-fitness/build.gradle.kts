@@ -21,4 +21,18 @@ tasks.test {
             .filter { it.isDirectory }
             .joinToString(File.pathSeparator) { it.absolutePath }
     )
+
+    systemProperty(
+        "voyager.allModules",
+        rootProject.subprojects
+            .filter { it.name.startsWith("voyager-") && it.name != project.name }
+            .joinToString(",") { it.name }
+    )
+
+    systemProperty(
+        "voyager.fitnessDependencies",
+        configurations.testImplementation.get().dependencies
+            .filterIsInstance<ProjectDependency>()
+            .joinToString(",") { it.name }
+    )
 }
