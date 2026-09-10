@@ -35,6 +35,15 @@ class DesignRuleTest {
                     .allowEmptyShould(false);
 
     @ArchTest
+    static final ArchRule exceptionsLiveInAnExceptionSubpackage =
+            classes().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().haveSimpleNameEndingWith("Exception")
+                    .should().resideInAPackage("..exception..")
+                    .because("rule 9 — an exception sits in an exception subpackage beside the domain "
+                            + "that throws it, never in one repo-wide collection package")
+                    .allowEmptyShould(false);
+
+    @ArchTest
     static final ArchRule apiTypesAreRecordsInterfacesOrEnums =
             classes().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .and().areTopLevelClasses()
