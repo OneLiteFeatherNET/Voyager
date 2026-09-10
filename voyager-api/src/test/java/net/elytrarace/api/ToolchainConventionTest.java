@@ -13,7 +13,7 @@ class ToolchainConventionTest {
 
     @Test
     void classesAreCompiledForJava25() throws Exception {
-        String resource = "/" + ToolchainConventionTest.class.getName().replace('.', '/') + ".class";
+        String resource = "/%s.class".formatted(ToolchainConventionTest.class.getName().replace('.', '/'));
         try (InputStream in = ToolchainConventionTest.class.getResourceAsStream(resource)) {
             assertThat(in).as("compiled class file must be on the test classpath").isNotNull();
             DataInputStream data = new DataInputStream(in);

@@ -19,7 +19,7 @@ class FlightStateTest {
                 .filter(component -> component.getName().equals(name))
                 .map(RecordComponent::getType)
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("no record component named " + name));
+                .orElseThrow(() -> new AssertionError("no record component named %s".formatted(name)));
     }
 
     @Test
