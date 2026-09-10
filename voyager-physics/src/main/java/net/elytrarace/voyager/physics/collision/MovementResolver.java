@@ -9,8 +9,11 @@ import java.util.List;
 
 /**
  * Integrates an attempted movement of a box against the world's solid blocks — Vanilla's steps 9
- * and 10 of the per-tick movement pipeline, {@code Entity.move} calling into
- * {@code Entity.collide} / {@code AABB.collideX/Y/Z}.
+ * and 10 of the per-tick movement pipeline, {@code Entity.move} calling into {@code Entity.collide},
+ * {@code Entity.collideWithShapes} and {@code Shapes.collide} / {@code VoxelShape.collideX}. (26.2
+ * has no {@code AABB.collideX/Y/Z}; earlier versions did, and citing those names cites methods that
+ * no longer exist.) Every method above is quoted verbatim in the collision-path section of
+ * {@code docs/reference/elytra-physics-26.2.md}.
  *
  * <p>The sweep is axis-separated. Y always resolves first, then whichever of X or Z has the larger
  * magnitude in {@code movement}, then the other — transcribed from
@@ -19,6 +22,12 @@ import java.util.List;
  * previous axes. Per axis, every candidate box that overlaps the moving box on the other two axes
  * is considered; among those, the movement is clamped to the nearest surface in the direction of
  * travel.
+ *
+ * <p><b>Vanilla's sub-{@code 1.0E-7} snap is not implemented.</b> {@code Shapes.collide} and
+ * {@code VoxelShape.collideX} both return {@code 0.0} outright when
+ * {@code Math.abs(distance) < 1.0E-7}, before consulting any shape — so a movement smaller than that
+ * against a nearby block travels its full (tiny) distance here and exactly zero in Vanilla. See the
+ * finding recorded alongside the transcription in the reference document.
  *
  * <p><b>Step-up is not implemented.</b> Vanilla's {@code collide} also nudges the box upward by up
  * to {@code maxUpStep()} so an entity can climb a slab-height ledge without stopping, but that
