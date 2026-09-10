@@ -35,6 +35,23 @@ class MovementResolverTest {
         return region -> List.of(new Aabb(new Vec3(-64, 7, -64), new Vec3(64, 8, 64)));
     }
 
+    /** A pillar: x in [1, 2] and z in [1, 2], unbounded on y. */
+    private static CollisionSpace pillarAtXOneTwoZOneTwo() {
+        return region -> List.of(new Aabb(new Vec3(1, -64, 1), new Vec3(2, 64, 2)));
+    }
+
+    /**
+     * A space that only returns a block when the queried region actually reaches it — unlike the
+     * fixtures above, which return their block unconditionally regardless of {@code region}. Used
+     * where the swept region (and its epsilon) must be load-bearing for the test to mean anything:
+     * against an unconditional fixture, a resolver that never swept the path at all — querying only
+     * the box's own footprint — would still find the block and pass.
+     */
+    private static CollisionSpace filtering(Aabb... blocks) {
+        List<Aabb> all = List.of(blocks);
+        return region -> all.stream().filter(region::intersects).toList();
+    }
+
     @Test
     void emptySpaceAllowsTheWholeMovement() {
         MovementResult result =
@@ -62,10 +79,18 @@ class MovementResolverTest {
         assertThat(result.horizontalCollision()).isFalse();
     }
 
+    /**
+     * Uses {@link #filtering}, not {@link #wallAtXFive}: the box starts at x = -0.3..0.3, nowhere
+     * near the wall at x = 5..6, so this only finds the wall because the resolver queries the region
+     * the box <em>sweeps through</em> while moving — not merely the region it already occupies. A
+     * resolver that queried only the box's starting footprint would find nothing here and sail
+     * through the wall.
+     */
     @Test
     void aWallStopsHorizontalMovementAndReportsIt() {
-        MovementResult result =
-                MovementResolver.resolve(boxAt(0, 10, 0), new Vec3(10.0, 0, 0), wallAtXFive());
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(10.0, 0, 0),
+                filtering(new Aabb(new Vec3(5, -64, -64), new Vec3(6, 64, 64))));
 
         assertThat(result.allowedMovement().x()).isCloseTo(4.7, within(1.0e-9));
         assertThat(result.horizontalCollision()).isTrue();
@@ -144,5 +169,41 @@ class MovementResolverTest {
 
         assertThat(result.allowedMovement().y()).isCloseTo(0.2, within(1.0e-9));
         assertThat(result.onGround()).isFalse();
+    }
+
+    /**
+     * {@code Direction.axisStepOrder}: {@code |dx| < |dz|} resolves Z before X, not X before Z.
+     * With {@code dx = 0.3} and {@code dz = 0.6} against a pillar finite on both x and z, the box
+     * starts clear of the pillar on both axes (a diagonal approach, mirroring how the step test
+     * above forces Y before X). Resolving Z first finds no x-overlap yet, so Z moves the full 0.6;
+     * X is then checked against the Z-shifted box, which now overlaps the pillar's z-range, and
+     * clamps to 0.2. Resolving X first (the wrong, fixed Y-X-Z order) would instead find no
+     * z-overlap yet, move X the full 0.3, then clamp Z to 0.2 against the X-shifted box — the two
+     * orders disagree on both components, exactly as the step test's Y-vs-X pair did.
+     */
+    @Test
+    void whenZMovesFurtherThanXZIsResolvedBeforeX() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0.5, 10, 0.5), new Vec3(0.3, 0, 0.6), pillarAtXOneTwoZOneTwo());
+
+        assertThat(result.allowedMovement().x()).isCloseTo(0.2, within(1.0e-9));
+        assertThat(result.allowedMovement().z()).isCloseTo(0.6, within(1.0e-9));
+    }
+
+    /**
+     * The only test that clamps Z and checks {@code horizontalCollision} off the back of it: a
+     * {@code clampZ} that never clamps, or a {@code horizontalCollision} that ignores its Z term,
+     * both still pass every other test in this class (only this test and
+     * {@link #anAxisWithoutAnObstacleIsUnaffectedByOneThatHasOne} move in Z, and that one expects Z
+     * unclamped either way).
+     */
+    @Test
+    void aWallOnZStopsMovementAndReportsHorizontalCollision() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(0, 0, 10.0),
+                filtering(new Aabb(new Vec3(-64, -64, 5), new Vec3(64, 64, 6))));
+
+        assertThat(result.allowedMovement().z()).isCloseTo(4.7, within(1.0e-9));
+        assertThat(result.horizontalCollision()).isTrue();
     }
 }

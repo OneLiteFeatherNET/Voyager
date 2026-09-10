@@ -12,10 +12,13 @@ import java.util.List;
  * and 10 of the per-tick movement pipeline, {@code Entity.move} calling into
  * {@code Entity.collide} / {@code AABB.collideX/Y/Z}.
  *
- * <p>The sweep is axis-separated, resolved in Vanilla's order — Y, then X, then Z — with each
- * axis clamped against the box already moved by the previous axes. Per axis, every candidate box
- * that overlaps the moving box on the other two axes is considered; among those, the movement is
- * clamped to the nearest surface in the direction of travel.
+ * <p>The sweep is axis-separated. Y always resolves first, then whichever of X or Z has the larger
+ * magnitude in {@code movement}, then the other — transcribed from
+ * {@code Direction.axisStepOrder(Vec3)}: {@code Math.abs(movement.x) < Math.abs(movement.z) ?
+ * YZX_AXIS_ORDER : YXZ_AXIS_ORDER}. Each axis is clamped against the box already moved by the
+ * previous axes. Per axis, every candidate box that overlaps the moving box on the other two axes
+ * is considered; among those, the movement is clamped to the nearest surface in the direction of
+ * travel.
  *
  * <p><b>Step-up is not implemented.</b> Vanilla's {@code collide} also nudges the box upward by up
  * to {@code maxUpStep()} so an entity can climb a slab-height ledge without stopping, but that
@@ -37,6 +40,13 @@ public abstract class MovementResolver {
     /** Slack added around the swept region so a box moving exactly onto a surface still queries it. */
     private static final double SWEEP_EPSILON = 1.0e-7;
 
+    /**
+     * Vanilla's horizontal-collision tolerance, transcribed from {@code Mth.equal(double, double)}
+     * — {@code Math.abs(b - a) < 1.0E-5F}. The vertical flag ({@link #resolve}'s {@code onGround})
+     * uses no such tolerance; only X and Z do.
+     */
+    private static final float HORIZONTAL_EQUALITY_EPSILON = 1.0e-5F;
+
     private MovementResolver() {
     }
 
@@ -57,14 +67,28 @@ public abstract class MovementResolver {
         Aabb afterY = translate(box, 0.0, clampedY, 0.0);
         boolean onGround = movement.y() < 0.0 && clampedY != movement.y();
 
-        double clampedX = clampX(afterY, candidates, movement.x());
-        Aabb afterX = translate(afterY, clampedX, 0.0, 0.0);
+        double clampedX;
+        double clampedZ;
+        if (Math.abs(movement.x()) < Math.abs(movement.z())) {
+            // Direction.axisStepOrder: more Z speed than X speed resolves Z before X.
+            clampedZ = clampZ(afterY, candidates, movement.z());
+            Aabb afterZ = translate(afterY, 0.0, 0.0, clampedZ);
+            clampedX = clampX(afterZ, candidates, movement.x());
+        } else {
+            clampedX = clampX(afterY, candidates, movement.x());
+            Aabb afterX = translate(afterY, clampedX, 0.0, 0.0);
+            clampedZ = clampZ(afterX, candidates, movement.z());
+        }
 
-        double clampedZ = clampZ(afterX, candidates, movement.z());
-
-        boolean horizontalCollision = clampedX != movement.x() || clampedZ != movement.z();
+        boolean horizontalCollision = !withinHorizontalTolerance(clampedX, movement.x())
+                || !withinHorizontalTolerance(clampedZ, movement.z());
 
         return new MovementResult(new Vec3(clampedX, clampedY, clampedZ), horizontalCollision, onGround);
+    }
+
+    /** {@code Mth.equal(achieved, requested)}: {@code Math.abs(requested - achieved) < 1.0E-5F}. */
+    private static boolean withinHorizontalTolerance(double achieved, double requested) {
+        return Math.abs(requested - achieved) < HORIZONTAL_EQUALITY_EPSILON;
     }
 
     /** The region the box sweeps through while moving, expanded by a small epsilon. */
