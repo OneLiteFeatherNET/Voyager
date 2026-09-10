@@ -96,10 +96,23 @@ class TraceCollectorTest {
 
     @Test
     void exposesTheScriptedInputForTheNextTick() {
-        TraceCollector collector = collector("hold 1 yaw=42 pitch=-7");
+        // A one-tick "hold" script degenerates every possible index expression to 0: inputAt(0),
+        // inputAt(ticks.size()) and inputAt(max(0, ticks.size() - 1)) all agree when there is
+        // exactly one tick and it has never been recorded. A ramp gives every tick a value distinct
+        // from every other tick, and checking after 0, 1 and 2 recorded samples pins nextInput() to
+        // "the tick about to be written next" rather than "the last one written" or a fixed index.
+        TraceCollector collector = collector("ramp 3 yaw=0..20 pitch=-10..10");
 
-        assertThat(collector.nextInput().yaw()).isEqualTo(42.0f);
-        assertThat(collector.nextInput().pitch()).isEqualTo(-7.0f);
+        assertThat(collector.nextInput().yaw()).isEqualTo(0.0f);
+        assertThat(collector.nextInput().pitch()).isEqualTo(-10.0f);
+
+        collector.record(sample(100.0));
+        assertThat(collector.nextInput().yaw()).isEqualTo(10.0f);
+        assertThat(collector.nextInput().pitch()).isEqualTo(0.0f);
+
+        collector.record(sample(99.9));
+        assertThat(collector.nextInput().yaw()).isEqualTo(20.0f);
+        assertThat(collector.nextInput().pitch()).isEqualTo(10.0f);
     }
 
     @Test
@@ -166,6 +179,10 @@ class TraceCollectorTest {
         assertThat(metadata.minecraftVersion()).isEqualTo("1.20.4");
         assertThat(metadata.profile()).isEqualTo("boost-tuning");
         assertThat(metadata.gravity()).isEqualTo(0.16);
+        // Nothing else in this file checks formatVersion at all; TraceMetadata only enforces
+        // >= 1, so any fixed value the collector might emit would satisfy that constructor check.
+        // This pins it to the one value the format's readers actually expect.
+        assertThat(metadata.formatVersion()).isEqualTo(1);
     }
 
     @Test
