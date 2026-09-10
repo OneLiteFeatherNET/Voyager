@@ -138,6 +138,9 @@ dependencies {
     testImplementation(platform(libs.findLibrary("junit-bom").orElseThrow()))
     testImplementation(libs.findLibrary("junit-jupiter").orElseThrow())
     testImplementation(libs.findLibrary("assertj").orElseThrow())
+    // Gradle 9 requires the launcher on the test runtime classpath; every existing
+    // module in this repository declares exactly this line.
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 ```
 
