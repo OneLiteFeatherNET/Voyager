@@ -25,6 +25,16 @@ class MovementResolverTest {
         return region -> List.of(new Aabb(new Vec3(5, -64, -64), new Vec3(6, 64, 64)));
     }
 
+    /** A finite step: x in [1, 2], y in [0, 1], unbounded on z. */
+    private static CollisionSpace stepAtXOneToTwo() {
+        return region -> List.of(new Aabb(new Vec3(1, 0, -64), new Vec3(2, 1, 64)));
+    }
+
+    /** A ceiling: y in [7, 8], unbounded on x and z. */
+    private static CollisionSpace ceilingAtSeven() {
+        return region -> List.of(new Aabb(new Vec3(-64, 7, -64), new Vec3(64, 8, 64)));
+    }
+
     @Test
     void emptySpaceAllowsTheWholeMovement() {
         MovementResult result =
@@ -96,5 +106,43 @@ class MovementResolverTest {
 
         assertThat(MovementResolver.resolve(boxAt(0, 10, 0), Vec3.ZERO, exploding).allowedMovement())
                 .isEqualTo(Vec3.ZERO);
+    }
+
+    /**
+     * A finite step forces Y to resolve before X: moving Y first clears the step's x-range before X
+     * is ever checked against it (free fall to y = 0.8, then clamped on X to 0.2); resolving X first
+     * would instead clear the step's y-range while still above it (free slide of 0.6), then clamp Y
+     * against the step's top afterwards (to -0.1). The two orders disagree on both components.
+     */
+    @Test
+    void yIsResolvedBeforeXSoAStepClampsTheFallNotTheSlide() {
+        MovementResult result =
+                MovementResolver.resolve(boxAt(0.5, 1.1, 0), new Vec3(0.6, -0.3, 0), stepAtXOneToTwo());
+
+        assertThat(result.allowedMovement().x()).isCloseTo(0.2, within(1.0e-9));
+        assertThat(result.allowedMovement().y()).isCloseTo(-0.3, within(1.0e-9));
+    }
+
+    /**
+     * The box's leading x-face sits exactly on the step's x-face (0.4..1.0 against 1..2). Strict
+     * overlap, matching {@link Aabb#intersects(Aabb)}, treats this as not overlapping, so the step
+     * is irrelevant to the Y clamp and the box falls freely.
+     */
+    @Test
+    void aFlushButNotOverlappingEdgeDoesNotBlockTheFall() {
+        MovementResult result =
+                MovementResolver.resolve(boxAt(0.7, 1.1, 0), new Vec3(0, -0.3, 0), stepAtXOneToTwo());
+
+        assertThat(result.allowedMovement().y()).isCloseTo(-0.3, within(1.0e-9));
+    }
+
+    /** Y is clamped by the ceiling, but the movement is upward, so onGround must stay false. */
+    @Test
+    void hittingACeilingWhileRisingIsNotGrounded() {
+        MovementResult result =
+                MovementResolver.resolve(boxAt(0, 5, 0), new Vec3(0, 2.0, 0), ceilingAtSeven());
+
+        assertThat(result.allowedMovement().y()).isCloseTo(0.2, within(1.0e-9));
+        assertThat(result.onGround()).isFalse();
     }
 }
