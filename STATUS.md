@@ -144,6 +144,16 @@ Done when: the old tree is gone and every module is on Java 25.
   claims in the existing reference and documents three fidelity traps that would pass a formula
   review and fail a trace comparison.
 
+## Deferred cleanup
+
+- **Style sweep over the tree being replaced.** The project settled two rules during E1 —
+  messages built with `String.formatted` rather than concatenation, and exceptions living in their
+  own `exception` subpackage. Both are applied throughout `voyager-*`. The old tree has 31
+  concatenation sites (`shared/common` 9, `plugins/setup` 8, `server` 6, `plugins/game` 5,
+  `shared/database` 2, `shared/conversation-api` 1) and keeps its exceptions beside the code.
+  Deliberately deferred: that code is deleted at E7, and a parallel effort is working in `server/`.
+  Worth doing only if `server/` turns out to live materially longer than the cut-over plan assumes.
+
 ## Notes to resolve
 
 - **E5.10 may be redundant.** It amends `CLAUDE.md` rule 8 to cover row-to-record adapters, but D12
