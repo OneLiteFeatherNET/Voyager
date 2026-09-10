@@ -22,17 +22,14 @@ tasks.test {
             .joinToString(File.pathSeparator) { it.absolutePath }
     )
 
+    // Every voyager-* module that carries production code. FitnessCoverageTest maps each of these
+    // to a package prefix and then proves that ArchUnit both saw the module and has a rule naming
+    // it. voyager-fitness has no src/main/java and so is absent, which is what lets it off having
+    // rules about itself.
     systemProperty(
-        "voyager.allModules",
+        "voyager.modulesWithSources",
         rootProject.subprojects
-            .filter { it.name.startsWith("voyager-") && it.path != project.path }
-            .joinToString(",") { it.path }
-    )
-
-    systemProperty(
-        "voyager.fitnessDependencies",
-        configurations.testImplementation.get().dependencies
-            .filterIsInstance<ProjectDependency>()
+            .filter { it.name.startsWith("voyager-") && it.projectDir.resolve("src/main/java").isDirectory }
             .joinToString(",") { it.path }
     )
 }

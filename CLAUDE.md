@@ -161,9 +161,12 @@ being enforced — see the skill's baseline reality check for how far short `ser
 ### ArchUnit Enforcement
 
 Rules for the rebuild live in `voyager-fitness/src/test/java/net/elytrarace/fitness/`. That module
-depends on every `voyager-*` module, and `FitnessCoverageTest` fails the build if a module is added
-without being wired in — the previous suite declared rules for four modules its classpath never
-contained, so they never ran.
+depends on every `voyager-*` module carrying production sources, and `FitnessCoverageTest` holds each
+of them to two conditions: ArchUnit imported at least one of its classes, and at least one declared
+`@ArchTest` rule names its package prefix. A module added to the build without an entry in that
+test's project-to-prefix map fails it, and an entry that is on the classpath but has no rule naming
+it fails it too — the previous suite declared rules for four modules its classpath never contained,
+so they never ran.
 
 The old tree's rules remain in `server/src/test/java/net/elytrarace/arch/`, unchanged.
 
