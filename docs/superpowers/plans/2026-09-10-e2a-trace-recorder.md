@@ -522,6 +522,15 @@ class FlightScriptParserTest {
     }
 
     @Test
+    void rampInterpolatesInFloatNotDouble() {
+        // The tolerance in the test above cannot see the difference; this one is the guard.
+        // Computing in double and narrowing at the end yields 13.333333f here instead.
+        FlightScript script = FlightScriptParser.parse("ramp 4 yaw=0 pitch=0..40");
+
+        assertThat(script.inputAt(1).pitch()).isEqualTo(13.333334f);
+    }
+
+    @Test
     void boostOccupiesOneTickAndInheritsThePreviousRotation() {
         FlightScript script = FlightScriptParser.parse("""
                 hold 2 yaw=0 pitch=-5
