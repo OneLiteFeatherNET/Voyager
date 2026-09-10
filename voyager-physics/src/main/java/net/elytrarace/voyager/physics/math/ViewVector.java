@@ -4,7 +4,7 @@ import net.elytrarace.voyager.api.math.Vec3;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
-abstract class ViewVector {
+public abstract class ViewVector {
 
     private ViewVector() {
     }

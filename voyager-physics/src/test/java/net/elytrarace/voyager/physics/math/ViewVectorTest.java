@@ -56,12 +56,22 @@ class ViewVectorTest {
 
     @Test
     void usesTheTableTrigonometryRatherThanTheJdk() {
-        // Same guard as MinecraftMathTest, one level up: a view vector built from Math.* would be
-        // close enough to pass every assertion above and still drift against the traces.
+        // Guard against silent Math.* substitution: yaw=0 alone is insufficient because
+        // sin(0) and cos(0) are identical in both table and JDK implementations.
+        // With yaw=0, the x component becomes ySin*xCos = 0*xCos = 0 regardless of source.
+        // Use non-degenerate angles and verify all three components exactly.
         float pitch = 17.0f;
-        float leanAngle = pitch * MinecraftMath.DEG_TO_RAD;
-        double expectedY = -MinecraftMath.sin(leanAngle);
+        float yaw = 53.0f;
+        float realXRot = pitch * MinecraftMath.DEG_TO_RAD;
+        float realYRot = -yaw * MinecraftMath.DEG_TO_RAD;
+        float yCos = MinecraftMath.cos(realYRot);
+        float ySin = MinecraftMath.sin(realYRot);
+        float xCos = MinecraftMath.cos(realXRot);
+        float xSin = MinecraftMath.sin(realXRot);
 
-        assertThat(ViewVector.of(pitch, 0.0f).y()).isEqualTo(expectedY);
+        Vec3 look = ViewVector.of(pitch, yaw);
+        assertThat(look.x()).isEqualTo((double) (ySin * xCos));
+        assertThat(look.y()).isEqualTo((double) (-xSin));
+        assertThat(look.z()).isEqualTo((double) (yCos * xCos));
     }
 }
