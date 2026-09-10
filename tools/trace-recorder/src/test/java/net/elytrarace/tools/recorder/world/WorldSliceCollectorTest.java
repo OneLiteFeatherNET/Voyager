@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class WorldSliceCollectorTest {
 
@@ -24,6 +25,9 @@ class WorldSliceCollectorTest {
 
     /** Solid at exactly one block, two blocks out on X from the origin block. */
     private static final SolidBlockSource EDGE_AT_TWO_BLOCKS = (x, y, z) -> x == 2 && y == 0 && z == 0;
+
+    /** A wall three blocks tall, confined to the single column at (x=0, z=0). */
+    private static final SolidBlockSource WALL = (x, y, z) -> x == 0 && z == 0 && y >= 0 && y <= 2;
 
     @Test
     void collectsNothingFromAnEmptyWorld() {
@@ -97,12 +101,43 @@ class WorldSliceCollectorTest {
     @Test
     void scansExactlyTheCeilingOfAFractionalRadius() {
         // Every radius above is a whole number (0.0, 1.0, 2.0), where Math.ceil and a plain
-        // (int) truncation agree. They disagree on a fractional radius: ceil(1.5) is 2,
-        // (int) 1.5 is 1. A block exactly 2 out on X is only found if the true ceiling, not a
-        // truncated one, drives the scan window.
+        // (int) truncation agree. radius = 1.2 separates all three roundings a buggy reach
+        // could use: truncation ((int) 1.2 is 1), the nearest whole number (Math.round(1.2)
+        // is 1, since 1.2 rounds down), and the true ceiling (Math.ceil(1.2) is 2). 1.5 would
+        // not have done this -- ceil(1.5) and round(1.5) both land on 2. Task 5 passes a
+        // radius around half an entity width (roughly 0.3-0.4), so a reach that silently
+        // rounds instead of ceiling would shrink a real recording's slice to one column.
+        // A block exactly 2 out on X is only found if the true ceiling drives the scan window.
         List<BlockBox> slice =
-                WorldSliceCollector.collect(List.of(at(0, 0.5, 0.5, 0.5)), 1.5, EDGE_AT_TWO_BLOCKS);
+                WorldSliceCollector.collect(List.of(at(0, 0.5, 0.5, 0.5)), 1.2, EDGE_AT_TWO_BLOCKS);
 
         assertThat(slice).containsExactly(new BlockBox(2, 0, 0, 3, 1, 1));
+    }
+
+    @Test
+    void collectsEveryStackedLayerOfATallWall() {
+        // Every fixture above is a single layer: FLOOR is y == 0, FLOOR_BELOW_ORIGIN is
+        // y == -1, EDGE_AT_TWO_BLOCKS is one block. None of them has two solid blocks in the
+        // same column, so a dedup keyed on (x, z) alone -- discarding everything stacked
+        // above the first layer found -- would pass every test above while collapsing a wall
+        // down to one block. That is exactly the wall-graze profile this task exists for: a
+        // collector that keeps only one layer per column would replay a graze as a clean
+        // pass-through. WALL is three blocks tall at one column; every layer must come back.
+        List<BlockBox> slice = WorldSliceCollector.collect(List.of(at(0, 0.5, 0.5, 0.5)), 3.0, WALL);
+
+        assertThat(slice).containsExactlyInAnyOrder(
+                new BlockBox(0, 0, 0, 1, 1, 1),
+                new BlockBox(0, 1, 0, 1, 2, 1),
+                new BlockBox(0, 2, 0, 1, 3, 1));
+    }
+
+    @Test
+    void returnsAnUnmodifiableList() {
+        // The brief requires an unmodifiable list; nothing above exercises that beyond
+        // happening to work with a mutable list too.
+        List<BlockBox> slice = WorldSliceCollector.collect(List.of(at(0, 0.5, 0.5, 0.5)), 0.0, FLOOR);
+
+        assertThatThrownBy(() -> slice.add(new BlockBox(5, 5, 5, 6, 6, 6)))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 }
