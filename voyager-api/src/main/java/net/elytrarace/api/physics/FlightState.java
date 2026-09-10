@@ -1,5 +1,7 @@
 package net.elytrarace.api.physics;
 
+import net.elytrarace.api.physics.exception.NonFiniteRotationException;
+
 import net.elytrarace.api.math.Vec3;
 
 /**

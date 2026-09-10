@@ -1,5 +1,7 @@
 package net.elytrarace.api.math;
 
+import net.elytrarace.api.math.exception.InvalidBoundingBoxException;
+
 /** An immutable axis-aligned bounding box in world space, in blocks. */
 public record Aabb(Vec3 min, Vec3 max) {
 

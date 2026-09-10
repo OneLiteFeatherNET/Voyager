@@ -1,5 +1,7 @@
 package net.elytrarace.api.math;
 
+import net.elytrarace.api.math.exception.InvalidBoundingBoxException;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

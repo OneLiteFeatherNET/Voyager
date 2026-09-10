@@ -1,5 +1,7 @@
 package net.elytrarace.api.math;
 
+import net.elytrarace.api.math.exception.NonFiniteVectorException;
+
 /**
  * An immutable three-dimensional vector in world space, in blocks.
  *

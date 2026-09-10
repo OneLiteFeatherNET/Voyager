@@ -1,4 +1,4 @@
-package net.elytrarace.api.math;
+package net.elytrarace.api.math.exception;
 
 /**
  * Thrown when a vector component is NaN or infinite.
