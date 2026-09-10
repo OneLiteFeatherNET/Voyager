@@ -10,6 +10,6 @@ package net.elytrarace.api.math;
 public final class NonFiniteVectorException extends RuntimeException {
 
     public NonFiniteVectorException(double x, double y, double z) {
-        super("vector components must be finite, was (" + x + ", " + y + ", " + z + ")");
+        super("vector components must be finite, was (%s, %s, %s)".formatted(x, y, z));
     }
 }

@@ -22,7 +22,7 @@ class DesignRuleTest {
                 public void check(JavaClass item, ConditionEvents events) {
                     if (!item.isRecord() && !item.isInterface() && !item.isEnum()) {
                         events.add(SimpleConditionEvent.violated(item,
-                                item.getName() + " is neither a record, an interface nor an enum"));
+                                "%s is neither a record, an interface nor an enum".formatted(item.getName())));
                     }
                 }
             };

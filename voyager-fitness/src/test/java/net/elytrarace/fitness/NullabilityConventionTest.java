@@ -37,11 +37,11 @@ class NullabilityConventionTest {
                     }
                     Path packageInfo = directory.resolve("package-info.java");
                     if (!Files.exists(packageInfo)) {
-                        offenders.add(root.relativize(directory) + " — no package-info.java");
+                        offenders.add("%s — no package-info.java".formatted(root.relativize(directory)));
                         return;
                     }
                     if (!readString(packageInfo).contains("@NotNullByDefault")) {
-                        offenders.add(root.relativize(directory) + " — package-info.java lacks @NotNullByDefault");
+                        offenders.add("%s — package-info.java lacks @NotNullByDefault".formatted(root.relativize(directory)));
                     }
                 });
             }

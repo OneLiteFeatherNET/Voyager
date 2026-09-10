@@ -4,6 +4,6 @@ package net.elytrarace.api.physics;
 public final class NonFiniteRotationException extends RuntimeException {
 
     public NonFiniteRotationException(float yaw, float pitch) {
-        super("rotation must be finite, was yaw=" + yaw + " pitch=" + pitch);
+        super("rotation must be finite, was yaw=%s pitch=%s".formatted(yaw, pitch));
     }
 }

@@ -4,6 +4,6 @@ package net.elytrarace.api.math;
 public final class InvalidBoundingBoxException extends RuntimeException {
 
     public InvalidBoundingBoxException(Vec3 min, Vec3 max) {
-        super("bounding box minimum must not exceed its maximum on any axis, was " + min + " to " + max);
+        super("bounding box minimum must not exceed its maximum on any axis, was %s to %s".formatted(min, max));
     }
 }

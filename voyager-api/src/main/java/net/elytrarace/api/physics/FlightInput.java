@@ -9,7 +9,7 @@ public record FlightInput(float yaw, float pitch, boolean fireworkBoostActive, i
         }
         if (fireworkTicksRemaining < 0) {
             throw new InvalidFlightInputException(
-                    "fireworkTicksRemaining must be >= 0, was " + fireworkTicksRemaining);
+                    "fireworkTicksRemaining must be >= 0, was %s".formatted(fireworkTicksRemaining));
         }
     }
 }
