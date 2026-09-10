@@ -818,6 +818,14 @@ class MovementResolverTest {
 }
 ```
 
+**These fixtures alone are not sufficient, and the suite must not stop here.** `floorAtZero` and `wallAtXFive` are infinite planes on their perpendicular axes, so neither the axis order nor the strictness of the overlap test can change any outcome, and nothing above clamps Y while rising. All three of the defects this resolver most plausibly has — sweeping the axes in the wrong order, selecting candidate boxes with non-strict overlap, reporting `onGround` on any Y clamp rather than only a downward one — survive the fixtures above untouched. Add three more, each shaped to discriminate exactly one:
+
+1. **Axis order.** A finite step at `x ∈ [1, 2]`, `y ∈ [0, 1]`. A box with feet at `x = 0.5`, `y = 1.1` moving `(+0.6, -0.3, 0)` resolves to an allowed x of `0.2` under Vanilla's Y-first order and to an allowed y of `-0.1` under X-first. The two orders disagree; assert the first.
+2. **Overlap strictness.** The same step, with a box whose maximum x edge sits exactly on the step's minimum x edge — feet at `x = 0.7`, so `x ∈ [0.4, 1.0]` — falling from `y = 1.1` by `-0.3`. Strict overlap lets it fall freely; non-strict catches it on the step.
+3. **Ground direction.** A ceiling at `y ∈ [7, 8]` and a box with feet at `y = 5` moving `(0, +2.0, 0)`. Y is clamped, but `onGround` must stay false.
+
+Prove each bites by introducing its defect, observing exactly one red test, and reverting.
+
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `./gradlew :voyager-physics:test --tests "*MovementResolverTest"`
