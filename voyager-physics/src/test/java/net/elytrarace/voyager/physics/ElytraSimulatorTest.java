@@ -228,27 +228,40 @@ class ElytraSimulatorTest {
     }
 
     @Test
-    void restitutionZeroesOnTheExactClampNotTheTolerantOne() {
-        // Same entering velocity/rotation as theEntityWidthIsPinnedByAWallAtAKnownDistance
-        // (unclamped velocity.x verified end-to-end at 44.55000042915344), but the wall is placed so
-        // the clamp differs from the requested movement by exactly 5e-6 — under Vanilla's 1.0E-5F
-        // horizontalCollision tolerance, so MovementResult.horizontalCollision() is false, while
-        // MovementResult.xCollision() (no tolerance) is true. Restitution must zero velocity.x on the
-        // exact flag: a simulator that zeroed on horizontalCollision instead would leave velocity.x
-        // at ~44.55.
+    void restitutionPreservesVelocityOnASubToleranceHorizontalClamp() {
+        // Same entering velocity/rotation as theEntityWidthIsPinnedByAWallAtAKnownDistance. At yaw 0
+        // and pitch 0 the whole pipeline is hand-derivable on X: lookAngle.x is 0 and lookHorLength
+        // is 1, so GRAVITY_AND_LIFT, DOWNWARD_GLIDE and UPWARD_PITCH_BOOST leave velocity.x at 50,
+        // DIRECTION_ALIGNMENT makes it 50 + (0 / 1 * 50 - 50) * 0.1 = 45, and DRAG multiplies by the
+        // *float* 0.99F (0.99000000953674316...), giving 45.0 * 0.99F = 44.550000429153442...
+        //
+        // The wall's near face is that value + 0.3 - 5e-6 = 44.84999542915344, so the box's
+        // half-width of 0.3 clamps the movement to 44.84999542915344 - 0.3 = 44.54999542915344 —
+        // 5e-6 short of what was requested.
+        //
+        // 5e-6 is under Vanilla's 1.0E-5F Mth.equal window, and Entity.move:760-762 computes BOTH
+        // horizontal flags through Mth.equal before :786 hands those same flags to
+        // restituteMovementAfterCollisions. Vanilla therefore does not treat this as a collision at
+        // all and the velocity survives untouched, even though the position was clamped. A
+        // simulator that zeroed on an exact (clamped != requested) flag — as this port did before
+        // the correction — would report 0.0 here.
         FlightState state = new FlightState(new Vec3(0, 10, 0), new Vec3(50, 0, 0), 0.0f, 0.0f, false);
         FlightInput input = new FlightInput(0.0f, 0.0f, false, 0, DEFAULT_GRAVITY);
 
         FlightState result = ElytraSimulator.tick(state, input, wallAt(44.84999542915344));
 
-        assertThat(result.velocity().x()).isEqualTo(0.0);
+        // The clamp really happened: without this the velocity assertion would also hold for a
+        // resolver that simply let the box fly through the wall.
+        assertThat(result.position().x()).isCloseTo(44.54999542915344, within(1.0e-9));
+        assertThat(result.velocity().x()).isEqualTo(45.0 * 0.99F);
     }
 
     /**
      * No simulator-level fixture ever produced a Z collision — every collision fixture above clamps
      * X or Y — so deleting {@code movementResult.zCollision() ? 0.0 :} from {@code restitute} left
      * the whole suite green while an entity flying into a wall on Z kept its full Z velocity. The
-     * {@code +X} mirror of this is {@code restitutionZeroesOnTheExactClampNotTheTolerantOne}.
+     * {@code +X} mirror of this is {@code theEntityWidthIsPinnedByAWallAtAKnownDistance} plus
+     * {@code aCollisionZeroesTheCollidedVelocityComponent}.
      */
     @Test
     void aZCollisionZeroesTheZVelocityAndClampsTheZPosition() {

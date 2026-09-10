@@ -65,8 +65,9 @@ public abstract class MovementResolver {
 
     /**
      * Vanilla's horizontal-collision tolerance, transcribed from {@code Mth.equal(double, double)}
-     * — {@code Math.abs(b - a) < 1.0E-5F}. The vertical flag ({@link #resolve}'s {@code onGround})
-     * uses no such tolerance; only X and Z do.
+     * — {@code Math.abs(b - a) < 1.0E-5F}. Both horizontal flags are computed through it, and both
+     * are what Vanilla's restitution reads; only the vertical flag ({@link #resolve}'s
+     * {@code verticalCollision}) is exact.
      */
     private static final float HORIZONTAL_EQUALITY_EPSILON = 1.0e-5F;
 
@@ -81,7 +82,7 @@ public abstract class MovementResolver {
      */
     public static MovementResult resolve(Aabb box, Vec3 movement, CollisionSpace space) {
         if (movement.lengthSquared() == 0.0) {
-            return new MovementResult(Vec3.ZERO, false, false, false, false, false);
+            return new MovementResult(Vec3.ZERO, false, false, false, false);
         }
 
         List<Aabb> candidates = space.boxesIntersecting(sweptRegion(box, movement));
@@ -104,14 +105,15 @@ public abstract class MovementResolver {
             clampedZ = clampZ(afterX, candidates, movement.z());
         }
 
-        boolean xCollision = clampedX != movement.x();
-        boolean zCollision = clampedZ != movement.z();
-        boolean horizontalCollision = !withinHorizontalTolerance(clampedX, movement.x())
-                || !withinHorizontalTolerance(clampedZ, movement.z());
+        // Vanilla computes both horizontal flags through Mth.equal and hands those same tolerant
+        // flags to restituteMovementAfterCollisions; only the vertical flag is exact. See
+        // MovementResult's javadoc.
+        boolean xCollision = !withinHorizontalTolerance(clampedX, movement.x());
+        boolean zCollision = !withinHorizontalTolerance(clampedZ, movement.z());
 
         return new MovementResult(
                 new Vec3(clampedX, clampedY, clampedZ),
-                xCollision, verticalCollision, zCollision, horizontalCollision, onGround);
+                xCollision, verticalCollision, zCollision, onGround);
     }
 
     /** {@code Mth.equal(achieved, requested)}: {@code Math.abs(requested - achieved) < 1.0E-5F}. */

@@ -231,21 +231,30 @@ class MovementResolverTest {
     /**
      * The same sub-tolerance clamp as {@link #aClampWellUnderVanillasToleranceIsNotReportedAsACollision}
      * — {@code dx = 4.700005} clamped to exactly {@code 4.7}, a {@code 5e-6} difference, under
-     * Vanilla's {@code 1.0E-5F} tolerance — but read through {@link MovementResult#xCollision()}
-     * instead of {@link MovementResult#horizontalCollision()}. Restitution (zeroing a collided axis'
-     * velocity, done by the caller in {@code ElytraSimulator}) must act on the exact clamp, not the
-     * tolerance-gated flag: a resolver that computed {@code xCollision} with the same tolerance as
-     * {@code horizontalCollision} would still pass every other test in this class, including {@link
-     * #aClampWellUnderVanillasToleranceIsNotReportedAsACollision} itself, since that one only checks
-     * {@code horizontalCollision}.
+     * Vanilla's {@code 1.0E-5F} tolerance — read through {@link MovementResult#xCollision()}, the
+     * per-axis flag rather than the derived one. Vanilla has no second, exact per-axis pair:
+     * {@code Entity.move:760-762} computes both horizontal flags through {@code Mth.equal} and
+     * {@code :786} hands those same tolerant flags to {@code restituteMovementAfterCollisions}. So
+     * the movement is clamped here and yet neither flag reports a collision — and the caller's
+     * restitution consequently leaves the velocity alone, which
+     * {@code ElytraSimulatorTest.restitutionPreservesVelocityOnASubToleranceHorizontalClamp} pins
+     * end to end. A resolver that computed {@code xCollision} exactly ({@code clamped != requested},
+     * as this port did before the correction) fails this test on its {@code xCollision} assertion,
+     * and — because {@link MovementResult#horizontalCollision()} is now derived from the per-axis
+     * flags rather than computed separately — fails
+     * {@link #aClampWellUnderVanillasToleranceIsNotReportedAsACollision} with it.
+     *
+     * <p>The {@code allowedMovement} assertion is load-bearing: without it a resolver that never
+     * clamped at all would satisfy the two flag assertions trivially.
      */
     @Test
-    void anExactSubToleranceClampStillReportsAxisCollision() {
+    void aSubToleranceClampReportsNoAxisCollisionEither() {
         MovementResult result = MovementResolver.resolve(
                 boxAt(0, 10, 0), new Vec3(4.700005, 0, 0),
                 filtering(new Aabb(new Vec3(5, -64, -64), new Vec3(6, 64, 64))));
 
-        assertThat(result.xCollision()).isTrue();
+        assertThat(result.allowedMovement().x()).isCloseTo(4.7, within(1.0e-9));
+        assertThat(result.xCollision()).isFalse();
         assertThat(result.horizontalCollision()).isFalse();
     }
 
@@ -283,7 +292,7 @@ class MovementResolverTest {
     }
 
     @Test
-    void anUnobstructedAxisReportsNoExactCollision() {
+    void anUnobstructedAxisReportsNoAxisCollision() {
         MovementResult result =
                 MovementResolver.resolve(boxAt(0, 10, 0), new Vec3(1, -0.5, 2), CollisionSpace.empty());
 

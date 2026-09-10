@@ -398,16 +398,25 @@ become `-v * 0.0 = 0.0`, and the Y term becomes `(0.0 - v.y) * 1.0 * 0.0 = 0.0`.
 velocity therefore becomes exactly `0.0`, not a fraction of itself — which is what the rebuild
 implements.
 
-**Finding — Vanilla gates horizontal restitution on the *tolerant* flags, the rebuild on the exact
-ones.** `xCollision` and `zCollision` as passed to `restituteMovementAfterCollisions` are
-`!Mth.equal(...)`, i.e. they are `false` when the clamp moved the component by less than `1.0E-5F`.
-The rebuild's `MovementResult.xCollision()` / `zCollision()` are exact (`clamped != requested`), and
-`ElytraSimulator.restitute` zeroes on those. The two agree on every clamp larger than `1.0E-5`, and
-disagree on a clamp inside `(0, 1.0E-5)`: Vanilla keeps the velocity, the rebuild zeroes it. Only the
-*vertical* flag is exact in Vanilla (`delta.y != movement.y`, `:762`). This contradicts what
-`ElytraSimulator`'s and `MovementResult`'s javadoc currently assert about which flag Vanilla's own
-restitution reads; it is recorded here rather than changed, because flipping it is a behaviour change
-that belongs with the real traces and the sub-tolerance case is bounded by `1.0E-5` per tick.
+**Horizontal restitution gates on the *tolerant* flags; only the vertical flag is exact.** The
+`xCollision` and `zCollision` handed to `restituteMovementAfterCollisions` at `:786` are the very
+same locals computed at `:760-761` as `!Mth.equal(...)` — there is no second, exact per-axis pair
+anywhere in `Entity.move`. They are therefore `false` whenever the clamp moved that component by
+less than `1.0E-5F`, and a horizontal clamp inside `(0, 1.0E-5)` is not a collision for any purpose:
+`horizontalCollision` stays `false`, no restitution runs, and the velocity on that axis survives
+even though the *position* was clamped. Only `verticalCollision` is exact (`delta.y != movement.y`,
+`:762`).
+
+The rebuild followed this until commit `dcfe98e`, which split `MovementResult` into an exact
+per-axis pair for restitution to read and a tolerant `horizontalCollision` for reporting. That split
+was wrong and has been reverted: `MovementResult.xCollision()` and `zCollision()` are now the
+tolerant flags, `verticalCollision()` stays exact, and `horizontalCollision()` is derived as
+`xCollision || zCollision` exactly as Vanilla derives it. `ElytraSimulator.restitute` reads the same
+three flags Vanilla's restitution reads.
+
+Pinned by `MovementResolverTest.aSubToleranceClampReportsNoAxisCollisionEither` (a `5e-6` clamp
+reports neither flag) and `ElytraSimulatorTest.restitutionPreservesVelocityOnASubToleranceHorizontalClamp`
+(the same clamp end to end: position moved, velocity untouched).
 
 ### The firework rocket impulse
 

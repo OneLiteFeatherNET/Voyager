@@ -46,14 +46,13 @@ import java.util.Map;
  * becomes a non-zero per-block value threaded in here, not a different formula.
  *
  * <p>Zeroing reads {@link MovementResult#xCollision()}, {@link MovementResult#verticalCollision()}
- * and {@link MovementResult#zCollision()} — the exact, non-tolerance flags — not {@link
- * MovementResult#horizontalCollision()}, which carries a {@code 1.0E-5F} tolerance meant for a
- * different concern (whether to report a collision at all for gameplay purposes, including the
- * block-damage check this simulator does not implement). Vanilla's vertical flag is exact the same
- * way ({@code delta.y != movement.y}); its two <em>horizontal</em> flags are the tolerant ones, so
- * on a clamp inside {@code (0, 1.0E-5)} Vanilla keeps the horizontal velocity where this zeroes it.
- * That difference is bounded by {@code 1.0E-5} per tick and is recorded as a finding in the
- * collision-path section of {@code docs/reference/elytra-physics-26.2.md} rather than resolved here.
+ * and {@link MovementResult#zCollision()} — the same three flags {@code Entity.move} hands to
+ * {@code restituteMovementAfterCollisions}, and with the same tolerances: the two horizontal ones
+ * carry Vanilla's {@code Mth.equal} window of {@code 1.0E-5F}, the vertical one is exact
+ * ({@code delta.y != movement.y}). A horizontal clamp inside {@code (0, 1.0E-5)} is therefore not a
+ * collision for restitution's purposes and the velocity on that axis survives it, which is what
+ * Vanilla does. {@link MovementResult#horizontalCollision()} is the derived {@code x || z} flag
+ * Vanilla gates its block-damage check on; this simulator reports it but does no damage.
  *
  * <p><b>Only the middle of {@code travelFallFlying} is assembled here.</b> Vanilla's method has
  * three parts this does not, and the first two appear nowhere in this module at all:
@@ -141,8 +140,7 @@ public abstract class ElytraSimulator {
 
     /**
      * Zeroes each collided component of {@code velocity} — Vanilla's collision restitution at
-     * {@code bounciness = 0.0}. See the class Javadoc for why the exact, non-tolerance flags are the
-     * correct ones to read here.
+     * {@code bounciness = 0.0}. See the class Javadoc for which flag each axis reads and why.
      */
     private static Vec3 restitute(Vec3 velocity, MovementResult movementResult) {
         return new Vec3(
