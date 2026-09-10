@@ -58,31 +58,52 @@ import java.util.OptionalInt;
 public abstract class TraceReplay {
 
     /**
-     * The default per-tick position-error bound, in blocks. Chosen far below the smallest
-     * meaningful physics difference so a clean replay of a bit-identical simulation reports zero
-     * divergence while any genuine formula mismatch is still caught on its first tick.
+     * The default per-tick position-error bound, in blocks: the distance between the simulated and
+     * the recorded position on any single tick. Chosen far below the smallest meaningful physics
+     * difference so a clean replay of a bit-identical simulation reports zero divergence while any
+     * genuine formula mismatch is still caught on its first tick.
      */
     public static final double DEFAULT_PER_TICK_THRESHOLD = 1.0E-6;
 
-    /** The default cumulative position-error bound, in blocks, summed across the whole replay. */
-    public static final double DEFAULT_CUMULATIVE_THRESHOLD = 1.0E-4;
+    /**
+     * The default drift bound, in blocks: how far the simulated position sits from the recorded one
+     * at the <em>end</em> of the replay. This is the spec's "cumulative drift over 200 ticks", and
+     * it is a single final position error, not a sum — a replay whose trajectory wanders and comes
+     * back is not drifting.
+     *
+     * <p>An earlier revision bounded the <em>sum</em> of every tick's error at {@code 1.0E-4}, which
+     * was neither the spec's metric nor internally consistent with it: for a steadily drifting trace
+     * the sum runs about two orders of magnitude above the final error, and a replay sitting exactly
+     * at the {@code 1e-6} per-tick bound accumulates {@code 2e-4} over 200 ticks and was reported
+     * dirty without ever exceeding the per-tick bound. The sum survives as {@link
+     * ReplayReport#summedTickError()}, reported but not bounded.
+     *
+     * <p>Like the per-tick bound, this is a stated assumption awaiting the real traces; Task 7 of
+     * the E2b plan calibrates both against measurement.
+     */
+    public static final double DEFAULT_DRIFT_THRESHOLD = 1.0E-2;
 
     private TraceReplay() {
     }
 
     /** Replays {@code fixture} against the default thresholds. */
     public static ReplayReport replay(TraceFixture fixture) {
-        return replay(fixture, DEFAULT_PER_TICK_THRESHOLD, DEFAULT_CUMULATIVE_THRESHOLD);
+        return replay(fixture, DEFAULT_PER_TICK_THRESHOLD, DEFAULT_DRIFT_THRESHOLD);
     }
 
     /**
      * Replays {@code fixture}, reporting the first tick whose position error exceeds {@code
-     * perTickThreshold} and whether the summed position error across the whole replay exceeds
-     * {@code cumulativeThreshold}. The two bounds are independent: a replay can stay under the
-     * per-tick bound on every single tick while its accumulated error still exceeds the cumulative
-     * one.
+     * perTickThreshold} and whether the position error at the last replayed tick exceeds {@code
+     * driftThreshold}. Both are distances in blocks between the simulated and the recorded position:
+     * the first is measured on every tick, the second only at the end.
+     *
+     * <p>The two bounds are independent. A replay can stay under the per-tick bound on every tick
+     * and still finish outside the drift bound only when {@code driftThreshold < perTickThreshold};
+     * with the defaults it is the other way round, and the drift bound is the coarser gate on how
+     * far a trajectory that already diverged is allowed to end up. The summed per-tick error is
+     * reported alongside as {@link ReplayReport#summedTickError()} and is not bounded by either.
      */
-    public static ReplayReport replay(TraceFixture fixture, double perTickThreshold, double cumulativeThreshold) {
+    public static ReplayReport replay(TraceFixture fixture, double perTickThreshold, double driftThreshold) {
         if (fixture == null) {
             throw new InvalidTraceFixtureException("fixture must not be null");
         }
@@ -90,9 +111,9 @@ public abstract class TraceReplay {
             throw new InvalidReplayThresholdException(
                     "perTickThreshold must be finite and >= 0, was %s".formatted(perTickThreshold));
         }
-        if (!Double.isFinite(cumulativeThreshold) || cumulativeThreshold < 0.0) {
+        if (!Double.isFinite(driftThreshold) || driftThreshold < 0.0) {
             throw new InvalidReplayThresholdException(
-                    "cumulativeThreshold must be finite and >= 0, was %s".formatted(cumulativeThreshold));
+                    "driftThreshold must be finite and >= 0, was %s".formatted(driftThreshold));
         }
 
         List<TraceFixture.Tick> ticks = fixture.ticks();
@@ -110,7 +131,8 @@ public abstract class TraceReplay {
         OptionalInt firstDivergingTick = OptionalInt.empty();
         double firstDivergingTickError = 0.0;
         double firstDivergingTickVelocityError = 0.0;
-        double cumulativeError = 0.0;
+        double summedTickError = 0.0;
+        double finalDrift = 0.0;
 
         for (int i = 1; i < ticks.size(); i++) {
             TraceFixture.Tick recorded = ticks.get(i);
@@ -126,7 +148,8 @@ public abstract class TraceReplay {
 
             Vec3 recordedPosition = new Vec3(recorded.posX(), recorded.posY(), recorded.posZ());
             double error = state.position().minus(recordedPosition).length();
-            cumulativeError += error;
+            summedTickError += error;
+            finalDrift = error;
 
             if (firstDivergingTick.isEmpty() && error > perTickThreshold) {
                 firstDivergingTick = OptionalInt.of(i);
@@ -139,8 +162,9 @@ public abstract class TraceReplay {
                 firstDivergingTick,
                 firstDivergingTickError,
                 firstDivergingTickVelocityError,
-                cumulativeError,
-                cumulativeError > cumulativeThreshold);
+                finalDrift,
+                summedTickError,
+                finalDrift > driftThreshold);
     }
 
     /**
@@ -169,20 +193,27 @@ public abstract class TraceReplay {
      *     the distance between the recorded velocity and the simulated velocity after restitution,
      *     {@code 0.0} when {@code firstDivergingTick} is empty. Not attributable to any single
      *     {@link net.elytrarace.voyager.physics.step.ElytraStep}; see this class's javadoc for why.
-     * @param cumulativeError the sum of every tick's position error across the whole replay
-     * @param cumulativeThresholdExceeded {@code true} when {@code cumulativeError} exceeded the
-     *     cumulative threshold, independently of whether any single tick exceeded the per-tick one
+     * @param finalDrift the position error at the last replayed tick — how far the simulation
+     *     ended up from the recording, in blocks. {@code 0.0} for a fixture with no tick past the
+     *     seed
+     * @param summedTickError the sum of every tick's position error across the whole replay. A
+     *     diagnostic, bounded by neither threshold: for a steadily drifting trace it runs about two
+     *     orders of magnitude above {@code finalDrift}, and for a trajectory that wanders and comes
+     *     back it can be large while {@code finalDrift} is near zero
+     * @param driftThresholdExceeded {@code true} when {@code finalDrift} exceeded the drift
+     *     threshold, independently of whether any single tick exceeded the per-tick one
      */
     public record ReplayReport(
             OptionalInt firstDivergingTick,
             double firstDivergingTickError,
             double firstDivergingTickVelocityError,
-            double cumulativeError,
-            boolean cumulativeThresholdExceeded) {
+            double finalDrift,
+            double summedTickError,
+            boolean driftThresholdExceeded) {
 
         /** {@code true} when neither bound was exceeded anywhere in the replay. */
         public boolean isClean() {
-            return firstDivergingTick.isEmpty() && !cumulativeThresholdExceeded;
+            return firstDivergingTick.isEmpty() && !driftThresholdExceeded;
         }
     }
 }
