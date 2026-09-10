@@ -118,142 +118,36 @@ docker compose -f docker/mariadb/compose.yml up -d
 
 ## Design Reference Rules (from ManisGame)
 
-The following rules are derived from [ManisGame](https://github.com/OneLiteFeatherNET/ManisGame) and are **mandatory** for all new code in the tree being replaced. For the rebuild, judgment calls these rules don't mechanically settle (sealed vs. not, record vs. class, exception design, nullability) belong in `.claude/skills/java-style/SKILL.md`, not restated here.
+Ten rules, originally derived from [ManisGame](https://github.com/OneLiteFeatherNET/ManisGame),
+apply across the whole project, not just to one tree — the design spec carries them forward in
+full for the rebuild and applies them module by module. The rebuild is where they are actually
+enforced today: mechanically where `voyager-fitness` already has a test for one (rules 5 and 9),
+and as judgment calls in `.claude/skills/java-style/SKILL.md` otherwise, which also explains when a
+rule legitimately doesn't apply. The tree being replaced is where they were written down without
+being enforced — see the skill's baseline reality check for how far short `server` falls.
 
-### 1. Sealed Interface Hierarchy
-
-Domain interfaces in `shared/common` must use `sealed` + `permits BaseSomething` where a controlled extension point is intended. The `Base*` implementation is `non-sealed abstract` so consumers extend it instead of the root interface.
-
-```java
-public sealed interface Scare permits BaseScare { ... }
-
-public abstract non-sealed class BaseScare implements Scare { ... }
-```
-
-### 2. Factory as abstract utility class with `@ApiStatus.Internal`
-
-Factory classes are `abstract` with a `private` constructor, annotated `@ApiStatus.Internal`. All factory methods are annotated `@Contract(pure = true, value = "... -> new")`.
-
-```java
-@ApiStatus.Internal
-public abstract class ScareFactory {
-    private ScareFactory() {}
-
-    @Contract(pure = true, value = "_, _, _ -> new")
-    public static Scare create(ScareCategory category, Key key, Map<Class<?>, T> components) { ... }
-}
-```
-
-### 3. Provider/Registry as sealed interface with static `create()`
-
-- Provider/Registry interfaces are `sealed`; the implementation is `final`.
-- Static `create()` factory method lives on the interface.
-- Backing storage uses `ConcurrentHashMap`; returned collections are `@Unmodifiable`.
-- The single implementation is named `Default*`.
-
-```java
-public sealed interface ScareProvider permits DefaultScareProvider {
-    @Contract(pure = true)
-    static ScareProvider create() { return new DefaultScareProvider(); }
-
-    boolean add(Scare scare);
-    @Unmodifiable Collection<Scare> getScares();
-}
-
-public final class DefaultScareProvider implements ScareProvider {
-    private final Map<Key, Scare> scaresByKey = new ConcurrentHashMap<>();
-    // ...
-}
-```
-
-### 4. Components as Java `record`s
-
-Data components are `record`s. The compact constructor validates invariants. A static `of(Annotation)` factory enables annotation-driven creation.
-
-```java
-public record TitleComponent(Component header, Component subHeader, long fadeIn, long stay, long fadeOut)
-        implements ScareComponent {
-
-    public TitleComponent {
-        Check.argCondition(fadeIn < 0, "fadeIn must be greater than 0");
-    }
-
-    @Contract(pure = true, value = "_ -> new")
-    public static TitleComponent of(TitleMeta titleMeta) { ... }
-}
-```
-
-### 5. `@NotNullByDefault` on packages
-
-Every package declares a `package-info.java` with `@NotNullByDefault`. Nullability is the exception, not the default.
-
-```java
-@NotNullByDefault
-package net.theevilreaper.manis.scare;
-
-import org.jetbrains.annotations.NotNullByDefault;
-```
-
-### 6. Enum DSL pattern
-
-Enums with external representations cache `VALUES`, provide `byName()`/`byId()` lookup methods, and return `@Nullable` or `Optional`.
-
-```java
-public enum ScareCategory {
-    SOUND("sound"), TITLE("title");
-
-    private static final ScareCategory[] VALUES = values(); // cached!
-    private final String dslKey;
-
-    ScareCategory(String dslKey) { this.dslKey = dslKey; }
-
-    public static @Nullable ScareCategory byName(String name) {
-        ScareCategory category = null;
-        for (int i = 0; i < VALUES.length && category == null; i++) {
-            if (VALUES[i].dslKey.equalsIgnoreCase(name)) category = VALUES[i];
-        }
-        return category;
-    }
-}
-```
-
-### 7. Functional interface as injectable Creator
-
-Abstract factories must be injectable via a `@FunctionalInterface` Creator so tests can substitute a different factory implementation.
-
-```java
-@FunctionalInterface
-public interface ScareCreator {
-    <T extends ScareComponent> Scare apply(ScareCategory category, Key key, Map<Class<?>, T> components);
-}
-// Usage: passed to adapters/loaders so tests can inject a different factory.
-```
-
-### 8. Gson Adapter naming
-
-- Deserializer classes are named `*Adapter` and live in an `adapter` subpackage.
-- Component adapters live in `adapter.component`.
-- All adapter classes are `final`.
-
-```java
-// package scare.adapter
-public final class ScareAdapter implements JsonDeserializer<Scare> { ... }
-
-// package scare.adapter.component
-public final class TitleComponentAdapter implements JsonDeserializer<TitleComponent> { ... }
-```
-
-### 9. Exception hierarchy
-
-All domain exceptions extend `RuntimeException`, carry the `Exception` suffix, and use domain-specific names.
-
-Examples: `MissingAnnotationException`, `InvalidDataException`, `InvalidCategoryException`.
-
-### 10. Module API boundary
-
-- `shared/api` — pure interfaces, enums, exceptions; zero implementation.
-- `shared/common` — implementations of shared logic; NO platform-specific imports.
-- `extensions/*` or `server` — platform-specific code; may import Minestom API.
+1. **Sealed interface hierarchy** — a domain interface needing a controlled extension point is
+   `sealed … permits BaseX`, with a `non-sealed abstract BaseX` implementation.
+2. **Factory as abstract utility class** — `abstract`, private constructor,
+   `@ApiStatus.Internal`, `@Contract(pure = true, ...)` on every factory method.
+3. **Provider/Registry as sealed interface** — `sealed` with a static `create()`, one `final
+   Default*` implementation backed by `ConcurrentHashMap`, `@Unmodifiable` return collections.
+4. **Components as records** — data components are `record`s; invariants live in the compact
+   constructor; a static `of(Annotation)` factory enables annotation-driven creation.
+5. **`@NotNullByDefault` on packages** — every package with sources declares it in a
+   `package-info.java`; `@Nullable` is the deliberate exception. Checked by
+   `NullabilityConventionTest` in `voyager-fitness`.
+6. **Enum DSL pattern** — enums with an external representation cache `VALUES` and expose
+   `byName()`/`byId()` returning `@Nullable`/`Optional`.
+7. **Injectable Creator** — an abstract factory is exposed through a `@FunctionalInterface`
+   Creator so tests can substitute a different implementation.
+8. **Gson adapter naming** — deserializers are named `*Adapter`, live in an `adapter` subpackage
+   (`adapter.component` for component adapters), and are `final`.
+9. **Exception hierarchy** — domain exceptions extend `RuntimeException`, carry the `Exception`
+   suffix, and use domain-specific names. Checked by `DesignRuleTest` in `voyager-fitness`.
+10. **Module API boundary** — pure interfaces/records/enums/exceptions live in the API module
+    with zero implementation; implementation code carries no platform-specific imports; platform
+    code is isolated to its own module.
 
 ### Module Isolation
 
