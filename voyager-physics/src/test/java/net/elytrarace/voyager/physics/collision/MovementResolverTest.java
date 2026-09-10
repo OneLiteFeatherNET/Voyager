@@ -227,4 +227,68 @@ class MovementResolverTest {
         assertThat(result.allowedMovement().x()).isCloseTo(4.7, within(1.0e-9));
         assertThat(result.horizontalCollision()).isFalse();
     }
+
+    /**
+     * The same sub-tolerance clamp as {@link #aClampWellUnderVanillasToleranceIsNotReportedAsACollision}
+     * — {@code dx = 4.700005} clamped to exactly {@code 4.7}, a {@code 5e-6} difference, under
+     * Vanilla's {@code 1.0E-5F} tolerance — but read through {@link MovementResult#xCollision()}
+     * instead of {@link MovementResult#horizontalCollision()}. Restitution (zeroing a collided axis'
+     * velocity, done by the caller in {@code ElytraSimulator}) must act on the exact clamp, not the
+     * tolerance-gated flag: a resolver that computed {@code xCollision} with the same tolerance as
+     * {@code horizontalCollision} would still pass every other test in this class, including {@link
+     * #aClampWellUnderVanillasToleranceIsNotReportedAsACollision} itself, since that one only checks
+     * {@code horizontalCollision}.
+     */
+    @Test
+    void anExactSubToleranceClampStillReportsAxisCollision() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(4.700005, 0, 0),
+                filtering(new Aabb(new Vec3(5, -64, -64), new Vec3(6, 64, 64))));
+
+        assertThat(result.xCollision()).isTrue();
+        assertThat(result.horizontalCollision()).isFalse();
+    }
+
+    @Test
+    void verticalCollisionIsTrueOnLanding() {
+        MovementResult result =
+                MovementResolver.resolve(boxAt(0, 0.5, 0), new Vec3(0, -2.0, 0), floorAtZero());
+
+        assertThat(result.verticalCollision()).isTrue();
+        assertThat(result.onGround()).isTrue();
+    }
+
+    /**
+     * {@code onGround} is landing-specific ({@code moving down AND clamped}); {@code
+     * verticalCollision} is broader — clamped in either direction. Hitting a ceiling while rising
+     * clamps Y (so {@code verticalCollision} is true) without landing (so {@code onGround} stays
+     * false) — the one case in this suite where the two vertical flags disagree.
+     */
+    @Test
+    void verticalCollisionIsTrueOnACeilingHitEvenThoughOnGroundIsFalse() {
+        MovementResult result =
+                MovementResolver.resolve(boxAt(0, 5, 0), new Vec3(0, 2.0, 0), ceilingAtSeven());
+
+        assertThat(result.verticalCollision()).isTrue();
+        assertThat(result.onGround()).isFalse();
+    }
+
+    @Test
+    void zCollisionIsTrueWhenZIsClamped() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(0, 0, 10.0),
+                filtering(new Aabb(new Vec3(-64, -64, 5), new Vec3(64, 64, 6))));
+
+        assertThat(result.zCollision()).isTrue();
+    }
+
+    @Test
+    void anUnobstructedAxisReportsNoExactCollision() {
+        MovementResult result =
+                MovementResolver.resolve(boxAt(0, 10, 0), new Vec3(1, -0.5, 2), CollisionSpace.empty());
+
+        assertThat(result.xCollision()).isFalse();
+        assertThat(result.verticalCollision()).isFalse();
+        assertThat(result.zCollision()).isFalse();
+    }
 }

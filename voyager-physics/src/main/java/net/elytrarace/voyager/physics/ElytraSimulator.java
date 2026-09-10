@@ -33,6 +33,24 @@ import java.util.Map;
  * <p>The entity's bounding box — 0.6 blocks wide, 1.8 blocks tall, feet at the entity's position —
  * is derived here from {@link FlightState#position()} rather than carried in {@link FlightState},
  * because it is a constant of the entity, not part of its state.
+ *
+ * <p>A collided axis is zeroed in the resulting velocity, never merely left at the pre-collision
+ * value. This is Vanilla's {@code Entity.restituteMovementAfterCollisions}, called from {@code
+ * Entity.move} right after the same axis-separated sweep {@link MovementResolver} performs: {@code
+ * movementAfterBounce = movementAfterBounce.with(axis, -currentMovement * restitution)}, or the
+ * equivalent vertical expression, evaluated per collided axis. {@code restitution} is {@code
+ * Entity.getEntityBounciness()}, which is {@code 0.0} for every entity against every ordinary
+ * (non-slime, non-bed) block — 26.2's default — so the term collapses to zero regardless of the
+ * pre-collision velocity: a collided axis' velocity becomes exactly {@code 0.0}, not a fraction of
+ * itself. Bouncy blocks are not modelled; if the simulation ever needs them, {@code restitution}
+ * becomes a non-zero per-block value threaded in here, not a different formula.
+ *
+ * <p>Zeroing reads {@link MovementResult#xCollision()}, {@link MovementResult#verticalCollision()}
+ * and {@link MovementResult#zCollision()} — the exact, non-tolerance flags — not {@link
+ * MovementResult#horizontalCollision()}: Vanilla's own restitution acts on the resolver's actual
+ * per-axis clamp, while {@code horizontalCollision} carries a {@code 1.0E-5F} tolerance meant for a
+ * different concern (whether to report a collision at all for gameplay purposes, including the
+ * block-damage check this simulator does not yet implement).
  */
 public abstract class ElytraSimulator {
 
@@ -77,15 +95,28 @@ public abstract class ElytraSimulator {
 
         Aabb box = boundingBoxAt(previous.position());
         MovementResult movementResult = MovementResolver.resolve(box, velocity, space);
+        Vec3 restitutedVelocity = restitute(velocity, movementResult);
 
         FlightState result = new FlightState(
                 previous.position().plus(movementResult.allowedMovement()),
-                velocity,
+                restitutedVelocity,
                 input.yaw(),
                 input.pitch(),
                 movementResult.onGround());
 
         return new TickTrace(result, velocityAfter);
+    }
+
+    /**
+     * Zeroes each collided component of {@code velocity} — Vanilla's collision restitution at
+     * {@code bounciness = 0.0}. See the class Javadoc for why the exact, non-tolerance flags are the
+     * correct ones to read here.
+     */
+    private static Vec3 restitute(Vec3 velocity, MovementResult movementResult) {
+        return new Vec3(
+                movementResult.xCollision() ? 0.0 : velocity.x(),
+                movementResult.verticalCollision() ? 0.0 : velocity.y(),
+                movementResult.zCollision() ? 0.0 : velocity.z());
     }
 
     /**
