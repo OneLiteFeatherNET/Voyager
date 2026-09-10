@@ -37,7 +37,21 @@ import java.util.List;
 @ApiStatus.Internal
 public abstract class MovementResolver {
 
-    /** Slack added around the swept region so a box moving exactly onto a surface still queries it. */
+    /**
+     * Slack added around the swept region before it is handed to {@link CollisionSpace}. It mirrors
+     * the {@code 1.0E-7} tolerance Vanilla's own per-axis clamp carries — {@code Shapes.collide}'s
+     * {@code Math.abs(distance) < 1.0E-7} short-circuit and {@code VoxelShape.collideX}'s
+     * {@code min + 1.0E-7} / {@code max - 1.0E-7} index lookups; see the collision-path section of
+     * {@code docs/reference/elytra-physics-26.2.md}.
+     *
+     * <p>No test depends on its value, and none should be expected to: because {@link
+     * #overlapsStrict} matches {@link Aabb#intersects(Aabb)}, the only boxes this slack adds to the
+     * candidate list are ones the box merely touches at the end of its sweep, and a clamp against a
+     * surface exactly at the end of the movement equals the requested movement. Setting it to
+     * {@code 0.0} therefore changes nothing observable here. It is kept because the region query is
+     * the port's one chance to widen the candidate set, and a {@link CollisionSpace} backed by a
+     * real world may round its own bounds.</p>
+     */
     private static final double SWEEP_EPSILON = 1.0e-7;
 
     /**

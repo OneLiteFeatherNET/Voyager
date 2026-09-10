@@ -291,4 +291,100 @@ class MovementResolverTest {
         assertThat(result.verticalCollision()).isFalse();
         assertThat(result.zCollision()).isFalse();
     }
+
+    // --- Fix-Runde 2: the negative direction, and exact-flush contact. ---
+
+    /**
+     * Every horizontal fixture above moves in {@code +X} or {@code +Z}, so {@code clampX}'s and
+     * {@code clampZ}'s {@code else if (result < 0.0 ...)} branches were never entered: deleting them
+     * outright left the whole suite green while an entity flying in {@code -X} passed straight
+     * through a wall. Mirror of {@link #aWallStopsHorizontalMovementAndReportsIt}, including its use
+     * of {@link #filtering} so the swept region stays load-bearing.
+     */
+    @Test
+    void aWallInNegativeXStopsHorizontalMovementAndReportsIt() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(-10.0, 0, 0),
+                filtering(new Aabb(new Vec3(-6, -64, -64), new Vec3(-5, 64, 64))));
+
+        // box.min.x (-0.3) >= other.max.x (-5), so limit = -5 - (-0.3) = -4.7.
+        assertThat(result.allowedMovement().x()).isCloseTo(-4.7, within(1.0e-9));
+        assertThat(result.xCollision()).isTrue();
+        assertThat(result.horizontalCollision()).isTrue();
+    }
+
+    /** The {@code -Z} mirror of {@link #aWallInNegativeXStopsHorizontalMovementAndReportsIt}. */
+    @Test
+    void aWallInNegativeZStopsHorizontalMovementAndReportsIt() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(0, 0, -10.0),
+                filtering(new Aabb(new Vec3(-64, -64, -6), new Vec3(64, 64, -5))));
+
+        assertThat(result.allowedMovement().z()).isCloseTo(-4.7, within(1.0e-9));
+        assertThat(result.zCollision()).isTrue();
+        assertThat(result.horizontalCollision()).isTrue();
+    }
+
+    // Exact-flush contact — a face of the box sitting exactly on a face of the block — is not an
+    // exotic state: it is the state a box is in on every tick after a collision clamped that axis to
+    // the surface and restitution zeroed the velocity. Each clamp's comparison is therefore
+    // non-strict (`<=` / `>=`), and relaxing it to `<` / `>` lets the box move through the surface it
+    // is already touching. Only aBoxAlreadyRestingOnTheFloorCannotSinkIntoIt covered any of the six;
+    // the five fixtures below cover the rest.
+
+    /** {@code clampY}, upward: {@code box.max.y() <= other.min.y()}. */
+    @Test
+    void aBoxFlushUnderACeilingCannotRiseIntoIt() {
+        // boxAt(0, 5.2, 0).max.y == 7.0, exactly the ceiling's min.y.
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 5.2, 0), new Vec3(0, 2.0, 0), ceilingAtSeven());
+
+        assertThat(result.allowedMovement().y()).isEqualTo(0.0);
+        assertThat(result.verticalCollision()).isTrue();
+        assertThat(result.onGround()).isFalse();
+    }
+
+    /** {@code clampX}, positive: {@code box.max.x() <= other.min.x()}. */
+    @Test
+    void aBoxFlushAgainstAWallInPositiveXCannotAdvanceIntoIt() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(1.0, 0, 0),
+                filtering(new Aabb(new Vec3(0.3, -64, -64), new Vec3(1.3, 64, 64))));
+
+        assertThat(result.allowedMovement().x()).isEqualTo(0.0);
+        assertThat(result.xCollision()).isTrue();
+    }
+
+    /** {@code clampX}, negative: {@code box.min.x() >= other.max.x()}. */
+    @Test
+    void aBoxFlushAgainstAWallInNegativeXCannotAdvanceIntoIt() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(-1.0, 0, 0),
+                filtering(new Aabb(new Vec3(-1.3, -64, -64), new Vec3(-0.3, 64, 64))));
+
+        assertThat(result.allowedMovement().x()).isEqualTo(0.0);
+        assertThat(result.xCollision()).isTrue();
+    }
+
+    /** {@code clampZ}, positive: {@code box.max.z() <= other.min.z()}. */
+    @Test
+    void aBoxFlushAgainstAWallInPositiveZCannotAdvanceIntoIt() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(0, 0, 1.0),
+                filtering(new Aabb(new Vec3(-64, -64, 0.3), new Vec3(64, 64, 1.3))));
+
+        assertThat(result.allowedMovement().z()).isEqualTo(0.0);
+        assertThat(result.zCollision()).isTrue();
+    }
+
+    /** {@code clampZ}, negative: {@code box.min.z() >= other.max.z()}. */
+    @Test
+    void aBoxFlushAgainstAWallInNegativeZCannotAdvanceIntoIt() {
+        MovementResult result = MovementResolver.resolve(
+                boxAt(0, 10, 0), new Vec3(0, 0, -1.0),
+                filtering(new Aabb(new Vec3(-64, -64, -1.3), new Vec3(64, 64, -0.3))));
+
+        assertThat(result.allowedMovement().z()).isEqualTo(0.0);
+        assertThat(result.zCollision()).isTrue();
+    }
 }

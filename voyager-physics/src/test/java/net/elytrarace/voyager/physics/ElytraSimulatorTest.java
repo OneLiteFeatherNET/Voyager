@@ -35,6 +35,11 @@ class ElytraSimulatorTest {
         return region -> List.of(new Aabb(new Vec3(minX, -64, -64), new Vec3(minX + 1.0, 64, 64)));
     }
 
+    /** A wall spanning the entity's altitude range, unbounded on y and x: z in {@code [minZ, minZ + 1]}. */
+    private static CollisionSpace wallAtZ(double minZ) {
+        return region -> List.of(new Aabb(new Vec3(-64, -64, minZ), new Vec3(64, 64, minZ + 1.0)));
+    }
+
     /** A ceiling, unbounded on x and z: y in {@code [minY, minY + 1]}. */
     private static CollisionSpace ceilingAt(double minY) {
         return region -> List.of(new Aabb(new Vec3(-64, minY, -64), new Vec3(64, minY + 1.0, 64)));
@@ -237,6 +242,26 @@ class ElytraSimulatorTest {
         FlightState result = ElytraSimulator.tick(state, input, wallAt(44.84999542915344));
 
         assertThat(result.velocity().x()).isEqualTo(0.0);
+    }
+
+    /**
+     * No simulator-level fixture ever produced a Z collision — every collision fixture above clamps
+     * X or Y — so deleting {@code movementResult.zCollision() ? 0.0 :} from {@code restitute} left
+     * the whole suite green while an entity flying into a wall on Z kept its full Z velocity. The
+     * {@code +X} mirror of this is {@code restitutionZeroesOnTheExactClampNotTheTolerantOne}.
+     */
+    @Test
+    void aZCollisionZeroesTheZVelocityAndClampsTheZPosition() {
+        FlightState state = new FlightState(new Vec3(0, 10, 0), new Vec3(0, 0, 50), 0.0f, 0.0f, false);
+        FlightInput input = new FlightInput(0.0f, 0.0f, false, 0, DEFAULT_GRAVITY);
+
+        FlightState result = ElytraSimulator.tick(state, input, wallAtZ(10.0));
+
+        // Same derivation as theEntityWidthIsPinnedByAWallAtAKnownDistance, on Z: 10 - 0.3 = 9.7.
+        assertThat(result.position().z()).isCloseTo(9.7, within(1.0e-9));
+        assertThat(result.velocity().z()).isEqualTo(0.0);
+        // Y is untouched by the wall, so its velocity must survive restitution unchanged.
+        assertThat(result.velocity().y()).isLessThan(0.0);
     }
 
     // --- Fix-Runde 2: the X terms, which every fixture above collapses to zero at yaw 0. ---
