@@ -1031,7 +1031,9 @@ the tick."
 
 **Interfaces:**
 - Consumes: `ElytraSimulator.tickTraced`, and the fixture format defined by E2a Task 2.
-- Produces: `TraceReplay.replay(TraceFixture)` returning a `ReplayReport` naming the first diverging tick, the diverging step, and the per-tick and cumulative error.
+- Produces: `TraceReplay.replay(TraceFixture)` returning a `ReplayReport` naming the first diverging tick, the velocity error at that tick, and the per-tick and cumulative position error.
+
+**Corrected during execution: there is no per-step attribution, and this plan was wrong to promise one.** A fixture carries one velocity per tick — the value after the last step — while the distances between consecutive steps' outputs are the same order of magnitude as a typical divergence. Measured over 245 realistically shaped cases, a heuristic attribution named a step by perturbation magnitude and direction rather than by cause: correct for velocity errors at or below `1e-3`, noise at `1e-2` and above. The step decomposition keeps its value for interactive debugging through `ElytraSimulator.tickTraced`; what the format cannot support is naming the step automatically. The velocity error must be computed against the **restituted** velocity, since that is what a recorder measures — comparing against the pre-restitution value reports the restitution gap on exactly the collision ticks the landing profiles are built from.
 
 All of this lives in the test source set. Fixture reading is not production behaviour and must not leak into the module's API — an ArchUnit rule already forbids `java.nio.file` in main sources, and this task must not be the reason someone weakens it.
 
