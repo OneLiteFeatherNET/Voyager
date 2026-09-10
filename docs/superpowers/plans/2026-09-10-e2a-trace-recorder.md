@@ -168,6 +168,7 @@ package net.elytrarace.tools.recorder.format;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.elytrarace.tools.recorder.format.exception.InvalidTraceException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -210,9 +211,10 @@ class TraceFileTest {
 
     @Test
     void rejectsNonFiniteSamples() {
-        TraceTick broken = new TraceTick(0, 0.0, Double.NaN, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f, false, false, 0);
-
-        assertThatThrownBy(() -> new TraceFile(metadata(), List.of(broken)))
+        // The construction must sit inside the lambda: TraceTick validates in its own compact
+        // constructor, so building it outside would throw before the assertion runs and the test
+        // would be permanently red against a correct implementation.
+        assertThatThrownBy(() -> new TraceTick(0, 0.0, Double.NaN, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f, false, false, 0))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
