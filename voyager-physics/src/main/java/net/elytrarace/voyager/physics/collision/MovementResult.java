@@ -10,13 +10,18 @@ import net.elytrarace.voyager.physics.exception.InvalidSimulationStateException;
  * <p>Two different notions of "did this axis collide" are carried, deliberately: {@link
  * #xCollision}, {@link #verticalCollision} and {@link #zCollision} are exact — {@code true}
  * whenever the resolver's clamp changed the requested component at all, with no tolerance — while
- * {@link #horizontalCollision} keeps Vanilla's {@code Mth.equal} tolerance of {@code 1.0E-5F}.
- * Vanilla's own collision-restitution step ({@code Entity.restituteMovementAfterCollisions}, called
- * from {@code Entity.move}) zeroes a collided axis based on its own exact per-axis collision fields,
- * not on the tolerance-gated flag it separately reports for other purposes (Vanilla's block-damage
- * check reads a still-different, distance-based delta) — so a caller zeroing velocity after
- * collision must read the exact fields, and a caller merely reporting whether a collision happened
- * for gameplay purposes reads {@link #horizontalCollision}.
+ * {@link #horizontalCollision} keeps Vanilla's {@code Mth.equal} tolerance of {@code 1.0E-5F}. A
+ * caller zeroing velocity after a collision reads the exact fields; a caller merely reporting
+ * whether a collision happened for gameplay purposes reads {@link #horizontalCollision} (Vanilla's
+ * block-damage check reads a still-different, distance-based delta).
+ *
+ * <p>Vanilla itself splits them differently, and the difference is deliberate here rather than
+ * accidental: {@code Entity.move} computes its vertical flag exactly ({@code delta.y != movement.y})
+ * but both horizontal flags through {@code Mth.equal}, and hands those tolerant flags to
+ * {@code Entity.restituteMovementAfterCollisions}. On a clamp inside {@code (0, 1.0E-5)} Vanilla
+ * therefore keeps the horizontal velocity while this port's caller zeroes it. Recorded as a finding
+ * in the collision-path section of {@code docs/reference/elytra-physics-26.2.md}; resolving it is a
+ * behaviour change that belongs with the real traces.
  *
  * @param allowedMovement the movement actually applied, after any axis was clamped by a collision
  * @param xCollision {@code true} when the X component was clamped at all, with no tolerance
