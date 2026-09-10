@@ -66,4 +66,62 @@ class TraceFileTest {
         assertThatThrownBy(() -> file.ticks().add(tick(1, 99.0)))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void rejectsABlankMinecraftVersion() {
+        assertThatThrownBy(() -> new TraceMetadata(" ", "steady-glide", 0.08, 1, List.of()))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsABlankProfile() {
+        assertThatThrownBy(() -> new TraceMetadata("26.2", " ", 0.08, 1, List.of()))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsAFormatVersionBelowOne() {
+        assertThatThrownBy(() -> new TraceMetadata("26.2", "steady-glide", 0.08, 0, List.of()))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsAMissingWorldSlice() {
+        assertThatThrownBy(() -> new TraceMetadata("26.2", "steady-glide", 0.08, 1, null))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsANegativeTickIndex() {
+        assertThatThrownBy(() -> new TraceTick(-1, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsANonFiniteRotation() {
+        assertThatThrownBy(
+                () -> new TraceTick(0, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, Float.NaN, -5.0f, false, false, 0))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsANegativeFireworkTickCount() {
+        assertThatThrownBy(() -> new TraceTick(0, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, -1))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsABlockBoxWhoseMinimumExceedsItsMaximum() {
+        assertThatThrownBy(() -> new BlockBox(0.0, 0.0, 0.0, -1.0, 1.0, 1.0))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void acceptsAValidBlockBoxAsPartOfAWorldSlice() {
+        BlockBox box = new BlockBox(0.0, 64.0, 0.0, 1.0, 65.0, 1.0);
+
+        TraceMetadata metadata = new TraceMetadata("26.2", "steady-glide", 0.08, 1, List.of(box));
+
+        assertThat(metadata.worldSlice()).containsExactly(box);
+    }
 }

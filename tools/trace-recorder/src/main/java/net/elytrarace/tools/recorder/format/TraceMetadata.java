@@ -31,6 +31,10 @@ public record TraceMetadata(
         if (formatVersion < 1) {
             throw new InvalidTraceException("formatVersion must be >= 1, was %s".formatted(formatVersion));
         }
+        if (worldSlice == null) {
+            throw new InvalidTraceException(
+                    "worldSlice must not be missing; an empty world must be recorded as [], not an absent field");
+        }
         worldSlice = List.copyOf(worldSlice);
     }
 }
