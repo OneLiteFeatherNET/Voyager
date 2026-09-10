@@ -93,11 +93,23 @@ double: -0.2181661564992912
 `Math.toRadians(pitch)` is the wrong conversion here.
 
 **3. The trigonometry is mixed, and one half is a lookup table.** The lift term uses
-`Math.cos(leanAngle)` — a true double cosine. The pitch-boost term uses `Mth.sin(leanAngle)`:
+`Math.cos(leanAngle)` — a true double cosine. The pitch-boost term uses `Mth.sin(leanAngle)`, and
+`Entity.calculateViewVector` uses both `Mth.sin` and `Mth.cos`. `net/minecraft/util/Mth.java`
+contains **exactly these two methods** on this path, and no `float` overload of either:
 
 ```java
+private static final float[] SIN = Util.make(new float[65536], sin -> {
+    for (int i = 0; i < sin.length; i++) {
+        sin[i] = (float)Math.sin(i / 10430.378350470453);
+    }
+});
+
 public static float sin(final double i) {
     return SIN[(int)((long)(i * 10430.378350470453) & 65535L)];
+}
+
+public static float cos(final double i) {
+    return SIN[(int)((long)(i * 10430.378350470453 + 16384.0) & 65535L)];
 }
 ```
 
@@ -105,6 +117,17 @@ That is a 65536-entry table returning `float`, with quantisation error orders of
 than the double `Math.sin` it superficially resembles. Reimplementing both terms with `Math.*` — the
 obvious, tidy choice — silently changes the climb behaviour. The port must use a table with the same
 size and index arithmetic.
+
+Two details of that index arithmetic are easy to get wrong, and neither shows up in a plot:
+
+- **There is no `float` overload in 26.2.** `calculateViewVector` passes `float` arguments
+  (`xRot * Mth.DEG_TO_RAD`), and they **widen to `double`** and bind to the methods above. A port
+  that assumes the "classic float form" — `SIN[(int)(i * 10430.378F + 16384.0F) & 65535]`, which
+  older Minecraft versions did carry — picks a different table entry for roughly 0.1% of angles. At
+  `-1.56955` rad the double form lands on index 12 and the float form on index 13, whose entries are
+  `9.59e-5` apart: a full table step, a hundred times the `1e-6` per-tick parity threshold.
+- **`cos` is `sin` shifted by a quarter turn of the table**, `+16384.0` added *before* the `long`
+  truncation — not `Math.cos` and not `sin(i + PI/2)`.
 
 ## Answered: does `air_drag_modifier` affect elytra drag?
 
