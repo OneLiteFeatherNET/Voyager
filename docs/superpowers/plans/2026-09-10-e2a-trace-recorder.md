@@ -1068,7 +1068,7 @@ other order produces a trace offset by one tick, which replays as constant drift
 
 ---
 
-### Task 7: The eight profiles and the procedure
+### Task 7: The nine profiles and the procedure
 
 **Files:**
 - Create: `tools/trace-recorder/scripts/steady-glide.txt`
@@ -1097,16 +1097,38 @@ Each script targets a behaviour the port could get wrong in a way steady flight 
 | `pitch-extremes` | Pitch at ±90°, where `lookHorLength` approaches zero | A port that adds its own guard where Vanilla has one, or omits Vanilla's |
 | `wall-graze` | Horizontal collision and the speed lost to it | Collision handled at the wrong point in the tick |
 | `landing` | Ground contact ending the glide | `onGround` handling and the end of fall flying |
+| `sustained-turn` | Yaw changing while gliding — the only profile where the look vector's x component is not zero | Any error in the yaw half of the look vector, the x drag term, or the direction-alignment step |
 
 - [ ] **Step 1: Write the eight scripts**
 
 Write each as a `.txt` in the script format, with a leading `#` comment naming the profile and one line saying what it is for. Keep every profile at or under 250 ticks — long enough for drift to show, short enough to read a fixture by eye.
 
+**The nine profiles have to work as a set, not only one at a time.** The `steady-glide` fixture
+recorded in Task 6 flies at `yaw = 0` on all 200 ticks, and its `velX` is exactly `0.0` on all 200 —
+at `yaw = 0` the look vector's x component vanishes and the whole x axis of the tick drops out of
+the arithmetic. Eight profiles that all fly straight would hand E2b a reference suite in which the x
+axis is a constant zero, and the physics port would then be calibrated against it. That is the same
+degeneracy that has been found and fixed in this stage's own tests four times; it must not be baked
+into the reference data.
+
+So before recording, check the scripts as a group: at least one profile must hold a `yaw` other than
+zero, and at least one must change `yaw` while gliding. `sustained-turn` is that profile — do not
+drop it to save a recording.
+
 `wall-graze` and `landing` need terrain. Document in each script's comment what the world must contain, and place a `# world:` line stating it, for example `# world: a stone wall at x=40, flat ground at y=64`.
 
 - [ ] **Step 2: Record all eight**
 
-Run each through `/record` on the same server and world. Verify each fixture the way Task 6 Step 4 verified `steady-glide`, and additionally check that the profile does what its name says — the stall profile must show horizontal speed collapsing, the wall graze must show a discontinuity in horizontal speed, the landing must end with `onGround` true.
+Run each through `/record` on the same server and world. Verify each fixture the way Task 6 Step 4 verified `steady-glide`, and additionally check that the profile does what its name says — the stall profile must show horizontal speed collapsing, the wall graze must show a discontinuity in horizontal speed, the landing must end with `onGround` true, and `sustained-turn` must show `velX` taking values other than zero.
+
+**The world slice has never once been exercised end to end.** Task 6's `steady-glide` recording came
+back with `worldSlice: 0 boxes` — correct for a profile flown through empty sky at y=202, but it
+means the whole path from `BukkitSolidBlockSource` through `WorldSliceCollector` into the fixture is
+so far proven only by unit tests against fake block sources. `wall-graze` and `landing` are the first
+recordings that can prove it. Treat a non-empty `worldSlice` in both as a pass condition of this
+task, and check the boxes actually correspond to the terrain the script's `# world:` line describes —
+a slice with the wrong coordinates is worse than an empty one, because a replay would resolve
+collisions against geometry that was never there.
 
 A profile that does not show its behaviour is a broken script, not a broken port. Fix the script and re-record.
 
