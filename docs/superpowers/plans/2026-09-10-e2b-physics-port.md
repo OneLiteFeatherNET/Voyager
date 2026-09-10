@@ -400,17 +400,23 @@ Expected: FAIL — `cannot find symbol: class ViewVector`.
 
 - [ ] **Step 3: Write the implementation**
 
-`ViewVector` is an `abstract` utility with a private constructor and `@ApiStatus.Internal`, transcribing `calculateViewVector` including its `float` intermediates:
+`ViewVector` is a **`public abstract`** utility with a private constructor and `@ApiStatus.Internal` — public because Task 3's `step` package calls it — transcribing `calculateViewVector` including its `float` intermediates:
 
 ```java
-public static Vec3 of(float pitchDegrees, float yawDegrees) {
+public abstract class ViewVector {
+
+    private ViewVector() {
+    }
+
+    public static Vec3 of(float pitchDegrees, float yawDegrees) {
     float realXRot = pitchDegrees * MinecraftMath.DEG_TO_RAD;
     float realYRot = -yawDegrees * MinecraftMath.DEG_TO_RAD;
     float yCos = MinecraftMath.cos(realYRot);
     float ySin = MinecraftMath.sin(realYRot);
     float xCos = MinecraftMath.cos(realXRot);
     float xSin = MinecraftMath.sin(realXRot);
-    return new Vec3(ySin * xCos, -xSin, yCos * xCos);
+        return new Vec3(ySin * xCos, -xSin, yCos * xCos);
+    }
 }
 ```
 
