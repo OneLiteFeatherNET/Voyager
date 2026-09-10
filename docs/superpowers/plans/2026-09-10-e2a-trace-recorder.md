@@ -85,8 +85,10 @@ Add to `settings.gradle.kts` after the greenfield includes:
 include("tools:trace-recorder")
 ```
 
+**The command must be runnable from the server console**, so the spike needs no Minecraft client and no human pilot. That means spawning at fixed coordinates in a loaded world rather than at the sender's location — a `ConsoleCommandSender` has no location.
+
 Write a plugin whose `onEnable` registers one command, `/probe`, that:
-1. spawns a `Zombie` at the sender's location plus 20 blocks of altitude,
+1. spawns a `Zombie` in the main world at a fixed, high, empty coordinate (for example `0, 200, 0`), loading the chunk first,
 2. equips an `ELYTRA` in the chest slot, makes it invulnerable, silent and persistent,
 3. calls `setGliding(true)`,
 4. schedules a repeating task at every tick for 100 ticks that sets rotation to a fixed pitch of `-5f` and yaw `0f`, then logs tick index, `getLocation()` and `getVelocity()`,
@@ -94,7 +96,9 @@ Write a plugin whose `onEnable` registers one command, `/probe`, that:
 
 - [ ] **Step 2: Run it and read the log**
 
-Download a Paper 26.2 server (`https://fill.papermc.io/v3/projects/paper` lists 26.2; the v2 API is sunset), accept the EULA, drop the shadow jar in `plugins/`, start it, join with any client, run `/probe`.
+Download a Paper 26.2 server (`https://fill.papermc.io/v3/projects/paper` lists 26.2; the v2 API is sunset), accept the EULA, drop the shadow jar in `plugins/`, start it, and run `/probe` **on the server console** — no client, no player.
+
+Run the server headless with a generous timeout; first start generates a world and takes a while. Feed the command to its standard input, and read the answers from `logs/latest.log`.
 
 Record verbatim in the report: the first ten and last ten logged lines.
 
