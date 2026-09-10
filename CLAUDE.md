@@ -4,46 +4,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Voyager (internally "ElytraRace") is a Minecraft elytra racing minigame (Mario Kart style — fly through cups of maps, each map has rings that give points). Multi-module Java project built with Gradle 9.4.
+Voyager is a Minecraft elytra racing minigame — fly through cups of maps, each map has rings that
+give points. Multi-module Java project built with Gradle 9.5.1.
 
-**Migration in progress:** Game plugin is being migrated from Paper to Minestom. Setup plugin stays on Paper.
+**The repository currently contains two trees.** The greenfield rebuild is being built alongside the
+tree it replaces; both build, both test, and `main` stays green throughout. The design that governs
+the rebuild is `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md`, and it — not this
+file — is the authority for the design rules until the rebuild lands.
 
-### Key Decisions (approved)
-- **Java**: 25 (Minestom requirement)
-- **Game Server**: Minestom 2026.x as standalone server (own main(), no extensions)
-- **Setup Server**: Paper API 1.21.5 (unchanged)
-- **World Format**: Anvil (direct loading, compatible with Paper setup)
-- **Conversation API**: Complete rewrite (platform-agnostic)
-- **Deployment**: CloudNet v4 (primary), Cloud-Native/K8s (later)
-- **Commits**: Conventional Commits, no Co-Author
-- **Version Catalog**: Defined programmatically in `settings.gradle.kts` via `dependencyResolutionManagement { versionCatalogs { ... } }` — do NOT use `gradle/libs.versions.toml`
+### The rebuild (`voyager-*`)
+
+| Module | Contents |
+|---|---|
+| `voyager-api` | Interfaces, records, enums, exceptions. No implementation, no I/O. |
+| `voyager-fitness` | Test-only. ArchUnit over every `voyager-*` module. |
+
+Further modules — `voyager-physics`, `voyager-race`, `voyager-persistence`, `voyager-platform`,
+`voyager-server`, `voyager-setup` — arrive in later stages. See the spec's delivery plan.
+
+### The tree being replaced
+
+`server`, `plugins/game`, `plugins/setup`, `shared/common`, `shared/conversation-api`,
+`shared/database`, `shared/spline`. Do not add features here. It is deleted in one cut once the
+rebuild reaches a flyable build with a green Vanilla trace suite.
+
+## Key Decisions
+
+- **Java**: 25 for every `voyager-*` module. Vanilla itself requires Java 25 since Minecraft 26.1.
+- **Target**: Minecraft 26.2, Minestom `2026.08.28-26.2`. Mojang moved to calendar versioning in
+  2026; there is no 1.22, it became 26.1. `settings.gradle.kts` still pins the old tree to Minestom
+  `2026.04.13-1.21.11` — that version applies only to `server`/`plugins/*`, not to the rebuild.
+- **Dependency injection**: `io.airlift:guice:10`, with DI annotations confined to the composition
+  roots.
+- **Commits**: Conventional Commits, no Co-Author line beyond the configured attribution.
+- **Version Catalog**: declared programmatically in `settings.gradle.kts`. Do not add
+  `gradle/libs.versions.toml`.
 
 ## Build Commands
 
 ```bash
-./gradlew build                          # Build all modules
-./gradlew :plugins:game:build           # Build only the game plugin
-./gradlew :plugins:setup:build          # Build only the setup plugin
-./gradlew :plugins:game:test            # Run game plugin tests
-./gradlew :plugins:game:shadowJar       # Build fat JAR for game plugin
-./gradlew :plugins:game:runServer       # Run a local Paper 1.21.5 test server
-./gradlew :plugins:game:test --tests "net.elytrarace.game.ElytraRaceTest.testPluginLoads"  # Run a single test
-./gradlew :server:build                  # Build server module
-./gradlew :server:test                   # Run server tests
-./gradlew :server:shadowJar             # Build fat JAR
-java -jar server/build/libs/*.jar        # Run standalone server
+./gradlew build                    # Everything, both trees
+./gradlew :voyager-api:test        # The rebuild's API module
+./gradlew :voyager-fitness:test    # Architecture rules over the whole rebuild
+./gradlew :server:build            # The tree being replaced
 ```
 
-Tests use JUnit 5 with MockBukkit (plugins) or Minestom Testing (server) for API mocking. JaCoCo coverage reports are generated automatically after tests.
-
-## Module Structure
-
-- **`server`** — Standalone Minestom game server. Handles gameplay, physics, scoring, cup flow, and UI. Entry point: `net.elytrarace.server.VoyagerServer` (own `main()`). Depends on `shared/common`, `shared/database`.
-- **`plugins/game`** — Legacy Paper game plugin (`ElytraRace-Game`). Being replaced by `server`. Entry point: `net.elytrarace.game.ElytraRace`
-- **`plugins/setup`** — Setup plugin (`ElytraRace-Setup`) for map/cup/portal configuration via in-game conversations. Depends on FastAsyncWorldEdit. Entry point: `net.elytrarace.setup.ElytraRace`
-- **`shared/common`** — Shared utilities: ECS framework, map/cup services, file handling (Gson-based JSON), language/i18n, spline math, builders (Bukkit-frei)
-- **`shared/conversation-api`** — Player conversation/prompt system, plattform-agnostisch (Bukkit-frei)
-- **`shared/database`** — Hibernate ORM + HikariCP + MariaDB persistence layer for player data
+Tests use JUnit 6 with AssertJ. Architecture rules live in `voyager-fitness` and are declared with
+`allowEmptyShould(false)` — a rule that passes because it matched nothing is a defect, not a pass.
 
 ## Architecture
 
@@ -60,14 +67,14 @@ Game-specific components are in `plugins/game/src/.../components/` (GameState, P
 Game phases (Lobby → Preparation → Game → End) are managed via [Xerus](https://github.com/OneLiteFeatherNET/Xerus) (`net.theevilreaper.xerus.api.phase.*`). Phases have start/finish lifecycle with callbacks. `LinearPhaseSeries` chains phases sequentially.
 
 ### Elytra velocity authority
-Normal elytra flight is client-authoritative, matching vanilla Minecraft. `ElytraPhysicsSystem` runs the vanilla formula every tick to keep a server-tracked velocity for ring collision and boost math, but it does NOT call `player.setVelocity()`. Velocity is only sent to the client for external forces: firework boost burns (`FireworkBoostSystem`), ring `BOOST`/`SLOW` effects (`RingEffectSystem`), and out-of-bounds resets (`OutOfBoundsSystem`). See [ADR-0002](docs/decisions/0002-elytra-flight-client-authority.md) and [docs/elytra-physics-reference.md](docs/elytra-physics-reference.md) §7.
+Normal elytra flight is client-authoritative, matching vanilla Minecraft. `ElytraPhysicsSystem` (`server`) runs the vanilla formula every tick to keep a server-tracked velocity for ring collision and boost math, but it does NOT call `player.setVelocity()`. Velocity is only sent to the client for external forces: firework boost burns (`FireworkBoostSystem`), ring `BOOST`/`SLOW` effects (`RingEffectSystem`), and out-of-bounds resets (`OutOfBoundsSystem`). See [docs/elytra-physics-reference.md](docs/elytra-physics-reference.md) §7 for the formula as implemented here, and [docs/reference/elytra-physics-26.2.md](docs/reference/elytra-physics-26.2.md) for the decompiled-source-verified 26.2 formulas the rebuild targets. No ADR documents this decision yet.
 
 ### Data Flow
 Map and cup definitions are stored as JSON files (via `GsonFileHandler`). The setup plugin uses a conversation-based wizard to create these configs. The game plugin loads them at runtime through `MapService`/`CupService`.
 
-## Dependencies (via version catalog in settings.gradle.kts)
+## Dependencies (via version catalog in settings.gradle.kts, old tree)
 
-- **Minestom** 2026.03.25-1.21.11 — Standalone Minecraft server (server module)
+- **Minestom** 2026.04.13-1.21.11 — Standalone Minecraft server (server module). The rebuild targets `2026.08.28-26.2`; see Key Decisions.
 - **Minestom Testing** — Test framework for Minestom (server module tests)
 - **Paper API** 1.21.5 — Minecraft server API (plugins only)
 - **Cloud** (Incendo) — Command framework
@@ -88,17 +95,30 @@ docker compose -f docker/mariadb/compose.yml up -d
 ## Code Conventions
 
 - Base package: `net.elytrarace`
-- Java 25 with `--release 25` (server module), Java 21 with `--release 21` (plugins, shared)
 - UTF-8 source encoding
+- Commits follow Conventional Commits (feat:, fix:, docs:, refactor:, test:, chore:, ci:) — no Co-Author line
+
+### The rebuild (`voyager-*`)
+
+- Domain exceptions live in an `exception` subpackage next to the domain they belong to (e.g.
+  `net.elytrarace.api.math.exception`, `net.elytrarace.api.physics.exception`), each with its own
+  `package-info.java` — not one repo-wide exception package.
+- Build exception messages and similar output with `String.formatted(...)`, not `+` concatenation.
+- For everything else — when `sealed` is worth it, record vs. class, nullability, interface size,
+  numeric types in physics code — load `.claude/skills/java-style/SKILL.md` rather than looking here;
+  restating it here is the drift this rewrite exists to stop.
+
+### The tree being replaced
+
+- Java 25 with `--release 25` (server module), Java 21 with `--release 21` (plugins, shared)
 - Interface + Impl pattern for services (e.g., `GameService` / `GameServiceImpl`, `CupService` / `CupServiceImpl`)
 - Builder pattern for DTOs (e.g., `MapDTOBuilder`, `CupDTOBuilder`)
 - Components are named `*Component`, systems are named `*System`
-- Commits follow Conventional Commits (feat:, fix:, docs:, refactor:, test:, chore:, ci:) — no Co-Author line
 - User-facing strings use `Component.translatable("key", args)` backed by `.properties` files. Placeholders use MiniMessage `<arg:N>` syntax — never `{N}` (MessageFormat). The `{N}` form renders as literal text because `PluginTranslationRegistry` disables the MessageFormat path. See [docs/guides/how-to-add-a-translation.md](docs/guides/how-to-add-a-translation.md).
 
 ## Design Reference Rules (from ManisGame)
 
-The following rules are derived from [ManisGame](https://github.com/OneLiteFeatherNET/ManisGame) and are **mandatory** for all new code.
+The following rules are derived from [ManisGame](https://github.com/OneLiteFeatherNET/ManisGame) and are **mandatory** for all new code in the tree being replaced. For the rebuild, judgment calls these rules don't mechanically settle (sealed vs. not, record vs. class, exception design, nullability) belong in `.claude/skills/java-style/SKILL.md`, not restated here.
 
 ### 1. Sealed Interface Hierarchy
 
@@ -237,13 +257,18 @@ Examples: `MissingAnnotationException`, `InvalidDataException`, `InvalidCategory
 
 ### Module Isolation
 
-- `shared/common`, `shared/phase`, `shared/conversation-api`, `shared/spline` must NOT import `net.minestom.*`.
+- `shared/common`, `shared/conversation-api`, `shared/spline` must NOT import `net.minestom.*`.
 - `server` module must NOT import `org.bukkit.*` (Paper).
 - `shared/database` must NOT import server- or game-specific classes.
 
 ### ArchUnit Enforcement
 
-These rules are enforced by ArchUnit tests in `server/src/test/java/net/elytrarace/arch/`.
+Rules for the rebuild live in `voyager-fitness/src/test/java/net/elytrarace/fitness/`. That module
+depends on every `voyager-*` module, and `FitnessCoverageTest` fails the build if a module is added
+without being wired in — the previous suite declared rules for four modules its classpath never
+contained, so they never ran.
+
+The old tree's rules remain in `server/src/test/java/net/elytrarace/arch/`, unchanged.
 
 ## Agent Team Workflow (MANDATORY)
 
