@@ -656,11 +656,11 @@ Expected: FAIL — `package net.elytrarace.voyager.physics.step does not exist`.
 Vec3 lookAngle = ViewVector.of(pitch, yaw);
 float leanAngle = pitch * MinecraftMath.DEG_TO_RAD;
 double lookHorLength = Math.sqrt(lookAngle.x() * lookAngle.x() + lookAngle.z() * lookAngle.z());
-double moveHorLength = Math.hypot(velocity.x(), velocity.z());
+double moveHorLength = Math.sqrt(velocity.x() * velocity.x() + velocity.z() * velocity.z());
 double liftForce = MinecraftMath.square(Math.cos(leanAngle));
 ```
 
-Note `Math.cos` here, not `MinecraftMath.cos` — Vanilla uses the JDK cosine for the lift term and the table for everything else. The compact constructor rejects a non-finite or non-positive gravity with `InvalidSimulationStateException`, a `final class` extending `RuntimeException` in the module's `exception` subpackage:
+Note two things. `Math.sqrt(x*x + z*z)` and not `Math.hypot` — Vanilla's `Vec3.horizontalDistance()` is the former, and `hypot` is a different, more accurate algorithm that disagrees in roughly one case in nine by a single ulp. And `Math.cos` here, not `MinecraftMath.cos` — Vanilla uses the JDK cosine for the lift term and the table for everything else. The compact constructor rejects a non-finite or non-positive gravity with `InvalidSimulationStateException`, a `final class` extending `RuntimeException` in the module's `exception` subpackage:
 
 ```java
 package net.elytrarace.voyager.physics.exception;
