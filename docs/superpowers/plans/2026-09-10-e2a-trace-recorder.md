@@ -788,6 +788,8 @@ package net.elytrarace.tools.recorder.capture;
 import net.elytrarace.tools.recorder.format.TraceFile;
 import net.elytrarace.tools.recorder.format.exception.InvalidTraceException;
 import net.elytrarace.tools.recorder.script.FlightScript;
+import net.elytrarace.tools.recorder.format.BlockBox;
+import net.elytrarace.tools.recorder.format.TraceTick;
 import net.elytrarace.tools.recorder.script.FlightScriptParser;
 import net.elytrarace.tools.recorder.world.SolidBlockSource;
 import org.junit.jupiter.api.Test;
@@ -799,8 +801,17 @@ class TraceCollectorTest {
 
     private static final SolidBlockSource EMPTY = (x, y, z) -> false;
 
+    /** A floor filling y == 0, so the collected slice is observable rather than always empty. */
+    private static final SolidBlockSource FLOOR = (x, y, z) -> y == 0;
+
     private static TraceCollector collector(String script) {
         return new TraceCollector("26.2", "test-profile", 0.08, FlightScriptParser.parse(script));
+    }
+
+    private static TraceCollector recordOneTickAt(double x, double y, double z) {
+        TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
+        collector.record(new GliderSample(x, y, z, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0));
+        return collector;
     }
 
     private static GliderSample sample(double y) {
@@ -834,6 +845,7 @@ class TraceCollectorTest {
         TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
         collector.record(sample(100.0));
 
+        assertThat(collector.finish(EMPTY, 1.0).metadata().minecraftVersion()).isEqualTo("26.2");
         assertThat(collector.finish(EMPTY, 1.0).metadata().gravity()).isEqualTo(0.08);
         assertThat(collector.finish(EMPTY, 1.0).metadata().profile()).isEqualTo("test-profile");
     }
@@ -873,6 +885,44 @@ class TraceCollectorTest {
         assertThat(collector.nextInput().yaw()).isEqualTo(42.0f);
         assertThat(collector.nextInput().pitch()).isEqualTo(-7.0f);
     }
+
+    @Test
+    void mapsEverySampleFieldOntoItsTick() {
+        // Every other sample here leaves x, z and both horizontal velocities at 0.0 and both
+        // flags at false, so a field written into the wrong slot would be invisible. Every
+        // component below holds a value distinct from all the others, including the two
+        // booleans, so any misrouting changes an assertion.
+        TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
+        collector.record(new GliderSample(1.5, 2.5, 3.5, 0.25, -0.5, 0.75, 12.0f, -34.0f, true, false, 7));
+
+        TraceTick tick = collector.finish(EMPTY, 1.0).ticks().get(0);
+
+        assertThat(tick.posX()).isEqualTo(1.5);
+        assertThat(tick.posY()).isEqualTo(2.5);
+        assertThat(tick.posZ()).isEqualTo(3.5);
+        assertThat(tick.velX()).isEqualTo(0.25);
+        assertThat(tick.velY()).isEqualTo(-0.5);
+        assertThat(tick.velZ()).isEqualTo(0.75);
+        assertThat(tick.yaw()).isEqualTo(12.0f);
+        assertThat(tick.pitch()).isEqualTo(-34.0f);
+        assertThat(tick.onGround()).isTrue();
+        assertThat(tick.fireworkBoostActive()).isFalse();
+        assertThat(tick.fireworkTicksRemaining()).isEqualTo(7);
+    }
+
+    @Test
+    void finishCollectsTheWorldSliceAroundTheFlownPathAtTheGivenRadius() {
+        // Every other test passes EMPTY, where the slice is [] whatever finish does with the
+        // radius or the recorded path. These three pin both: the radius reaches the collector
+        // (one column at 0.0, nine at 1.0) and the slice follows the position that was
+        // actually recorded rather than the origin.
+        assertThat(recordOneTickAt(0.5, 1.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
+                .containsExactly(new BlockBox(0, 0, 0, 1, 1, 1));
+        assertThat(recordOneTickAt(0.5, 1.5, 0.5).finish(FLOOR, 1.0).metadata().worldSlice())
+                .hasSize(9);
+        assertThat(recordOneTickAt(8.5, 1.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
+                .containsExactly(new BlockBox(8, 0, 0, 9, 1, 1));
+    }
 }
 ```
 
@@ -890,7 +940,7 @@ Expected: FAIL — `package net.elytrarace.tools.recorder.capture does not exist
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `./gradlew :tools:trace-recorder:test`
-Expected: PASS, 27 tests.
+Expected: PASS -- the module's whole suite, with the nine new tests among them.
 
 - [ ] **Step 5: Commit**
 
