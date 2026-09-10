@@ -47,10 +47,42 @@ import java.util.Map;
  *
  * <p>Zeroing reads {@link MovementResult#xCollision()}, {@link MovementResult#verticalCollision()}
  * and {@link MovementResult#zCollision()} — the exact, non-tolerance flags — not {@link
- * MovementResult#horizontalCollision()}: Vanilla's own restitution acts on the resolver's actual
- * per-axis clamp, while {@code horizontalCollision} carries a {@code 1.0E-5F} tolerance meant for a
+ * MovementResult#horizontalCollision()}, which carries a {@code 1.0E-5F} tolerance meant for a
  * different concern (whether to report a collision at all for gameplay purposes, including the
- * block-damage check this simulator does not yet implement).
+ * block-damage check this simulator does not implement). Vanilla's vertical flag is exact the same
+ * way ({@code delta.y != movement.y}); its two <em>horizontal</em> flags are the tolerant ones, so
+ * on a clamp inside {@code (0, 1.0E-5)} Vanilla keeps the horizontal velocity where this zeroes it.
+ * That difference is bounded by {@code 1.0E-5} per tick and is recorded as a finding in the
+ * collision-path section of {@code docs/reference/elytra-physics-26.2.md} rather than resolved here.
+ *
+ * <p><b>Only the middle of {@code travelFallFlying} is assembled here.</b> Vanilla's method has
+ * three parts this does not, and the first two appear nowhere in this module at all:
+ *
+ * <ul>
+ *   <li>{@code onClimbable()} — a gliding entity that touches a ladder or vine takes the other
+ *       branch entirely: {@code travelInAir(input)} instead of {@code updateFallFlyingMovement},
+ *       which is a different formula, not a modifier on this one.</li>
+ *   <li>{@code stopFallFlying()} — called on that same branch; gliding ends and the shared flag is
+ *       toggled. Nothing here ever ends a glide; the caller decides when to stop calling
+ *       {@link #tick}.</li>
+ *   <li>{@code handleFallFlyingCollisions(lastSpeed, newSpeed)} — collision damage,
+ *       {@code (float)(diff * 10.0 - 3.0)} from the horizontal speed lost during the move, applied
+ *       only when {@code horizontalCollision} is set and only server-side. This simulator computes
+ *       the flag it is gated on and reports it, but does no damage.</li>
+ * </ul>
+ *
+ * <p>The bookkeeping around {@code Entity.move} is likewise absent: the stuck-speed multiplier
+ * (cobwebs, powder snow), {@code maybeBackOffFromEdge}, fall-distance tracking and fall damage, the
+ * closing {@code getBlockSpeedFactor()} multiply (soul sand, honey), and the guard that skips the
+ * position update outright when the resolved movement is below {@code 1.0E-7} and far short of what
+ * was requested. See {@link MovementResolver}'s javadoc for what the sweep itself omits.
+ *
+ * <p>Position is derived as {@code previous.position().plus(allowedMovement)} and the bounding box
+ * is rebuilt from it each tick, never carried. That is Vanilla's own direction of derivation:
+ * {@code Entity.move} computes {@code Vec3 newPosition = pos.add(movement)} and hands it to
+ * {@code setPos}, which then rebuilds the box via {@code makeBoundingBox()} from the new position.
+ * The position is the authoritative value on both sides, so no rounding difference arises from
+ * choosing one over the other.
  */
 public abstract class ElytraSimulator {
 
