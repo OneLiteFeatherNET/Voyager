@@ -24,7 +24,7 @@
 
 ## Resolved risk carried by this epic
 
-This epic originally put `voyager-api` at `net.elytrarace.voyager.api`, which the tree being replaced already owns: `shared/conversation-api` has 26 classes under `net.elytrarace.voyager.api.conversation` and `shared/database` 14 under `net.elytrarace.voyager.api.database`, ten of them importing `jakarta.persistence` or `org.hibernate` — exactly what `ApiPurityTest.apiDoesNotDependOnPersistenceTechnology` forbids for that prefix. The rule only passed because the old tree is not on the fitness classpath, which is the blindness `voyager-fitness` exists to prevent.
+This epic originally put `voyager-api` at `net.elytrarace.api`, which the tree being replaced already owns: `shared/conversation-api` has 26 classes under `net.elytrarace.api.conversation` and `shared/database` 14 under `net.elytrarace.api.database`, ten of them importing `jakarta.persistence` or `org.hibernate` — exactly what `ApiPurityTest.apiDoesNotDependOnPersistenceTechnology` forbids for that prefix. The rule only passed because the old tree is not on the fitness classpath, which is the blindness `voyager-fitness` exists to prevent.
 
 The rebuild's sub-root is therefore `net.elytrarace.voyager..`; `voyager-api` lives at `net.elytrarace.voyager.api`. The base package stays `net.elytrarace`. Later epics place their packages under the same sub-root, so `net.elytrarace.server..` and `net.elytrarace.setup..` — owned by `server/` and `plugins/setup` — stay free of the rebuild until E7 deletes them.
 
@@ -770,6 +770,12 @@ widen them and drift against the traces."
 ```
 
 ---
+
+> **Superseded in part by the final whole-branch review.** Tasks 5 to 7 below describe the design as
+> planned. The shipped code goes further: `DesignRuleTest` gained `exceptionsLiveInAnExceptionSubpackage`,
+> and `FitnessCoverageTest` was extended from proving classpath membership to proving rule coverage —
+> per module it now asserts that ArchUnit imported at least one of its classes and that at least one rule
+> names its package prefix. Read the code, not these listings, for current behaviour.
 
 ### Task 5: `voyager-fitness` and the API purity rules
 

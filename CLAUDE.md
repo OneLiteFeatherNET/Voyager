@@ -209,7 +209,7 @@ Each agent has a codename (persona) used in agent-to-agent references; invoke vi
 | Bedrock | `voyager-minecraft-expert` | Vanilla mechanics, elytra physics, protocol, collision |
 | Drift | `voyager-game-designer` | Gameplay loops, balancing, ring/map/cup design, feedback timing |
 | Thrust | `voyager-game-developer` | Physics code, ring collision, scoring, cup system, game loop |
-| Origami | `voyager-paper-expert` | Setup plugin, Paper API, MockBukkit tests |
+| Origami | `voyager-paper-expert` | Setup plugin, Paper API, FastAsyncWorldEdit |
 | Vault | `voyager-database-expert` | Hibernate entities, repositories, queries, schema changes |
 | Hangar | `voyager-devops-expert` | CI/CD, GitHub Actions, CloudNet v4, Docker, deployment |
 | Scout | `voyager-researcher` | Deep research before decisions (Context7, WebSearch, WebFetch) |
