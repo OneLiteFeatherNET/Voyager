@@ -49,6 +49,35 @@ class TraceReplayTest {
         return inputs;
     }
 
+    /**
+     * Rotation that changes on every tick, so a replay that reads tick {@code i - 1}'s rotation
+     * instead of tick {@code i}'s feeds a different look vector into every step. The range stays
+     * clear of ±90, where {@code lookHorLength} degenerates.
+     */
+    private static List<FlightInput> varyingInputs(int count) {
+        List<FlightInput> inputs = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            inputs.add(new FlightInput(-30.0f + i * 7.0f, -25.0f + i * 3.0f, false, 0, GRAVITY));
+        }
+        return inputs;
+    }
+
+    /**
+     * A boost window: inactive, then active for {@code boostLength} consecutive ticks with the
+     * remaining-tick counter running down, then inactive again. No other fixture in this class ever
+     * sets {@code fireworkBoostActive} — {@link #constantInputs} hardcodes {@code false, 0} — even
+     * though the parity profiles include a single boost and chained boosts.
+     */
+    private static List<FlightInput> boostWindowInputs(int count, int boostStart, int boostLength) {
+        List<FlightInput> inputs = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            boolean boosting = i >= boostStart && i < boostStart + boostLength;
+            int remaining = boosting ? boostStart + boostLength - i : 0;
+            inputs.add(new FlightInput(0.0f, -20.0f, boosting, remaining, GRAVITY));
+        }
+        return inputs;
+    }
+
     private static TraceFixture.Tick tickOf(FlightState state, boolean boostActive, int boostTicks) {
         return new TraceFixture.Tick(
                 0,
@@ -153,6 +182,49 @@ class TraceReplayTest {
         CollisionSpace floor = region -> List.of(new Aabb(new Vec3(-64, -1, -64), new Vec3(64, 0, 64)));
         FlightState fallingSeed = new FlightState(new Vec3(0, 2, 0), new Vec3(0, -0.5, 0.2), 0.0f, 0.0f, false);
         return generateFixture(fallingSeed, constantInputs(15, 0.0f, 0.0f), floor, worldSlice);
+    }
+
+    // ---- each tick's input comes from that tick, not the one before it -----------------------
+
+    /**
+     * Every other fixture in this class uses constant rotation, so taking {@code yaw} and
+     * {@code pitch} from {@code ticks.get(i - 1)} instead of {@code ticks.get(i)} produced identical
+     * inputs and left the suite green — an off-by-one that would misread every real recording, where
+     * the player is turning. With rotation changing on every tick the shift feeds a different look
+     * vector into every step and the replay stops being clean.
+     */
+    @Test
+    void aFixtureWithChangingRotationReplaysCleanOnlyWithTheRightTickAlignment() {
+        TraceFixture fixture = generateFixture(seed(), varyingInputs(20), FREE_FLIGHT, List.of());
+
+        // Otherwise a change to varyingInputs silently turns this into a constant-rotation duplicate.
+        assertThat(fixture.ticks().get(1).yaw()).isNotEqualTo(fixture.ticks().get(2).yaw());
+        assertThat(fixture.ticks().get(1).pitch()).isNotEqualTo(fixture.ticks().get(2).pitch());
+
+        ReplayReport report = TraceReplay.replay(fixture);
+
+        assertThat(report.isClean()).isTrue();
+        assertThat(report.firstDivergingTick()).isEmpty();
+    }
+
+    /**
+     * The same off-by-one on the boost fields. No fixture ever set {@code fireworkBoostActive}, so
+     * shifting the boost window by one tick changed nothing measurable; here the window is five
+     * ticks long and a one-tick shift applies the impulse on the wrong ticks.
+     */
+    @Test
+    void aFixtureWithABoostWindowReplaysCleanOnlyWithTheRightTickAlignment() {
+        TraceFixture fixture = generateFixture(seed(), boostWindowInputs(20, 5, 5), FREE_FLIGHT, List.of());
+
+        // Otherwise a change to boostWindowInputs silently turns this into a no-boost duplicate.
+        assertThat(fixture.ticks().stream().filter(TraceFixture.Tick::fireworkBoostActive)).hasSize(5);
+        assertThat(fixture.ticks().get(5).fireworkBoostActive()).isFalse();
+        assertThat(fixture.ticks().get(6).fireworkBoostActive()).isTrue();
+
+        ReplayReport report = TraceReplay.replay(fixture);
+
+        assertThat(report.isClean()).isTrue();
+        assertThat(report.firstDivergingTick()).isEmpty();
     }
 
     // ---- naming the diverging tick ---------------------------------------------------------
