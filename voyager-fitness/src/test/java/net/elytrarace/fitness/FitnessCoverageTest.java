@@ -40,7 +40,8 @@ class FitnessCoverageTest {
      * construction — it is not required to have rules about itself.
      */
     private static final Map<String, String> PACKAGE_PREFIX_BY_PROJECT = Map.of(
-            ":voyager-api", "net.elytrarace.voyager.api");
+            ":voyager-api", "net.elytrarace.voyager.api",
+            ":voyager-physics", "net.elytrarace.voyager.physics");
 
     private static final String FITNESS_PACKAGE = "net.elytrarace.fitness";
 

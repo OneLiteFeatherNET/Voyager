@@ -30,6 +30,7 @@ class FlightStateTest {
         assertThat(componentType(FlightInput.class, "pitch")).isEqualTo(float.class);
         assertThat(componentType(FlightState.class, "position")).isEqualTo(Vec3.class);
         assertThat(componentType(FlightState.class, "velocity")).isEqualTo(Vec3.class);
+        assertThat(componentType(FlightInput.class, "gravity")).isEqualTo(double.class);
     }
 
     @Test
@@ -45,18 +46,34 @@ class FlightStateTest {
     void rejectsNonFiniteRotation() {
         assertThatThrownBy(() -> new FlightState(Vec3.ZERO, Vec3.ZERO, Float.NaN, 0f, false))
                 .isInstanceOf(NonFiniteRotationException.class);
-        assertThatThrownBy(() -> new FlightInput(0f, Float.POSITIVE_INFINITY, false, 0))
+        assertThatThrownBy(() -> new FlightInput(0f, Float.POSITIVE_INFINITY, false, 0, 0.08))
                 .isInstanceOf(NonFiniteRotationException.class);
     }
 
     @Test
     void rejectsNegativeFireworkTicks() {
-        assertThatThrownBy(() -> new FlightInput(0f, 0f, true, -1))
+        assertThatThrownBy(() -> new FlightInput(0f, 0f, true, -1, 0.08))
+                .isInstanceOf(InvalidFlightInputException.class);
+    }
+
+    @Test
+    void rejectsNonFiniteGravity() {
+        assertThatThrownBy(() -> new FlightInput(0f, 0f, false, 0, Double.NaN))
+                .isInstanceOf(InvalidFlightInputException.class);
+        assertThatThrownBy(() -> new FlightInput(0f, 0f, false, 0, Double.POSITIVE_INFINITY))
+                .isInstanceOf(InvalidFlightInputException.class);
+    }
+
+    @Test
+    void rejectsNonPositiveGravity() {
+        assertThatThrownBy(() -> new FlightInput(0f, 0f, false, 0, 0.0))
+                .isInstanceOf(InvalidFlightInputException.class);
+        assertThatThrownBy(() -> new FlightInput(0f, 0f, false, 0, -0.08))
                 .isInstanceOf(InvalidFlightInputException.class);
     }
 
     @Test
     void acceptsAnInactiveBoostWithZeroTicks() {
-        assertThat(new FlightInput(0f, 0f, false, 0).fireworkBoostActive()).isFalse();
+        assertThat(new FlightInput(0f, 0f, false, 0, 0.08).fireworkBoostActive()).isFalse();
     }
 }

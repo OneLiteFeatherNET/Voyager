@@ -7,6 +7,7 @@ plugins {
 // because they ran on a classpath that did not contain the modules they named.
 dependencies {
     testImplementation(project(":voyager-api"))
+    testImplementation(project(":voyager-physics"))
     testImplementation(libs.archunit.junit5)
 }
 

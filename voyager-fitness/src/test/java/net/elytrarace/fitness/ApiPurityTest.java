@@ -48,4 +48,47 @@ class ApiPurityTest {
                     .should().dependOnClassesThat().resideInAnyPackage("java.nio.file..")
                     .because("voyager-api declares configuration types and never loads them")
                     .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnMinestom =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.minestom..")
+                    .because("Minestom types belong to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnPaper =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
+                    .because("Paper is dropped entirely by the rebuild")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnPersistenceTechnology =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
+                    .because("the physics module simulates flight, ORM technology does not belong here")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnADiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition roots")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotPerformFileIo =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("java.nio.file..")
+                    .because("the physics module has no configuration of any kind and never loads files")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnRaceOrPlatform =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform..")
+                    .because("physics is a pure simulation core that race and platform depend on, not vice versa")
+                    .allowEmptyShould(false);
 }
