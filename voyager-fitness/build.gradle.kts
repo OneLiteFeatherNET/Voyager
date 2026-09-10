@@ -25,14 +25,14 @@ tasks.test {
     systemProperty(
         "voyager.allModules",
         rootProject.subprojects
-            .filter { it.name.startsWith("voyager-") && it.name != project.name }
-            .joinToString(",") { it.name }
+            .filter { it.name.startsWith("voyager-") && it.path != project.path }
+            .joinToString(",") { it.path }
     )
 
     systemProperty(
         "voyager.fitnessDependencies",
         configurations.testImplementation.get().dependencies
             .filterIsInstance<ProjectDependency>()
-            .joinToString(",") { it.name }
+            .joinToString(",") { it.path }
     )
 }
