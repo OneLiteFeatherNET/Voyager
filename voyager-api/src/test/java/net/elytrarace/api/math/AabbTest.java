@@ -31,8 +31,16 @@ class AabbTest {
     }
 
     @Test
-    void treatsTouchingFacesAsIntersecting() {
-        assertThat(box(0, 0, 0, 1, 1, 1).intersects(box(1, 0, 0, 2, 1, 1))).isTrue();
+    void treatsTouchingFacesAsNotIntersecting() {
+        assertThat(box(0, 0, 0, 1, 1, 1).intersects(box(1, 0, 0, 2, 1, 1))).isFalse();
+    }
+
+    @Test
+    void detectsOverlapThatIsSmallButGenuine() {
+        // Overlaps by 0.001 on x rather than touching at x=1. Paired with the touching case above,
+        // this pins the boundary: a predicate using <= / >= calls both intersecting, a predicate
+        // using strict < / > on the wrong side calls both separate. Only the correct one passes both.
+        assertThat(box(0, 0, 0, 1, 1, 1).intersects(box(0.999, 0, 0, 2, 1, 1))).isTrue();
     }
 
     @Test

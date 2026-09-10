@@ -11,11 +11,16 @@ public record Aabb(Vec3 min, Vec3 max) {
         }
     }
 
-    /** Touching faces count as intersecting, matching how Vanilla resolves block collision. */
+    /**
+     * Tests strict overlap on all three axes: two boxes that merely touch along a face, an edge or a
+     * corner do <em>not</em> intersect. This is Vanilla's semantics, verified against the decompiled
+     * {@code net/minecraft/world/phys/AABB.java:235} for Minecraft 26.2 — see
+     * {@code docs/reference/elytra-physics-26.2.md}.
+     */
     public boolean intersects(Aabb other) {
-        return min.x() <= other.max.x() && max.x() >= other.min.x()
-                && min.y() <= other.max.y() && max.y() >= other.min.y()
-                && min.z() <= other.max.z() && max.z() >= other.min.z();
+        return min.x() < other.max.x() && max.x() > other.min.x()
+                && min.y() < other.max.y() && max.y() > other.min.y()
+                && min.z() < other.max.z() && max.z() > other.min.z();
     }
 
     public Aabb expand(double amount) {

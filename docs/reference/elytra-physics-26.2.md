@@ -136,3 +136,23 @@ Two further behaviours belong to the same method:
 - `onClimbable()` ends gliding immediately and falls through to normal air travel.
 - `stopFallFlying()` sets the shared flag to `true` and then to `false`, which forces a metadata
   update rather than expressing an intent.
+
+## Bounding-box intersection is strict on all three axes
+
+`net/minecraft/world/phys/AABB.java:235`:
+
+```java
+public boolean intersects(final double minX, final double minY, final double minZ, final double maxX, final double maxY, final double maxZ) {
+    return this.minX < maxX && this.maxX > minX && this.minY < maxY && this.maxY > minY && this.minZ < maxZ && this.maxZ > minZ;
+}
+```
+
+Every comparison is strict. Two boxes that share a face, an edge or a corner do **not** intersect —
+a box occupying `[0,1]` on x does not intersect one occupying `[1,2]`. This matters for the
+rebuild's `Aabb.intersects`, which used `<=` / `>=` and claimed Vanilla parity it did not have: with
+non-strict comparisons a player resting exactly on a block boundary registers a collision Vanilla
+would not, so any plausibility check calibrated against a real client drifts at exactly the positions
+clients most often occupy.
+
+`AABB.intersects(BlockPos)` expands the position to `[x, x+1]` per axis before applying the same
+predicate, so block collision inherits the strict semantics unchanged.
