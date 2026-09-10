@@ -124,4 +124,19 @@ class TraceFileTest {
 
         assertThat(metadata.worldSlice()).containsExactly(box);
     }
+
+    @Test
+    void roundTripsANonEmptyWorldSliceThroughJsonUnchanged() {
+        // roundTripsThroughJsonUnchanged only ever exercises an empty worldSlice via metadata(), so it
+        // never proves Gson's reflective record construction actually reaches BlockBox on the way back
+        // in. This sends a real BlockBox through the same toJson/fromJson path a recorded fixture file
+        // takes, so the world-slice branch of deserialization is no longer a dead path.
+        BlockBox box = new BlockBox(0.0, 64.0, 0.0, 1.0, 65.0, 1.0);
+        TraceMetadata metadataWithWorldSlice = new TraceMetadata("26.2", "steady-glide", 0.08, 1, List.of(box));
+        TraceFile original = new TraceFile(metadataWithWorldSlice, List.of(tick(0, 100.0)));
+
+        TraceFile restored = GSON.fromJson(GSON.toJson(original), TraceFile.class);
+
+        assertThat(restored.metadata().worldSlice()).containsExactly(box);
+    }
 }
