@@ -11,8 +11,9 @@ Last updated: 2026-09-09
 
 ## Where we are
 
-Design approved, epics broken out, E1 planned to the level of individual test cases. **No production
-code has been written yet.** Execution of E1 is not authorised.
+E1 is implemented on `feat/greenfield-e1-foundation` and awaiting merge: 24 commits, 36 files,
+`./gradlew build` green across both trees. The rebuild's package root is `net.elytrarace.voyager`.
+E1.6 (CI wiring for the dual tree) was not part of the executed plan and remains open.
 
 The tree being replaced still runs; production itself still runs the 2023 Kotlin build, so nothing
 is under outage pressure.
@@ -36,14 +37,14 @@ is under outage pressure.
 
 ## Stage board
 
-### E1 — Foundation
-Done when: ArchUnit imports every module and no rule runs empty.
+### E1 — Foundation — COMPLETE (branch `feat/greenfield-e1-foundation`, not yet merged)
+Done when: ArchUnit imports every module and no rule runs empty. **Met, and exceeded:** the coverage test now also proves each module is actually named by a rule, not merely on the classpath.
 
-- [ ] E1.1 buildSrc convention plugins
-- [ ] E1.2 Eight-module Gradle skeleton and settings wiring
-- [ ] E1.3 `voyager-api` core types
-- [ ] E1.4 `voyager-fitness` ArchUnit rule suite
-- [ ] E1.5 `CLAUDE.md` rewrite (D12) — needs approval before merge
+- [x] E1.1 buildSrc convention plugins
+- [x] E1.2 Eight-module Gradle skeleton and settings wiring
+- [x] E1.3 `voyager-api` core types
+- [x] E1.4 `voyager-fitness` ArchUnit rule suite
+- [x] E1.5 `CLAUDE.md` rewrite (D12) — needs approval before merge
 - [ ] E1.6 CI wiring for the dual tree
 
 ### E2 — Vanilla parity (carries the project's central risk)
