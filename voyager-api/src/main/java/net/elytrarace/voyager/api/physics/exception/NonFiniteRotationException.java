@@ -1,4 +1,4 @@
-package net.elytrarace.api.physics.exception;
+package net.elytrarace.voyager.api.physics.exception;
 
 /** Thrown when a yaw or pitch value is NaN or infinite. */
 public final class NonFiniteRotationException extends RuntimeException {

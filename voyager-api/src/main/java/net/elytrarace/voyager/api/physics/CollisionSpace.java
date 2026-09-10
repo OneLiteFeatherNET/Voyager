@@ -1,6 +1,6 @@
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.math.Aabb;
+import net.elytrarace.voyager.api.math.Aabb;
 
 import java.util.List;
 

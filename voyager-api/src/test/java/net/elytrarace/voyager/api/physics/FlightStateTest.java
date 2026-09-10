@@ -1,9 +1,9 @@
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.physics.exception.NonFiniteRotationException;
-import net.elytrarace.api.physics.exception.InvalidFlightInputException;
+import net.elytrarace.voyager.api.physics.exception.NonFiniteRotationException;
+import net.elytrarace.voyager.api.physics.exception.InvalidFlightInputException;
 
-import net.elytrarace.api.math.Vec3;
+import net.elytrarace.voyager.api.math.Vec3;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.RecordComponent;

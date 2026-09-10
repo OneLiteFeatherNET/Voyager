@@ -75,11 +75,11 @@ Naming collision to watch for: never name a domain exception `PersistenceExcepti
 **Placement:** exceptions live in an `exception` subpackage next to the domain they belong to, not in one repo-wide collection package. Each domain area gets its own, so the exception stays next to the code that throws it and the pattern scales as more modules are added:
 
 ```
-net/elytrarace/api/math/Vec3.java
-net/elytrarace/api/math/Aabb.java
-net/elytrarace/api/math/exception/NonFiniteVectorException.java
-net/elytrarace/api/math/exception/InvalidBoundingBoxException.java
-net/elytrarace/api/math/exception/package-info.java
+net/elytrarace/voyager/api/math/Vec3.java
+net/elytrarace/voyager/api/math/Aabb.java
+net/elytrarace/voyager/api/math/exception/NonFiniteVectorException.java
+net/elytrarace/voyager/api/math/exception/InvalidBoundingBoxException.java
+net/elytrarace/voyager/api/math/exception/package-info.java
 ```
 
 This keeps the domain type's file free of error-handling noise — you read `Aabb.java` for what a bounding box *is*, not for every way constructing one can fail. The `package-info.java` in the `exception` subpackage is not optional: see the `NullabilityConventionTest` pointer above — it's a real, separate package and needs its own `@NotNullByDefault`, not an inherited one from the parent package.

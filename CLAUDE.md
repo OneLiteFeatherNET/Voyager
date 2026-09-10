@@ -100,9 +100,12 @@ docker compose -f docker/mariadb/compose.yml up -d
 
 ### The rebuild (`voyager-*`)
 
+- Packages live under `net.elytrarace.voyager..` (e.g. `voyager-api` at `net.elytrarace.voyager.api`).
+  The tree being replaced owns `net.elytrarace.api`, `net.elytrarace.server` and `net.elytrarace.setup`,
+  so the rebuild keeps its own sub-root and fitness rules stay unambiguous.
 - Domain exceptions live in an `exception` subpackage next to the domain they belong to (e.g.
-  `net.elytrarace.api.math.exception`, `net.elytrarace.api.physics.exception`), each with its own
-  `package-info.java` — not one repo-wide exception package.
+  `net.elytrarace.voyager.api.math.exception`, `net.elytrarace.voyager.api.physics.exception`), each
+  with its own `package-info.java` — not one repo-wide exception package.
 - Build exception messages and similar output with `String.formatted(...)`, not `+` concatenation.
 - For everything else — when `sealed` is worth it, record vs. class, nullability, interface size,
   numeric types in physics code — load `.claude/skills/java-style/SKILL.md` rather than looking here;

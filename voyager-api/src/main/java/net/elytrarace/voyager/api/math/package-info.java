@@ -1,4 +1,4 @@
 @NotNullByDefault
-package net.elytrarace.api.math.exception;
+package net.elytrarace.voyager.api.math;
 
 import org.jetbrains.annotations.NotNullByDefault;

@@ -1,7 +1,7 @@
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.math.Aabb;
-import net.elytrarace.api.math.Vec3;
+import net.elytrarace.voyager.api.math.Aabb;
+import net.elytrarace.voyager.api.math.Vec3;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

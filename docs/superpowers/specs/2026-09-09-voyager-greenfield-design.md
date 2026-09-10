@@ -133,6 +133,19 @@ voyager-fitness      -> all                            (test-only, ArchUnit)
 `voyager-api` contains no implementation. `voyager-physics` depends only on `api` and is
 free of Minestom, of the game, and of the database.
 
+### Package root
+
+Every module of the rebuild places its packages under `net.elytrarace.voyager..` — `voyager-api`
+at `net.elytrarace.voyager.api`, `voyager-platform` at `net.elytrarace.voyager.platform`, and so
+on. The base package stays `net.elytrarace`.
+
+The sub-root is not cosmetic. The tree being replaced already owns `net.elytrarace.api`
+(`shared/conversation-api`, `shared/database`), `net.elytrarace.server` (`server/`) and
+`net.elytrarace.setup` (`plugins/setup`). A rule written as `resideInAPackage("net.elytrarace.api..")`
+would silently span both trees the moment they share a classpath, and the old side violates several
+of these rules. Scoping the rebuild to its own sub-root keeps every fitness rule meaning what it
+says until E7 deletes the old tree.
+
 ### The vector type
 
 `voyager-api` defines its own `record Vec3(double x, double y, double z)`. Conversion to
@@ -515,7 +528,7 @@ instantiate a `voyager-api` record directly:
 
 ```java
 static final String TOP_BY_MAP = """
-    select new net.elytrarace.api.persistence.LeaderboardEntry(
+    select new net.elytrarace.voyager.api.persistence.LeaderboardEntry(
         pb.playerId, p.lastKnownName, pb.bestTimeMs, pb.achievedAt)
     from MapPersonalBestEntity pb
       join PlayerEntity p on p.playerId = pb.playerId
@@ -1144,9 +1157,9 @@ hand-copied, so they cannot drift, and `-Dvoyager.config.check=true` runs agains
 static final ArchRule environmentAccessIsConfinedToTheEdge =
         noClasses()
             .that().resideOutsideOfPackages(
-                    "net.elytrarace.platform.config..",
-                    "net.elytrarace.server..",
-                    "net.elytrarace.setup..")
+                    "net.elytrarace.voyager.platform.config..",
+                    "net.elytrarace.voyager.server..",
+                    "net.elytrarace.voyager.setup..")
             .should().callMethod(System.class, "getenv", String.class)
             .orShould().callMethod(System.class, "getProperty", String.class)
             .orShould().callMethod(Integer.class, "getInteger", String.class, int.class)
@@ -1159,7 +1172,7 @@ circumvented without anyone intending to.
 
 The remaining rules: no module references `eu.cloudnetservice..` (when `voyager-cloudnet-bridge`
 exists, that module becomes the sole exception and the rule is narrowed rather than deleted); no
-class outside `net.elytrarace.persistence..` and the composition roots calls `Secret.value()`; every
+class outside `net.elytrarace.voyager.persistence..` and the composition roots calls `Secret.value()`; every
 type in a `..config..` package is a record with only final fields; no `static final String` in a
 `..config..` package has a name containing `PASSWORD`, `SECRET` or `TOKEN`; `voyager-api` does not
 depend on `java.nio.file.Files`; and `voyager-physics` does not depend on any type in a `..config..`

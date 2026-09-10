@@ -1,8 +1,8 @@
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.physics.exception.NonFiniteRotationException;
+import net.elytrarace.voyager.api.physics.exception.NonFiniteRotationException;
 
-import net.elytrarace.api.math.Vec3;
+import net.elytrarace.voyager.api.math.Vec3;
 
 /**
  * The complete state of one gliding entity at a tick boundary.

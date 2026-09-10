@@ -22,9 +22,11 @@
 - ArchUnit rules are declared with `.allowEmptyShould(false)`. A rule that passes because it matched nothing is a defect.
 - The old tree (`server/`, `plugins/*`, `shared/*`) is untouched by this epic and must keep building.
 
-## Known risk carried by this epic
+## Resolved risk carried by this epic
 
-`shared/database` already uses the package `net.elytrarace.api.database`, and `voyager-api` introduces `net.elytrarace.api`. These are not a split package (no class lives in `net.elytrarace.api` itself on the old side) and the two modules never share a classpath, because `voyager-fitness` depends only on `voyager-*` modules. The collision disappears at E7. If a JPMS module descriptor is ever added before then, revisit this.
+This epic originally put `voyager-api` at `net.elytrarace.voyager.api`, which the tree being replaced already owns: `shared/conversation-api` has 26 classes under `net.elytrarace.voyager.api.conversation` and `shared/database` 14 under `net.elytrarace.voyager.api.database`, ten of them importing `jakarta.persistence` or `org.hibernate` — exactly what `ApiPurityTest.apiDoesNotDependOnPersistenceTechnology` forbids for that prefix. The rule only passed because the old tree is not on the fitness classpath, which is the blindness `voyager-fitness` exists to prevent.
+
+The rebuild's sub-root is therefore `net.elytrarace.voyager..`; `voyager-api` lives at `net.elytrarace.voyager.api`. The base package stays `net.elytrarace`. Later epics place their packages under the same sub-root, so `net.elytrarace.server..` and `net.elytrarace.setup..` — owned by `server/` and `plugins/setup` — stay free of the rebuild until E7 deletes them.
 
 ---
 
@@ -35,8 +37,8 @@
 - Create: `buildSrc/settings.gradle.kts`
 - Create: `buildSrc/src/main/kotlin/voyager.java-conventions.gradle.kts`
 - Create: `voyager-api/build.gradle.kts`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/package-info.java`
-- Create: `voyager-api/src/test/java/net/elytrarace/api/ToolchainConventionTest.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/package-info.java`
+- Create: `voyager-api/src/test/java/net/elytrarace/voyager/api/ToolchainConventionTest.java`
 - Modify: `settings.gradle.kts`
 
 **Interfaces:**
@@ -47,10 +49,10 @@
 
 The test proves the convention plugin actually produced Java 25 bytecode, by reading the class-file major version out of a compiled class. Major version 69 is Java 25.
 
-Create `voyager-api/src/test/java/net/elytrarace/api/ToolchainConventionTest.java`:
+Create `voyager-api/src/test/java/net/elytrarace/voyager/api/ToolchainConventionTest.java`:
 
 ```java
-package net.elytrarace.api;
+package net.elytrarace.voyager.api;
 
 import org.junit.jupiter.api.Test;
 
@@ -176,11 +178,11 @@ plugins {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/package-info.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/package-info.java`:
 
 ```java
 @NotNullByDefault
-package net.elytrarace.api;
+package net.elytrarace.voyager.api;
 
 import org.jetbrains.annotations.NotNullByDefault;
 ```
@@ -211,10 +213,10 @@ of the greenfield tree, proven to compile to class-file major version 69."
 ### Task 2: `Vec3` — the type that cannot hold NaN
 
 **Files:**
-- Create: `voyager-api/src/main/java/net/elytrarace/api/math/Vec3.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/math/NonFiniteVectorException.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/math/package-info.java`
-- Test: `voyager-api/src/test/java/net/elytrarace/api/math/Vec3Test.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/math/Vec3.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/math/NonFiniteVectorException.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/math/package-info.java`
+- Test: `voyager-api/src/test/java/net/elytrarace/voyager/api/math/Vec3Test.java`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -222,10 +224,10 @@ of the greenfield tree, proven to compile to class-file major version 69."
 
 - [ ] **Step 1: Write the failing test**
 
-Create `voyager-api/src/test/java/net/elytrarace/api/math/Vec3Test.java`:
+Create `voyager-api/src/test/java/net/elytrarace/voyager/api/math/Vec3Test.java`:
 
 ```java
-package net.elytrarace.api.math;
+package net.elytrarace.voyager.api.math;
 
 import org.junit.jupiter.api.Test;
 
@@ -294,15 +296,15 @@ class Vec3Test {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `./gradlew :voyager-api:test --tests "net.elytrarace.api.math.Vec3Test"`
-Expected: FAIL — compilation error, `package net.elytrarace.api.math does not exist`.
+Run: `./gradlew :voyager-api:test --tests "net.elytrarace.voyager.api.math.Vec3Test"`
+Expected: FAIL — compilation error, `package net.elytrarace.voyager.api.math does not exist`.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `voyager-api/src/main/java/net/elytrarace/api/math/NonFiniteVectorException.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/math/NonFiniteVectorException.java`:
 
 ```java
-package net.elytrarace.api.math;
+package net.elytrarace.voyager.api.math;
 
 /**
  * Thrown when a vector component is NaN or infinite.
@@ -319,10 +321,10 @@ public final class NonFiniteVectorException extends RuntimeException {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/math/Vec3.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/math/Vec3.java`:
 
 ```java
-package net.elytrarace.api.math;
+package net.elytrarace.voyager.api.math;
 
 /**
  * An immutable three-dimensional vector in world space, in blocks.
@@ -361,18 +363,18 @@ public record Vec3(double x, double y, double z) {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/math/package-info.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/math/package-info.java`:
 
 ```java
 @NotNullByDefault
-package net.elytrarace.api.math;
+package net.elytrarace.voyager.api.math;
 
 import org.jetbrains.annotations.NotNullByDefault;
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `./gradlew :voyager-api:test --tests "net.elytrarace.api.math.Vec3Test"`
+Run: `./gradlew :voyager-api:test --tests "net.elytrarace.voyager.api.math.Vec3Test"`
 Expected: PASS, 7 tests.
 
 - [ ] **Step 5: Commit**
@@ -391,12 +393,12 @@ cannot be constructed and therefore cannot reach setVelocity. Minestom issue
 ### Task 3: `Aabb` and the `CollisionSpace` port
 
 **Files:**
-- Create: `voyager-api/src/main/java/net/elytrarace/api/math/Aabb.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/math/InvalidBoundingBoxException.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/physics/CollisionSpace.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/physics/package-info.java`
-- Test: `voyager-api/src/test/java/net/elytrarace/api/math/AabbTest.java`
-- Test: `voyager-api/src/test/java/net/elytrarace/api/physics/CollisionSpaceTest.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/math/Aabb.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/math/InvalidBoundingBoxException.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/CollisionSpace.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/package-info.java`
+- Test: `voyager-api/src/test/java/net/elytrarace/voyager/api/math/AabbTest.java`
+- Test: `voyager-api/src/test/java/net/elytrarace/voyager/api/physics/CollisionSpaceTest.java`
 
 **Interfaces:**
 - Consumes: `Vec3` from Task 2.
@@ -404,10 +406,10 @@ cannot be constructed and therefore cannot reach setVelocity. Minestom issue
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `voyager-api/src/test/java/net/elytrarace/api/math/AabbTest.java`:
+Create `voyager-api/src/test/java/net/elytrarace/voyager/api/math/AabbTest.java`:
 
 ```java
-package net.elytrarace.api.math;
+package net.elytrarace.voyager.api.math;
 
 import org.junit.jupiter.api.Test;
 
@@ -454,13 +456,13 @@ class AabbTest {
 }
 ```
 
-Create `voyager-api/src/test/java/net/elytrarace/api/physics/CollisionSpaceTest.java`:
+Create `voyager-api/src/test/java/net/elytrarace/voyager/api/physics/CollisionSpaceTest.java`:
 
 ```java
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.math.Aabb;
-import net.elytrarace.api.math.Vec3;
+import net.elytrarace.voyager.api.math.Aabb;
+import net.elytrarace.voyager.api.math.Vec3;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -487,15 +489,15 @@ class CollisionSpaceTest {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `./gradlew :voyager-api:test --tests "net.elytrarace.api.math.AabbTest" --tests "net.elytrarace.api.physics.CollisionSpaceTest"`
-Expected: FAIL — compilation errors, `cannot find symbol: class Aabb` and `package net.elytrarace.api.physics does not exist`.
+Run: `./gradlew :voyager-api:test --tests "net.elytrarace.voyager.api.math.AabbTest" --tests "net.elytrarace.voyager.api.physics.CollisionSpaceTest"`
+Expected: FAIL — compilation errors, `cannot find symbol: class Aabb` and `package net.elytrarace.voyager.api.physics does not exist`.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `voyager-api/src/main/java/net/elytrarace/api/math/InvalidBoundingBoxException.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/math/InvalidBoundingBoxException.java`:
 
 ```java
-package net.elytrarace.api.math;
+package net.elytrarace.voyager.api.math;
 
 /** Thrown when a bounding box is constructed with a minimum corner that exceeds its maximum. */
 public final class InvalidBoundingBoxException extends RuntimeException {
@@ -506,10 +508,10 @@ public final class InvalidBoundingBoxException extends RuntimeException {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/math/Aabb.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/math/Aabb.java`:
 
 ```java
-package net.elytrarace.api.math;
+package net.elytrarace.voyager.api.math;
 
 /** An immutable axis-aligned bounding box in world space, in blocks. */
 public record Aabb(Vec3 min, Vec3 max) {
@@ -534,12 +536,12 @@ public record Aabb(Vec3 min, Vec3 max) {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/physics/CollisionSpace.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/CollisionSpace.java`:
 
 ```java
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.math.Aabb;
+import net.elytrarace.voyager.api.math.Aabb;
 
 import java.util.List;
 
@@ -564,11 +566,11 @@ public interface CollisionSpace {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/physics/package-info.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/package-info.java`:
 
 ```java
 @NotNullByDefault
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
 import org.jetbrains.annotations.NotNullByDefault;
 ```
@@ -594,11 +596,11 @@ supply a recorded world slice."
 ### Task 4: `FlightState` and `FlightInput` with Vanilla numeric fidelity
 
 **Files:**
-- Create: `voyager-api/src/main/java/net/elytrarace/api/physics/FlightState.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/physics/FlightInput.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/physics/NonFiniteRotationException.java`
-- Create: `voyager-api/src/main/java/net/elytrarace/api/physics/InvalidFlightInputException.java`
-- Test: `voyager-api/src/test/java/net/elytrarace/api/physics/FlightStateTest.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/FlightState.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/FlightInput.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/NonFiniteRotationException.java`
+- Create: `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/InvalidFlightInputException.java`
+- Test: `voyager-api/src/test/java/net/elytrarace/voyager/api/physics/FlightStateTest.java`
 
 **Interfaces:**
 - Consumes: `Vec3` from Task 2.
@@ -608,12 +610,12 @@ The rotation components are `float` and the position and velocity components are
 
 - [ ] **Step 1: Write the failing test**
 
-Create `voyager-api/src/test/java/net/elytrarace/api/physics/FlightStateTest.java`:
+Create `voyager-api/src/test/java/net/elytrarace/voyager/api/physics/FlightStateTest.java`:
 
 ```java
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.math.Vec3;
+import net.elytrarace.voyager.api.math.Vec3;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.RecordComponent;
@@ -674,15 +676,15 @@ class FlightStateTest {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `./gradlew :voyager-api:test --tests "net.elytrarace.api.physics.FlightStateTest"`
+Run: `./gradlew :voyager-api:test --tests "net.elytrarace.voyager.api.physics.FlightStateTest"`
 Expected: FAIL — compilation error, `cannot find symbol: class FlightState`.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `voyager-api/src/main/java/net/elytrarace/api/physics/NonFiniteRotationException.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/NonFiniteRotationException.java`:
 
 ```java
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
 /** Thrown when a yaw or pitch value is NaN or infinite. */
 public final class NonFiniteRotationException extends RuntimeException {
@@ -693,10 +695,10 @@ public final class NonFiniteRotationException extends RuntimeException {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/physics/InvalidFlightInputException.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/InvalidFlightInputException.java`:
 
 ```java
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
 /** Thrown when flight input violates an invariant that no client can legitimately produce. */
 public final class InvalidFlightInputException extends RuntimeException {
@@ -707,12 +709,12 @@ public final class InvalidFlightInputException extends RuntimeException {
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/physics/FlightState.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/FlightState.java`:
 
 ```java
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.math.Vec3;
+import net.elytrarace.voyager.api.math.Vec3;
 
 /**
  * The complete state of one gliding entity at a tick boundary.
@@ -731,10 +733,10 @@ public record FlightState(Vec3 position, Vec3 velocity, float yaw, float pitch, 
 }
 ```
 
-Create `voyager-api/src/main/java/net/elytrarace/api/physics/FlightInput.java`:
+Create `voyager-api/src/main/java/net/elytrarace/voyager/api/physics/FlightInput.java`:
 
 ```java
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
 /** The per-tick input driving a simulated glide. */
 public record FlightInput(float yaw, float pitch, boolean fireworkBoostActive, int fireworkTicksRemaining) {
@@ -799,40 +801,40 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * voyager-api is the module every other module depends on, so anything it drags in is dragged in
  * everywhere. These rules are the reason the dependency direction in the module graph holds.
  */
-@AnalyzeClasses(packages = "net.elytrarace", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "net.elytrarace.voyager", importOptions = ImportOption.DoNotIncludeTests.class)
 class ApiPurityTest {
 
     @ArchTest
     static final ArchRule apiDoesNotDependOnMinestom =
-            noClasses().that().resideInAPackage("net.elytrarace.api..")
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .should().dependOnClassesThat().resideInAnyPackage("net.minestom..")
                     .because("Minestom types belong to voyager-platform alone")
                     .allowEmptyShould(false);
 
     @ArchTest
     static final ArchRule apiDoesNotDependOnPaper =
-            noClasses().that().resideInAPackage("net.elytrarace.api..")
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
                     .because("Paper is dropped entirely by the rebuild")
                     .allowEmptyShould(false);
 
     @ArchTest
     static final ArchRule apiDoesNotDependOnPersistenceTechnology =
-            noClasses().that().resideInAPackage("net.elytrarace.api..")
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
                     .because("ports live in the api module, ORM technology does not")
                     .allowEmptyShould(false);
 
     @ArchTest
     static final ArchRule apiDoesNotDependOnADiContainer =
-            noClasses().that().resideInAPackage("net.elytrarace.api..")
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "jakarta.inject..")
                     .because("DI annotations are confined to the composition roots")
                     .allowEmptyShould(false);
 
     @ArchTest
     static final ArchRule apiDoesNotPerformFileIo =
-            noClasses().that().resideInAPackage("net.elytrarace.api..")
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .should().dependOnClassesThat().resideInAnyPackage("java.nio.file..")
                     .because("voyager-api declares configuration types and never loads them")
                     .allowEmptyShould(false);
@@ -855,7 +857,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
-@AnalyzeClasses(packages = "net.elytrarace", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "net.elytrarace.voyager", importOptions = ImportOption.DoNotIncludeTests.class)
 class DesignRuleTest {
 
     // ArchUnit 1.4.2 has beInterfaces() and beEnums() but no beRecords(), so the record case is
@@ -880,7 +882,7 @@ class DesignRuleTest {
 
     @ArchTest
     static final ArchRule apiTypesAreRecordsInterfacesOrEnums =
-            classes().that().resideInAPackage("net.elytrarace.api..")
+            classes().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .and().areTopLevelClasses()
                     .and().haveSimpleNameNotEndingWith("Exception")
                     .and().haveSimpleNameNotEndingWith("package-info")
@@ -926,7 +928,7 @@ Expected: PASS, 7 rules evaluated (5 purity, 2 design), none empty.
 
 - [ ] **Step 5: Prove the rules actually bite**
 
-Temporarily add this field to `voyager-api/src/main/java/net/elytrarace/api/math/Vec3.java`:
+Temporarily add this field to `voyager-api/src/main/java/net/elytrarace/voyager/api/math/Vec3.java`:
 
 ```java
     private static final java.nio.file.Path SMOKE_TEST = java.nio.file.Path.of(".");
@@ -1079,18 +1081,18 @@ Expected: PASS. Tasks 1 to 4 already created a `package-info.java` for each of t
 Temporarily rename one package-info file:
 
 ```bash
-mv voyager-api/src/main/java/net/elytrarace/api/math/package-info.java \
-   voyager-api/src/main/java/net/elytrarace/api/math/package-info.java.bak
+mv voyager-api/src/main/java/net/elytrarace/voyager/api/math/package-info.java \
+   voyager-api/src/main/java/net/elytrarace/voyager/api/math/package-info.java.bak
 ```
 
 Run: `./gradlew :voyager-fitness:test --tests "net.elytrarace.fitness.NullabilityConventionTest"`
-Expected: FAIL, listing `net/elytrarace/api/math — no package-info.java`.
+Expected: FAIL, listing `net/elytrarace/voyager/api/math — no package-info.java`.
 
 Restore it:
 
 ```bash
-mv voyager-api/src/main/java/net/elytrarace/api/math/package-info.java.bak \
-   voyager-api/src/main/java/net/elytrarace/api/math/package-info.java
+mv voyager-api/src/main/java/net/elytrarace/voyager/api/math/package-info.java.bak \
+   voyager-api/src/main/java/net/elytrarace/voyager/api/math/package-info.java
 ```
 
 Run: `./gradlew :voyager-fitness:test`

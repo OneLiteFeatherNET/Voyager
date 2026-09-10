@@ -1,4 +1,4 @@
-package net.elytrarace.api;
+package net.elytrarace.voyager.api;
 
 import org.junit.jupiter.api.Test;
 

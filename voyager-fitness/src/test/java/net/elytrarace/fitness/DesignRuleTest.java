@@ -11,7 +11,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
-@AnalyzeClasses(packages = "net.elytrarace", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "net.elytrarace.voyager", importOptions = ImportOption.DoNotIncludeTests.class)
 class DesignRuleTest {
 
     // ArchUnit 1.4.2 has beInterfaces() and beEnums() but no beRecords(), so the record case is
@@ -36,7 +36,7 @@ class DesignRuleTest {
 
     @ArchTest
     static final ArchRule apiTypesAreRecordsInterfacesOrEnums =
-            classes().that().resideInAPackage("net.elytrarace.api..")
+            classes().that().resideInAPackage("net.elytrarace.voyager.api..")
                     .and().areTopLevelClasses()
                     .and().haveSimpleNameNotEndingWith("Exception")
                     .and().haveSimpleNameNotEndingWith("package-info")

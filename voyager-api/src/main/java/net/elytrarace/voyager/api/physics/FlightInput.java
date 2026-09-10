@@ -1,7 +1,7 @@
-package net.elytrarace.api.physics;
+package net.elytrarace.voyager.api.physics;
 
-import net.elytrarace.api.physics.exception.NonFiniteRotationException;
-import net.elytrarace.api.physics.exception.InvalidFlightInputException;
+import net.elytrarace.voyager.api.physics.exception.NonFiniteRotationException;
+import net.elytrarace.voyager.api.physics.exception.InvalidFlightInputException;
 
 /** The per-tick input driving a simulated glide. */
 public record FlightInput(float yaw, float pitch, boolean fireworkBoostActive, int fireworkTicksRemaining) {
