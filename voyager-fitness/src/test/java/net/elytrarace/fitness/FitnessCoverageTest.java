@@ -9,6 +9,7 @@ import com.tngtech.archunit.lang.ArchRule;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +45,7 @@ class FitnessCoverageTest {
     private static final String FITNESS_PACKAGE = "net.elytrarace.fitness";
 
     private static Set<String> property(String key) {
-        return Arrays.stream(System.getProperty(key, "").split(","))
+        return Arrays.stream(System.getProperty(key, "").split(File.pathSeparator))
                 .map(String::trim)
                 .filter(entry -> !entry.isEmpty())
                 .collect(Collectors.toSet());
@@ -52,7 +53,12 @@ class FitnessCoverageTest {
 
     @Test
     void everyModuleWithProductionSourcesIsMappedToAPackagePrefix() {
-        Set<String> modules = property("voyager.modulesWithSources");
+        // The build supplies module names rather than Gradle paths, because the separator every
+        // fitness property uses — File.pathSeparator — is ":" on Unix, the character a project path
+        // begins with. The map is keyed by the path a reader would type into build.gradle.kts.
+        Set<String> modules = property("voyager.modulesWithSources").stream()
+                .map(":%s"::formatted)
+                .collect(Collectors.toSet());
 
         assertThat(modules)
                 .as("the build must supply voyager.modulesWithSources; an empty list would pass vacuously")
