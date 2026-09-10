@@ -6,9 +6,8 @@ import net.elytrarace.voyager.api.physics.CollisionSpace;
 import net.elytrarace.voyager.api.physics.FlightInput;
 import net.elytrarace.voyager.api.physics.FlightState;
 import net.elytrarace.voyager.physics.ElytraSimulator;
-import net.elytrarace.voyager.physics.TickTrace;
-import net.elytrarace.voyager.physics.step.ElytraStep;
 import net.elytrarace.voyager.physics.trace.TraceReplay.ReplayReport;
+import net.elytrarace.voyager.physics.trace.exception.InvalidReplayThresholdException;
 import net.elytrarace.voyager.physics.trace.exception.InvalidTraceFixtureException;
 import org.junit.jupiter.api.Test;
 
@@ -85,13 +84,6 @@ class TraceReplayTest {
         return new TraceFixture(metadata, ticks);
     }
 
-    private static FlightState stateOf(TraceFixture.Tick tick) {
-        return new FlightState(
-                new Vec3(tick.posX(), tick.posY(), tick.posZ()),
-                new Vec3(tick.velX(), tick.velY(), tick.velZ()),
-                tick.yaw(), tick.pitch(), tick.onGround());
-    }
-
     private static TraceFixture.Tick withPosition(TraceFixture.Tick tick, double dx) {
         return new TraceFixture.Tick(
                 tick.index(),
@@ -126,18 +118,13 @@ class TraceReplayTest {
 
         assertThat(report.isClean()).isTrue();
         assertThat(report.firstDivergingTick()).isEmpty();
-        assertThat(report.divergingStep()).isEmpty();
         assertThat(report.cumulativeError()).isEqualTo(0.0);
         assertThat(report.cumulativeThresholdExceeded()).isFalse();
     }
 
     @Test
     void aSyntheticFixtureWithCollisionAgainstAFloorReplaysWithZeroDivergence() {
-        List<TraceFixture.BlockBox> worldSlice = List.of(new TraceFixture.BlockBox(-64, -1, -64, 64, 0, 64));
-        CollisionSpace floor = region -> List.of(new Aabb(new Vec3(-64, -1, -64), new Vec3(64, 0, 64)));
-        FlightState fallingSeed = new FlightState(new Vec3(0, 2, 0), new Vec3(0, -0.5, 0.2), 0.0f, 0.0f, false);
-
-        TraceFixture fixture = generateFixture(fallingSeed, constantInputs(15, 0.0f, 0.0f), floor, worldSlice);
+        TraceFixture fixture = landingFixture();
 
         // Otherwise a change to the seed (e.g. a shallower fall) silently turns this into a
         // duplicate of the free-flight test above, without ever having exercised collision at all.
@@ -158,6 +145,14 @@ class TraceReplayTest {
 
         assertThat(restored).isEqualTo(fixture);
         assertThat(TraceReplay.replay(restored).isClean()).isTrue();
+    }
+
+    /** A short fall onto a floor, ending on the ground — shared by the collision-related tests. */
+    private static TraceFixture landingFixture() {
+        List<TraceFixture.BlockBox> worldSlice = List.of(new TraceFixture.BlockBox(-64, -1, -64, 64, 0, 64));
+        CollisionSpace floor = region -> List.of(new Aabb(new Vec3(-64, -1, -64), new Vec3(64, 0, 64)));
+        FlightState fallingSeed = new FlightState(new Vec3(0, 2, 0), new Vec3(0, -0.5, 0.2), 0.0f, 0.0f, false);
+        return generateFixture(fallingSeed, constantInputs(15, 0.0f, 0.0f), floor, worldSlice);
     }
 
     // ---- naming the diverging tick ---------------------------------------------------------
@@ -255,21 +250,19 @@ class TraceReplayTest {
         assertThat(report.isClean()).isFalse();
     }
 
-    // ---- naming the diverging step: the ordinary case names none ----------------------------
+    // ---- the velocity error, and why there is no per-step attribution -----------------------
+    //
+    // TraceReplay used to also try naming which ElytraStep a divergence belonged to. Measured
+    // against realistically-shaped fixtures, that attribution tracked the sign and magnitude of
+    // whatever perturbed the recording, not its cause — DRAG only scales velocity by ~1%, so once a
+    // divergence reached roughly that size relative to the velocity itself, an unrelated earlier
+    // step's output would coincidentally sit closer to the recording than DRAG's own, and get named
+    // instead. See TraceReplay's class javadoc for the full account. What remains is the velocity
+    // error itself: how far the simulated post-restitution velocity sits from the recorded one, with
+    // no claim about which step produced the gap.
 
-    /**
-     * A real recorder (E2a Task 2) never writes anything but the entity's actual post-tick
-     * velocity — the value a correct simulation produces after {@code DRAG}, the last step. This
-     * builds a fixture in exactly that shape: the recorded velocity at the perturbed tick is the
-     * real simulated final velocity plus a small, direction-agnostic offset, not any step's raw
-     * intermediate output. Per {@link TraceReplay#replay}'s javadoc, this is the case attribution
-     * cannot resolve — the recorded value stays closest to {@code DRAG}'s own output, so there is no
-     * earlier step meaningfully closer to blame instead. The tick is still correctly flagged as
-     * diverging (via position error) and the residual is still reported; only the step name is
-     * withheld, honestly, instead of defaulting to {@code DRAG} every time.
-     */
     @Test
-    void aRealisticallyShapedDivergenceReportsNoStepBecauseTheFormatCannotSayWhichOne() {
+    void aGenuineVelocityDivergenceIsReportedAsANonZeroVelocityError() {
         TraceFixture clean = generateFixture(seed(), constantInputs(10, 0.0f, -20.0f), FREE_FLIGHT, List.of());
         int perturbedTick = 4;
 
@@ -281,63 +274,48 @@ class TraceReplayTest {
         ReplayReport report = TraceReplay.replay(perturbed, 1.0E-9, 1000.0);
 
         assertThat(report.firstDivergingTick()).hasValue(perturbedTick);
-        assertThat(report.divergingStep()).isEmpty();
-        assertThat(report.firstDivergingTickVelocityResidual()).isGreaterThan(0.0);
+        assertThat(report.firstDivergingTickVelocityError()).isGreaterThan(0.0);
     }
 
-    // ---- naming the diverging step: the mechanism, exercised directly ------------------------
-    //
-    // The two tests below construct a recorded velocity equal to an intermediate step's exact raw
-    // output — a shape no recorder can produce, since a recording only ever samples the entity's
-    // actual post-tick (post-DRAG) velocity. They exist to pin the attribution mechanism's own
-    // logic directly (which step gets named when one genuinely is closer than DRAG), the way a
-    // unit test exercises a branch a realistic input may take years to hit on its own. The test
-    // above is the one proving what happens on input shaped like a real recording.
-
+    /**
+     * A tiny position-only nudge (velocity left exactly as recorded) is enough to force the replay
+     * to evaluate and report a velocity error at a chosen tick, without introducing any real
+     * velocity divergence — so the reported error must come out at exactly {@code 0.0} in free
+     * flight, where there is no restitution to confuse it with.
+     */
     @Test
-    void theDivergingStepIsAttributableToWhicheverStepTheRecordedVelocityStoppedMatching() {
+    void theVelocityErrorIsZeroWhenOnlyPositionWasNudgedInFreeFlight() {
         TraceFixture clean = generateFixture(seed(), constantInputs(10, 0.0f, -20.0f), FREE_FLIGHT, List.of());
-        int perturbedTick = 4;
+        int tick = 4;
+        TraceFixture forced = withTick(clean, tick, withPosition(clean.ticks().get(tick), 1.0E-7));
 
-        TickTrace trace = recomputeTick(clean, perturbedTick);
-        Vec3 stoppedAtDirectionAlignment = trace.velocityAfter().get(ElytraStep.DIRECTION_ALIGNMENT);
+        ReplayReport report = TraceReplay.replay(forced, 1.0E-9, 1000.0);
 
-        TraceFixture.Tick original = clean.ticks().get(perturbedTick);
-        TraceFixture.Tick replacement = withVelocity(withPosition(original, 0.25), stoppedAtDirectionAlignment);
-        TraceFixture perturbed = withTick(clean, perturbedTick, replacement);
-
-        ReplayReport report = TraceReplay.replay(perturbed, 1.0E-9, 1000.0);
-
-        assertThat(report.firstDivergingTick()).hasValue(perturbedTick);
-        assertThat(report.divergingStep()).hasValue(ElytraStep.DRAG);
+        assertThat(report.firstDivergingTick()).hasValue(tick);
+        assertThat(report.firstDivergingTickVelocityError()).isEqualTo(0.0);
     }
 
+    /**
+     * The case the reviewer measured directly: comparing against {@code velocityAfter(DRAG)} (the
+     * pre-restitution step output) instead of {@code state.velocity()} (post-restitution) reported
+     * a velocity error of {@code 0.2848} on this exact fixture, entirely from the restitution gap on
+     * the landing tick — a completely correct simulation, reported as if its velocity were wrong.
+     * Forcing evaluation at the landing tick the same way as the free-flight test above (position
+     * nudged, velocity untouched) must report {@code 0.0} here too, precisely because the tick
+     * involves a real collision and restitution.
+     */
     @Test
-    void aDifferentStoppingPointNamesADifferentStepRatherThanTheSameOneEveryTime() {
-        TraceFixture clean = generateFixture(seed(), constantInputs(10, 0.0f, -20.0f), FREE_FLIGHT, List.of());
-        int perturbedTick = 4;
+    void theVelocityErrorIsZeroOnACleanLandingTickNotTheRestitutionGap() {
+        TraceFixture clean = landingFixture();
+        int landingTick = clean.ticks().size() - 1;
+        assertThat(clean.ticks().get(landingTick).onGround()).isTrue();
 
-        TickTrace trace = recomputeTick(clean, perturbedTick);
-        Vec3 stoppedAtUpwardPitchBoost = trace.velocityAfter().get(ElytraStep.UPWARD_PITCH_BOOST);
+        TraceFixture forced = withTick(clean, landingTick, withPosition(clean.ticks().get(landingTick), 1.0E-7));
 
-        TraceFixture.Tick original = clean.ticks().get(perturbedTick);
-        TraceFixture.Tick replacement = withVelocity(withPosition(original, 0.25), stoppedAtUpwardPitchBoost);
-        TraceFixture perturbed = withTick(clean, perturbedTick, replacement);
+        ReplayReport report = TraceReplay.replay(forced, 1.0E-9, 1000.0);
 
-        ReplayReport report = TraceReplay.replay(perturbed, 1.0E-9, 1000.0);
-
-        assertThat(report.firstDivergingTick()).hasValue(perturbedTick);
-        assertThat(report.divergingStep()).hasValue(ElytraStep.DIRECTION_ALIGNMENT);
-    }
-
-    /** Recomputes the traced tick that produced {@code clean.ticks().get(tickIndex)}, white-box. */
-    private static TickTrace recomputeTick(TraceFixture clean, int tickIndex) {
-        FlightState previous = stateOf(clean.ticks().get(tickIndex - 1));
-        TraceFixture.Tick recorded = clean.ticks().get(tickIndex);
-        FlightInput input = new FlightInput(
-                recorded.yaw(), recorded.pitch(),
-                recorded.fireworkBoostActive(), recorded.fireworkTicksRemaining(), GRAVITY);
-        return ElytraSimulator.tickTraced(previous, input, FREE_FLIGHT);
+        assertThat(report.firstDivergingTick()).hasValue(landingTick);
+        assertThat(report.firstDivergingTickVelocityError()).isEqualTo(0.0);
     }
 
     // ---- malformed / empty fixtures fail with a domain exception -----------------------------
@@ -441,25 +419,28 @@ class TraceReplayTest {
     }
 
     // ---- TraceReplay validates its own arguments, not just the fixture ------------------------
+    //
+    // A bad threshold is a defect in the call, not in the fixture, so it fails with
+    // InvalidReplayThresholdException rather than InvalidTraceFixtureException.
 
     @Test
-    void replayingWithANonFiniteThresholdFailsWithADomainExceptionRatherThanSilentlyReportingClean() {
+    void replayingWithANonFiniteThresholdFailsWithAThresholdExceptionRatherThanSilentlyReportingClean() {
         TraceFixture clean = generateFixture(seed(), constantInputs(5, 0.0f, -20.0f), FREE_FLIGHT, List.of());
 
         assertThatThrownBy(() -> TraceReplay.replay(clean, Double.NaN, 1000.0))
-                .isInstanceOf(InvalidTraceFixtureException.class);
+                .isInstanceOf(InvalidReplayThresholdException.class);
         assertThatThrownBy(() -> TraceReplay.replay(clean, 0.01, Double.NaN))
-                .isInstanceOf(InvalidTraceFixtureException.class);
+                .isInstanceOf(InvalidReplayThresholdException.class);
     }
 
     @Test
-    void replayingWithANegativeThresholdFailsWithADomainException() {
+    void replayingWithANegativeThresholdFailsWithAThresholdException() {
         TraceFixture clean = generateFixture(seed(), constantInputs(5, 0.0f, -20.0f), FREE_FLIGHT, List.of());
 
         assertThatThrownBy(() -> TraceReplay.replay(clean, -0.01, 1000.0))
-                .isInstanceOf(InvalidTraceFixtureException.class);
+                .isInstanceOf(InvalidReplayThresholdException.class);
         assertThatThrownBy(() -> TraceReplay.replay(clean, 0.01, -1000.0))
-                .isInstanceOf(InvalidTraceFixtureException.class);
+                .isInstanceOf(InvalidReplayThresholdException.class);
     }
 
     // ---- RecordedCollisionSpace filters on the queried region ---------------------------------
