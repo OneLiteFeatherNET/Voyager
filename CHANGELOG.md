@@ -1,3 +1,10 @@
+## [1.11.5](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.4...v1.11.5) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.mariadb.jdbc:mariadb-java-client to v3.5.10 ([#221](https://github.com/OneLiteFeatherNET/Voyager/issues/221)) ([4340890](https://github.com/OneLiteFeatherNET/Voyager/commit/4340890cc0d65a2186d854d8ed2594e6af283b13))
+
 ## [1.11.4](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.3...v1.11.4) (2026-09-11)
 
 
