@@ -113,4 +113,29 @@ class RingPassTest {
     void rejectsAPassJustOutsideTheRimWithACombinedXAndYOffset() {
         assertThat(RingPass.crosses(new Vec3(3.001, 60.0, 99.0), new Vec3(3.001, 60.0, 101.0), FLAT)).isFalse();
     }
+
+    // In every TILTED case above, from.z equals to.z, so the intersection's z-coordinate is never
+    // actually interpolated by t — it is the same value whichever endpoint it is copied from. TILTED's
+    // normal has no z component, so z is otherwise free; these two give the step a genuine z-delta and
+    // land the offset from centre (which TILTED's other tests only ever produce along z, see above)
+    // on that interpolated value instead of a value shared by both endpoints.
+    //
+    // t stays 0.5 (x/y unchanged from countsAPassThroughATiltedRingsCentre); z runs from -18 to -14,
+    // so the midpoint is -16 — 4 above the centre's -20, exactly the tilted ring's radius.
+
+    @Test
+    void countsAPassOnTheRimOfATiltedRingThroughAGenuineZStep() {
+        Vec3 from = new Vec3(9.4, 69.2, -18.0);
+        Vec3 to = new Vec3(10.6, 70.8, -14.0);
+
+        assertThat(RingPass.crosses(from, to, TILTED)).isTrue();
+    }
+
+    @Test
+    void rejectsAPassJustOutsideTheRimOfATiltedRingThroughAGenuineZStep() {
+        Vec3 from = new Vec3(9.4, 69.2, -18.0);
+        Vec3 to = new Vec3(10.6, 70.8, -13.996);
+
+        assertThat(RingPass.crosses(from, to, TILTED)).isFalse();
+    }
 }
