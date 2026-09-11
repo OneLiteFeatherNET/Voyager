@@ -1,3 +1,10 @@
+## [1.11.6](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.5...v1.11.6) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.slf4j:slf4j-api to v2.0.18 ([#222](https://github.com/OneLiteFeatherNET/Voyager/issues/222)) ([82e908b](https://github.com/OneLiteFeatherNET/Voyager/commit/82e908b8687cdc3e9320bb9f597b91fcee400b7b))
+
 ## [1.11.5](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.4...v1.11.5) (2026-09-11)
 
 
