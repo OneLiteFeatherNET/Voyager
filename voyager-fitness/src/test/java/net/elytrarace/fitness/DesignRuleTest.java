@@ -55,9 +55,10 @@ class DesignRuleTest {
 
     @ArchTest
     static final ArchRule race_domain_exceptions_are_runtime_exceptions =
-            classes().that().resideInAPackage("net.elytrarace.voyager.race..")
+            classes().that().resideInAnyPackage("net.elytrarace.voyager.race..", "net.elytrarace.voyager.api.race..")
                     .and().haveSimpleNameEndingWith("Exception")
                     .should().beAssignableTo(RuntimeException.class)
-                    .as("domain exceptions in net.elytrarace.voyager.race.. extend RuntimeException")
+                    .as("domain exceptions in net.elytrarace.voyager.race.. or net.elytrarace.voyager.api.race.. "
+                            + "extend RuntimeException")
                     .allowEmptyShould(false);
 }
