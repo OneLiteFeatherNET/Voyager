@@ -23,6 +23,7 @@ import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.CupScorer;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.elytrarace.voyager.race.scoring.MapScorer;
+import net.elytrarace.voyager.race.scoring.Placement;
 import net.elytrarace.voyager.race.scoring.PlacementBonus;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -311,22 +312,21 @@ class CupPlaythroughTest {
     }
 
     private static void scoreTheMap(int mapIndex, MapDefinition map, GameMode mode, Map<String, Run> runs) {
-        // PlacementBonus.award takes scores positionally and carries no racer identity, so this list
-        // and RACERS have to stay index-aligned by hand. See the report's finding on that.
-        List<MapScore> beforePlacement = new ArrayList<>(RACERS.size());
+        // Each score goes in tagged with the racer it belongs to and comes back the same way, so
+        // nothing here is index-aligned by hand with RACERS.
+        List<Placement<String>> beforePlacement = new ArrayList<>(RACERS.size());
         for (Racer racer : RACERS) {
             Run run = runs.get(racer.name());
             Duration elapsed = run.finishedOnGameTick == NOT_FINISHED
                     ? TICK.multipliedBy(GAME_TICKS)
                     : TICK.multipliedBy(run.finishedOnGameTick);
-            beforePlacement.add(MapScorer.score(run.progress, map, elapsed));
+            beforePlacement.add(new Placement<>(racer.name(), MapScorer.score(run.progress, map, elapsed)));
         }
 
-        List<MapScore> awarded = PlacementBonus.award(beforePlacement, mode);
-        for (int i = 0; i < RACERS.size(); i++) {
-            Run run = runs.get(RACERS.get(i).name());
-            RESULTS.add(new Result(mapIndex, map.name(), RACERS.get(i).name(), run.progress,
-                    List.copyOf(run.passedOnGameTick), run.finishedOnGameTick, awarded.get(i), run.velocity,
+        for (Placement<String> awarded : PlacementBonus.award(beforePlacement, mode)) {
+            Run run = runs.get(awarded.key());
+            RESULTS.add(new Result(mapIndex, map.name(), awarded.key(), run.progress,
+                    List.copyOf(run.passedOnGameTick), run.finishedOnGameTick, awarded.score(), run.velocity,
                     run.effectsApplied));
         }
     }
@@ -495,9 +495,9 @@ class CupPlaythroughTest {
         //   Wren's lane (-2.0, 63.0): crossing z = 152.0 + (-0.36 * 0.5 + 0.48 * 0.5) / 0.8 = 152.075
         //                            tick = ceil(152.075 / 2.10) = ceil(72.417) = 73 -> 3.650 s
         assertThat(resultFor(0, "Rook").finishedOnGameTick()).isEqualTo(58);
-        assertThat(resultFor(0, "Rook").score().completionTime()).isEqualTo(Duration.ofMillis(2_900));
+        assertThat(resultFor(0, "Rook").score().completionTime()).contains(Duration.ofMillis(2_900));
         assertThat(resultFor(0, "Wren").finishedOnGameTick()).isEqualTo(73);
-        assertThat(resultFor(0, "Wren").score().completionTime()).isEqualTo(Duration.ofMillis(3_650));
+        assertThat(resultFor(0, "Wren").score().completionTime()).contains(Duration.ofMillis(3_650));
 
         // Map two, ring 3, centre (0.5, 65.5, 223.0), normal (0.36, -0.48, 0.8), spawn z 3.0:
         //   Rook: crossing z = 223.0 + (0.36 * -1.0 + -0.48 * 0.5) / 0.8 = 222.250
@@ -505,14 +505,14 @@ class CupPlaythroughTest {
         //   Pike's lane (0.75, 66.5): crossing z = 223.0 + (0.36 * -0.25 + -0.48 * -1.0) / 0.8 = 223.4875
         //         tick = ceil((223.4875 - 3.0) / 2.11) = ceil(104.497) = 105 -> 5.250 s
         assertThat(resultFor(1, "Rook").finishedOnGameTick()).isEqualTo(50);
-        assertThat(resultFor(1, "Rook").score().completionTime()).isEqualTo(Duration.ofMillis(2_500));
+        assertThat(resultFor(1, "Rook").score().completionTime()).contains(Duration.ofMillis(2_500));
         assertThat(resultFor(1, "Pike").finishedOnGameTick()).isEqualTo(105);
-        assertThat(resultFor(1, "Pike").score().completionTime()).isEqualTo(Duration.ofMillis(5_250));
+        assertThat(resultFor(1, "Pike").score().completionTime()).contains(Duration.ofMillis(5_250));
 
         Duration phaseEnd = TICK.multipliedBy(GAME_TICKS);
         assertThat(phaseEnd).isEqualTo(Duration.ofSeconds(8));
         assertThat(RESULTS).filteredOn(result -> result.score().medal() != MedalTier.DNF)
-                .extracting(result -> result.score().completionTime())
+                .extracting(result -> result.score().completionTime().orElseThrow())
                 .doesNotContain(phaseEnd)
                 .containsExactly(Duration.ofMillis(2_900), Duration.ofMillis(3_650),
                         Duration.ofMillis(2_500), Duration.ofMillis(5_250));
@@ -618,10 +618,11 @@ class CupPlaythroughTest {
         assertThat(cupScores.get("Pike").mapsFinished()).isEqualTo(1);
         assertThat(cupScores.get("Pike").bestTime()).contains(Duration.ofMillis(5_250));
 
-        // The DNF rows carry the full phase duration as their completion time. None of it leaked into
-        // a best time.
-        assertThat(resultFor(0, "Pike").score().completionTime()).isEqualTo(Duration.ofSeconds(8));
-        assertThat(resultFor(1, "Wren").score().completionTime()).isEqualTo(Duration.ofSeconds(8));
+        // The DNF rows have no completion time at all. They were handed the full phase duration as
+        // their elapsed time — 8.000 s, which would have been the smallest value in Pike's cup and
+        // the largest in Wren's — and the scorer declined to call it a result.
+        assertThat(resultFor(0, "Pike").score().completionTime()).isEmpty();
+        assertThat(resultFor(1, "Wren").score().completionTime()).isEmpty();
         assertThat(cupScores.values()).extracting(CupScore::bestTime)
                 .doesNotContain(Optional.of(Duration.ofSeconds(8)));
     }

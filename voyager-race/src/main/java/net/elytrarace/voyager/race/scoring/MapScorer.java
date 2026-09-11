@@ -8,6 +8,7 @@ import net.elytrarace.voyager.race.progress.RingProgress;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * Scores a player's run on a single map from how far they got and how long they took.
@@ -26,13 +27,17 @@ public abstract class MapScorer {
     /**
      * Returns {@code progress}'s score on {@code map} for a run that took {@code elapsed}, with
      * {@code placementBonus} zero.
+     *
+     * <p>{@code elapsed} is how long the player was on the course, which for a run that did not
+     * finish is simply how long the phase lasted. That is not a completion time, so the returned
+     * score carries {@link Optional#empty()} rather than echoing it back.
      */
     public static MapScore score(RingProgress progress, MapDefinition map, Duration elapsed) {
         int ringPoints = progress.passedCount() * POINTS_PER_RING;
         if (progress.passedCount() != map.rings().size()) {
-            return new MapScore(ringPoints, MedalTier.DNF.medalPoints(), 0, elapsed, MedalTier.DNF);
+            return new MapScore(ringPoints, MedalTier.DNF.medalPoints(), 0, Optional.empty(), MedalTier.DNF);
         }
         MedalTier medal = MedalBrackets.DEFAULT.classify(elapsed, map.referenceTime());
-        return new MapScore(ringPoints, medal.medalPoints(), 0, elapsed, medal);
+        return new MapScore(ringPoints, medal.medalPoints(), 0, Optional.of(elapsed), medal);
     }
 }

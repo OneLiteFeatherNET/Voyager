@@ -43,7 +43,7 @@ class MapScorerTest {
         assertThat(score.medal()).isEqualTo(MedalTier.DIAMOND);
         assertThat(score.medalPoints()).isEqualTo(60);
         assertThat(score.placementBonus()).isZero();
-        assertThat(score.completionTime()).isEqualTo(completionTime);
+        assertThat(score.completionTime()).contains(completionTime);
         assertThat(score.total()).isEqualTo(80);
     }
 
@@ -59,35 +59,38 @@ class MapScorerTest {
         assertThat(score.ringPoints()).isEqualTo(30);
         assertThat(score.medal()).isEqualTo(MedalTier.GOLD);
         assertThat(score.medalPoints()).isEqualTo(45);
-        assertThat(score.completionTime()).isEqualTo(completionTime);
+        assertThat(score.completionTime()).contains(completionTime);
         assertThat(score.total()).isEqualTo(75);
     }
 
     @Test
-    void scoresAnUnfinishedRunAsRingPointsOnlyWithDidNotFinish() {
+    void scoresAnUnfinishedRunAsRingPointsOnlyWithDidNotFinishAndNoCompletionTime() {
         // One of three rings passed: ringPoints must come from passedCount (10), not rings.size() * 10
         // (30).
         RingProgress unfinished = new RingProgress(1, -1);
-        Duration completionTime = Duration.ofSeconds(20);
+        Duration timeOnCourse = Duration.ofSeconds(20);
 
-        MapScore score = MapScorer.score(unfinished, THREE_RING_MAP, completionTime);
+        MapScore score = MapScorer.score(unfinished, THREE_RING_MAP, timeOnCourse);
 
         assertThat(score.ringPoints()).isEqualTo(10);
         assertThat(score.medal()).isEqualTo(MedalTier.DNF);
         assertThat(score.medalPoints()).isZero();
         assertThat(score.placementBonus()).isZero();
-        assertThat(score.completionTime()).isEqualTo(completionTime);
+        // The 20 s is how long the player was on the course, not a completion time. Echoing it back
+        // is what the old shape did, and it left every reader to check the medal first.
+        assertThat(score.completionTime()).isEmpty();
         assertThat(score.total()).isEqualTo(10);
     }
 
     @Test
-    void carriesTheCompletionTimeThroughUnchangedWhetherFinishedOrNot() {
+    void carriesAFinishersTimeThroughUnchangedAndReportsNoneForANonFinisher() {
         Duration oddDuration = Duration.ofSeconds(12).plusNanos(345);
 
         MapScore finishedScore = MapScorer.score(new RingProgress(2, -1), TWO_RING_MAP, oddDuration);
         MapScore unfinishedScore = MapScorer.score(new RingProgress(0, -1), TWO_RING_MAP, oddDuration);
 
-        assertThat(finishedScore.completionTime()).isEqualTo(oddDuration);
-        assertThat(unfinishedScore.completionTime()).isEqualTo(oddDuration);
+        assertThat(finishedScore.completionTime()).contains(oddDuration);
+        assertThat(unfinishedScore.completionTime()).as("the same elapsed value, deliberately not echoed back")
+                .isEmpty();
     }
 }

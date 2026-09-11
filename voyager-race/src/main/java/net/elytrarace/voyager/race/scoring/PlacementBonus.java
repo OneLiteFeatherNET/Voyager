@@ -8,9 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Awards each player's placement bonus for their standing on a single map, ranked by {@link
+ * Awards each competitor's placement bonus for their standing on a single map, ranked by {@link
  * MapScore#total()} descending: 1st place 10, 2nd 6, 3rd 3, every rank below that flat at 1 — the
  * tail does not keep counting down.
+ *
+ * <p>Scores go in and come back as {@link Placement}s, so each bonus stays attached to the
+ * competitor it was computed for. Before that, the input was a bare {@code List<MapScore>} whose
+ * order the caller had to keep aligned with a parallel list of its own — the one spot in the stage
+ * where a mis-pairing produces a plausible wrong answer rather than an exception.
  *
  * <p>Two players tied on {@code total()} share the same rank and therefore the same bonus; the next
  * distinct total is ranked below <em>both</em> of them, not below just one of them — a tie for first
@@ -34,23 +39,30 @@ public abstract class PlacementBonus {
     }
 
     /**
-     * Returns a new list, the same size and in the same order as {@code scores}, with each entry's
-     * placement bonus added on top of whatever it already carried. {@code scores} itself is not
-     * mutated: this returns replacement {@link MapScore} values rather than editing in place, and
-     * never reorders or sorts the input.
+     * Returns a new list, the same size and in the same order as {@code standings}, each entry
+     * keeping its {@link Placement#key()} and carrying a {@link MapScore} whose placement bonus has
+     * been added on top of whatever it already carried. {@code standings} itself is not mutated:
+     * this returns replacement values rather than editing in place, and never reorders or sorts the
+     * input.
+     *
+     * <p>The order is part of the contract and is pinned by a test, but callers should read results
+     * back by key rather than by index — carrying the identity is the whole reason
+     * {@link Placement} exists.
      */
-    public static List<MapScore> award(List<MapScore> scores, GameMode mode) {
-        int[] totals = new int[scores.size()];
-        for (int i = 0; i < scores.size(); i++) {
-            totals[i] = scores.get(i).total();
+    public static <K> List<Placement<K>> award(List<Placement<K>> standings, GameMode mode) {
+        int[] totals = new int[standings.size()];
+        for (int i = 0; i < standings.size(); i++) {
+            totals[i] = standings.get(i).score().total();
         }
 
-        List<MapScore> awarded = new ArrayList<>(scores.size());
-        for (int i = 0; i < scores.size(); i++) {
+        List<Placement<K>> awarded = new ArrayList<>(standings.size());
+        for (int i = 0; i < standings.size(); i++) {
             int bonus = mode.ranked() ? bonusFor(rankOf(totals, i)) : 0;
-            MapScore score = scores.get(i);
-            awarded.add(new MapScore(score.ringPoints(), score.medalPoints(), score.placementBonus() + bonus,
-                    score.completionTime(), score.medal()));
+            Placement<K> standing = standings.get(i);
+            MapScore score = standing.score();
+            awarded.add(new Placement<>(standing.key(),
+                    new MapScore(score.ringPoints(), score.medalPoints(), score.placementBonus() + bonus,
+                            score.completionTime(), score.medal())));
         }
         return List.copyOf(awarded);
     }

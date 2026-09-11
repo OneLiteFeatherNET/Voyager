@@ -12,9 +12,11 @@ import java.util.Optional;
  * Sums a player's per-map scores into their standing across a whole cup.
  *
  * <p>A map the player did not finish ({@link MedalTier#DNF}) still contributes its ring points to
- * {@link CupScore#totalPoints()} — {@link MapScore#total()} counts them regardless — but its
- * {@link MapScore#completionTime()} is elapsed time on a run that never finished, not a real result,
- * so it is excluded from both {@link CupScore#bestTime()} and {@link CupScore#mapsFinished()}.
+ * {@link CupScore#totalPoints()} — {@link MapScore#total()} counts them regardless — but it has no
+ * completion time at all, so it counts toward neither {@link CupScore#bestTime()} nor
+ * {@link CupScore#mapsFinished()}. The {@code DNF} check below is what excludes it from
+ * {@code mapsFinished}; {@code bestTime} no longer needs one, because
+ * {@link MapScore#completionTime()} is empty on exactly those rows.
  */
 @ApiStatus.Internal
 public abstract class CupScorer {
@@ -33,8 +35,9 @@ public abstract class CupScorer {
                 continue;
             }
             mapsFinished++;
-            if (bestTime == null || score.completionTime().compareTo(bestTime) < 0) {
-                bestTime = score.completionTime();
+            Optional<Duration> completed = score.completionTime();
+            if (completed.isPresent() && (bestTime == null || completed.get().compareTo(bestTime) < 0)) {
+                bestTime = completed.get();
             }
         }
         return new CupScore(totalPoints, Optional.ofNullable(bestTime), mapsFinished);
