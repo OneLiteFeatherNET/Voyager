@@ -147,6 +147,8 @@ So: `git add` the file (or commit it) before the first mutation, revert with `gi
 
 The answer is a narrow test seam: a package-private accessor that exposes exactly the state in question, and a test written against it. In this repository that move has now been made three times — for a collision cursor's cell classification, for a block-shape bound, and for a flight tracker's pending-event set — and each time the alternative was a line nothing could prove. Say in the accessor's javadoc that it exists for the test, so nobody widens it later thinking it is API.
 
+**A per-module failure list from a multi-module Gradle run is not evidence unless you passed `--continue`.** Gradle stops at the first failing task, so the modules after it never run — and a mutation sweep that reads "only voyager-platform failed" may mean "voyager-race was never tested". This was caught here by a sweep whose first pass reported no failures in a module that turned out to have four: once the run continued, one mutation went from 1 to 5 failing tests and the next from 5 to 9. When a mutation's blast radius is the thing you are measuring, measure all of it.
+
 ## 10. Patterns avoided on purpose
 
 - **Singleton / static mutable state.** The existing `create()` factories (`CupDTOBuilder`, `*Service.create()`) exist specifically so tests can construct a fresh instance instead of reaching through a static accessor. A singleton undoes that on day one.
