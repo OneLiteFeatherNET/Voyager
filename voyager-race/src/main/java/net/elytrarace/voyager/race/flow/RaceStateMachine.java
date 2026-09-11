@@ -29,7 +29,16 @@ public abstract class RaceStateMachine {
      * <p>A {@code state} with {@link RaceState#cupFinished()} true is returned unchanged: that is the
      * cup's normal terminal state, not an error. Otherwise {@code state.mapIndex()} must be a valid
      * index into {@code cup.mapNames()}, or this throws {@link IllegalPhaseTransitionException} — an
-     * out-of-range index is a programming error, never a game outcome.
+     * index outside the cup's rotation is not a position a race can be in.
+     *
+     * <p><strong>The boundary overshoot is carried forward.</strong> When a step takes the clock past
+     * a phase's duration, the new phase does not start at zero: it starts at
+     * {@code inPhase - duration}, the part of the step that was spent after the boundary. So no time
+     * is lost when {@code step} does not divide the phase durations, and a driver can sum
+     * {@link RaceState#inPhase()} across phases and get the wall clock back. Two deliberate
+     * exceptions, both because no boundary was crossed: a {@code GAME} phase ended early by
+     * {@code allPlayersFinished}, and the terminal state of a finished cup, which has no next phase
+     * to carry anything into.
      */
     public static RaceState advance(RaceState state, CupDefinition cup, RaceTimings timings, Duration step,
             boolean allPlayersFinished) {
@@ -51,15 +60,20 @@ public abstract class RaceStateMachine {
 
     private static RaceState advanceLobby(RaceState state, RaceTimings timings, Duration inPhase) {
         if (inPhase.compareTo(timings.lobby()) >= 0) {
-            return new RaceState(RacePhase.GAME, state.mapIndex(), Duration.ZERO, false);
+            return new RaceState(RacePhase.GAME, state.mapIndex(), inPhase.minus(timings.lobby()), false);
         }
         return new RaceState(RacePhase.LOBBY, state.mapIndex(), inPhase, false);
     }
 
     private static RaceState advanceGame(RaceState state, RaceTimings timings, Duration inPhase,
             boolean allPlayersFinished) {
-        if (allPlayersFinished || inPhase.compareTo(timings.race()) >= 0) {
+        // Ending early is not a boundary being crossed: no time was spent past a limit, so there is
+        // no overshoot to carry and END starts at zero. Ending on the limit is, and it carries.
+        if (allPlayersFinished) {
             return new RaceState(RacePhase.END, state.mapIndex(), Duration.ZERO, false);
+        }
+        if (inPhase.compareTo(timings.race()) >= 0) {
+            return new RaceState(RacePhase.END, state.mapIndex(), inPhase.minus(timings.race()), false);
         }
         return new RaceState(RacePhase.GAME, state.mapIndex(), inPhase, false);
     }
@@ -69,13 +83,17 @@ public abstract class RaceStateMachine {
         if (inPhase.compareTo(timings.end()) < 0) {
             return new RaceState(RacePhase.END, state.mapIndex(), inPhase, false);
         }
+        Duration overshoot = inPhase.minus(timings.end());
         if (cup.mode() == GameMode.PRACTICE) {
-            return new RaceState(RacePhase.LOBBY, state.mapIndex(), Duration.ZERO, false);
+            return new RaceState(RacePhase.LOBBY, state.mapIndex(), overshoot, false);
         }
         int nextMapIndex = state.mapIndex() + 1;
         if (nextMapIndex < mapCount) {
-            return new RaceState(RacePhase.LOBBY, nextMapIndex, Duration.ZERO, false);
+            return new RaceState(RacePhase.LOBBY, nextMapIndex, overshoot, false);
         }
+        // The one place the overshoot is deliberately dropped: no phase follows a finished cup, so
+        // there is nothing for it to be carried into. The terminal state's clock reads zero because
+        // it measures a phase that is over, not one that is running.
         return new RaceState(RacePhase.END, state.mapIndex(), Duration.ZERO, true);
     }
 }

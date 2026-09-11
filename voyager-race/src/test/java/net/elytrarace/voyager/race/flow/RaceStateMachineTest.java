@@ -163,6 +163,88 @@ class RaceStateMachineTest {
         assertThat(state.mapIndex()).isEqualTo(1);
     }
 
+    /**
+     * A step that does not divide the phase durations. Every test above uses 1 s against 5/20/3 s,
+     * and the gate uses 50 ms against 2/8/1 s, so until this was written nothing in the suite could
+     * tell "the overshoot is carried" from "the overshoot is discarded" — the whole clock contract
+     * was untested, not just its edges.
+     *
+     * <p>With a 3 s step: the lobby's 5 s boundary is crossed at 6 s, so {@code GAME} starts at 1 s,
+     * not at zero. From there the 20 s race boundary is crossed at 22 s, so {@code END} starts at
+     * 2 s. From there the 3 s end boundary is crossed at 5 s, so the next map's lobby starts at 2 s.
+     * Discarding the overshoot instead makes every phase run up to one step long and loses 5 s of
+     * wall clock over one map.
+     */
+    @Test
+    void aStepThatDoesNotDivideThePhaseDurationsCarriesTheOvershootIntoTheNextPhase() {
+        Duration threeSecondStep = Duration.ofSeconds(3);
+        RaceState state = RaceState.initial();
+
+        state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, threeSecondStep, false);
+        assertThat(state.phase()).isEqualTo(RacePhase.LOBBY);
+        assertThat(state.inPhase()).isEqualTo(Duration.ofSeconds(3));
+
+        state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, threeSecondStep, false);
+        assertThat(state.phase()).as("6 s is past the 5 s lobby").isEqualTo(RacePhase.GAME);
+        assertThat(state.inPhase()).as("the 1 s spent past the lobby boundary").isEqualTo(Duration.ofSeconds(1));
+
+        // 1 s + seven 3 s steps = 22 s, the first value past the 20 s race boundary.
+        for (int step = 1; step <= 6; step++) {
+            state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, threeSecondStep, false);
+            assertThat(state.phase()).isEqualTo(RacePhase.GAME);
+        }
+        assertThat(state.inPhase()).isEqualTo(Duration.ofSeconds(19));
+
+        state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, threeSecondStep, false);
+        assertThat(state.phase()).isEqualTo(RacePhase.END);
+        assertThat(state.inPhase()).as("the 2 s spent past the race boundary").isEqualTo(Duration.ofSeconds(2));
+
+        state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, threeSecondStep, false);
+        assertThat(state.phase()).isEqualTo(RacePhase.LOBBY);
+        assertThat(state.mapIndex()).isEqualTo(1);
+        assertThat(state.inPhase()).as("the 2 s spent past the end boundary").isEqualTo(Duration.ofSeconds(2));
+    }
+
+    /**
+     * The same carry on a {@code PRACTICE} cup, which returns to the lobby on its own map rather
+     * than rotating — a separate branch, and one an overshoot could silently be dropped in.
+     */
+    @Test
+    void practiceCarriesTheOvershootBackIntoItsOwnLobby() {
+        RaceState state = new RaceState(RacePhase.END, 1, Duration.ofSeconds(2), false);
+
+        state = RaceStateMachine.advance(state, PRACTICE_CUP, TIMINGS, Duration.ofSeconds(3), false);
+
+        assertThat(state.phase()).isEqualTo(RacePhase.LOBBY);
+        assertThat(state.mapIndex()).isEqualTo(1);
+        assertThat(state.inPhase()).as("5 s against a 3 s end phase leaves 2 s").isEqualTo(Duration.ofSeconds(2));
+    }
+
+    /**
+     * The tick-alignment F1 names, asserted rather than left implicit: {@code inPhase} is the clock
+     * a tick <em>starts</em> from. The first {@code GAME} state a driver sees reads zero and is the
+     * tick on which the first movement is played, so the phase's Nth movement tick reads
+     * {@code (N-1) * step} and the last one is a whole step short of the phase duration.
+     */
+    @Test
+    void inPhaseIsTheClockATickStartsFromSoTheLastGameTickIsOneStepShortOfTheLimit() {
+        RaceState state = new RaceState(RacePhase.GAME, 0, Duration.ZERO, false);
+
+        // Movement tick 1 is played against inPhase 0 — the state above. Tick 2 reads one step.
+        state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, STEP, false);
+        assertThat(state.inPhase()).isEqualTo(Duration.ofSeconds(1));
+
+        for (int movementTick = 3; movementTick <= 20; movementTick++) {
+            state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, STEP, false);
+            assertThat(state.phase()).isEqualTo(RacePhase.GAME);
+            assertThat(state.inPhase()).isEqualTo(Duration.ofSeconds(movementTick - 1L));
+        }
+
+        // Twenty movement ticks were played in a 20 s phase, and the last of them read 19 s. A
+        // finish timed from inPhase would therefore be one step short of the truth.
+        assertThat(state.inPhase()).isEqualTo(TIMINGS.race().minus(STEP));
+    }
+
     @Test
     void aMapIndexBeyondTheCupsMapListThrows() {
         RaceState outOfRange = new RaceState(RacePhase.LOBBY, MAP_NAMES.size(), Duration.ZERO, false);
