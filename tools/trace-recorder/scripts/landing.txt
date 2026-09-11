@@ -1,0 +1,7 @@
+# landing: ground contact ending the glide. A moderate dive (pitch=25) that loses altitude fast
+# enough to reach a flat floor within the tick budget -- contact lands around tick 138 of 200,
+# leaving room to see onGround stay true afterward.
+# world: a flat stone floor spanning x=1990..2010, z=-10..300 at y=265 (blocks occupy y=265..266).
+# Recorded at x=2000 y=300 z=0 -- its own column, isolated from wall-graze's wall so the dive
+# never crosses it. The glider spawns 2 blocks above, at y=302.
+hold 200 yaw=0 pitch=25
