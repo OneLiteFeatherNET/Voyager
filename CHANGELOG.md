@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.1...v1.11.0) (2026-09-11)
+
+
+### Features
+
+* E2a Vanilla trace recorder and the nine reference fixtures ([#240](https://github.com/OneLiteFeatherNET/Voyager/issues/240)) ([c6c572d](https://github.com/OneLiteFeatherNET/Voyager/commit/c6c572d43d83ec41632546cd4c1581aea472ce58))
+
 ## [1.10.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.0...v1.10.1) (2026-09-11)
 
 
