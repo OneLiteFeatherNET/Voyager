@@ -455,10 +455,15 @@ class CupPlaythroughTest {
      * with a ring's plane is {@code ring.cz} plus the lateral term from the class comment, and only a
      * tilted normal gives that term a value at all. If {@link RingPass} ignored a ring's stored normal
      * and assumed {@code (0, 0, 1)} — the shape the old tree's shipped maps never exercised — then
-     * every crossing would sit on the ring's own {@code z} and four of the ticks below would move:
-     * Rook's map-one rings 2 and 3 to 36 and 46, Wren's map-one ring 0 to 15, and Pike's map-two ring 2
-     * to 79. The finish ticks alone would not have noticed, because the lateral offsets there are
-     * smaller than one tick of travel.
+     * every crossing would sit on the ring's own {@code z} and nine of the ticks below would move:
+     * Rook's map-one rings 2 and 3 to 36 and 46; Wren's map-one rings 0, 1, 2 and 3 to 15, 30, 45 and
+     * 58; Rook's map-two ring 1 to 25; Wren's map-two ring 0 to 21; and Pike's map-two ring 2 to 79.
+     * The finish ticks alone would not have noticed, because the lateral offsets there are smaller
+     * than one tick of travel.
+     *
+     * <p>Do not trim this test down to the finish ticks on the grounds that the normals are "only
+     * fixture variety". They are varied precisely so this assertion can depend on them, and it is the
+     * only assertion that does.
      *
      * <pre>
      * ember-ascent, spawn z 0.0        crossing z per lane                             tick

@@ -32,11 +32,14 @@ class DesignRuleTest {
     // whose BaseX normally does carry shared implementation; it is the api module that cannot host
     // it, and a sealed interface whose base needs real behaviour belongs in an implementation module.
     //
-    // KNOWN GAP, deliberately left: a constructor is a JavaConstructor, not a JavaMethod, so
-    // `protected BaseX() { … }` with a body walks through this condition untouched. A constructor in
-    // a class with no fields can do very little — it has nothing to assign — so this is recorded
-    // rather than closed. Closing it means also iterating getConstructors() and rejecting any whose
-    // body is more than the implicit super() call, which ArchUnit cannot see from bytecode alone.
+    // KNOWN GAP, deliberately left: a constructor is a JavaConstructor and a static initialiser is a
+    // JavaStaticInitializer — neither is a JavaMethod — so `protected BaseX() { … }` and
+    // `static { … }` both walk through this condition untouched, verified against compiled bytecode.
+    // What actually keeps the gap small is not that such a body has little to do: it is the module
+    // purity rules in ApiPurityTest, which stop anything in voyager-api reaching for a platform, a
+    // parser or the game. Closing it properly means iterating getConstructors() and the static
+    // initialiser and rejecting a body longer than the implicit super() call, which ArchUnit cannot
+    // see from bytecode alone.
     private static final ArchCondition<JavaClass> BE_A_RECORD_AN_INTERFACE_AN_ENUM_OR_A_SEALED_BASE =
             new ArchCondition<>(
                     "be a record, an interface, an enum, or a sealed hierarchy's empty abstract Base* "
