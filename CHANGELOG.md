@@ -5,6 +5,23 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.12.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.12.0...v1.12.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* vanilla parity at exactly zero — boost placement, movement deadzone, float half-width ([#247](https://github.com/OneLiteFeatherNET/Voyager/issues/247)) ([3bb24cd](https://github.com/OneLiteFeatherNET/Voyager/commit/3bb24cdccb88acde524b8d88410bb6a5f7ec47b3))
+
+
+### Continuous Integration
+
+* build a pull request once, not twice ([#259](https://github.com/OneLiteFeatherNET/Voyager/issues/259)) ([833df33](https://github.com/OneLiteFeatherNET/Voyager/commit/833df33acfeeabe9821cab83906c8ae1d11a1140))
+
+
+### Miscellaneous Chores
+
+* relicense under the AGPL-3.0 ([#261](https://github.com/OneLiteFeatherNET/Voyager/issues/261)) ([b8da951](https://github.com/OneLiteFeatherNET/Voyager/commit/b8da95187a96e1e926f3d55c0a80d1abbed79734))
+
 ## [1.12.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.10...v1.12.0) (2026-09-11)
 
 
