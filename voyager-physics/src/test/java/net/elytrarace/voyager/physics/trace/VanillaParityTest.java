@@ -56,6 +56,16 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class VanillaParityTest {
 
     /**
+     * {@code Math.cos} over every lean angle from -90 to 90 degrees in half-degree steps, folded
+     * into one value, as produced by the amd64 JVM these fixtures were recorded against. Comparing
+     * the whole sequence rather than asking whether {@code Math.cos} merely differs from
+     * {@code StrictMath.cos} is the point: an architecture can diverge from {@code StrictMath} and
+     * still not agree with this one. The first version of this guard asked the weaker question and
+     * let the suite fail on macos-arm64 exactly as before.
+     */
+    private static final long RECORDING_PLATFORM_COS_FINGERPRINT = -5789642536773738251L;
+
+    /**
      * Vanilla's elytra tick is not bit-identical across CPU architectures, and neither is this port,
      * because both compute the lift term with {@link Math#cos(double)}. {@code Math.cos} is only
      * required to be within one ulp and may differ between implementations;
@@ -75,20 +85,17 @@ class VanillaParityTest {
      */
     @BeforeAll
     static void requireTheArchitectureTheFixturesWereRecordedOn() {
-        int divergences = 0;
+        long fingerprint = 1125899906842597L;
         for (float pitch = -90.0f; pitch <= 90.0f; pitch += 0.5f) {
             float lean = pitch * (float) (Math.PI / 180.0);
-            if (Double.doubleToRawLongBits(Math.cos(lean))
-                    != Double.doubleToRawLongBits(StrictMath.cos(lean))) {
-                divergences++;
-            }
+            fingerprint = 31 * fingerprint + Double.doubleToRawLongBits(Math.cos(lean));
         }
-        assumeTrue(divergences > 0,
-                "this JVM's Math.cos agrees with StrictMath.cos on every sampled lean angle, so its "
-                        + "trigonometry differs from the amd64 JVM these fixtures were recorded "
-                        + "against, where the two disagree by one ulp on some angles. Vanilla itself "
-                        + "would produce different numbers here, so the fixtures are not a valid "
-                        + "oracle on this architecture — re-record to gate it.");
+        assumeTrue(fingerprint == RECORDING_PLATFORM_COS_FINGERPRINT,
+                ("this JVM's Math.cos does not produce the values the fixtures were recorded "
+                        + "against (fingerprint %s, expected %s), so Vanilla on this machine would "
+                        + "not produce them either and the fixtures are not a valid oracle here. "
+                        + "Re-record on this architecture to gate it.")
+                        .formatted(fingerprint, RECORDING_PLATFORM_COS_FINGERPRINT));
     }
 
 
