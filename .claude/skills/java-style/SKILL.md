@@ -133,7 +133,15 @@ This is the single defect that has recurred most often in this repository, and i
 
 Zero is the value this happens at most, because it is the least effort to type and because so much arithmetic vanishes there — but the shape is broader than zero: any constant across the fixtures is a candidate, and the dangerous constants are the ones the code special-cases or collapses at. A count is a weak assertion for the same reason: it survives a permutation and a shift. Name the values.
 
+**The sharper form of the same defect: two fields that happen to coincide.** A fixture list where every `Ring.index()` equals its position in the list cannot distinguish code that reads the index from code that reads the position — no single column is constant, so a per-field sweep passes, and the suite is still blind. Look for pairs that agree by construction as well as columns that never move: an id equal to a loop counter, a size equal to a capacity, a timestamp equal to an index. Give one of the pair a different value and see whether anything fails.
+
+**And a varied value is not the same as a load-bearing one.** A fixture can carry the tilted normal, the negative coordinate, the distinct id — and still not test them, because no assertion depends on the difference. In this repository a ring's stored normal was varied across the fixtures and *still* deletable: a mutation assuming `(0,0,1)` survived every assertion, because along an axis-parallel flight path a wrong normal can only move the crossing point *toward* the ring's centre, and a radius check cannot see that. Only the crossing **tick** could. So after you vary a field, ask the second question: which assertion would change if this value were wrong? If the answer is none, vary the assertion, not the fixture.
+
 The counter-move costs one pass. Pick the field, move it off its constant, and see whether an assertion changes. If nothing changes, that field was never tested.
+
+**When you prove a test bites by mutating production code, stage the baseline before you mutate.** `git checkout -- <file>` does nothing for a file git is not yet tracking, and it fails *silently*; `git diff` on an untracked file is always empty, so "reverted, diff clean" reads as confirmation when nothing was restored. A mutation left in place that way contaminates every run after it, and the suite still looks green — which is the exact failure the mutation was meant to rule out.
+
+So: `git add` the file (or commit it) before the first mutation, revert with `git checkout -- <file>`, and confirm by comparing **content**, not by counting diff lines — `git diff --stat` showing nothing is not evidence for a file git never saw. This was found the hard way, by an implementer who noticed several mutation results disagreeing with each other and traced it back.
 
 ## 10. Patterns avoided on purpose
 
