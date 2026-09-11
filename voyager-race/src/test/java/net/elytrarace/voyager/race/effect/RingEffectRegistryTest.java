@@ -77,6 +77,25 @@ class RingEffectRegistryTest {
 
         assertThatThrownBy(() -> entries.put(RingType.STANDARD, boostEffect()))
                 .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> entries.remove(RingType.BOOST))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    /**
+     * Two registries share nothing a caller could use to change one through the other: the mapping
+     * is built once and immutable, so the absence of a {@code register} is not something a caller
+     * can route around by holding on to {@code entries()}.
+     */
+    @Test
+    void twoRegistriesAgreeOnEveryRingTypeAndNeitherCanBeChanged() {
+        RingEffectRegistry other = RingEffectRegistry.create();
+
+        for (RingType type : RingType.values()) {
+            assertThat(registry.effectFor(type).isPresent())
+                    .as("both registries map %s the same way".formatted(type))
+                    .isEqualTo(other.effectFor(type).isPresent());
+        }
+        assertThatThrownBy(() -> other.entries().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
