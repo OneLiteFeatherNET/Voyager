@@ -12,13 +12,13 @@ dependencies {
     // Gson (was provided transitively by Paper)
     api("com.google.code.gson:gson:2.14.0")
     // Guava (was provided transitively by Paper)
-    implementation("com.google.guava:guava:33.6.0-jre")
+    implementation("com.google.guava:guava:33.7.0-android")
     // Logging (was provided transitively by Paper)
-    api("org.slf4j:slf4j-api:2.0.17")
+    api("org.slf4j:slf4j-api:2.0.18")
     // Annotations
     compileOnly(libs.jetbrains.annotations)
     // Test
-    testImplementation(platform("org.junit:junit-bom:6.1.2"))
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.assertj:assertj-core:3.27.7")
