@@ -1,3 +1,10 @@
+## [1.11.9](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.8...v1.11.9) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.google.guava:guava to v33.7.0-android ([#232](https://github.com/OneLiteFeatherNET/Voyager/issues/232)) ([cdf7805](https://github.com/OneLiteFeatherNET/Voyager/commit/cdf78052915d96b048a8a197759df0f81d8a286e))
+
 ## [1.11.8](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.7...v1.11.8) (2026-09-11)
 
 
