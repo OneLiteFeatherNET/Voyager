@@ -296,14 +296,32 @@ reality that matters in production. A client mod would cost several times more.
 Fixtures live in `voyager-physics/src/test/resources/traces/`, each with metadata for
 Minecraft version and initial state.
 
-Acceptance thresholds (initial assumptions, to be confirmed or corrected against the
-first real traces):
+Acceptance thresholds, **measured** against all nine recorded profiles in E2b Task 7
+(the `1e-6` per tick and `0.01` cumulative this section previously carried were stated
+assumptions, and both were too loose — by six and two orders of magnitude):
 
-- per-tick position deviation < `1e-6` blocks
-- cumulative drift over 200 ticks < `0.01` blocks
+- per-tick position deviation **exactly `0`** blocks
+- cumulative drift over a whole trace **exactly `0`** blocks
 
-Flight profiles to cover: steady glide; climb into stall; dive and pull-out; single
-firework boost; chained firework boosts; pitch at ±90°; glancing wall collision; landing.
+Every comparable tick of every profile reproduces the recorded position, velocity and
+`onGround` flag bit-for-bit, both as a one-step residual and across a free-running replay
+of the whole trace. Per-profile figures, the two derived scope rules and the one recording
+defect that still limits the velocity comparison are in
+[docs/reference/elytra-physics-26.2.md](../../reference/elytra-physics-26.2.md#measured-parity-e2b-task-7).
+
+Calibrate only against the **one-step residual** — from the recorded state at tick *k*,
+advance exactly one tick, compare against the recorded state at *k+1*. A free-running
+replay measures the seeding and the formula at once and turns a single slip into a long
+decaying tail: a fixture that is bit-exact step by step still showed `8.2e-02` of
+free-running drift while the recorder's first-tick transient was unfixed. Keep the
+free-running replay under its own bound as well, never as the only measurement.
+
+Flight profiles to cover: steady glide; climb into stall; **sustained turn**; dive and
+pull-out; single firework boost; chained firework boosts; pitch at ±90°; glancing wall
+collision; landing. Nine, not eight: the sustained turn was added in E2a because the other
+eight all fly at yaw `0`, where `lookAngle.x` vanishes and the whole x axis drops out of
+the tick — a sign flip worth `1.9e-02` blocks per tick survived the module's entire suite
+until a non-zero-yaw fixture existed.
 
 ### Explicitly not here
 
@@ -1262,7 +1280,7 @@ CI, Release Please and Renovate are untouched.
 |---|---|---|
 | FAWE has no Minestom equivalent | Blocks E6 | Own research epic before E6 planning |
 | `air_drag_modifier` may alter the 26.2 elytra drag path | Drag constants wrong, all tracking drifts | Decompile check of `LivingEntity.travel()` in 26.2, before E2 completes |
-| Trace tolerances set too tight or too loose | False failures, or parity claimed without proof | Calibrate against the first real traces; thresholds above are assumptions |
+| ~~Trace tolerances set too tight or too loose~~ | ~~False failures, or parity claimed without proof~~ | **Closed in E2b Task 7.** Calibrated against all nine real traces; both bounds are exactly `0`, so there is no slack left to be wrong about. The residual risk moved: `Math.cos` carries 1 ulp of platform latitude, so a CI runner on another architecture could show a last-bit residual. The response is to measure and record it, not to widen the bound pre-emptively |
 | Plausibility thresholds reject legitimate fast pilots | Valid records discarded | Log-only in v1; arm only on measured distributions |
 | Minecraft 26.3 ships during the rebuild | Possible double migration | Minestom is confined to `voyager-platform`; re-check `releases.atom` at E4 |
 | Vanilla 26.2 recording setup is more work than estimated | E2 slips, and E2 gates everything | Prototype the recorder before committing to E2 scope |

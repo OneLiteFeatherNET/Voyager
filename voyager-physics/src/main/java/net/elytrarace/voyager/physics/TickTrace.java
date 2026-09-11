@@ -17,15 +17,23 @@ import java.util.Map;
  * declared in Vanilla's order, so iterating {@code velocityAfter.keySet()} yields that same order.
  * A caller diagnosing a divergence can therefore name the step that produced it, not only the tick.
  *
- * <p>The map has no entry for the firework boost: it is applied before the first {@link
- * ElytraStep} runs, so {@code velocityAfter.get(ElytraStep.GRAVITY_AND_LIFT)} is already the
- * post-boost velocity with that step's own contribution folded in. A divergence traced to a
- * boosted tick cannot currently be attributed to the boost or to {@code GRAVITY_AND_LIFT}
- * individually from this map alone — only to the tick as a whole via {@code GRAVITY_AND_LIFT}'s
- * entry. Giving the boost its own entry would need a key type broader than {@link ElytraStep} (it
- * is not one of Vanilla's five {@code updateFallFlyingMovement} branches), which would touch the
- * shape this record was reviewed and pinned against in Task 5 — left as a follow-up decision rather
- * than changed unilaterally here.
+ * <p>The map covers the five {@code updateFallFlyingMovement} branches and nothing else. Two parts
+ * of the tick are outside it, on either side:
+ *
+ * <ul>
+ *   <li>{@code LivingEntity.aiStep()}'s {@code 0.003} deadzone runs <em>before</em> the first step,
+ *       so {@code velocityAfter.get(ElytraStep.GRAVITY_AND_LIFT)} is already post-deadzone with
+ *       that step's own contribution folded in. A divergence caused by a clamped component shows up
+ *       there and cannot be separated from {@code GRAVITY_AND_LIFT}'s own arithmetic through this
+ *       map alone.</li>
+ *   <li>The firework impulse runs <em>after</em> the move and after collision restitution, so it
+ *       appears in no entry at all: {@code velocityAfter.get(ElytraStep.DRAG)} is the pre-collision,
+ *       pre-boost velocity, while {@code result().velocity()} carries both.</li>
+ * </ul>
+ *
+ * <p>Giving either its own entry would need a key type broader than {@link ElytraStep} — neither is
+ * one of Vanilla's five branches — which would touch the shape this record was reviewed and pinned
+ * against in Task 5; left as a follow-up decision rather than changed unilaterally here.
  *
  * @param result the state produced by the tick
  * @param velocityAfter the velocity recorded immediately after each step ran, keyed by step, in

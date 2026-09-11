@@ -452,8 +452,7 @@ reports neither flag) and `ElytraSimulatorTest.restitutionPreservesVelocityOnASu
 ### The firework rocket impulse
 
 `net/minecraft/world/entity/projectile/FireworkRocketEntity.java:127-142`, applied to the attached
-entity from the rocket's own `tick()` — outside `updateFallFlyingMovement`, so the velocity the
-update reads already includes that tick's impulse:
+entity from the rocket's own `tick()` — outside `updateFallFlyingMovement`, **on the far side of it**:
 
 ```java
 if (this.attachedToEntity.isFallFlying()) {
@@ -472,9 +471,169 @@ if (this.attachedToEntity.isFallFlying()) {
 }
 ```
 
+**Where in the tick it lands, measured.** A rocket is an entity, spawned after the glider it is
+attached to, and `EntityTickList` is insertion-ordered — so on any given level tick the glider runs
+`updateFallFlyingMovement` and `move` *first*, and the rocket's impulse then lands on the velocity
+the glider carries into the **next** tick. The consequences for a port:
+
+- The position reached on a boosted tick is computed from the velocity the glider **entered** that
+  tick with. Applying the impulse before the steps moves the position instead, and the E2a fixtures
+  separate the two outright: boost-first missed `single-boost`'s first boosted tick by `0.69` blocks
+  and stayed `1.1e-02` out for the rest of the burn, boost-last reproduces every boosted tick's
+  position bit-for-bit.
+- The two orders apply the same *number* of impulses over a burn, so a free-running replay merely
+  looks scaled and a converged burn looks almost right. Only a one-step residual tells them apart.
+  This is why an earlier revision of the port read "outside `updateFallFlyingMovement`" as "before
+  it" and passed review.
+- It lands after `Entity.move`, so after collision restitution: a collided axis is zeroed and *then*
+  boosted.
+
+**The impulse is a blend, not an addition.** Read as a whole, `v' = 0.5 · v + 0.85 · lookAngle`,
+which is the halfway point between the current velocity and a terminal `1.7 · lookAngle`. So a burn
+converges instead of accelerating without bound — `single-boost` settles at `velZ = 1.6716` and holds
+it to the last bit — and two rockets burning at once converge *nearer* the terminal value rather than
+doubling the speed: `chained-boosts` records a steady `1.6862`.
+
+**The impulse is summed before being added, once.** It is the whole argument to `Vec3.add`, so
+`v + (look.x * 0.1 + (look.x * 1.5 - v.x) * 0.5)`. Writing it without the parentheses associates left
+to right and rounds twice against `v`; the difference is a bit or two, which passes a `1e-12`
+tolerance and is enough to stop `single-boost` from being bit-exact.
+
 `docs/reference/firework-boost.md` documents the legacy Minestom boost system, whose impulse is a
 different formula entirely. That document is not a description of Vanilla and must not be used as
 one; this block is.
+
+### `LivingEntity.aiStep`'s 0.003 movement deadzone
+
+`net/minecraft/world/entity/LivingEntity.java`, in `aiStep()` — **before** `travel` and therefore
+before `travelFallFlying` and every step above:
+
+```java
+Vec3 movement = this.getDeltaMovement();
+double x = movement.x;
+double y = movement.y;
+double z = movement.z;
+if (Math.abs(movement.x) < 0.003) { x = 0.0; }
+if (Math.abs(movement.y) < 0.003) { y = 0.0; }
+if (Math.abs(movement.z) < 0.003) { z = 0.0; }
+this.setDeltaMovement(x, y, z);
+```
+
+Per axis, against the incoming component, and blind to the vector's length: `(0.002, 0, 0.002)` is
+zeroed on both axes even though its horizontal length exceeds `0.003`.
+
+**It is not a rounding tidy-up.** `0.003` is three orders of magnitude above the bounds this module
+is measured against, and clamping a component changes which branches of
+`updateFallFlyingMovement` fire on that tick: a `y` of `-0.002` becomes `0.0`, which closes the
+sink-conversion branch's `movement.y < 0.0` guard, and a clamped `x` or `z` changes `moveHorLength`
+for every branch after it. Its effect therefore concentrates exactly where a component crosses zero —
+at manoeuvre transitions. Omitting it left `sustained-turn`, `pitch-extremes` and `dive-and-pull-out`
+each with a burst of `2–3e-03` deviations around their transition plus a lone outlier elsewhere, and
+reinstating it made all three bit-exact.
+
+### The entity box is assembled in `float`
+
+`net/minecraft/world/entity/EntityDimensions.java`:
+
+```java
+public AABB makeBoundingBox(final double x, final double y, final double z) {
+    float f = this.width() / 2.0F;
+    float g = this.height();
+    return new AABB(x - (double) f, y, z - (double) f, x + (double) f, y + (double) g, z + (double) f);
+}
+```
+
+`width()` and `height()` are `float`, and the halving happens in `float` before the widening cast. A
+`0.6F`-wide entity therefore has a half-width of `0.300000011920928955078125`, **not** `0.3` —
+`1.19e-08` higher — and a `1.8F`-tall one a box height of `1.7999999523162842`. This is fidelity
+trap 2 applied to the box rather than to the formula, and it decides a resting position exactly:
+`wall-graze` records its final `z` as `89.699999988079071`, not `89.7`, and a `double` `0.3`
+reproduces that fixture's velocity bit-for-bit while missing its position by exactly that
+`1.19e-08` — the whole of the residual left in it once the boost order was corrected.
+
+Only the width is pinned by a recording: `wall-graze`'s wall spans `y = 250..310` and `landing`'s
+floor is under the feet, so no fixture brings the top of the box into contact with anything. The E2a
+fixtures were also recorded from a zombie (`0.6F × 1.95F`), so a future ceiling-contact fixture would
+have to be recorded from the entity the game actually flies before it could pin a player's `1.8F`.
+
+## Measured parity (E2b Task 7)
+
+The nine E2a fixtures, replayed against the port. **Both bounds are exactly zero.** The design spec
+carried `1e-6` per tick and `0.01` cumulative as stated assumptions; measurement replaced them.
+
+Two forms are measured, and only the first calibrates:
+
+- **One-step residual** — from the recorded state at tick *k*, advance exactly one tick, compare
+  against the recorded state at *k+1*. Measures the formula alone.
+- **Free-running replay** — seed once from tick 0 and never correct. Measures the seeding *and* the
+  formula, and turns a single slip into a long decaying tail: while the recorder's first-tick
+  transient was unfixed, a fixture that is bit-exact step by step still accumulated `8.2e-02` of
+  free-running drift. Kept under its own bound, never as the only measurement.
+
+| Profile | ticks | one-step position | one-step velocity | free-running drift |
+|---|---|---|---|---|
+| `steady-glide` | 200 | `0` (199/199) | `0` | `0` |
+| `climb-into-stall` | 200 | `0` (199/199) | `0` | `0` |
+| `sustained-turn` | 200 | `0` (199/199) | `0` | `0` |
+| `pitch-extremes` | 200 | `0` (199/199) | `0` | `0` |
+| `dive-and-pull-out` | 200 | `0` (199/199) | `0` | `0` |
+| `single-boost` | 200 | `0` (199/199) | `0` | `0` |
+| `chained-boosts` | 200 | `0` (199/199) | `0` on 170/199 ticks; **not comparable** on ticks 20–48 | **not comparable** (`5.0e-01`) |
+| `wall-graze` | 220 | `0` (219/219) | `0` | `0` |
+| `landing` | 200 | `0` (138/138 up to touchdown) | `0` | `0` |
+
+`onGround` matches on every comparable tick of every profile too, touchdown included.
+
+**Bound chosen: `0`, margin `0`.** There is nothing to take a margin from. A non-zero bound here
+would not buy safety, it would spend it: at `1e-6` the port could drop `aiStep`'s deadzone and still
+pass most profiles, and the `float` half-width would be invisible at any bound above `1.19e-08`. Both
+were real defects and both were found by the bound being zero.
+
+**Residual risk, not yet measured.** `Math.cos` (which `liftForce` uses, and which Vanilla uses too)
+is specified to 1 ulp rather than bit-exactly, so a CI runner on another architecture could show a
+last-bit residual. If that happens, the response is to record the measurement and state the new
+bound — not to widen it pre-emptively, and not to substitute `StrictMath`, which would diverge from
+Vanilla on whichever platform the two disagree.
+
+### What is deliberately not compared, and why neither is a tolerance
+
+**`landing` after touchdown.** `LivingEntity.updateFallFlying` ends the glide the moment the entity
+is on the ground, so from the tick after touchdown the recording is ordinary ground movement, not
+`travelFallFlying` — its `velY` is a constant `-0.078400002` (`-0.08 * 0.98`, the non-flying
+gravity-and-drag step) and its `velZ` decays with ground friction, roughly halving per tick. This
+module ports `travelFallFlying` and deliberately not `stopFallFlying` or the branch it hands over to,
+so those 61 ticks lie outside anything a threshold could describe. No bound loose enough to pass them
+would still catch a real defect. The touchdown tick itself is compared like every other — clamp to
+the block face, zeroed `velY`, `onGround` flag — and matches bit-for-bit. Derived from the fixture
+(first tick with `onGround`), not hardcoded.
+
+**`chained-boosts`'s burn, on velocity only.** A recording defect, and the one finding of this task
+that belongs to E2a rather than to the port. `TraceTick` carries a `boolean fireworkBoostActive` and
+a single `fireworkTicksRemaining` that `GliderRunner.sampleGlider` computes as the **maximum** over
+every attached rocket, so one rocket and three record identically — while Vanilla applies one impulse
+per rocket per tick. `chained-boosts` exists precisely to fly a second ignition into a live burn, and
+its recorded steady `velZ` of `1.686154` against `single-boost`'s `1.671612` is the two-rocket
+signature: the fixture shows the effect and cannot say what produced it. The replay applies one
+impulse where Vanilla applied two, and the `7.5e-03` that leaves is in the recording, not in the port.
+A second ignition is at least *visible*, because the field is a maximum and a fresh rocket outlives
+the burning one: inside a flagged run the value otherwise falls by exactly one per tick, so any
+increase is a new rocket, and the run it appears in is treated as unaccountable in full.
+
+**The fix belongs in the recorder**: sample the number of attached rockets per tick and bump
+`formatVersion`. Until a re-recording exists, those 29 ticks are compared on position only — position
+is insensitive to the impulse count, since a tick's position follows from the velocity the glider
+*entered* it with. `single-boost`'s burn is accountable in full and is compared on velocity tick by
+tick, so the impulse formula itself is not left unpinned.
+
+**One more recorder artefact, compensated rather than excluded.** The boost flag is one tick short at
+the trailing edge of a burn: the sample for tick *n* is read from a `runTaskLater(…, 1L)` callback,
+CraftBukkit runs its scheduler heartbeat at the top of `tickChildren` before the levels tick, so the
+sample is taken at the start of tick *n+1* — by which point a rocket that boosted during tick *n*
+and detonated at the end of it has already been filtered out of `activeFireworks`. `single-boost`
+flags ticks `30..51` while tick `52`'s recorded velocity (`1.671612598`, above tick 51's
+`1.671612475`, where an unboosted tick would have fallen to `1.6497`) shows the impulse still ran. The
+replay therefore reads the impulse as having run during a tick whenever the flag is set at that tick
+**or at the one before it**. That is derived from the recorder's code, not fitted to the residual.
 
 ### The view vector
 
@@ -515,3 +674,21 @@ clients most often occupy.
 
 `AABB.intersects(BlockPos)` expands the position to `[x, x+1]` per axis before applying the same
 predicate, so block collision inherits the strict semantics unchanged.
+
+## The thresholds are architecture-bound
+
+The parity suite asserts exactly zero, and that bound is only meaningful on a CPU architecture whose
+`Math.cos` matches the one the fixtures were recorded against.
+
+`Math.cos` is specified to within one ulp and is free to differ between implementations;
+`StrictMath.cos` is the reproducible one. Vanilla computes the lift term with `Math.cos`, so
+**Vanilla's own elytra tick is not bit-identical across architectures either**. Measured on the
+amd64 JVM these fixtures came from: the two functions disagree on 5 of the 77 distinct pitches in
+`pitch-extremes`, and on 12 of 361 lean angles sampled at half a degree across the full range — one
+ulp each time, which is exactly enough to fail an assertion demanding zero. The 65536-entry sine
+table is unaffected; `Math.sin` and `StrictMath.sin` agree on every entry here.
+
+Switching the port to `StrictMath` is not the fix and was tried: it turns the suite red on amd64,
+because it makes the port disagree with Vanilla on the machine the recording came from. The port
+stays faithful and `VanillaParityTest` carries an architecture guard instead, which skips with an
+explanation rather than relaxing a bound. To gate another architecture, re-record there.
