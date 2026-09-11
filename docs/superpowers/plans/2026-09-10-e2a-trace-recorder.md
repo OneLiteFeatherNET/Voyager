@@ -1119,6 +1119,12 @@ drop it to save a recording.
 
 - [ ] **Step 2: Record all eight**
 
+**Before recording anything, set `entity-activation-range.monsters: 0` in the server's `spigot.yml` and restart.** Without it every recording on this server dies at an entity age of exactly 200 ticks, and Task 7's profiles run longer than that.
+
+The cause is not a bug in the recorder and not worth rediscovering: Paper's `ActivationRange#checkIfActive` grants a hard 200-tick grace period after spawn — below `Entity.tickCount` 200 it returns active unconditionally — and from tick 200 on, `activateEntities` derives `activatedTick` **only** from `Level#players()`. A recording driven from the console has no player online, so the glider can never become active again: `inactiveTick()` runs, `tickCount` keeps counting, `travel()` does not. The `(currentTick - activatedTick - 1) % 20 == 0` fallback wakes it irregularly, which is why the gap size varies while the failure point does not.
+
+A range of `0` makes `initializeEntityActivationState` set `defaultActivationState = true`, which bypasses the check without needing a player. Measured: 250 ticks clean three times, 600 ticks clean, `entityTick` gapless. **It does not change the physics** — a 250-tick probe with the setting is bit-identical to a stock recording at the matching index. Without it the safe ceiling is 198 ticks.
+
 Run each through `/record` on the same server and world. Verify each fixture the way Task 6 Step 4 verified `steady-glide`, and additionally check that the profile does what its name says — the stall profile must show horizontal speed collapsing, the wall graze must show a discontinuity in horizontal speed, the landing must end with `onGround` true, and `sustained-turn` must show `velX` taking values other than zero.
 
 **The world slice has never once been exercised end to end.** Task 6's `steady-glide` recording came
@@ -1134,7 +1140,7 @@ A profile that does not show its behaviour is a broken script, not a broken port
 
 - [ ] **Step 3: Write the procedure**
 
-Create `docs/guides/how-to-record-a-trace.md` covering: which Paper build to use and where to get it, how to build and install the plugin, the world each profile needs, how to run a recording, how to tell a good fixture from a broken one, and when to re-record — specifically, that a Minecraft version change invalidates every fixture and that the scripts, not the recordings, are the source of truth.
+Create `docs/guides/how-to-record-a-trace.md` covering: which Paper build to use and where to get it, **the `entity-activation-range.monsters: 0` setting and why a recording silently stops at entity age 200 without it**, how to build and install the plugin, the world each profile needs, how to run a recording, how to tell a good fixture from a broken one, and when to re-record — specifically, that a Minecraft version change invalidates every fixture and that the scripts, not the recordings, are the source of truth.
 
 State plainly what the fixtures prove and what they do not, repeating the boundary from this plan's header: they validate the formula, not the client-server path.
 
