@@ -83,3 +83,4 @@ include("voyager-fitness")
 
 // Tooling that is not part of the rebuild's module graph.
 include("tools:trace-recorder")
+include("tools:map-converter")
