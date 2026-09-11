@@ -2,6 +2,11 @@
 
 This reference documents the component, system, and configuration record that implement the firework-rocket boost on the Minestom game server.
 
+> **This is not Vanilla.** The boost described here is the legacy Minestom system, whose impulse is a
+> different formula from the one Minecraft applies. For the Vanilla rocket impulse — the one the
+> `voyager-physics` port reproduces — see the "The firework rocket impulse" section of
+> [`elytra-physics-26.2.md`](elytra-physics-26.2.md).
+
 ## FireworkBoostComponent
 
 Holds per-player boost intent, cooldown state, and the active `BoostConfig`. Attached to every player entity by `GameEntityFactory.createPlayerEntity`.
