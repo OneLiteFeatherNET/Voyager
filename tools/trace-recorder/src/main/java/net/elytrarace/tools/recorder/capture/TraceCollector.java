@@ -56,7 +56,12 @@ public final class TraceCollector {
                 sample.fireworkTicksRemaining()));
     }
 
-    /** The scripted input for the tick about to be recorded. */
+    /**
+     * The scripted input for the tick about to be recorded: apply it to the entity, let exactly one
+     * world tick pass, then pass the resulting state to {@link #record(GliderSample)}. That recorded
+     * tick will carry this same index — {@code nextInput()} for index {@code k} and the sample
+     * {@code record} assigns index {@code k} are one input/response pair, not offset from each other.
+     */
     public ScriptedInput nextInput() {
         return script.inputAt(ticks.size());
     }

@@ -3,7 +3,8 @@ package net.elytrarace.tools.recorder.format;
 import net.elytrarace.tools.recorder.format.exception.InvalidTraceException;
 
 /**
- * One tick of a recorded glide, sampled after the entity has been ticked.
+ * One tick of a recorded glide: the state produced by applying this index's scripted input and
+ * letting exactly one world tick pass, sampled after that tick — not before it, and not after two.
  *
  * <p>Position and velocity are {@code double} and rotation is {@code float}, mirroring Vanilla's own
  * numeric types. Velocity is the entity's real internal delta movement, not a position difference.

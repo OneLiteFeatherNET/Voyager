@@ -21,8 +21,6 @@ dependencyResolutionManagement {
             version("plugin-yml", "0.6.0")
 
             library("minecraft.paper","io.papermc.paper", "paper-api").versionRef("paper")
-            version("paper-api", "26.2.build.123-stable")
-            library("minecraft.paper.api", "io.papermc.paper", "paper-api").versionRef("paper-api")
             library("minecraft.minestom", "net.minestom", "minestom").versionRef("minestom")
             library("minecraft.minestom.testing", "net.minestom", "testing").versionRef("minestom")
             library("minecraft.cloud.paper", "org.incendo", "cloud-paper").version("2.0.0")
