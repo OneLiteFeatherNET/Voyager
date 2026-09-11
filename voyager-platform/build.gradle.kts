@@ -30,6 +30,15 @@ dependencies {
 
     api("net.onelitefeather:falco-anvil:$falcoVersion")
 
+    // Gson, and only here. The catalogue reads the committed map and cup JSON; every module that
+    // models a race is handed a catalog rather than a file, so none of them needs a parser — see
+    // ApiPurityTest's onlyPlatformDependsOnGson. `implementation`, not `api`: the catalogue's public
+    // surface is two constructors taking a Path, the *Adapter classes are @ApiStatus.Internal, and
+    // keeping Gson off voyager-server's compile classpath means that rule cannot be broken there by
+    // accident. Pinned inline for the same reason Minestom is above; 2.14.0 is the version
+    // tools/trace-recorder and Paper 26.2 already agree on.
+    implementation("com.google.code.gson:gson:2.14.0")
+
     // The logging facade both Minestom and falco-anvil already put on the runtime classpath, and
     // which neither exposes for compilation. compileOnly is what it costs: this module's published
     // runtime metadata then says nothing about a library its code calls, and a consumer that got

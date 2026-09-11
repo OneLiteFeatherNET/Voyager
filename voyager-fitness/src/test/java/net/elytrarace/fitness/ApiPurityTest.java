@@ -236,6 +236,30 @@ class ApiPurityTest {
     // Written as "everything outside voyager-server" rather than naming each domain module
     // individually, so a future rebuild module is covered by construction instead of needing its own
     // DI-purity rule remembered on top.
+    // E4 puts the first JSON parser in the rebuild on a classpath, in voyager-platform's catalogue.
+    // The design's claim is that every module modelling a race is handed a catalog rather than a
+    // file — which is what lets a whole race play out in JUnit against definitions built in code —
+    // and until this rule landed, that claim rested on nobody having reached for Gson yet.
+    //
+    // Written as "everything outside voyager-platform" rather than one rule per module, for the same
+    // reason onlyServerDependsOnDiContainer below is: a future rebuild module is then covered by
+    // construction instead of needing its own purity rule remembered on top of it. It names all four
+    // guarded modules in its description so FitnessCoverageTest's second assertion can see them, and
+    // it was made red once per guarded module before being left green.
+    @ArchTest
+    static final ArchRule onlyPlatformDependsOnGson =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.google.gson..")
+                    .as("no classes in net.elytrarace.voyager.api.., net.elytrarace.voyager.physics.., "
+                            + "net.elytrarace.voyager.race.. or net.elytrarace.voyager.server.. should "
+                            + "depend on Gson")
+                    .because("the map and cup catalogue is the only thing in the rebuild that parses "
+                            + "JSON, and it lives in voyager-platform; every other module is handed a "
+                            + "MapCatalog or a CupCatalog rather than a file, which is what lets a "
+                            + "whole race play out in JUnit")
+                    .allowEmptyShould(false);
+
     @ArchTest
     static final ArchRule onlyServerDependsOnDiContainer =
             noClasses().that().resideInAPackage("net.elytrarace.voyager..")
