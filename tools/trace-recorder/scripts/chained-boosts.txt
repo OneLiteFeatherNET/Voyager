@@ -1,0 +1,7 @@
+# chained-boosts: a second boost ignites while the first rocket's burn is still active -- boosts
+# must blend, not add.
+hold 20 yaw=0 pitch=-5
+boost
+hold 5 yaw=0 pitch=-5
+boost
+hold 173 yaw=0 pitch=-5
