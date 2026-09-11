@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.0...v1.11.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.apache.commons:commons-lang3 to v3.18.0 ([#111](https://github.com/OneLiteFeatherNET/Voyager/issues/111)) ([58c810a](https://github.com/OneLiteFeatherNET/Voyager/commit/58c810a33e27b50525a4616e1142fa966c188e66))
+
 # [1.11.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.1...v1.11.0) (2026-09-11)
 
 
