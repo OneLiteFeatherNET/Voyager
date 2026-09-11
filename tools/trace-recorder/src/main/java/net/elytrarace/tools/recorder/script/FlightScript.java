@@ -9,6 +9,11 @@ public record FlightScript(List<ScriptedInput> inputs) {
 
     public FlightScript {
         inputs = List.copyOf(inputs);
+        if (inputs.isEmpty()) {
+            throw new InvalidTraceException(
+                    "a flight script must drive at least one tick; an empty or comment-only script "
+                            + "file parses to zero inputs, which nothing downstream can fly");
+        }
     }
 
     /** Number of ticks this script drives the recorded entity for. */

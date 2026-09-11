@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class WorldSliceCollectorTest {
 
     private static TraceTick at(int index, double x, double y, double z) {
-        return new TraceTick(index, x, y, z, 0, 0, 0, 0f, 0f, false, false, 0);
+        return new TraceTick(index, x, y, z, 0, 0, 0, 0f, 0f, false, false, 0, index);
     }
 
     /** A floor filling y == 0, unbounded horizontally. */

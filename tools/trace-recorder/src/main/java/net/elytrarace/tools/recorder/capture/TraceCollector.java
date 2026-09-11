@@ -39,12 +39,31 @@ public final class TraceCollector {
         this.script = script;
     }
 
-    /** Appends {@code sample} as the next tick, assigning it the next consecutive index. */
+    /**
+     * Appends {@code sample} as the next tick, assigning it the next consecutive index.
+     *
+     * <p>Throws {@link InvalidTraceException} if {@code sample}'s {@code entityTick} is not exactly
+     * one more than the previously recorded tick's — the one hard check in the module that turns "was
+     * the entity actually ticked in between" from something a caller has to get right on its own into
+     * something this method refuses to accept if it did not happen. The first recorded sample has no
+     * predecessor to compare against, so it sets the baseline rather than being checked against one.
+     */
     public void record(GliderSample sample) {
         if (isComplete()) {
             throw new InvalidTraceException(
                     "cannot record tick %s; the script only covers %s tick(s)"
                             .formatted(ticks.size(), script.durationTicks()));
+        }
+        if (!ticks.isEmpty()) {
+            int previousEntityTick = ticks.get(ticks.size() - 1).entityTick();
+            int delta = sample.entityTick() - previousEntityTick;
+            if (delta != 1) {
+                throw new InvalidTraceException(
+                        ("tick %s arrived %s entity tick(s) after the previous recorded tick "
+                                + "(entity tick %s -> %s); expected exactly 1 — the entity was not "
+                                + "ticked on every world tick in between")
+                                .formatted(ticks.size(), delta, previousEntityTick, sample.entityTick()));
+            }
         }
         ticks.add(new TraceTick(
                 ticks.size(),
@@ -53,7 +72,8 @@ public final class TraceCollector {
                 sample.yaw(), sample.pitch(),
                 sample.onGround(),
                 sample.fireworkBoostActive(),
-                sample.fireworkTicksRemaining()));
+                sample.fireworkTicksRemaining(),
+                sample.entityTick()));
     }
 
     /**

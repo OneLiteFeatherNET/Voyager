@@ -26,20 +26,20 @@ class TraceCollectorTest {
 
     private static TraceCollector recordOneTickAt(double x, double y, double z) {
         TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
-        collector.record(new GliderSample(x, y, z, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0));
+        collector.record(new GliderSample(x, y, z, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0, 0));
         return collector;
     }
 
-    private static GliderSample sample(double y) {
-        return new GliderSample(0.0, y, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0);
+    private static GliderSample sample(double y, int entityTick) {
+        return new GliderSample(0.0, y, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0, entityTick);
     }
 
     @Test
     void producesOneTickPerRecordedSample() {
         TraceCollector collector = collector("hold 3 yaw=0 pitch=-5");
-        collector.record(sample(100.0));
-        collector.record(sample(99.9));
-        collector.record(sample(99.8));
+        collector.record(sample(100.0, 10));
+        collector.record(sample(99.9, 11));
+        collector.record(sample(99.8, 12));
 
         TraceFile file = collector.finish(EMPTY, 1.0);
 
@@ -50,8 +50,8 @@ class TraceCollectorTest {
     @Test
     void numbersTicksConsecutivelyFromZero() {
         TraceCollector collector = collector("hold 2 yaw=0 pitch=-5");
-        collector.record(sample(100.0));
-        collector.record(sample(99.9));
+        collector.record(sample(100.0, 10));
+        collector.record(sample(99.9, 11));
 
         assertThat(collector.finish(EMPTY, 1.0).ticks()).extracting("index").containsExactly(0, 1);
     }
@@ -59,7 +59,7 @@ class TraceCollectorTest {
     @Test
     void carriesTheMetadataItWasBuiltWith() {
         TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
-        collector.record(sample(100.0));
+        collector.record(sample(100.0, 10));
 
         assertThat(collector.finish(EMPTY, 1.0).metadata().minecraftVersion()).isEqualTo("26.2");
         assertThat(collector.finish(EMPTY, 1.0).metadata().gravity()).isEqualTo(0.08);
@@ -69,16 +69,16 @@ class TraceCollectorTest {
     @Test
     void refusesMoreSamplesThanTheScriptHasTicks() {
         TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
-        collector.record(sample(100.0));
+        collector.record(sample(100.0, 10));
 
-        assertThatThrownBy(() -> collector.record(sample(99.9)))
+        assertThatThrownBy(() -> collector.record(sample(99.9, 11)))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
     @Test
     void refusesToFinishBeforeTheScriptIsComplete() {
         TraceCollector collector = collector("hold 3 yaw=0 pitch=-5");
-        collector.record(sample(100.0));
+        collector.record(sample(100.0, 10));
 
         assertThatThrownBy(() -> collector.finish(EMPTY, 1.0))
                 .isInstanceOf(InvalidTraceException.class);
@@ -89,8 +89,8 @@ class TraceCollectorTest {
         TraceCollector collector = collector("hold 2 yaw=0 pitch=-5");
 
         assertThat(collector.isComplete()).isFalse();
-        collector.record(sample(100.0));
-        collector.record(sample(99.9));
+        collector.record(sample(100.0, 10));
+        collector.record(sample(99.9, 11));
         assertThat(collector.isComplete()).isTrue();
     }
 
@@ -106,11 +106,11 @@ class TraceCollectorTest {
         assertThat(collector.nextInput().yaw()).isEqualTo(0.0f);
         assertThat(collector.nextInput().pitch()).isEqualTo(-10.0f);
 
-        collector.record(sample(100.0));
+        collector.record(sample(100.0, 10));
         assertThat(collector.nextInput().yaw()).isEqualTo(10.0f);
         assertThat(collector.nextInput().pitch()).isEqualTo(0.0f);
 
-        collector.record(sample(99.9));
+        collector.record(sample(99.9, 11));
         assertThat(collector.nextInput().yaw()).isEqualTo(20.0f);
         assertThat(collector.nextInput().pitch()).isEqualTo(10.0f);
     }
@@ -122,7 +122,7 @@ class TraceCollectorTest {
         // component below holds a value distinct from all the others, including the two
         // booleans, so any misrouting changes an assertion.
         TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
-        collector.record(new GliderSample(1.5, 2.5, 3.5, 0.25, -0.5, 0.75, 12.0f, -34.0f, true, false, 7));
+        collector.record(new GliderSample(1.5, 2.5, 3.5, 0.25, -0.5, 0.75, 12.0f, -34.0f, true, false, 7, 42));
 
         TraceTick tick = collector.finish(EMPTY, 1.0).ticks().get(0);
 
@@ -137,6 +137,54 @@ class TraceCollectorTest {
         assertThat(tick.onGround()).isTrue();
         assertThat(tick.fireworkBoostActive()).isFalse();
         assertThat(tick.fireworkTicksRemaining()).isEqualTo(7);
+        assertThat(tick.entityTick()).isEqualTo(42);
+    }
+
+    @Test
+    void firstRecordedSampleSetsTheEntityTickBaselineWithoutBeingChecked() {
+        // The first sample has no predecessor, so any non-negative entityTick is accepted as the
+        // baseline rather than checked against one -- an entity spawned mid-session might already
+        // have lived for thousands of ticks. GliderSample itself still refuses a negative one
+        // (GliderSampleTest), so "no predecessor" does not mean "no validation at all".
+        TraceCollector collector = collector("hold 2 yaw=0 pitch=-5");
+        collector.record(sample(100.0, 5_000));
+        collector.record(sample(99.9, 5_001));
+
+        assertThat(collector.finish(EMPTY, 1.0).ticks()).extracting("entityTick").containsExactly(5_000, 5_001);
+    }
+
+    @Test
+    void refusesASampleWhoseEntityTickRepeatsThePrevious() {
+        // The exact shape of a stalled tick: the entity was not ticked between two recorded
+        // samples, so its own tick counter did not advance. This is the corruption the review
+        // found the sample-equality heuristic blind to whenever the script also changes rotation
+        // between the two ticks -- entityTick does not depend on rotation, so it still catches it.
+        TraceCollector collector = collector("hold 2 yaw=0 pitch=-5");
+        collector.record(sample(100.0, 10));
+
+        assertThatThrownBy(() -> collector.record(sample(100.0, 10)))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void refusesASampleWhoseEntityTickSkipsAhead() {
+        // The other direction of the same check: two or more real entity ticks passed between two
+        // recorded samples (a false-positive retry that waited too long, or any caller bug that
+        // drops a tick), and no field in the trace would otherwise show it.
+        TraceCollector collector = collector("hold 2 yaw=0 pitch=-5");
+        collector.record(sample(100.0, 10));
+
+        assertThatThrownBy(() -> collector.record(sample(99.9, 13)))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void refusesASampleWhoseEntityTickGoesBackwards() {
+        TraceCollector collector = collector("hold 2 yaw=0 pitch=-5");
+        collector.record(sample(100.0, 10));
+
+        assertThatThrownBy(() -> collector.record(sample(99.9, 9)))
+                .isInstanceOf(InvalidTraceException.class);
     }
 
     @Test
@@ -172,7 +220,7 @@ class TraceCollectorTest {
         // constructs directly with different values to prove they are not fixed.
         TraceCollector collector = new TraceCollector(
                 "1.20.4", "boost-tuning", 0.16, FlightScriptParser.parse("hold 1 yaw=0 pitch=-5"));
-        collector.record(sample(100.0));
+        collector.record(sample(100.0, 10));
 
         TraceMetadata metadata = collector.finish(EMPTY, 1.0).metadata();
 
@@ -193,7 +241,7 @@ class TraceCollectorTest {
         // is left false here, unlike mapsEverySampleFieldOntoItsTick's true, so the two booleans
         // still carry different values and a swap between them would still be visible.
         TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
-        collector.record(new GliderSample(0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, true, 3));
+        collector.record(new GliderSample(0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, true, 3, 10));
 
         TraceTick tick = collector.finish(EMPTY, 1.0).ticks().get(0);
 

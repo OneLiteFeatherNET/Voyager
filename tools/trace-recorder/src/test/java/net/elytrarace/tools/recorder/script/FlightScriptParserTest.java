@@ -10,6 +10,19 @@ import static org.assertj.core.api.Assertions.within;
 class FlightScriptParserTest {
 
     @Test
+    void rejectsAnEmptyScript() {
+        // Concrete, reachable trigger: an empty file, or one containing only blank lines and
+        // comments, parses to zero ScriptedInputs. Nothing downstream should ever see a
+        // FlightScript with no ticks to fly -- GliderRunner.start() calls nextInput() before
+        // scheduling anything, and a zero-input script would otherwise only fail once inside a
+        // scheduled callback, several layers away from where the bad script file was read.
+        assertThatThrownBy(() -> FlightScriptParser.parse(""))
+                .isInstanceOf(InvalidTraceException.class);
+        assertThatThrownBy(() -> FlightScriptParser.parse("# just a comment\n\n"))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
     void holdKeepsRotationForTheWholeSpan() {
         FlightScript script = FlightScriptParser.parse("hold 3 yaw=90 pitch=-5");
 

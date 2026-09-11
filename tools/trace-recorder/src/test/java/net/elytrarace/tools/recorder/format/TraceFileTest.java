@@ -15,7 +15,7 @@ class TraceFileTest {
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
     private static TraceTick tick(int index, double y) {
-        return new TraceTick(index, 0.0, y, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0);
+        return new TraceTick(index, 0.0, y, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0, index);
     }
 
     private static TraceMetadata metadata() {
@@ -49,7 +49,7 @@ class TraceFileTest {
         // never reach TraceFile in the first place — constructing it here throws immediately, so the
         // assertion must wrap the TraceTick construction itself, not a TraceFile built from an
         // already-invalid tick (which could never exist).
-        assertThatThrownBy(() -> new TraceTick(0, 0.0, Double.NaN, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f, false, false, 0))
+        assertThatThrownBy(() -> new TraceTick(0, 0.0, Double.NaN, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f, false, false, 0, 0))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
@@ -93,20 +93,26 @@ class TraceFileTest {
 
     @Test
     void rejectsANegativeTickIndex() {
-        assertThatThrownBy(() -> new TraceTick(-1, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0))
+        assertThatThrownBy(() -> new TraceTick(-1, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0, 0))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
     @Test
     void rejectsANonFiniteRotation() {
         assertThatThrownBy(
-                () -> new TraceTick(0, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, Float.NaN, -5.0f, false, false, 0))
+                () -> new TraceTick(0, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, Float.NaN, -5.0f, false, false, 0, 0))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
     @Test
     void rejectsANegativeFireworkTickCount() {
-        assertThatThrownBy(() -> new TraceTick(0, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, -1))
+        assertThatThrownBy(() -> new TraceTick(0, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, -1, 0))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsANegativeEntityTick() {
+        assertThatThrownBy(() -> new TraceTick(0, 0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0, -1))
                 .isInstanceOf(InvalidTraceException.class);
     }
 

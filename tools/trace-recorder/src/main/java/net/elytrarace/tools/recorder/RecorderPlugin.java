@@ -1,5 +1,6 @@
 package net.elytrarace.tools.recorder;
 
+import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.elytrarace.tools.recorder.bukkit.GliderRunner;
@@ -22,19 +23,26 @@ import java.util.regex.Pattern;
  *
  * <p>plugin-yml 0.6.0's {@code paper { }} block has no {@code commands { }} DSL — that container is
  * only present on the Bukkit descriptor, not the Paper one — so the command is declared here,
- * through Paper's Brigadier lifecycle event, instead of in {@code build.gradle.kts}.
+ * through Paper's Brigadier lifecycle event, instead of in {@code build.gradle.kts}. The command is
+ * registered through an anonymous {@link BasicCommand} rather than the {@code this::record} method
+ * reference used before: a method reference can only implement {@code execute}, and gating the
+ * command behind {@link #RECORD_PERMISSION} means overriding the {@code permission()} default too,
+ * which only a class body can do.
  *
  * <p>This class stays thin by design: it only reads the script and orchestrates the handoff.
  * Everything about what a valid recording is lives in {@link TraceCollector}, and everything about
- * driving the entity lives in {@link GliderRunner}. The two things it does decide are mechanical,
- * not physical: {@code profile} is restricted to a safe character set before it ever reaches a path
- * (a name like {@code ../../x} would otherwise walk the script/trace lookup out of the data folder),
- * and only one recording runs at a time (two gliders can push each other despite
+ * driving the entity lives in {@link GliderRunner}. The things it does decide are mechanical, not
+ * physical: {@code profile} is restricted to a safe character set before it ever reaches a path (a
+ * name like {@code ../../x} would otherwise walk the script/trace lookup out of the data folder),
+ * only one recording runs at a time (two gliders can push each other despite
  * {@code setAware(false)} — that suppresses look control, not collision — and two concurrent
- * recordings of the same profile would race the same output file).
+ * recordings of the same profile would race the same output file), and the command requires
+ * {@link #RECORD_PERMISSION} (spawning entities and writing files to disk on request is not
+ * something an arbitrary player should be able to trigger).
  */
 public final class RecorderPlugin extends JavaPlugin {
 
+    private static final String RECORD_PERMISSION = "trace-recorder.record";
     private static final Pattern PROFILE_NAME = Pattern.compile("[A-Za-z0-9_-]+");
 
     private boolean recordingInProgress;
@@ -44,7 +52,17 @@ public final class RecorderPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> event.registrar().register(
                 "record",
                 "Fly a scripted profile and write its trace fixture",
-                this::record));
+                new BasicCommand() {
+                    @Override
+                    public void execute(CommandSourceStack source, String[] args) {
+                        record(source, args);
+                    }
+
+                    @Override
+                    public String permission() {
+                        return RECORD_PERMISSION;
+                    }
+                }));
     }
 
     private void record(CommandSourceStack source, String[] args) {
@@ -69,7 +87,7 @@ public final class RecorderPlugin extends JavaPlugin {
         try {
             scriptText = Files.readString(scriptPath);
         } catch (IOException e) {
-            sender.sendMessage("No script found at %s".formatted(scriptPath));
+            sender.sendMessage("No script found at %s: %s".formatted(scriptPath, e.getMessage()));
             return;
         }
 
@@ -82,10 +100,22 @@ public final class RecorderPlugin extends JavaPlugin {
         }
 
         Location above = source.getLocation();
-        GliderRunner runner = new GliderRunner(this, above);
-        TraceCollector collector =
-                new TraceCollector(Bukkit.getMinecraftVersion(), profile, runner.gravity(), script);
-        recordingInProgress = true;
-        runner.start(collector, profile, sender, () -> recordingInProgress = false);
+        GliderRunner runner = null;
+        try {
+            runner = new GliderRunner(this, above);
+            double gravity = runner.gravity();
+            TraceCollector collector = new TraceCollector(Bukkit.getMinecraftVersion(), profile, gravity, script);
+            recordingInProgress = true;
+            runner.start(collector, profile, sender, () -> recordingInProgress = false);
+        } catch (RuntimeException e) {
+            // Reached only if the glider was already spawned (by this same call) and something
+            // after that — reading its gravity attribute, building the collector — threw before
+            // start() could take over responsibility for cleaning it up. recordingInProgress is
+            // never set in that case, so there is nothing to release here beyond the entity itself.
+            if (runner != null) {
+                runner.disposeWithoutStarting();
+            }
+            sender.sendMessage("Failed to prepare the recording: %s".formatted(e.getMessage()));
+        }
     }
 }

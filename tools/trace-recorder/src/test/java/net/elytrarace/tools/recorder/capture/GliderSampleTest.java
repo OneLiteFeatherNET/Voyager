@@ -17,21 +17,28 @@ class GliderSampleTest {
     @Test
     void rejectsANonFinitePositionOrVelocity() {
         assertThatThrownBy(() -> new GliderSample(
-                Double.NaN, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0))
+                Double.NaN, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0, 0))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
     @Test
     void rejectsANonFiniteRotation() {
         assertThatThrownBy(() -> new GliderSample(
-                0.0, 100.0, 0.0, 0.0, -0.08, 0.0, Float.NaN, -5.0f, false, false, 0))
+                0.0, 100.0, 0.0, 0.0, -0.08, 0.0, Float.NaN, -5.0f, false, false, 0, 0))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
     @Test
     void rejectsANegativeFireworkTickCount() {
         assertThatThrownBy(() -> new GliderSample(
-                0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, -1))
+                0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, -1, 0))
+                .isInstanceOf(InvalidTraceException.class);
+    }
+
+    @Test
+    void rejectsANegativeEntityTick() {
+        assertThatThrownBy(() -> new GliderSample(
+                0.0, 100.0, 0.0, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0, -1))
                 .isInstanceOf(InvalidTraceException.class);
     }
 }
