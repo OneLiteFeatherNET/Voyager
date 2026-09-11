@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   release-please:
-    uses: OneLiteFeatherNET/workflows/.github/workflows/release-please.yml@v2.8.1
+    uses: OneLiteFeatherNET/workflows/.github/workflows/release-please.yml@v2.9.0
     secrets: inherit
 
   publish:
