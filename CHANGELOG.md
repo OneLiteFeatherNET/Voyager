@@ -1,3 +1,10 @@
+## [1.11.8](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.7...v1.11.8) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update log4j2 to v2.25.5 ([#224](https://github.com/OneLiteFeatherNET/Voyager/issues/224)) ([c6c133c](https://github.com/OneLiteFeatherNET/Voyager/commit/c6c133c1fc60a76b3ef72f4c16aaf5f64d68f3d9))
+
 ## [1.11.7](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.6...v1.11.7) (2026-09-11)
 
 
