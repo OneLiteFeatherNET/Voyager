@@ -1,3 +1,45 @@
+## [1.11.4](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.3...v1.11.4) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update flyway to v12.9.0 ([#213](https://github.com/OneLiteFeatherNET/Voyager/issues/213)) ([dfc2241](https://github.com/OneLiteFeatherNET/Voyager/commit/dfc22418930edaf0d146840e48d851c8697ede42))
+
+## [1.11.3](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.2...v1.11.3) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.tngtech.archunit:archunit-junit5 to v1.5.0 ([#212](https://github.com/OneLiteFeatherNET/Voyager/issues/212)) ([4e6e103](https://github.com/OneLiteFeatherNET/Voyager/commit/4e6e103154ce58c93b425e5e179bd8da009c5a46))
+
+## [1.11.2](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.1...v1.11.2) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update minestom to v2026.05.11-1.21.11 (minor) ([#198](https://github.com/OneLiteFeatherNET/Voyager/issues/198)) ([cfb44cf](https://github.com/OneLiteFeatherNET/Voyager/commit/cfb44cf711c9bc2e8676cd30d44943d00b5f7b3b))
+
+## [1.11.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.0...v1.11.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.apache.commons:commons-lang3 to v3.18.0 ([#111](https://github.com/OneLiteFeatherNET/Voyager/issues/111)) ([58c810a](https://github.com/OneLiteFeatherNET/Voyager/commit/58c810a33e27b50525a4616e1142fa966c188e66))
+
+# [1.11.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.1...v1.11.0) (2026-09-11)
+
+
+### Features
+
+* E2a Vanilla trace recorder and the nine reference fixtures ([#240](https://github.com/OneLiteFeatherNET/Voyager/issues/240)) ([c6c572d](https://github.com/OneLiteFeatherNET/Voyager/commit/c6c572d43d83ec41632546cd4c1581aea472ce58))
+
+## [1.10.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.0...v1.10.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.kyori:adventure-text-minimessage to v4.22.0 ([#110](https://github.com/OneLiteFeatherNET/Voyager/issues/110)) ([474bbaf](https://github.com/OneLiteFeatherNET/Voyager/commit/474bbaf36700c4acb14c74bb037287f43d58d6ae))
+
 # [1.10.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.9.0...v1.10.0) (2026-09-11)
 
 

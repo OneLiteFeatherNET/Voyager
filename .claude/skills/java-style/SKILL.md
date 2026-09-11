@@ -122,6 +122,19 @@ AssertJ (`assertThat(...)`), never `assertNotNull`/`assertEquals` from JUnit's o
 
 For a `sealed` hierarchy with real behavior on each variant (not just data), write one abstract contract test class with the shared assertions, and one concrete subclass per variant that supplies the instance under test — that's how you get Liskov substitutability checked, which ArchUnit cannot do (it can check that a class exists, not that it behaves like its siblings). `CupDTO permits FileCupDTO, ResolvedCupDTO` is the first sealed hierarchy in this repo that qualifies for this pattern once either variant grows behavior beyond plain accessors — don't build the abstract test class pre-emptively for a type that's still pure data (see §7).
 
+**Before you call a test suite done, tabulate every input field across every test case and ask two questions per column: is this value the same in all of them, and does the code under test stop computing at that value?** Where both answers are yes, the suite has a hole the size of that computation, and the suite is green.
+
+This is the single defect that has recurred most often in this repository, and it has never once been found by reading the test — only by deleting a line of production code and watching nothing turn red. Each of these was a real, green, reviewed suite:
+
+- Every `yaw` in every rotation test was `0`, where three of four trigonometric terms degenerate. A sign flip worth 1.9e-2 blocks per tick survived the whole of `voyager-physics`.
+- Every position in the world-slice tests was above zero, where `Math.floor` and an `(int)` cast agree. Below zero they differ by a block.
+- A collision fixture was an infinite plane on a perpendicular axis, so no test could tell a correct axis order from a wrong one.
+- A `ramp` test asserted `hasSize(9)`, which cannot distinguish the window `[-1, 1]` from `[0, 2]`.
+
+Zero is the value this happens at most, because it is the least effort to type and because so much arithmetic vanishes there — but the shape is broader than zero: any constant across the fixtures is a candidate, and the dangerous constants are the ones the code special-cases or collapses at. A count is a weak assertion for the same reason: it survives a permutation and a shift. Name the values.
+
+The counter-move costs one pass. Pick the field, move it off its constant, and see whether an assertion changes. If nothing changes, that field was never tested.
+
 ## 10. Patterns avoided on purpose
 
 - **Singleton / static mutable state.** The existing `create()` factories (`CupDTOBuilder`, `*Service.create()`) exist specifically so tests can construct a fresh instance instead of reaching through a static accessor. A singleton undoes that on day one.
