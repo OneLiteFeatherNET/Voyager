@@ -9,6 +9,7 @@ import net.elytrarace.voyager.physics.TickTrace;
 import net.elytrarace.voyager.physics.trace.exception.InvalidReplayThresholdException;
 import net.elytrarace.voyager.physics.trace.exception.InvalidTraceFixtureException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 
@@ -58,12 +59,23 @@ import java.util.OptionalInt;
 public abstract class TraceReplay {
 
     /**
-     * The default per-tick position-error bound, in blocks: the distance between the simulated and
-     * the recorded position on any single tick. Chosen far below the smallest meaningful physics
-     * difference so a clean replay of a bit-identical simulation reports zero divergence while any
-     * genuine formula mismatch is still caught on its first tick.
+     * The per-tick position-error bound, in blocks: the distance between the simulated and the
+     * recorded position on any single tick.
+     *
+     * <p><b>Zero, measured.</b> The E2b plan carried {@code 1.0E-6} as a stated assumption awaiting
+     * the real traces; Task 7 measured it against all nine and it is six orders of magnitude too
+     * loose. Every comparable tick of every fixture — free flight, a sustained turn at non-zero yaw,
+     * ±90° pitch, a firework burn, a wall clamp, a touchdown — reproduces the recorded position
+     * <em>bit-for-bit</em>, both as a one-step residual and across a free-running replay of the
+     * whole trace. The per-profile figures are in {@code docs/reference/elytra-physics-26.2.md}.
+     *
+     * <p>A non-zero bound here would not buy safety, it would spend it: at {@code 1e-6} the port
+     * could drop {@code LivingEntity.aiStep}'s deadzone and still pass most profiles, and the
+     * {@code float} half-width that decides where the glider rests against a wall
+     * ({@code 1.19e-08}) would be invisible. Both defects were real and both were found by this
+     * bound being zero.
      */
-    public static final double DEFAULT_PER_TICK_THRESHOLD = 1.0E-6;
+    public static final double DEFAULT_PER_TICK_THRESHOLD = 0.0;
 
     /**
      * The default drift bound, in blocks: how far the simulated position sits from the recorded one
@@ -78,10 +90,19 @@ public abstract class TraceReplay {
      * dirty without ever exceeding the per-tick bound. The sum survives as {@link
      * ReplayReport#summedTickError()}, reported but not bounded.
      *
-     * <p>Like the per-tick bound, this is a stated assumption awaiting the real traces; Task 7 of
-     * the E2b plan calibrates both against measurement.
+     * <p><b>Zero, measured.</b> Like the per-tick bound this was a stated assumption ({@code
+     * 1.0E-2}) awaiting the real traces. Replayed free-running from tick 0, eight of the nine
+     * fixtures end on the recorded position bit-for-bit after 199 or 219 ticks; the ninth,
+     * {@code chained-boosts}, ends {@code 5.0e-01} out for a reason no threshold should absorb —
+     * its fixture cannot say how many rockets were burning, so the replay applies one impulse where
+     * Vanilla applied two, and the error is in the recording, not in the port. It is excluded by
+     * name and by derivation rather than tolerated; see {@link RecordedGlide}.
+     *
+     * <p>The spec's earlier {@code 1.0E-2} would have passed a replay that drifted a centimetre
+     * over ten seconds of flight — enough to move a ring pass into a ring miss — and is now
+     * recorded in {@code docs/reference/elytra-physics-26.2.md} as the assumption it was.
      */
-    public static final double DEFAULT_DRIFT_THRESHOLD = 1.0E-2;
+    public static final double DEFAULT_DRIFT_THRESHOLD = 0.0;
 
     private TraceReplay() {
     }
@@ -107,6 +128,48 @@ public abstract class TraceReplay {
         if (fixture == null) {
             throw new InvalidTraceFixtureException("fixture must not be null");
         }
+        return replay(fixture, literalInputs(fixture), fixture.ticks().size() - 1,
+                perTickThreshold, driftThreshold);
+    }
+
+    /**
+     * Replays the comparable part of a real recording: {@link RecordedGlide} supplies both the
+     * per-tick inputs — which are not a literal reading of {@code fireworkBoostActive}, see its
+     * javadoc — and the tick at which the recording stops describing a glide at all.
+     */
+    public static ReplayReport replay(RecordedGlide glide, double perTickThreshold, double driftThreshold) {
+        if (glide == null) {
+            throw new InvalidTraceFixtureException("glide must not be null");
+        }
+        return replay(glide.fixture(), glide.inputs(), glide.lastComparableTick(),
+                perTickThreshold, driftThreshold);
+    }
+
+    /**
+     * A literal reading of the fixture's own fields, one input per tick. Correct for the synthetic
+     * fixtures this harness was built against, where {@code fireworkBoostActive} means exactly
+     * "a boost ran on this tick"; {@link RecordedGlide} exists because a real recording's flag is
+     * one tick short at the end of a burn.
+     */
+    private static List<FlightInput> literalInputs(TraceFixture fixture) {
+        double gravity = fixture.metadata().gravity();
+        List<FlightInput> inputs = new ArrayList<>(fixture.ticks().size());
+        inputs.add(null);
+        for (int index = 1; index < fixture.ticks().size(); index++) {
+            TraceFixture.Tick tick = fixture.ticks().get(index);
+            inputs.add(new FlightInput(
+                    tick.yaw(), tick.pitch(), tick.fireworkBoostActive(),
+                    tick.fireworkTicksRemaining(), gravity));
+        }
+        return inputs;
+    }
+
+    private static ReplayReport replay(
+            TraceFixture fixture,
+            List<FlightInput> inputs,
+            int lastTick,
+            double perTickThreshold,
+            double driftThreshold) {
         if (!Double.isFinite(perTickThreshold) || perTickThreshold < 0.0) {
             throw new InvalidReplayThresholdException(
                     "perTickThreshold must be finite and >= 0, was %s".formatted(perTickThreshold));
@@ -126,7 +189,6 @@ public abstract class TraceReplay {
                 seed.onGround());
 
         CollisionSpace space = new RecordedCollisionSpace(fixture.metadata().worldSlice());
-        double gravity = fixture.metadata().gravity();
 
         OptionalInt firstDivergingTick = OptionalInt.empty();
         double firstDivergingTickError = 0.0;
@@ -134,14 +196,9 @@ public abstract class TraceReplay {
         double summedTickError = 0.0;
         double finalDrift = 0.0;
 
-        for (int i = 1; i < ticks.size(); i++) {
+        for (int i = 1; i <= lastTick; i++) {
             TraceFixture.Tick recorded = ticks.get(i);
-            FlightInput input = new FlightInput(
-                    recorded.yaw(),
-                    recorded.pitch(),
-                    recorded.fireworkBoostActive(),
-                    recorded.fireworkTicksRemaining(),
-                    gravity);
+            FlightInput input = inputs.get(i);
 
             TickTrace trace = ElytraSimulator.tickTraced(state, input, space);
             state = trace.result();
