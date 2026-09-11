@@ -1,0 +1,8 @@
+# dive-and-pull-out: exercises the downward-glide conversion term (movement.y * -0.1 * liftForce)
+# and its cos^2 factor across a changing pitch. Dives to a steep angle, holds it to accumulate
+# vertical speed and convert it to horizontal speed, then pulls back out to a trim glide.
+hold 5 yaw=0 pitch=0
+ramp 15 yaw=0 pitch=0..70
+hold 80 yaw=0 pitch=70
+ramp 20 yaw=0 pitch=70..-5
+hold 80 yaw=0 pitch=-5

@@ -1,0 +1,6 @@
+# sustained-turn: yaw changes while gliding -- the only profile where the look vector's x
+# component is not zero throughout. Establishes a straight glide, then turns 90 degrees over 100
+# ticks while holding trim pitch, then holds the new heading.
+hold 30 yaw=0 pitch=-5
+ramp 100 yaw=0..90 pitch=-5
+hold 70 yaw=90 pitch=-5

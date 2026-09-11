@@ -1,3 +1,94 @@
+## [1.11.8](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.7...v1.11.8) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update log4j2 to v2.25.5 ([#224](https://github.com/OneLiteFeatherNET/Voyager/issues/224)) ([c6c133c](https://github.com/OneLiteFeatherNET/Voyager/commit/c6c133c1fc60a76b3ef72f4c16aaf5f64d68f3d9))
+
+## [1.11.7](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.6...v1.11.7) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update hibernate to v7.3.10.final ([#223](https://github.com/OneLiteFeatherNET/Voyager/issues/223)) ([56185c1](https://github.com/OneLiteFeatherNET/Voyager/commit/56185c17947f1ca42318ea2f6bff03c2886cff91))
+
+## [1.11.6](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.5...v1.11.6) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.slf4j:slf4j-api to v2.0.18 ([#222](https://github.com/OneLiteFeatherNET/Voyager/issues/222)) ([82e908b](https://github.com/OneLiteFeatherNET/Voyager/commit/82e908b8687cdc3e9320bb9f597b91fcee400b7b))
+
+## [1.11.5](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.4...v1.11.5) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.mariadb.jdbc:mariadb-java-client to v3.5.10 ([#221](https://github.com/OneLiteFeatherNET/Voyager/issues/221)) ([4340890](https://github.com/OneLiteFeatherNET/Voyager/commit/4340890cc0d65a2186d854d8ed2594e6af283b13))
+
+## [1.11.4](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.3...v1.11.4) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update flyway to v12.9.0 ([#213](https://github.com/OneLiteFeatherNET/Voyager/issues/213)) ([dfc2241](https://github.com/OneLiteFeatherNET/Voyager/commit/dfc22418930edaf0d146840e48d851c8697ede42))
+
+## [1.11.3](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.2...v1.11.3) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.tngtech.archunit:archunit-junit5 to v1.5.0 ([#212](https://github.com/OneLiteFeatherNET/Voyager/issues/212)) ([4e6e103](https://github.com/OneLiteFeatherNET/Voyager/commit/4e6e103154ce58c93b425e5e179bd8da009c5a46))
+
+## [1.11.2](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.1...v1.11.2) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update minestom to v2026.05.11-1.21.11 (minor) ([#198](https://github.com/OneLiteFeatherNET/Voyager/issues/198)) ([cfb44cf](https://github.com/OneLiteFeatherNET/Voyager/commit/cfb44cf711c9bc2e8676cd30d44943d00b5f7b3b))
+
+## [1.11.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.0...v1.11.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.apache.commons:commons-lang3 to v3.18.0 ([#111](https://github.com/OneLiteFeatherNET/Voyager/issues/111)) ([58c810a](https://github.com/OneLiteFeatherNET/Voyager/commit/58c810a33e27b50525a4616e1142fa966c188e66))
+
+# [1.11.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.1...v1.11.0) (2026-09-11)
+
+
+### Features
+
+* E2a Vanilla trace recorder and the nine reference fixtures ([#240](https://github.com/OneLiteFeatherNET/Voyager/issues/240)) ([c6c572d](https://github.com/OneLiteFeatherNET/Voyager/commit/c6c572d43d83ec41632546cd4c1581aea472ce58))
+
+## [1.10.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.0...v1.10.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.kyori:adventure-text-minimessage to v4.22.0 ([#110](https://github.com/OneLiteFeatherNET/Voyager/issues/110)) ([474bbaf](https://github.com/OneLiteFeatherNET/Voyager/commit/474bbaf36700c4acb14c74bb037287f43d58d6ae))
+
+# [1.10.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.9.0...v1.10.0) (2026-09-11)
+
+
+### Features
+
+* E2b physics port — Vanilla elytra tick and the trace replay harness ([#238](https://github.com/OneLiteFeatherNET/Voyager/issues/238)) ([9f720cf](https://github.com/OneLiteFeatherNET/Voyager/commit/9f720cf0eb14470ef6b4aa8d37a315f09b3e2f64))
+
+# [1.9.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.11...v1.9.0) (2026-09-11)
+
+
+### Features
+
+* E1 foundation — build conventions, voyager-api, architecture tests ([#236](https://github.com/OneLiteFeatherNET/Voyager/issues/236)) ([ea55ff9](https://github.com/OneLiteFeatherNET/Voyager/commit/ea55ff9eafc31a32fbcf662641ae753f98514285))
+
+## [1.8.11](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.10...v1.8.11) (2026-09-10)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.junit:junit-bom to v6.1.2 ([#235](https://github.com/OneLiteFeatherNET/Voyager/issues/235)) ([6dbade4](https://github.com/OneLiteFeatherNET/Voyager/commit/6dbade4690a585ffc5bb9a426a1e8cae2e1de16c))
+
 ## [1.8.10](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.9...v1.8.10) (2026-08-30)
 
 
