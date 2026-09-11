@@ -1,9 +1,14 @@
 name: Build
 
+# Pull requests are built by build-pr.yml, which calls the shared org workflow and produces job
+# names identical to this one's — "Build on <os>". Running both meant nine build jobs per pull
+# request instead of three. This one keeps the push trigger so a branch, and main after a merge,
+# still gets built; the required status checks on main are satisfied by build-pr.yml on the pull
+# request itself. Both must keep producing the same job names: the ruleset main-branch-protection
+# requires "Build on ubuntu-latest", "Build on windows-latest" and "Build on macos-latest" by name,
+# so renaming either job blocks every pull request.
 on:
   push:
-    branches: ['**']
-  pull_request:
     branches: ['**']
 
 permissions:
