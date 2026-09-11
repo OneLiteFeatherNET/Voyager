@@ -28,10 +28,23 @@ dependencies {
 
     api("net.onelitefeather:falco-anvil:$falcoVersion")
 
+    // Load-bearing, not an optional extra. MapInstances asks the loader for
+    // ChunkMigrationMode.IN_MEMORY, and falco-anvil's builder throws IllegalStateException at
+    // construction when a migration mode is set and no ChunkMigrator is on the classpath - so
+    // dropping this line breaks every world load rather than quietly degrading it. runtimeOnly
+    // because nothing here names a type from the migration module: Falco finds it by ServiceLoader.
+    runtimeOnly("net.onelitefeather:falco-migration:$falcoVersion")
+
+    // And again for the tests, because Gradle's testRuntimeOnly does not extend the main source
+    // set's runtimeOnly: without this line the test JVM is the one configuration the migrator is
+    // missing from, and every world load in it fails on the builder's own guard.
+    testRuntimeOnly("net.onelitefeather:falco-migration:$falcoVersion")
+
     // The logging facade both Minestom and falco-anvil already put on the runtime classpath, and
-    // which neither exposes for compilation. compileOnly rather than implementation: this module
-    // needs the facade to compile a warning, not a second copy of it in the runtime graph that
-    // would then have to be kept in step with whatever Minestom resolves.
+    // which neither exposes for compilation. compileOnly is what it costs: this module's published
+    // runtime metadata then says nothing about a library its code calls, and a consumer that got
+    // Minestom from somewhere else would find out at the first log line. Acceptable only because
+    // Minestom cannot run without slf4j at all, so no consumer of this module can be without it.
     compileOnly("org.slf4j:slf4j-api:2.0.18")
 
     // Same reasoning as the main artifact above: pinned to the exact rebuild version, not the

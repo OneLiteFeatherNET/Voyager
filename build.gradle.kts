@@ -9,9 +9,11 @@ group = "net.onelitefeather"
 subprojects {
     repositories {
         mavenCentral()
-        // Falco (falco-anvil) is published here, publicly and without credentials. The existing
-        // OneLiteFeatherRepository entry below is a different, authenticated repository; using it
-        // would make a fresh clone need secrets to resolve a public artefact.
+        // Where the Falco artefacts themselves live, publicly. Resolving them still needs the
+        // authenticated OneLiteFeatherRepository below as well: falco-anvil's POM imports
+        // net.onelitefeather:mycelium-bom:1.7.2, and that version is in neither this repository
+        // (which has only 1.8.3 to 1.8.5) nor Maven Central. Both entries stay until Falco publishes
+        // against mycelium-bom 1.8.5.
         maven("https://repo.onelitefeather.dev/releases")
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://maven.enginehub.org/repo/")

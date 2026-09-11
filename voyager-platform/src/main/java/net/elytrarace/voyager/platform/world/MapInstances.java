@@ -6,7 +6,9 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.world.DimensionType;
 import net.onelitefeather.falco.anvil.AnvilDiagnostics;
+import net.onelitefeather.falco.anvil.ChunkMigrationMode;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,15 @@ import java.util.stream.Stream;
  * than an optimisation: a single world backs more than one map, so two {@code MapDefinition}s naming
  * the same world have to get the same instance and the same loader. Two loaders over one set of
  * region files is a bug.
+ *
+ * <p><strong>Chunk migration is on, and it is not optional.</strong> Minecraft namespaced the chunk
+ * status in 1.20.2: a chunk written before that stores {@code full}, and Falco's fullness check
+ * accepts only {@code minecraft:full}, so every older chunk is reported as not fully generated and
+ * comes back as air. Measured on the shipped world {@code ElytraraceBlueAndRed}, that is 3464 of its
+ * 9429 fully generated chunks — a third of the racetrack, silently. With
+ * {@link ChunkMigrationMode#IN_MEMORY} the same world reads all 9429, still with no unknown block
+ * and no error. IN_MEMORY rather than ON_DISK because the translation is paid on every load and
+ * never written back, which is exactly right here: nothing in this class writes to a world.
  *
  * <p>The unknown-block policy stays at Falco's default — an unrecognised block name becomes air —
  * and is made visible rather than fatal. A throwing policy runs inside a chunk load, where the
@@ -112,27 +123,44 @@ public final class MapInstances implements AutoCloseable {
      */
     @Override
     public void close() {
-        IOException failure = null;
+        RuntimeException failure = null;
 
-        for (LoadedWorld entry : loaded.values()) {
-            instanceManager.unregisterInstance(entry.instance());
+        for (Map.Entry<String, LoadedWorld> cached : loaded.entrySet()) {
+            String world = cached.getKey();
+            LoadedWorld entry = cached.getValue();
+
+            // Both steps keep going past a failure, for the same reason: a shutdown that stops at
+            // the first world leaves every loader after it holding its region files open, and the
+            // cache uncleared. Unregistering is the live hazard rather than the theoretical one —
+            // InstanceManager refuses an instance that still has a player in it, and a shutdown is
+            // precisely when one still does.
+            try {
+                instanceManager.unregisterInstance(entry.instance());
+            } catch (RuntimeException exception) {
+                failure = also(failure, exception);
+            }
             try {
                 entry.loader().close();
             } catch (IOException exception) {
-                // Kept going rather than rethrown here: one region file that will not close must not
-                // leave the remaining loaders holding their file handles open.
-                if (failure == null) {
-                    failure = exception;
-                } else {
-                    failure.addSuppressed(exception);
-                }
+                failure = also(failure, new UncheckedIOException(
+                        "the loader for world '%s' could not be closed".formatted(world), exception));
+            } catch (RuntimeException exception) {
+                failure = also(failure, exception);
             }
         }
         loaded.clear();
 
         if (failure != null) {
-            throw new UncheckedIOException("a world loader could not be closed", failure);
+            throw failure;
         }
+    }
+
+    private static RuntimeException also(@Nullable RuntimeException first, RuntimeException next) {
+        if (first == null) {
+            return next;
+        }
+        first.addSuppressed(next);
+        return first;
     }
 
     /**
@@ -143,6 +171,12 @@ public final class MapInstances implements AutoCloseable {
      * the world is mid-generation; a missing region file or a missing entry says the data is not
      * there at all, and only the second kind is what a mistyped world name looks like. A racetrack
      * is a finished world, so a partial chunk in one is a different conversation.
+     *
+     * <p>Refused chunks are carried separately even though the loader also counts each of them as an
+     * error, so {@code isSound()} would already be false without this. The redundancy is the point:
+     * the verdict then does not depend on Falco continuing to account a version refusal as an error,
+     * and {@code describe()} can say which version was refused, which is the only part of that
+     * report an operator can act on.
      *
      * <p>Package-private for the test: the difference between the two-term sum and Falco's own
      * total only shows on a world holding a partially generated chunk, which nothing the public
@@ -168,6 +202,8 @@ public final class MapInstances implements AutoCloseable {
                 diagnostics.chunksLoaded(),
                 diagnostics.chunksSkippedWithoutRegionFile() + diagnostics.chunksSkippedWithoutEntry(),
                 diagnostics.unknownBlockCount(),
+                diagnostics.chunksSkippedAsUnsupported(),
+                diagnostics.unsupportedChunkVersions(),
                 diagnostics.errors());
 
         if (health.unknownBlocks() > 0 && unknownBlocksReported.compareAndSet(false, true)) {
@@ -175,6 +211,24 @@ public final class MapInstances implements AutoCloseable {
                     health.describe());
         }
         return health;
+    }
+
+    /**
+     * Whether this world has already had its unknown block names warned about.
+     *
+     * <p>Package-private for the test, and narrower than it looks: {@link #report} pins how the
+     * warning treats the flag it is handed, but nothing on the public surface can see that
+     * {@link #healthOf(String)} hands it that world's own flag rather than a fresh one — a
+     * {@code healthOf} that warned on every call is indistinguishable from one that warns once.
+     * This is what tells the two apart, and what shows the flag is per world and not shared.
+     *
+     * @param world the world directory's name
+     * @return true once a non-zero unknown-block count has been reported for that world
+     * @throws UnknownWorldException if no region data sits behind the name
+     */
+    @VisibleForTesting
+    boolean hasWarnedAboutUnknownBlocks(String world) {
+        return load(world).unknownBlocksReported().get();
     }
 
     /**
@@ -202,6 +256,10 @@ public final class MapInstances implements AutoCloseable {
         AnvilDiagnostics diagnostics = new AnvilDiagnostics();
         FalcoAnvilLoader loader = FalcoAnvilLoader.builder()
                 .diagnostics(diagnostics)
+                // See the class javadoc. This throws IllegalStateException right here if
+                // falco-migration is not on the runtime classpath, which is the failure we want:
+                // the alternative to a loud one is a third of the racetrack quietly becoming air.
+                .migration(ChunkMigrationMode.IN_MEMORY)
                 .build(worldRoot, DimensionType.OVERWORLD.key());
 
         try {

@@ -8,18 +8,31 @@ import net.minestom.server.instance.block.Block;
 import net.minestom.server.world.DimensionType;
 import net.minestom.testing.Env;
 import net.minestom.testing.EnvTest;
+import net.kyori.adventure.nbt.BinaryTag;
+import net.kyori.adventure.nbt.BinaryTagIO;
+import net.kyori.adventure.nbt.BinaryTagTypes;
+import net.kyori.adventure.nbt.CompoundBinaryTag;
+import net.kyori.adventure.nbt.ListBinaryTag;
+import net.minestom.server.coordinate.Pos;
 import net.onelitefeather.falco.anvil.AnvilDiagnostics;
+import net.onelitefeather.falco.anvil.ChunkCompression;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
+import net.onelitefeather.falco.anvil.RegionFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @EnvTest
@@ -27,6 +40,23 @@ class MapInstancesTest {
 
     private static final String TRACK = "goldrush";
     private static final String OTHER_TRACK = "bluecanyon";
+
+    /**
+     * 1.20.1. Old enough that its chunk status is stored un-namespaced as {@code full} — Minecraft
+     * namespaced it in 1.20.2 — and new enough that the migrator will translate it: it refuses
+     * anything below data version 1519 and anything at or above the version the server writes.
+     */
+    private static final int PRE_NAMESPACE_DATA_VERSION = 3337;
+
+    /**
+     * Below both the migrator's floor and the loader's minimum, so the chunk is neither translated
+     * nor read: the version policy refuses it. A version between the two would be migrated up and
+     * never refused at all.
+     */
+    private static final int UNREADABLE_DATA_VERSION = 1400;
+
+    /** A name no Minecraft version ever had, so the running server cannot resolve it. */
+    private static final String UNKNOWN_BLOCK_NAME = "voyager:missing_ring_marker";
 
     /**
      * Three blocks, each a different type, in three different chunks and across two region files.
@@ -63,6 +93,10 @@ class MapInstancesTest {
             Instance instance = instances.forWorld(TRACK);
 
             assertBlocks(instance, TRACK_BLOCKS);
+            // A racetrack is flown across, so chunks have to arrive as the player reaches them.
+            // Minestom already defaults this to true, so the assertion catches an edit that turns it
+            // off rather than one that drops the call - which is the edit worth catching.
+            assertThat(instance.hasEnabledAutoChunkLoad()).isTrue();
         }
     }
 
@@ -97,12 +131,19 @@ class MapInstancesTest {
     }
 
     @Test
-    void throwsNamingTheWorldWhenTheDirectoryDoesNotExist(Env env) {
+    void throwsNamingTheWorldThePathAndTheLayoutWhenTheDirectoryDoesNotExist(Env env) {
+        // The message is the entire product of this class, so all three of its parts are asserted.
+        // The path in particular: the loader resolves it rather than being given it, so "looked in
+        // the wrong place" and "the place is empty" are different reports and only the path tells
+        // them apart. Nothing exists under the world root here, so the dimension layout is taken.
+        Path expectedRegionDirectory = worldsRoot().resolve(TRACK)
+                .resolve("dimensions").resolve("minecraft").resolve("overworld").resolve("region");
+
         try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
             assertThatThrownBy(() -> instances.forWorld(TRACK))
                     .isInstanceOf(UnknownWorldException.class)
-                    .hasMessageContaining(TRACK)
-                    .hasMessageContaining("holds no region data");
+                    .hasMessage("world '%s' holds no region data; the loader resolved %s using the dimension layout",
+                            TRACK, expectedRegionDirectory);
         }
     }
 
@@ -118,7 +159,8 @@ class MapInstancesTest {
         try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
             assertThatThrownBy(() -> instances.forWorld(TRACK))
                     .isInstanceOf(UnknownWorldException.class)
-                    .hasMessageContaining(TRACK);
+                    .hasMessage("world '%s' holds no region data; the loader resolved %s using the dimension layout",
+                            TRACK, regionDirectory);
         }
     }
 
@@ -166,10 +208,11 @@ class MapInstancesTest {
             loadChunksOf(instance, TRACK_BLOCKS);
             WorldHealth health = instances.healthOf(TRACK);
 
-            // Three blocks in three distinct chunks, all of which exist on disk: every one is a read
-            // rather than a miss, so a report that counted misses as reads would not show three.
+            // A literal, not TRACK_BLOCKS.size(): the two agree only because each fixture block
+            // happens to sit in its own chunk, and a suite that leaned on that coincidence could not
+            // tell a count of chunks from a count of blocks. The three are (0,0), (2,4) and (-1,-1).
             assertThat(health.world()).isEqualTo(TRACK);
-            assertThat(health.chunksLoaded()).isEqualTo(TRACK_BLOCKS.size());
+            assertThat(health.chunksLoaded()).isEqualTo(3L);
             assertThat(health.chunksSkipped()).isZero();
             assertThat(health.unknownBlocks()).isZero();
             assertThat(health.errors()).isZero();
@@ -216,7 +259,8 @@ class MapInstancesTest {
             loadChunksOf(instance, TRACK_BLOCKS);
 
             // The same object the loader writes into, not a copy taken when it was handed over.
-            assertThat(diagnostics.chunksLoaded()).isEqualTo(TRACK_BLOCKS.size());
+            // A literal for the same reason as in healthReportsWhatTheLoaderActuallyRead.
+            assertThat(diagnostics.chunksLoaded()).isEqualTo(3L);
         }
     }
 
@@ -284,6 +328,189 @@ class MapInstancesTest {
         MapInstances.report(TRACK, withUnknownBlocks, reported);
 
         assertThat(reported).isTrue();
+    }
+
+    @Test
+    void readsAChunkWhoseStatusPredatesTheNamespacing(Env env) throws IOException {
+        // The defect this world loader exists to not have. Minecraft namespaced the chunk status in
+        // 1.20.2; Falco's fullness check accepts only "minecraft:full", so a chunk written before
+        // that is reported as not fully generated and comes back as air. On the shipped world that
+        // is 3464 of 9429 chunks. The round trip alone cannot see it — a 26.2 loader writes
+        // "minecraft:full" — so the chunk is aged on disk after it is written.
+        PlacedBlock block = TRACK_BLOCKS.getFirst();
+        writeWorld(env, TRACK, List.of(block));
+        patchStoredChunk(TRACK, block, MapInstancesTest::agedBeforeTheStatusWasNamespaced);
+
+        try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
+            Instance instance = instances.forWorld(TRACK);
+
+            assertBlocks(instance, List.of(block));
+
+            WorldHealth health = instances.healthOf(TRACK);
+            assertThat(health.chunksLoaded()).isEqualTo(1L);
+            assertThat(health.isSound()).isTrue();
+            // Not merely read: read because it was translated. Without the migration the same chunk
+            // is counted as partially generated instead, which is the silent third of the racetrack.
+            assertThat(instances.diagnosticsFor(TRACK).chunksMigrated()).isEqualTo(1L);
+            assertThat(instances.diagnosticsFor(TRACK).chunksSkippedAsPartial()).isZero();
+        }
+    }
+
+    @Test
+    void reportsChunksTheVersionPolicyRefusedWithTheVersionTheyCameFrom(Env env) throws IOException {
+        PlacedBlock block = TRACK_BLOCKS.getFirst();
+        writeWorld(env, TRACK, List.of(block));
+        patchStoredChunk(TRACK, block, MapInstancesTest::agedBeyondWhatTheLoaderReads);
+
+        try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
+            Instance instance = instances.forWorld(TRACK);
+            try {
+                instance.loadChunk(block.chunkX(), block.chunkZ()).join();
+            } catch (RuntimeException expected) {
+                // The refusal is the subject. Falco propagates it rather than reporting the chunk as
+                // absent, precisely so the server cannot generate a replacement over the real one.
+            }
+
+            WorldHealth health = instances.healthOf(TRACK);
+
+            assertThat(health.chunksRefused()).isEqualTo(1L);
+            assertThat(health.refusedVersions()).containsExactly(Map.entry("1400", 1L));
+            assertThat(health.isSound()).isFalse();
+            assertThat(health.describe()).contains("1 chunk(s) refused for their data version (1400 x 1)");
+        }
+    }
+
+    @Test
+    void warnsOncePerWorldAboutBlockNamesTheServerDoesNotKnow(Env env) throws IOException {
+        // The default policy turns an unknown name into air, which is a hole in the course that
+        // nothing else reports. Both worlds get one, so the latch can be shown to be per world.
+        PlacedBlock block = TRACK_BLOCKS.getFirst();
+        writeWorld(env, TRACK, List.of(block));
+        writeWorld(env, OTHER_TRACK, List.of(block));
+        patchStoredChunk(TRACK, block, MapInstancesTest::withAnUnknownBlockName);
+        patchStoredChunk(OTHER_TRACK, block, MapInstancesTest::withAnUnknownBlockName);
+
+        try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
+            Instance track = instances.forWorld(TRACK);
+            track.loadChunk(block.chunkX(), block.chunkZ()).join();
+
+            assertThat(instances.hasWarnedAboutUnknownBlocks(TRACK))
+                    .describedAs("nothing has asked for a report yet")
+                    .isFalse();
+
+            WorldHealth health = instances.healthOf(TRACK);
+
+            assertThat(health.unknownBlocks()).isEqualTo(1);
+            assertThat(health.isSound()).isFalse();
+            assertThat(track.getBlock(block.x(), block.y(), block.z()))
+                    .describedAs("the unknown name became air, which is the hole being warned about")
+                    .isEqualTo(Block.AIR);
+            assertThat(instances.hasWarnedAboutUnknownBlocks(TRACK)).isTrue();
+            // The second world has an unknown block of its own and has not been reported on, so a
+            // latch shared between worlds would already read true here.
+            assertThat(instances.hasWarnedAboutUnknownBlocks(OTHER_TRACK))
+                    .describedAs("the latch belongs to a world, not to the loader set")
+                    .isFalse();
+
+            Instance otherTrack = instances.forWorld(OTHER_TRACK);
+            otherTrack.loadChunk(block.chunkX(), block.chunkZ()).join();
+
+            assertThat(instances.healthOf(OTHER_TRACK).unknownBlocks()).isEqualTo(1);
+            assertThat(instances.hasWarnedAboutUnknownBlocks(OTHER_TRACK)).isTrue();
+            assertThat(instances.hasWarnedAboutUnknownBlocks(TRACK))
+                    .describedAs("still set, and set only once")
+                    .isTrue();
+        }
+    }
+
+    @Test
+    void closeClosesEveryLoaderEvenWhenOneWorldRefusesToBeUnregistered(Env env) throws IOException {
+        // InstanceManager refuses an instance that still has a player in it, and a shutdown is
+        // exactly when one still does. A close that stopped there would leave every loader after it
+        // in iteration order holding its region files open.
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+        writeWorld(env, OTHER_TRACK, OTHER_TRACK_BLOCKS);
+        MapInstances instances = new MapInstances(env.process().instance(), worldsRoot());
+        Instance track = instances.forWorld(TRACK);
+        Instance otherTrack = instances.forWorld(OTHER_TRACK);
+        FalcoAnvilLoader trackLoader = instances.loaderFor(TRACK);
+        FalcoAnvilLoader otherTrackLoader = instances.loaderFor(OTHER_TRACK);
+        track.loadChunk(0, 0).join();
+        env.createPlayer(track, new Pos(3, 65, 5));
+
+        assertThatThrownBy(instances::close).isInstanceOf(IllegalStateException.class);
+
+        assertThat(catchThrowable(() -> trackLoader.loadChunk(track, 0, 0)))
+                .describedAs("the loader of the world that refused to unregister")
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(catchThrowable(() -> otherTrackLoader.loadChunk(otherTrack, 0, 0)))
+                .describedAs("the loader of every world after it")
+                .isInstanceOf(IllegalStateException.class);
+        // Cleared too, so a later forWorld builds afresh instead of handing out a closed loader.
+        assertThat(instances.forWorld(OTHER_TRACK)).isNotSameAs(otherTrack);
+    }
+
+    /**
+     * Rewrites the stored NBT of the one chunk a block sits in, through Falco's own region file so
+     * the test does not re-implement the format it is testing against.
+     */
+    private void patchStoredChunk(String world, PlacedBlock block, UnaryOperator<CompoundBinaryTag> change)
+            throws IOException {
+        Path regionFile = worldsRoot().resolve(world)
+                .resolve("dimensions").resolve("minecraft").resolve("overworld").resolve("region")
+                .resolve("r.%d.%d.mca".formatted(block.chunkX() >> 5, block.chunkZ() >> 5));
+
+        try (RegionFile region = RegionFile.open(regionFile)) {
+            RegionFile.RawChunk raw = region.readRaw(block.chunkX(), block.chunkZ());
+            assertThat(raw).describedAs("the chunk to patch has to be on disk already").isNotNull();
+            CompoundBinaryTag stored = BinaryTagIO.unlimitedReader()
+                    .read(new ByteArrayInputStream(raw.decompress()), BinaryTagIO.Compression.NONE);
+            ByteArrayOutputStream patched = new ByteArrayOutputStream();
+            BinaryTagIO.writer().writeNamed(Map.entry("", change.apply(stored)), patched,
+                    BinaryTagIO.Compression.NONE);
+            region.writeRaw(block.chunkX(), block.chunkZ(), ChunkCompression.ZLIB,
+                    ChunkCompression.ZLIB.compress(patched.toByteArray()));
+        } catch (Exception exception) {
+            throw new IOException("could not patch the stored chunk of world '%s'".formatted(world), exception);
+        }
+    }
+
+    private static CompoundBinaryTag agedBeforeTheStatusWasNamespaced(CompoundBinaryTag chunk) {
+        return chunk.putString("Status", "full").putInt("DataVersion", PRE_NAMESPACE_DATA_VERSION);
+    }
+
+    private static CompoundBinaryTag agedBeyondWhatTheLoaderReads(CompoundBinaryTag chunk) {
+        return chunk.putInt("DataVersion", UNREADABLE_DATA_VERSION);
+    }
+
+    private static CompoundBinaryTag withAnUnknownBlockName(CompoundBinaryTag chunk) {
+        ListBinaryTag.Builder<CompoundBinaryTag> sections = ListBinaryTag.builder(BinaryTagTypes.COMPOUND);
+        boolean renamed = false;
+
+        for (BinaryTag rawSection : chunk.getList("sections")) {
+            CompoundBinaryTag section = (CompoundBinaryTag) rawSection;
+
+            if (!(section.get("block_states") instanceof CompoundBinaryTag blockStates)) {
+                sections.add(section);
+                continue;
+            }
+            ListBinaryTag.Builder<CompoundBinaryTag> palette = ListBinaryTag.builder(BinaryTagTypes.COMPOUND);
+
+            for (BinaryTag rawEntry : blockStates.getList("palette")) {
+                CompoundBinaryTag entry = (CompoundBinaryTag) rawEntry;
+
+                if (!"minecraft:air".equals(entry.getString("Name"))) {
+                    entry = entry.putString("Name", UNKNOWN_BLOCK_NAME);
+                    renamed = true;
+                }
+                palette.add(entry);
+            }
+            sections.add(section.put("block_states", blockStates.put("palette", palette.build())));
+        }
+        if (!renamed) {
+            throw new IllegalStateException("the fixture chunk holds nothing but air, so nothing could be renamed");
+        }
+        return chunk.put("sections", sections.build());
     }
 
     /**
