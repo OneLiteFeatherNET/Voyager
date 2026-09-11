@@ -9,6 +9,10 @@ group = "net.onelitefeather"
 subprojects {
     repositories {
         mavenCentral()
+        // Falco (falco-anvil) is published here, publicly and without credentials. The existing
+        // OneLiteFeatherRepository entry below is a different, authenticated repository; using it
+        // would make a fresh clone need secrets to resolve a public artefact.
+        maven("https://repo.onelitefeather.dev/releases")
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://maven.enginehub.org/repo/")
         maven {

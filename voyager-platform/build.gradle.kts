@@ -12,12 +12,27 @@ plugins {
 // the tree being replaced against 26.2.
 val minestomRebuildVersion = "2026.08.28-26.2"
 
+// falco-anvil 2.1.0 is compiled against Minestom 2026.06.20-26.1.2 and declares Minestom
+// compileOnly, so it links against the 26.2 pinned above at our runtime. A constant-pool comparison
+// of all three Falco modules against both Minestom jars, differenced against the 26.1.2 baseline,
+// leaves exactly two deltas and both are in falco-instance's ChunkGeneration. falco-anvil is
+// delta-free. Take that module and no other.
+val falcoVersion = "2.1.0"
+
 dependencies {
     api(project(":voyager-api"))
     api(project(":voyager-physics"))
     api(project(":voyager-race"))
 
     api("net.minestom:minestom:$minestomRebuildVersion")
+
+    api("net.onelitefeather:falco-anvil:$falcoVersion")
+
+    // The logging facade both Minestom and falco-anvil already put on the runtime classpath, and
+    // which neither exposes for compilation. compileOnly rather than implementation: this module
+    // needs the facade to compile a warning, not a second copy of it in the runtime graph that
+    // would then have to be kept in step with whatever Minestom resolves.
+    compileOnly("org.slf4j:slf4j-api:2.0.18")
 
     // Same reasoning as the main artifact above: pinned to the exact rebuild version, not the
     // catalog's `minestom` alias, so the test environment and the api dependency it tests against

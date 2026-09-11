@@ -22,10 +22,12 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 class ApiPurityTest {
 
     @ArchTest
-    static final ArchRule apiDoesNotDependOnMinestom =
+    static final ArchRule apiDoesNotDependOnMinestomOrItsWorldLoader =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
-                    .should().dependOnClassesThat().resideInAnyPackage("net.minestom..")
-                    .because("Minestom types belong to voyager-platform alone")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.minestom..", "net.onelitefeather.falco..")
+                    .because("Minestom types and the Falco world loader that reads region files for "
+                            + "it are both platform detail and belong to voyager-platform alone")
                     .allowEmptyShould(false);
 
     @ArchTest
@@ -57,10 +59,12 @@ class ApiPurityTest {
                     .allowEmptyShould(false);
 
     @ArchTest
-    static final ArchRule physicsDoesNotDependOnMinestom =
+    static final ArchRule physicsDoesNotDependOnMinestomOrItsWorldLoader =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
-                    .should().dependOnClassesThat().resideInAnyPackage("net.minestom..")
-                    .because("Minestom types belong to voyager-platform alone")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.minestom..", "net.onelitefeather.falco..")
+                    .because("Minestom types and the Falco world loader that reads region files for "
+                            + "it are both platform detail and belong to voyager-platform alone")
                     .allowEmptyShould(false);
 
     @ArchTest
@@ -106,12 +110,14 @@ class ApiPurityTest {
     // E4 is the stage that first puts it on a neighbouring module's classpath, which is exactly when
     // an unenforced prohibition turns into an argument.
     @ArchTest
-    static final ArchRule raceDoesNotDependOnMinestomOrXerus =
+    static final ArchRule raceDoesNotDependOnMinestomXerusOrItsWorldLoader =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
                     .should().dependOnClassesThat()
-                    .resideInAnyPackage("net.minestom..", "net.theevilreaper.xerus..")
-                    .because("a whole race has to play out in JUnit; Minestom and the Minestom-bound "
-                            + "Xerus phase system belong to voyager-platform alone")
+                    .resideInAnyPackage("net.minestom..", "net.theevilreaper.xerus..",
+                            "net.onelitefeather.falco..")
+                    .because("a whole race has to play out in JUnit; Minestom, the Minestom-bound "
+                            + "Xerus phase system and the Falco world loader that reads a racetrack "
+                            + "off disk are all platform detail and belong to voyager-platform alone")
                     .allowEmptyShould(false);
 
     @ArchTest

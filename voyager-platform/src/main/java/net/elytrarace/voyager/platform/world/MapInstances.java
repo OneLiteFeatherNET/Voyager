@@ -1,0 +1,247 @@
+package net.elytrarace.voyager.platform.world;
+
+import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.instance.InstanceManager;
+import net.minestom.server.world.DimensionType;
+import net.onelitefeather.falco.anvil.AnvilDiagnostics;
+import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+/**
+ * The racetrack worlds, one Minestom instance per world directory, read through Falco.
+ *
+ * <p><strong>Falco and not Minestom's own {@code AnvilLoader}</strong>, for one reason: Falco throws
+ * on a read failure where Minestom's loader reports the chunk as absent. Absence makes the server
+ * generate a fresh chunk in its place, and the next save writes that over real map geometry. For a
+ * racetrack that is the difference between a loud failure and a silent one.
+ *
+ * <p><strong>Nothing here ever saves.</strong> {@link #close()} closes the loaders and unregisters
+ * the instances and deliberately does not call {@code saveChunksToStorage()}. The race server reads
+ * maps and never writes them, so there is no state worth persisting — and a save path is precisely
+ * how a bug anywhere else in the rebuild would turn into a corrupted racetrack that no one notices
+ * until a player flies into the hole.
+ *
+ * <p><strong>One instance per world name, cached.</strong> That is a correctness requirement rather
+ * than an optimisation: a single world backs more than one map, so two {@code MapDefinition}s naming
+ * the same world have to get the same instance and the same loader. Two loaders over one set of
+ * region files is a bug.
+ *
+ * <p>The unknown-block policy stays at Falco's default — an unrecognised block name becomes air —
+ * and is made visible rather than fatal. A throwing policy runs inside a chunk load, where the
+ * exception is caught by code we do not control, and one removed decorative block would take the
+ * whole server down. {@link #healthOf(String)} logs the first time it sees a non-zero count so the
+ * hole is reported instead of merely being there.
+ */
+public final class MapInstances implements AutoCloseable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MapInstances.class);
+
+    private static final String REGION_FILE_SUFFIX = ".mca";
+
+    private final InstanceManager instanceManager;
+    private final Path worldsRoot;
+    private final Map<String, LoadedWorld> loaded = new ConcurrentHashMap<>();
+
+    /**
+     * @param instanceManager the manager the instances are registered with and unregistered from
+     * @param worldsRoot      the directory the world directories sit in; a world name resolves
+     *                        against it to a world root, the directory holding {@code region/} or
+     *                        {@code dimensions/}, not to {@code region/} itself
+     */
+    public MapInstances(InstanceManager instanceManager, Path worldsRoot) {
+        this.instanceManager = instanceManager;
+        this.worldsRoot = worldsRoot;
+    }
+
+    /**
+     * The instance a map's world is loaded into, building it on the first call for that name.
+     *
+     * @param world the world directory's name, as carried by {@code MapDefinition.world()}
+     * @return the instance for that world; the same object for every call with the same name
+     * @throws UnknownWorldException if no region data sits behind the name
+     */
+    public Instance forWorld(String world) {
+        return load(world).instance();
+    }
+
+    /**
+     * Falco's raw counters for a world, for a caller that needs more than {@link WorldHealth}
+     * reports — the acceptance run reads the per-status and per-version breakdowns from here.
+     *
+     * @param world the world directory's name
+     * @return the diagnostics object the loader for that world writes into
+     * @throws UnknownWorldException if no region data sits behind the name
+     */
+    public AnvilDiagnostics diagnosticsFor(String world) {
+        return load(world).diagnostics();
+    }
+
+    /**
+     * What the loader for a world has actually done so far.
+     *
+     * <p>Logs a warning the first time it sees an unknown block name for a world. Once, not per
+     * call: the count only grows, and a line repeated every time somebody asks is noise rather than
+     * a report.
+     *
+     * @param world the world directory's name
+     * @return a snapshot of that world's counters
+     * @throws UnknownWorldException if no region data sits behind the name
+     */
+    public WorldHealth healthOf(String world) {
+        LoadedWorld entry = load(world);
+        return report(world, entry.diagnostics(), entry.unknownBlocksReported());
+    }
+
+    /**
+     * Closes every loader and unregisters every instance this object created.
+     *
+     * <p>Does not save. See the class javadoc: the race server reads maps and never writes them.
+     */
+    @Override
+    public void close() {
+        IOException failure = null;
+
+        for (LoadedWorld entry : loaded.values()) {
+            instanceManager.unregisterInstance(entry.instance());
+            try {
+                entry.loader().close();
+            } catch (IOException exception) {
+                // Kept going rather than rethrown here: one region file that will not close must not
+                // leave the remaining loaders holding their file handles open.
+                if (failure == null) {
+                    failure = exception;
+                } else {
+                    failure.addSuppressed(exception);
+                }
+            }
+        }
+        loaded.clear();
+
+        if (failure != null) {
+            throw new UncheckedIOException("a world loader could not be closed", failure);
+        }
+    }
+
+    /**
+     * Reads a set of Falco counters into a {@link WorldHealth}.
+     *
+     * <p>Skipped chunks are the two "there was no data" counters and deliberately not Falco's own
+     * {@code chunksSkipped()}, which also folds in partially generated chunks. A partial chunk says
+     * the world is mid-generation; a missing region file or a missing entry says the data is not
+     * there at all, and only the second kind is what a mistyped world name looks like. A racetrack
+     * is a finished world, so a partial chunk in one is a different conversation.
+     *
+     * <p>Package-private for the test: the difference between the two-term sum and Falco's own
+     * total only shows on a world holding a partially generated chunk, which nothing the public
+     * surface can reach will produce — a loader only ever reads what is on disk, and the round trip
+     * writes fully generated chunks. Feeding a hand-filled {@code AnvilDiagnostics} in here pins the
+     * choice without a hand-written region file.
+     *
+     * <p>The unknown-block warning is raised here rather than by the caller, and raised once per
+     * world: the count only grows, so a line repeated on every call is noise rather than a report.
+     * The flag the guard flips is the only trace a log line leaves behind that a test can read,
+     * which is the second reason this method is reachable from one.
+     *
+     * @param world                 the world these counters belong to
+     * @param diagnostics           the counters a loader has been writing into
+     * @param unknownBlocksReported whether this world has already had its unknown blocks warned
+     *                              about; set by this method the first time there are any
+     * @return the report for that world
+     */
+    @VisibleForTesting
+    static WorldHealth report(String world, AnvilDiagnostics diagnostics, AtomicBoolean unknownBlocksReported) {
+        WorldHealth health = new WorldHealth(
+                world,
+                diagnostics.chunksLoaded(),
+                diagnostics.chunksSkippedWithoutRegionFile() + diagnostics.chunksSkippedWithoutEntry(),
+                diagnostics.unknownBlockCount(),
+                diagnostics.errors());
+
+        if (health.unknownBlocks() > 0 && unknownBlocksReported.compareAndSet(false, true)) {
+            LOGGER.warn("{} - each unknown name became air, so the course has holes where those blocks were",
+                    health.describe());
+        }
+        return health;
+    }
+
+    /**
+     * The loader behind a world, for the test that proves {@link #close()} really closes it.
+     *
+     * <p>Package-private and only that: {@link #close()} clears the cache, so nothing on the public
+     * surface can observe whether the loaders it held were closed or merely dropped. Do not widen
+     * this — a caller outside this package holding a loader could close it under a live instance.
+     *
+     * @param world the world directory's name
+     * @return the loader for that world
+     * @throws UnknownWorldException if no region data sits behind the name
+     */
+    @VisibleForTesting
+    FalcoAnvilLoader loaderFor(String world) {
+        return load(world).loader();
+    }
+
+    private LoadedWorld load(String world) {
+        return loaded.computeIfAbsent(world, this::open);
+    }
+
+    private LoadedWorld open(String world) {
+        Path worldRoot = worldsRoot.resolve(world);
+        AnvilDiagnostics diagnostics = new AnvilDiagnostics();
+        FalcoAnvilLoader loader = FalcoAnvilLoader.builder()
+                .diagnostics(diagnostics)
+                .build(worldRoot, DimensionType.OVERWORLD.key());
+
+        try {
+            // Falco's own resolution rather than a second derivation of the directory layout here:
+            // the loader picks the dimension layout or the legacy one depending on what exists, and
+            // a check that re-derived that choice could disagree with the loader it is guarding.
+            if (!holdsRegionData(loader.regionDirectory())) {
+                throw new UnknownWorldException(world, loader.regionDirectory(), loader.legacyLayout());
+            }
+        } catch (RuntimeException failure) {
+            closeQuietly(loader, world);
+            throw failure;
+        }
+
+        InstanceContainer instance = instanceManager.createInstanceContainer(DimensionType.OVERWORLD);
+        instance.setChunkLoader(loader);
+        instance.enableAutoChunkLoad(true);
+        return new LoadedWorld(instance, loader, diagnostics, new AtomicBoolean());
+    }
+
+    private static boolean holdsRegionData(Path regionDirectory) {
+        if (!Files.isDirectory(regionDirectory)) {
+            return false;
+        }
+        try (Stream<Path> entries = Files.list(regionDirectory)) {
+            return entries.anyMatch(entry -> entry.getFileName().toString().endsWith(REGION_FILE_SUFFIX));
+        } catch (IOException exception) {
+            throw new UncheckedIOException("cannot list the region directory %s".formatted(regionDirectory), exception);
+        }
+    }
+
+    private static void closeQuietly(FalcoAnvilLoader loader, String world) {
+        try {
+            loader.close();
+        } catch (IOException exception) {
+            LOGGER.warn("Could not close the rejected loader for world '{}'", world, exception);
+        }
+    }
+
+    private record LoadedWorld(Instance instance, FalcoAnvilLoader loader, AnvilDiagnostics diagnostics,
+                               AtomicBoolean unknownBlocksReported) {
+    }
+}
