@@ -33,7 +33,7 @@ jobs:
       ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
     steps:
       - name: Checkout the released tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
@@ -66,7 +66,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
