@@ -143,6 +143,10 @@ The counter-move costs one pass. Pick the field, move it off its constant, and s
 
 So: `git add` the file (or commit it) before the first mutation, revert with `git checkout -- <file>`, and confirm by comparing **content**, not by counting diff lines — `git diff --stat` showing nothing is not evidence for a file git never saw. This was found the hard way, by an implementer who noticed several mutation results disagreeing with each other and traced it back.
 
+**When a mutation survives and the line it removed is genuinely needed, ask whether the public surface can observe that line at all.** Sometimes it cannot: a cleanup that a later call would have performed anyway, a guard whose effect only shows on a path no public method reaches. Deleting the line is wrong — it is doing real work — and leaving the mutation unpinned is wrong too, because the next person to touch it has no signal.
+
+The answer is a narrow test seam: a package-private accessor that exposes exactly the state in question, and a test written against it. In this repository that move has now been made three times — for a collision cursor's cell classification, for a block-shape bound, and for a flight tracker's pending-event set — and each time the alternative was a line nothing could prove. Say in the accessor's javadoc that it exists for the test, so nobody widens it later thinking it is API.
+
 ## 10. Patterns avoided on purpose
 
 - **Singleton / static mutable state.** The existing `create()` factories (`CupDTOBuilder`, `*Service.create()`) exist specifically so tests can construct a fresh instance instead of reaching through a static accessor. A singleton undoes that on day one.
