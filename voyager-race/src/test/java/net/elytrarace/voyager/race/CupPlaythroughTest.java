@@ -78,9 +78,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       no "ring count" can be confused with a player count, a map count or a map index.
  *   <li>Reference times 3 s and 5 s, so a scorer that hardcoded one map's reference lands on the
  *       wrong medal for the other.
- *   <li>Each {@link Ring#points()} is a distinct value and none of them is 10: {@link MapScorer} pays
- *       a flat 10 per ring, so a scorer that summed {@code ring.points()} instead would produce 115
- *       and 114 rather than 50 and 40.
+ *   <li>Each {@link Ring#points()} is a distinct value, none of them is 10, and no leading run of
+ *       them sums to ten times its length: map one pays 113 for all five rings and 18 for its first
+ *       two, map two 114 for all four and 17 for its first one. A scorer that paid a flat 10 a ring
+ *       — which is what this one did until the final review — would produce 50, 20, 40 and 10
+ *       instead, and every one of those differs.
  *   <li>Every ring radius differs, so a pass checked against a neighbouring ring's radius shows up.
  *   <li>Per-map speeds differ per racer, so nobody's fastest map is decided by a single speed.
  *   <li>Which racer fails to finish rotates between the two maps, so the placement order on map two
@@ -136,7 +138,7 @@ class CupPlaythroughTest {
             new Vec3(0.5, 64.0, 0.0),
             List.of(
                     new Ring(0, new Vec3(0.0, 64.0, 31.0), new Vec3(0.6, 0.0, 0.8), 6.0, 7, RingType.STANDARD),
-                    new Ring(1, new Vec3(2.0, 66.0, 62.0), new Vec3(0.0, 0.6, 0.8), 7.0, 13, RingType.BOOST),
+                    new Ring(1, new Vec3(2.0, 66.0, 62.0), new Vec3(0.0, 0.6, 0.8), 7.0, 11, RingType.BOOST),
                     new Ring(2, new Vec3(-1.0, 65.0, 93.0), new Vec3(TWO_THIRDS, ONE_THIRD, TWO_THIRDS), 8.0, 21,
                             RingType.CHECKPOINT),
                     new Ring(3, new Vec3(1.0, 67.0, 121.0), new Vec3(0.48, 0.64, 0.6), 9.0, 33, RingType.STANDARD),
@@ -409,13 +411,13 @@ class CupPlaythroughTest {
         assertThat(resultFor(1, "Rook").score().medal()).isEqualTo(MedalTier.DIAMOND);
 
         // Pike closes his elytra after two of map one's five rings: DNF, no medal points, and the
-        // twenty points for the two rings he did pass are still his.
+        // eighteen points for the two rings he did pass are still his.
         Result pikeOnMapOne = resultFor(0, "Pike");
         assertThat(pikeOnMapOne.progress().passedCount()).isEqualTo(2);
         assertThat(pikeOnMapOne.finishedOnGameTick()).isEqualTo(NOT_FINISHED);
         assertThat(pikeOnMapOne.score().medal()).isEqualTo(MedalTier.DNF);
         assertThat(pikeOnMapOne.score().medalPoints()).isZero();
-        assertThat(pikeOnMapOne.score().ringPoints()).isEqualTo(20);
+        assertThat(pikeOnMapOne.score().ringPoints()).as("rings 0 and 1 of ember-ascent, 7 + 11").isEqualTo(18);
 
         // Wren does the same on map two after one of four rings — a different ring count on a
         // different map, so neither number could be hardcoded.
@@ -423,7 +425,7 @@ class CupPlaythroughTest {
         assertThat(wrenOnMapTwo.progress().passedCount()).isEqualTo(1);
         assertThat(wrenOnMapTwo.finishedOnGameTick()).isEqualTo(NOT_FINISHED);
         assertThat(wrenOnMapTwo.score().medal()).isEqualTo(MedalTier.DNF);
-        assertThat(wrenOnMapTwo.score().ringPoints()).isEqualTo(10);
+        assertThat(wrenOnMapTwo.score().ringPoints()).as("ring 0 of glacier-chicane").isEqualTo(17);
     }
 
     /**
@@ -544,12 +546,12 @@ class CupPlaythroughTest {
      */
     @Test
     void placementIsAwardedPerMapFromThatMapsOwnTotals() {
-        // Map one totals before placement: Rook 50 + 60 = 110, Wren 50 + 30 = 80, Pike 20 + 0 = 20.
+        // Map one totals before placement: Rook 113 + 60 = 173, Wren 113 + 30 = 143, Pike 18 + 0 = 18.
         assertThat(resultFor(0, "Rook").score().placementBonus()).isEqualTo(10);
         assertThat(resultFor(0, "Wren").score().placementBonus()).isEqualTo(6);
         assertThat(resultFor(0, "Pike").score().placementBonus()).isEqualTo(3);
 
-        // Map two totals before placement: Rook 40 + 60 = 100, Pike 40 + 45 = 85, Wren 10 + 0 = 10.
+        // Map two totals before placement: Rook 114 + 60 = 174, Pike 114 + 45 = 159, Wren 17 + 0 = 17.
         assertThat(resultFor(1, "Rook").score().placementBonus()).isEqualTo(10);
         assertThat(resultFor(1, "Pike").score().placementBonus()).isEqualTo(6);
         assertThat(resultFor(1, "Wren").score().placementBonus()).isEqualTo(3);
@@ -558,25 +560,25 @@ class CupPlaythroughTest {
     /**
      * The cup standing, with every number written out.
      *
-     * <p>Ring points are a flat 10 a ring; medal points are 60 / 45 / 30 / 15 / 5 / 0 for diamond /
-     * gold / silver / bronze / finish / DNF; placement is 10 / 6 / 3 and then 1 flat.
+     * <p>Ring points are each passed ring's own value; medal points are 60 / 45 / 30 / 15 / 5 / 0 for
+     * diamond / gold / silver / bronze / finish / DNF; placement is 10 / 6 / 3 and then 1 flat.
      *
      * <pre>
-     * Map "ember-ascent" — 5 rings, 3.000 s reference
-     *                       ring pts        time     medal        placement    map total
-     *   Rook   5 x 10 =          50     2.900 s     DIAMOND  60   1st  +10  =        120
-     *   Wren   5 x 10 =          50     3.650 s     SILVER   30   2nd   +6  =         86
-     *   Pike   2 x 10 =          20     did not finish  DNF   0   3rd   +3  =         23
+     * Map "ember-ascent" — 5 rings worth 7, 11, 21, 33, 41 — 3.000 s reference
+     *                            ring pts        time     medal        placement    map total
+     *   Rook   7+11+21+33+41 =        113     2.900 s     DIAMOND  60   1st  +10  =        183
+     *   Wren   7+11+21+33+41 =        113     3.650 s     SILVER   30   2nd   +6  =        149
+     *   Pike   7+11          =         18     did not finish  DNF   0   3rd   +3  =         21
      *
-     * Map "glacier-chicane" — 4 rings, 5.000 s reference
-     *   Rook   4 x 10 =          40     2.500 s     DIAMOND  60   1st  +10  =        110
-     *   Pike   4 x 10 =          40     5.250 s     GOLD     45   2nd   +6  =         91
-     *   Wren   1 x 10 =          10     did not finish  DNF   0   3rd   +3  =         13
+     * Map "glacier-chicane" — 4 rings worth 17, 23, 31, 43 — 5.000 s reference
+     *   Rook   17+23+31+43   =        114     2.500 s     DIAMOND  60   1st  +10  =        184
+     *   Pike   17+23+31+43   =        114     5.250 s     GOLD     45   2nd   +6  =        165
+     *   Wren   17            =         17     did not finish  DNF   0   3rd   +3  =         20
      *
      * Cup totals
-     *   Rook   120 + 110 = 230
-     *   Pike    23 +  91 = 114
-     *   Wren    86 +  13 =  99
+     *   Rook   183 + 184 = 367
+     *   Pike    21 + 165 = 186
+     *   Wren   149 +  20 = 169
      * </pre>
      *
      * <p>Rook wins the cup, Pike comes second having lost map one badly and won a medal on map two,
@@ -585,16 +587,16 @@ class CupPlaythroughTest {
      */
     @Test
     void cupTotalsAreOrderedAsThePlayWarrants() {
-        assertThat(resultFor(0, "Rook").score().total()).isEqualTo(120);
-        assertThat(resultFor(0, "Wren").score().total()).isEqualTo(86);
-        assertThat(resultFor(0, "Pike").score().total()).isEqualTo(23);
-        assertThat(resultFor(1, "Rook").score().total()).isEqualTo(110);
-        assertThat(resultFor(1, "Pike").score().total()).isEqualTo(91);
-        assertThat(resultFor(1, "Wren").score().total()).isEqualTo(13);
+        assertThat(resultFor(0, "Rook").score().total()).isEqualTo(183);
+        assertThat(resultFor(0, "Wren").score().total()).isEqualTo(149);
+        assertThat(resultFor(0, "Pike").score().total()).isEqualTo(21);
+        assertThat(resultFor(1, "Rook").score().total()).isEqualTo(184);
+        assertThat(resultFor(1, "Pike").score().total()).isEqualTo(165);
+        assertThat(resultFor(1, "Wren").score().total()).isEqualTo(20);
 
-        assertThat(cupScores.get("Rook").totalPoints()).isEqualTo(230);
-        assertThat(cupScores.get("Pike").totalPoints()).isEqualTo(114);
-        assertThat(cupScores.get("Wren").totalPoints()).isEqualTo(99);
+        assertThat(cupScores.get("Rook").totalPoints()).isEqualTo(367);
+        assertThat(cupScores.get("Pike").totalPoints()).isEqualTo(186);
+        assertThat(cupScores.get("Wren").totalPoints()).isEqualTo(169);
 
         assertThat(cupScores.get("Rook").totalPoints())
                 .isGreaterThan(cupScores.get("Pike").totalPoints());
