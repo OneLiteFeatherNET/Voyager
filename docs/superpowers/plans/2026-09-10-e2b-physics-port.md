@@ -1083,10 +1083,67 @@ the port is wrong, not that the harness might be."
 
 ### Task 7: Real fixtures and threshold calibration
 
-**Depends on E2a being complete.** Do not start this task until the eight fixtures exist.
+**E2a is complete.** Nine fixtures — not eight; `sustained-turn` was added because the other
+eight all fly at yaw 0, where the look vector's x component vanishes and the whole x axis drops out
+of the tick. They are committed at `tools/trace-recorder/traces/*.json` and must be **moved** to
+`voyager-physics/src/test/resources/traces/`, which is where the spec puts them and where the
+consuming tests live.
+
+## What has already been measured
+
+Do not re-derive this. Every fixture was replayed through `ElytraSimulator` as a **one-step
+residual** — take the recorded state at k, advance exactly one tick, compare against the recorded
+state at k+1 — with gravity read from the metadata, the firework flags read from the fixture, and an
+empty `CollisionSpace`:
+
+| Profile | ticks | steps exactly zero | worst residual | deviating steps |
+|---|---|---|---|---|
+| `steady-glide` | 200 | **199/199** | 0 | — |
+| `climb-into-stall` | 200 | **199/199** | 0 | — |
+| `sustained-turn` | 200 | 194/199 | 2.6e-03 | 31–34, plus 158 |
+| `pitch-extremes` | 200 | 194/199 | 1.9e-03 | 195–198, plus 172 |
+| `dive-and-pull-out` | 200 | 188/199 | 2.5e-03 | 163–172, plus 139 |
+| `single-boost` | 200 | 175/199 | 2.2e-02 | **29–51**, plus 77 |
+| `chained-boosts` | 200 | 169/199 | 2.7e-02 | **19–47**, plus 73 |
+| `wall-graze` | 220 | 170/219 | 7.1e-01 | from 170 |
+| `landing` | 200 | 137/199 | 7.3e-01 | from 138 |
+
+This already settles Step 2's classification for most of them:
+
+- **Two profiles need no tolerance at all.** Steady flight and the climb into stall are bit-exact
+  against real Vanilla. Any threshold that lets them pass by a margin is a threshold that would
+  also hide a real defect. Assert exactly zero for these.
+- **The boost is a port defect, not a tolerance question.** In `single-boost` the boost is active on
+  ticks 30–51 and the deviating steps are 29–51 — exactly the window, not one tick more. The port
+  has a boost branch (`applyFireworkBoost`); it does not match Vanilla, and its magnitude is an
+  order above everything else. What to reproduce is visible in the recording: during a boost `velZ`
+  stands still (1.671612 / 1.671612 / 1.671613) and only falls afterwards, so Vanilla blends toward
+  a terminal speed rather than adding an impulse. **Fix the step. Do not widen a threshold.**
+- **`wall-graze` and `landing` are not findings yet.** That measurement ran an empty
+  `CollisionSpace`, so a 0.7-block deviation at the collision and touchdown ticks is expected. Feed
+  a `CollisionSpace` from each fixture's own `worldSlice` — 98 and 196 boxes, coordinates already
+  checked against the scripts' `# world:` lines — and measure again before classifying them.
+- **Three profiles show short bursts at manoeuvre transitions** (4–10 steps, 2–3e-03), plus a single
+  isolated step in almost every profile (77, 73, 158, 139, 172). A contiguous window and a lone
+  outlier are different phenomena; classify them separately. `tickTraced` gives the per-step values
+  needed to name which `ElytraStep` diverges.
+
+**One methodological point that changes the answer.** A free-running replay measures the starting
+condition *and* the formula, and makes a single slip look like a continuous error: the same
+`steady-glide` fixture that is bit-exact step by step accumulated 8.2e-02 blocks of drift when
+replayed free-running from its spawn point, purely as the decaying echo of one anomalous first
+transition that has since been fixed in the recorder. Calibrate a threshold **only** against the
+one-step residual. Keep a free-running test as well, with its own separate bound, but never as the
+only one — on its own it points at 199 steps where nothing is wrong.
+
+A working harness for both forms is at
+`/tmp/claude-1000/-mnt-projects-oss-onelitefeather-Voyager/bf572fec-d4f7-4155-ae01-787f00089f05/scratchpad/tick0check/`
+(`Residual.java`, `Replay.java`). It is scratch code, not something to merge, but the numbers above
+came out of it and it is the fastest way to reproduce them.
 
 **Files:**
-- Create: `voyager-physics/src/test/resources/traces/*.json` — the eight fixtures, copied from the recorder
+- Create: `voyager-physics/src/test/resources/traces/*.json` — the nine fixtures, moved from `tools/trace-recorder/traces/`
+- Delete: `tools/trace-recorder/traces/*.json` — one home for the fixtures, not two
 - Create: `voyager-physics/src/test/java/net/elytrarace/voyager/physics/trace/VanillaParityTest.java`
 - Modify: `docs/reference/elytra-physics-26.2.md` — record the measured thresholds
 - Modify: `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` — replace the assumed thresholds with the measured ones
@@ -1099,7 +1156,7 @@ The spec's thresholds — per-tick position deviation under `1e-6` blocks, cumul
 
 - [ ] **Step 1: Copy the fixtures and run them**
 
-Copy the eight fixtures into `voyager-physics/src/test/resources/traces/`. Write `VanillaParityTest` as a parameterised test over every fixture on the classpath, so adding a ninth needs no code change.
+Move the nine fixtures into `voyager-physics/src/test/resources/traces/` and delete the originals under `tools/trace-recorder/traces/` — two copies of a fixture is one copy too many, and the recorder does not read them back. Write `VanillaParityTest` as a parameterised test over every fixture on the classpath, so adding a ninth needs no code change.
 
 Run it and record, per profile: the maximum per-tick deviation, the cumulative deviation, and — for any profile that fails — the first diverging tick and step.
 
@@ -1126,7 +1183,7 @@ This is the mechanism the design names for Liskov substitutability — ArchUnit 
 - [ ] **Step 5: Run the full suite**
 
 Run: `./gradlew build`
-Expected: BUILD SUCCESSFUL, with all eight profiles green at the calibrated thresholds.
+Expected: BUILD SUCCESSFUL, with all nine profiles green at the calibrated thresholds — and the two bit-exact profiles green at exactly zero, not within a margin.
 
 - [ ] **Step 6: Commit**
 
