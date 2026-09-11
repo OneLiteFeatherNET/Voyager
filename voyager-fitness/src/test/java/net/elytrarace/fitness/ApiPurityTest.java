@@ -1,9 +1,16 @@
 package net.elytrarace.fitness;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaCall;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.properties.HasName;
+import com.tngtech.archunit.core.domain.properties.HasOwner;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+
+import net.minestom.server.coordinate.Vec;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -181,6 +188,41 @@ class ApiPurityTest {
                     .should().dependOnClassesThat()
                     .haveFullyQualifiedName("net.minestom.server.collision.ShapeImpl")
                     .because("the one cast past Minestom's Shape interface lives in BlockShapes alone")
+                    .allowEmptyShould(false);
+
+    // Task 2 left this as a finding for whoever wired the first tick loop: the design's single
+    // velocity exit was stated in prose only. "One place to look when a velocity turns up that
+    // should not have" is worth nothing if a second place can be added without the build noticing,
+    // and E4's tick driver is where the temptation first appears — it is the first code that holds a
+    // per-tick velocity for a live player. Matched by call target name and owner package rather than
+    // by the declared type at the call site: setVelocity is inherited from Entity, so a caller
+    // holding an Entity or a LivingEntity emits a different owner and would walk past a rule pinned
+    // to Player.
+    private static final DescribedPredicate<JavaCall<?>> SET_VELOCITY_ON_A_MINESTOM_TYPE =
+            JavaCall.Predicates.target(HasName.Predicates.name("setVelocity"))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.resideInAPackage("net.minestom.."))))
+                    .as("call setVelocity on a Minestom type");
+
+    @ArchTest
+    static final ArchRule onlyVelocityExitSendsAVelocityToMinestom =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.platform.convert.VelocityExit")
+                    .should().callMethodWhere(SET_VELOCITY_ON_A_MINESTOM_TYPE)
+                    .because("normal elytra flight is client-authoritative and the server simulates "
+                            + "silently alongside it; a velocity reaches Minestom only for a firework "
+                            + "boost, a ring BOOST/SLOW effect and an out-of-bounds reset, and all "
+                            + "three go through net.elytrarace.voyager.platform.convert.VelocityExit")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule onlyVectorsBuildsAMinestomVectorFromDomainCoordinates =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.platform.convert.Vectors")
+                    .should().callConstructor(Vec.class, double.class, double.class, double.class)
+                    .because("the Vec3 <-> Minestom boundary is one class, so a value that crossed it "
+                            + "without the finiteness re-assertion — or with a unit conversion the "
+                            + "coordinate path must not carry — has exactly one place to have come from")
                     .allowEmptyShould(false);
 
     // io.airlift:guice keeps upstream Guice's com.google.inject package name (see the greenfield
