@@ -5,6 +5,19 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.12.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.10...v1.12.0) (2026-09-11)
+
+
+### Features
+
+* E3 race core — a whole cup playable without a server ([#253](https://github.com/OneLiteFeatherNET/Voyager/issues/253)) ([c4534bb](https://github.com/OneLiteFeatherNET/Voyager/commit/c4534bb8260a4c6c9398e10044074a23cfd8f04c))
+
+
+### Miscellaneous Chores
+
+* **ci:** adopt shared workflows and central Renovate preset ([#233](https://github.com/OneLiteFeatherNET/Voyager/issues/233)) ([b688e7b](https://github.com/OneLiteFeatherNET/Voyager/commit/b688e7bfec164d335e65820d948f16ff083875c6))
+* **ci:** put every commit type in the changelog ([#257](https://github.com/OneLiteFeatherNET/Voyager/issues/257)) ([db22a66](https://github.com/OneLiteFeatherNET/Voyager/commit/db22a66f3e10aba860a8abaeb7164139e6dbc39a))
+
 ## [1.11.9](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.8...v1.11.9) (2026-09-11)
 
 

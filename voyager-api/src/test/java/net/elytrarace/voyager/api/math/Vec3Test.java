@@ -64,4 +64,31 @@ class Vec3Test {
     void exposesAZeroConstant() {
         assertThat(Vec3.ZERO).isEqualTo(new Vec3(0, 0, 0));
     }
+
+    @Test
+    void computesTheDotProduct() {
+        // Three non-zero, mutually distinct components on both sides: with every component equal, or
+        // any of them zero, a dot product that sums the wrong pair still returns the right number.
+        Vec3 a = new Vec3(2, 3, 4);
+        Vec3 b = new Vec3(5, 6, 7);
+
+        // 2*5 + 3*6 + 4*7 = 10 + 18 + 28 = 56
+        assertThat(a.dot(b)).isEqualTo(56.0);
+    }
+
+    @Test
+    void computesTheDistanceBetweenTwoPoints() {
+        Vec3 a = new Vec3(1, 2, 3);
+        Vec3 b = new Vec3(4, 6, 3);
+
+        // delta = (3, 4, 0), length 5 — distanceTo must return the real distance, not its square.
+        assertThat(a.distanceTo(b)).isCloseTo(5.0, within(1e-12));
+    }
+
+    @Test
+    void distanceToIsZeroForTheSamePoint() {
+        Vec3 vec = new Vec3(1, 2, 3);
+
+        assertThat(vec.distanceTo(vec)).isZero();
+    }
 }
