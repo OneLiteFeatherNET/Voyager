@@ -1154,13 +1154,13 @@ came out of it and it is the fastest way to reproduce them.
 
 The spec's thresholds — per-tick position deviation under `1e-6` blocks, cumulative drift under `0.01` blocks over 200 ticks — are **stated assumptions, not measurements**. This task is where they are confirmed or corrected against evidence. Correcting them is a legitimate outcome; quietly widening them until the suite passes is not.
 
-- [ ] **Step 1: Copy the fixtures and run them**
+- [x] **Step 1: Copy the fixtures and run them**
 
 Move the nine fixtures into `voyager-physics/src/test/resources/traces/` and delete the originals under `tools/trace-recorder/traces/` — two copies of a fixture is one copy too many, and the recorder does not read them back. Write `VanillaParityTest` as a parameterised test over every fixture on the classpath, so adding a ninth needs no code change.
 
 Run it and record, per profile: the maximum per-tick deviation, the cumulative deviation, and — for any profile that fails — the first diverging tick and step.
 
-- [ ] **Step 2: Read the failures before touching the thresholds**
+- [x] **Step 2: Read the failures before touching the thresholds**
 
 For each failing profile, decide which of these it is, and say so in the report with evidence:
 
@@ -1170,22 +1170,22 @@ For each failing profile, decide which of these it is, and say so in the report 
 
 Only the third justifies changing a threshold, and only with the measured distribution written down beside it.
 
-- [ ] **Step 3: Set the thresholds from measurement**
+- [x] **Step 3: Set the thresholds from measurement**
 
 Set the per-tick and cumulative bounds from the observed values with a stated margin, and record in `docs/reference/elytra-physics-26.2.md`: the measured maximum per profile, the chosen bound, and the margin between them. Update the spec's Trace acceptance section to match, replacing the assumed numbers rather than leaving both.
 
-- [ ] **Step 4: Add the contract tests for the step hierarchy**
+- [x] **Step 4: Add the contract tests for the step hierarchy**
 
 Create an abstract contract test that every `FlightStep` must pass: it never returns a non-finite vector for finite input, it is a pure function of its two arguments, and it leaves the vector unchanged when its guard condition is not met. Run all five steps through it.
 
 This is the mechanism the design names for Liskov substitutability — ArchUnit cannot check behavioural substitutability, a contract test can.
 
-- [ ] **Step 5: Run the full suite**
+- [x] **Step 5: Run the full suite**
 
 Run: `./gradlew build`
 Expected: BUILD SUCCESSFUL, with all nine profiles green at the calibrated thresholds — and the two bit-exact profiles green at exactly zero, not within a margin.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add voyager-physics docs
@@ -1200,10 +1200,10 @@ must pass, which is the mechanism for substitutability that ArchUnit cannot chec
 
 ## Definition of Done for E2b
 
-- [ ] `voyager-physics` depends only on `voyager-api`, and `voyager-fitness` enforces it.
-- [ ] `FitnessCoverageTest` maps the module and at least one rule names its prefix; removing either turns the build red.
-- [ ] The three fidelity traps each have a test whose failure would be caused by exactly the tidy-up that reintroduces them.
-- [ ] The simulator is a pure function: no state, no configuration, no injection point.
-- [ ] The replay harness is proven against synthetic fixtures before meeting a real one.
-- [ ] All eight recorded profiles replay within thresholds that were **measured and recorded**, not assumed.
-- [ ] Where the port deliberately stops short of Vanilla — step-up, partial block shapes, entity collision — the module says so in its own documentation.
+- [x] `voyager-physics` depends only on `voyager-api`, and `voyager-fitness` enforces it.
+- [x] `FitnessCoverageTest` maps the module and at least one rule names its prefix; removing either turns the build red.
+- [x] The three fidelity traps each have a test whose failure would be caused by exactly the tidy-up that reintroduces them.
+- [x] The simulator is a pure function: no state, no configuration, no injection point.
+- [x] The replay harness is proven against synthetic fixtures before meeting a real one.
+- [x] All **nine** recorded profiles replay within thresholds that were **measured and recorded**, not assumed — and the measurement is exactly zero, so the recorded bound has no slack in it. Two kinds of tick are excluded, both derived from the recording rather than chosen, and both documented: `landing` after touchdown (Vanilla has stopped gliding) and `chained-boosts`'s burn on velocity only (the fixture format cannot say how many rockets were firing — a recording defect with a named fix in E2a's recorder).
+- [x] Where the port deliberately stops short of Vanilla — step-up, partial block shapes, entity collision, `stopFallFlying`, the `onClimbable` branch, collision damage, one firework impulse per tick — the module says so in its own documentation (`MovementResolver`, `ElytraSimulator`, `FlightInput`, `RecordedGlide`).
