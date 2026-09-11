@@ -1,14 +1,21 @@
 name: Build
 
-# Pull requests are built by build-pr.yml, which calls the shared org workflow and produces job
-# names identical to this one's — "Build on <os>". Running both meant nine build jobs per pull
-# request instead of three. This one keeps the push trigger so a branch, and main after a merge,
-# still gets built; the required status checks on main are satisfied by build-pr.yml on the pull
-# request itself. Both must keep producing the same job names: the ruleset main-branch-protection
-# requires "Build on ubuntu-latest", "Build on windows-latest" and "Build on macos-latest" by name,
-# so renaming either job blocks every pull request.
+# This workflow used to trigger on both `push: '**'` and `pull_request: '**'`, so every push to a
+# pull request's branch ran it twice — six jobs where three were meant, on top of the three that
+# build-pr.yml contributes through the shared org workflow. Nine per pull request.
+#
+# Now: pull requests are covered by the `pull_request` trigger here, which is also what satisfies
+# the ruleset main-branch-protection — it requires "Build on ubuntu-latest", "Build on
+# windows-latest" and "Build on macos-latest" by name, and those names come from this file's
+# matrix. Renaming that job blocks every pull request. The `push` trigger is narrowed to `main`, so
+# a merge is still built without duplicating the branch's own pull-request run.
+#
+# build-pr.yml produces differently named jobs (`build / Build (<os>)`) through the shared workflow
+# and is not what the ruleset watches.
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: ['**']
 
 permissions:
