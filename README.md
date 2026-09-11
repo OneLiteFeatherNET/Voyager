@@ -153,7 +153,12 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+GNU Affero General Public License v3.0 — see [LICENSE](LICENSE).
+
+Voyager loads its worlds through [Falco](https://github.com/OneLiteFeatherNET/Falco), which is
+AGPL-3.0, so the combined work is too. Because this is a server people connect to, section 13
+applies even where nothing is distributed: anyone interacting with a Voyager server over a network
+must be offered its source.
 
 ---
 
