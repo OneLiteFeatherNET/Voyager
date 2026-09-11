@@ -24,18 +24,51 @@ class DesignRuleTest {
     // it is the closed hierarchy's hook, not an implementation — so it stays in voyager-api rather
     // than moving to voyager-race. Matched narrowly: abstract AND named Base*, not abstract alone,
     // so an unrelated abstract class can't sneak through the same door.
+    //
+    // The name alone is not enough, though. Until this was tightened, an `abstract class BaseX` in
+    // voyager-api could carry fields and concrete method bodies and still pass — implementation
+    // walking into the module the spec defines as having none. So the extension point must also be
+    // EMPTY: no declared field, and every declared method abstract. That does not contradict rule 1,
+    // whose BaseX normally does carry shared implementation; it is the api module that cannot host
+    // it, and a sealed interface whose base needs real behaviour belongs in an implementation module.
+    //
+    // KNOWN GAP, deliberately left: a constructor is a JavaConstructor, not a JavaMethod, so
+    // `protected BaseX() { … }` with a body walks through this condition untouched. A constructor in
+    // a class with no fields can do very little — it has nothing to assign — so this is recorded
+    // rather than closed. Closing it means also iterating getConstructors() and rejecting any whose
+    // body is more than the implicit super() call, which ArchUnit cannot see from bytecode alone.
     private static final ArchCondition<JavaClass> BE_A_RECORD_AN_INTERFACE_AN_ENUM_OR_A_SEALED_BASE =
             new ArchCondition<>(
-                    "be a record, an interface, an enum, or a sealed hierarchy's abstract Base* extension point") {
+                    "be a record, an interface, an enum, or a sealed hierarchy's empty abstract Base* "
+                            + "extension point") {
                 @Override
                 public void check(JavaClass item, ConditionEvents events) {
-                    boolean isSealedExtensionPoint = item.getModifiers().contains(JavaModifier.ABSTRACT)
+                    boolean namedLikeAnExtensionPoint = item.getModifiers().contains(JavaModifier.ABSTRACT)
                             && item.getSimpleName().startsWith("Base");
-                    if (!item.isRecord() && !item.isInterface() && !item.isEnum() && !isSealedExtensionPoint) {
+                    if (item.isRecord() || item.isInterface() || item.isEnum()) {
+                        return;
+                    }
+                    if (!namedLikeAnExtensionPoint) {
                         events.add(SimpleConditionEvent.violated(item,
                                 "%s is neither a record, an interface, an enum, nor an abstract Base* "
                                         + "extension point".formatted(item.getName())));
+                        return;
                     }
+                    if (!item.getFields().isEmpty()) {
+                        events.add(SimpleConditionEvent.violated(item,
+                                "%s is an abstract Base* extension point but declares field(s) %s — "
+                                        + "state is implementation, and voyager-api carries none"
+                                                .formatted(item.getName(), item.getFields())));
+                    }
+                    item.getMethods().stream()
+                            .filter(method -> !method.getModifiers().contains(JavaModifier.SYNTHETIC)
+                                    && !method.getModifiers().contains(JavaModifier.BRIDGE))
+                            .filter(method -> !method.getModifiers().contains(JavaModifier.ABSTRACT))
+                            .forEach(method -> events.add(SimpleConditionEvent.violated(item,
+                                    "%s is an abstract Base* extension point but declares the concrete "
+                                            + "method %s — a method body is implementation, and "
+                                            + "voyager-api carries none"
+                                                    .formatted(item.getName(), method.getFullName()))));
                 }
             };
 
