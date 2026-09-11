@@ -160,3 +160,52 @@ Done when: the old tree is gone and every module is on Java 25.
 - **E5.10 may be redundant.** It amends `CLAUDE.md` rule 8 to cover row-to-record adapters, but D12
   supersedes that file and E1.5 rewrites it. The extension should simply be part of the E1.5
   rewrite, and E5.10 should then be dropped rather than carried for four stages.
+
+## Open pull requests — merge order, rehearsed locally 2026-09-10
+
+Every PR below was merged and built in throwaway worktrees outside the repository
+(`voyager-int-greenfield`, `voyager-int-deps`, `voyager-int-redcheck`). Nothing was pushed and no
+PR was merged on GitHub. The point was to learn what the individual green checkmarks cannot say:
+these PRs were each tested against a `main` that did not contain the others.
+
+**Batch 1 — the greenfield stack, in this order.** #236, then #238 (stacked on #236, not on `main`).
+Merges clean on `main` @7cca737, full build green, 1019 tests, 0 failures.
+Note: #236 has two unpushed local commits — the E2a and E2b plan documents, 2193 lines of Markdown,
+no code. They belong to no PR right now.
+
+**Batch 2 — 21 dependency PRs, safe together.**
+`110 111 189 198 208 209 210 212 213 215 216 221 222 223 224 227 228 229 230 232 237`
+Twelve needed trivial conflict resolution — adjacent lines in `settings.gradle.kts`, which carries
+the version catalogue programmatically, so most Renovate PRs pass through that one file. Full build
+green on `main`, and green again when merged on top of batch 1 (verified separately: 1019 tests,
+Gradle 9.6.0 from #210).
+
+**#198 is not the Minestom risk it looks like.** It moves only the old tree's pin
+(2026.04.13 -> 2026.05.11) and never touches the rebuild's `2026.08.28-26.2`.
+
+**Held back, with reasons:**
+
+| PR | Why | What it needs |
+|---|---|---|
+| #203 + #204 | Adventure 5.x removes `TranslationRegistry` (now `TranslationStore`) and drops `UTF8ResourceBundleControl`. Used by `shared/common`'s `PluginTranslationRegistry` and `LanguageServiceImpl`, and by `plugins/setup/.../ElytraRace.java:52-53`. 18 compile errors. | A migration, or deferral until the old tree is cut. **Never merge #203 alone** — `shared/common` pins `adventure-bom:4.26.1` and declares `adventure-api` without a version, so the BOM decides and #203 looks inert until someone bumps the BOM for an unrelated reason. |
+| #214 vs #208 | Both pin `actions/checkout`, to different targets (v4-digest vs v5-digest). | A human picks one. |
+| #234 vs #209 | Both pin `actions/setup-java`, v5-digest vs v6-digest. | A human picks one. |
+| #231 | `package-lock.json` has a real transitive conflict from the semantic-release major (undici 6->7). | A proper `npm install` regeneration, not a hand splice. |
+| #211 | `run-paper` 3.1.0 needs Gradle plugin API 9.7.0; the wrapper is on 9.5.1. **#210 does not fix this** — it only reaches 9.6.0. | Gradle 9.7. |
+| #218 | `aonyx-bom` 0.7.3 forces Minestom 2026.05.17, which removed `MinestomAdventure.AUTOMATIC_COMPONENT_TRANSLATION`, used at `server/.../VoyagerServer.java:82`. | Deferral until the cut is cheapest — `voyager-server` is written fresh against 26.2 where the constant is gone anyway. |
+| #225 | Shadow 9.5.0 finalises `java.toolchain.languageVersion` during plugin apply, before `server/build.gradle.kts:39` sets it. | An ordering fix, not a version fix: `server` applies shadow in its `plugins` block and sets the toolchain in the script body, which runs later. `buildSrc`'s `voyager.java-conventions` sets the same property from a convention plugin, i.e. before shadow — so the rebuild is *predicted* safe, unverified until `voyager-server` gets its fat JAR. |
+
+**Adventure escaped the version catalogue.** It is hardcoded in `shared/common/build.gradle.kts:8`
+and `shared/conversation-api/build.gradle.kts:6-7`, and those two lines pin different versions of
+the same library family — `adventure-api:4.26.1` beside `adventure-text-minimessage:4.21.0`.
+
+**The Adventure migration is not a rename.** `PluginTranslationRegistry` deliberately disables the
+MessageFormat path, which is why every translation uses MiniMessage `<arg:N>` and why `{N}` renders
+as literal text. Whatever replaces it on `TranslationStore` has to re-establish that, or every
+placeholder in the project silently degrades to plain text.
+
+**27 tests are disabled in the old tree** — `RingCollisionSystemTest`, `GameOrchestratorTest`,
+`OutOfBoundsSystemTest`, `GameEntityFactoryTest`. Pre-existing, not caused by any merge. They cover
+exactly the systems the rebuild replaces, so for ring collision, out-of-bounds and the game loop
+there is no live test coverage in the old tree to compare the rebuild against. Relevant to E4/E5
+planning: "the old tree is the reference" does not hold for those four areas.

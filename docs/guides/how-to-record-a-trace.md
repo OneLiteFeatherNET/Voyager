@@ -1,0 +1,258 @@
+# How to record a trace
+
+This guide explains how to record an E2a flight-profile fixture: a scripted elytra glide flown on
+a real Paper server, sampled tick by tick, and written to a JSON file under
+`tools/trace-recorder/traces/`. `voyager-physics`'s test suite replays those fixtures as a
+one-step residual check against the ported `ElytraSimulator` — recorded state at tick `k`, one
+tick computed, held against tick `k + 1`.
+
+**What a fixture proves, and what it does not.** A trace validates the physics *formula* — whether
+`ElytraSimulator.tick` reproduces the same velocity Vanilla produced from the same starting state.
+It says nothing about the client-server path: packet timing, input lag, or how a real player's
+client-authoritative movement reconciles with the server's tracked velocity. Do not read a passing
+trace suite as proof the network path is correct; it only proves the arithmetic is.
+
+## 1. Get a matching Paper build
+
+The recorder has to run the exact Minecraft version `voyager-physics` targets — `26.2`, per this
+repository's `CLAUDE.md`. Download it from PaperMC's Fill API
+(`https://fill.papermc.io/v3/projects/paper`; the v2 API is sunset) and accept the EULA
+(`eula.txt` containing `eula=true`) before the server will start.
+
+**A Minecraft version bump invalidates every fixture in `tools/trace-recorder/traces/`.** The
+recorded numbers are Vanilla `26.2`'s output; if Mojang changes the elytra formula, a constant, or
+even an unrelated tick-order detail that this recorder happens to depend on, every existing trace
+now describes a version of the game that no longer exists on the server that would replay it
+against a live comparison. When the target version changes, re-record all nine profiles against
+the new build before trusting the suite again — do not assume old fixtures still apply.
+
+## 2. The activation-range setting, and why it is not optional
+
+Set this in the server's `spigot.yml` **before recording anything**, then restart the server:
+
+```yaml
+world-settings:
+  default:
+    entity-activation-range:
+      monsters: 0
+```
+
+Without it, a recording silently stops progressing at entity age (`Entity#tickCount`) 200 — not a
+crash, not an error, just `tickCount` climbing while `travel()` never runs again, which
+`TraceCollector` eventually catches as a stall and aborts.
+
+The cause: Paper's `ActivationRange#checkIfActive` grants every entity a hard 200-tick grace period
+after spawn — below `tickCount` 200 it returns active unconditionally. From tick 200 on,
+`activateEntities` derives `activatedTick` **only** from `Level#players()`. A recording driven from
+the server console (or RCON, as this guide uses) has no player online, so the glider can never
+become active again through that path. A `(currentTick - activatedTick - 1) % 20 == 0` fallback
+wakes it irregularly, which is why a stalled recording's gap size varies while the failure point
+(tick 200) does not.
+
+Setting `monsters: 0` makes `initializeEntityActivationState` set `defaultActivationState = true`
+for the glider (a `Zombie` wearing an elytra — see `GliderRunner`), bypassing the check without
+needing a player. This was measured directly during E2a: 600 ticks clean, `entityTick` gapless,
+and a 250-tick probe recorded with the setting is bit-identical, tick for tick, to a stock recording
+up to the point the stock one stalls. **The setting does not change the physics** — it only removes
+an artifact of recording from the console. Every profile in this repository runs well past 200
+ticks (`wall-graze` at 220), so every one of them needs this setting.
+
+## 3. Build and install the plugin
+
+```bash
+./gradlew :tools:trace-recorder:shadowJar
+cp tools/trace-recorder/build/libs/trace-recorder-<version>-all.jar <paper-server>/plugins/
+```
+
+Restart the server (or start it for the first time) so the plugin loads. On enable it registers
+`/record <profile>` behind the `trace-recorder.record` permission — RCON and the console both
+carry full permissions by default, so no explicit grant is needed to drive a recording headlessly.
+
+Scripts live in the plugin's data folder, not on the classpath: copy every `.txt` file from
+`tools/trace-recorder/scripts/` into `<paper-server>/plugins/trace-recorder/scripts/` before
+recording. `/record <profile>` reads `plugins/trace-recorder/scripts/<profile>.txt`; a missing file
+fails with "No script found at ...".
+
+## 4. Recording without a client
+
+There is no Minecraft client in this loop. `/record` is driven over RCON, from the console, using
+`execute positioned` — a bare console/RCON `CommandSourceStack` has no standing location of its
+own (it defaults to a fixed point in the world), so every invocation must supply one explicitly:
+
+```
+execute positioned <x> <y> <z> run record <profile>
+```
+
+The glider spawns 2 blocks above the given point. `/record` returns immediately — it schedules a
+multi-tick process and the RCON response carries no useful status — so poll for the output file
+instead of trusting the RCON reply:
+
+```
+<paper-server>/plugins/trace-recorder/traces/<profile>.json
+```
+
+A 200-tick profile takes roughly 10 real seconds at 20 TPS, plus the fixed 3-tick settle described
+in `GliderRunner`'s Javadoc (`input[0]`'s rotation is held for 2 unrecorded ticks, plus one more
+inside the first `driveTick`, before trace index 0 is sampled) — wait at least that long, with
+margin, before concluding a recording has failed rather than merely not finished yet.
+
+Only one recording runs at a time (`RecorderPlugin.recordingInProgress`); do not fire a second
+`/record` before the previous profile's file has appeared.
+
+## 5. What each profile needs from the world
+
+Seven of the nine profiles fly through open sky and need no terrain at all — but *placement still
+matters*. Every non-terrain profile in this repository is recorded at `x=0 z=0`, all flying along
+`+Z` or turning from it; a leftover block anywhere near that column silently produces an
+unscripted collision, not a script bug. Pick spawn columns with sky verified clear along the whole
+flight path (`worldSlice: 0` in the resulting fixture is that verification, after the fact — see
+§6), and keep terrain profiles in their own columns, well clear of every other profile's path.
+
+| Profile | World | Recorded at |
+|---|---|---|
+| `steady-glide` | open sky | `x=0 y=300 z=0` |
+| `climb-into-stall` | open sky | `x=0 y=300 z=0` |
+| `dive-and-pull-out` | open sky | `x=0 y=300 z=0` |
+| `single-boost` | open sky | `x=0 y=300 z=0` |
+| `chained-boosts` | open sky | `x=0 y=300 z=0` |
+| `pitch-extremes` | open sky | `x=0 y=300 z=0` |
+| `sustained-turn` | open sky | `x=0 y=300 z=0` |
+| `wall-graze` | stone wall, `x=990..1010 y=250..310`, 1 block thick at `z=90` | `x=1000 y=300 z=0` |
+| `landing` | flat stone floor, `x=1990..2010 z=-10..300` at `y=265` | `x=2000 y=300 z=0` |
+
+Build terrain with `/fill` before recording (`/forceload add <x1> <z1> <x2> <z2>` first, if the
+target chunks are not already loaded — a `/fill` into unloaded chunks fails with "not loaded", and
+one whose Y range exceeds the world's build height fails with "out of this world" **but Minecraft
+has been observed to partially apply such a fill up to the valid height before reporting the
+error** — always verify with a matching `/fill ... air` or a probe recording rather than trusting
+the error message to mean nothing happened. `wall-graze` and `landing` each got their own X column,
+1000 blocks apart, specifically so neither profile's flight path can ever cross the other's
+geometry — the first attempt at `landing` was recorded sharing `wall-graze`'s column and picked up
+an extra, unscripted horizontal collision with the wall on the way down, ten ticks or so before it
+ever reached the floor a `worldSlice` inspection was the only reason that was caught.
+
+Each script's `# world:` comment line states exactly what its terrain must be, in absolute
+coordinates — treat that line as authoritative and build precisely that, not an approximation.
+
+## 6. Verifying a fixture
+
+### Structural checks (every profile)
+
+- `ticks` has exactly as many entries as the script's total tick count (sum of every `hold`/`ramp`
+  span, plus one per `boost`), indices consecutive from `0`.
+- `entityTick` increases by exactly `1` between consecutive samples. `TraceCollector.record` enforces
+  this at recording time — a fixture that made it to disk already satisfies it — but re-check after
+  hand-editing a fixture for any reason.
+- `metadata.gravity` is `0.08` (the default `Attribute.GRAVITY`, read live from the spawned
+  entity, not hardcoded) unless the profile deliberately used a different gravity modifier.
+- `worldSlice` is `[]` for every open-sky profile, and **non-empty** for `wall-graze` and
+  `landing`. A non-empty slice for an open-sky profile means the flight path clipped something it
+  should not have — treat the recording as contaminated and re-record after clearing the world, not
+  as a passing fixture with bonus data.
+- For `wall-graze` and `landing`, the `worldSlice` boxes' coordinates must fall inside the geometry
+  the script's `# world:` line describes. Compare `minX`/`minY`/`minZ`/`maxX`/`maxY`/`maxZ` against
+  the documented range by eye. A slice with the wrong coordinates is worse than an empty one: a
+  replay would resolve collisions against geometry that was never actually there.
+
+### Behavioural checks (does it do what its name says)
+
+- `steady-glide`: `yaw` and `pitch` constant, position drifting smoothly, no discontinuities.
+- `climb-into-stall`: horizontal speed (`hypot(velX, velZ)`) rises during the trim phase, then
+  visibly drops once the climb pitch takes hold.
+- `dive-and-pull-out`: horizontal speed rises substantially during the dive, peaking after the
+  pull-out ramp completes.
+- `single-boost`: a sharp jump in horizontal speed at the boost tick (`fireworkBoostActive: true`),
+  decaying over the following ticks as the rocket burns out (`fireworkTicksRemaining` counting down
+  to `0`).
+- `chained-boosts`: a second `fireworkBoostActive: true` tick appears while
+  `fireworkTicksRemaining` on the *previous* sample was still greater than `0` — check the ticks
+  around both boosts by hand; a second boost that lands after the first one's countdown already hit
+  zero is not exercising the "still active" case the profile is for.
+- `pitch-extremes`: no `NaN`/`Infinity` anywhere, including at the exact `±90` holds where
+  `lookHorLength` is genuinely zero.
+- `wall-graze`: a hard discontinuity in the horizontal velocity component facing the wall (here,
+  `velZ`) at one specific tick, dropping to (numerically) `0`, with position pinned at the wall face
+  afterward.
+- `landing`: `onGround` flips from `false` to `true` at one tick and stays `true` through the end of
+  the recording, vertical velocity settling near `0`.
+- `sustained-turn`: `yaw` changes across the recording (not constant like every other profile), and
+  `velX` is non-zero somewhere. This is the one acceptance condition that spans the whole set, not
+  a single fixture — see the next section.
+
+A profile that does not show its behaviour is a broken script, not a broken port: fix the script
+and re-record. Do not adjust the physics or the recorder to force a particular-looking result out
+of a script that is not actually exercising what it claims to.
+
+### The one check that spans all nine fixtures
+
+Every profile except `sustained-turn` flies at `yaw = 0`. At `yaw = 0` the look vector's `x`
+component is exactly zero, and with it the entire `x` axis of the tick's arithmetic — `velX` stays
+`0.0` for the whole recording regardless of whether the port's yaw handling is correct. Before
+trusting the suite as a set, confirm across all nine fixtures that `yaw` takes more than one value
+somewhere and that `velX` is non-zero somewhere — `sustained-turn` is what supplies both. A
+reference suite that happened to lose this profile would silently calibrate the whole `x` axis
+against a constant.
+
+### The one-step residual check
+
+`voyager-physics`'s replay harness (`net.elytrarace.voyager.physics.trace.TraceReplay`, exercised by
+`TraceReplayTest`) is built to consume exactly this fixture format, though as of this writing it is
+still proven only against synthetic fixtures generated by running `ElytraSimulator` itself — wiring
+these nine recordings in as its real input is E2b's job, not this guide's. Independently of that,
+every fixture recorded for this guide was checked the same way that harness will check it: a
+one-step residual. Take the recorded state at tick `k`, run `ElytraSimulator.tick` for exactly one
+tick using tick `k + 1`'s rotation as input, and compare the result against the recorded state at
+`k + 1`. This isolates a single tick's arithmetic from any accumulated drift a multi-tick replay
+would carry.
+
+Every fixture in this repository was run through that check before being committed:
+
+| Profile | Steps exact (< 1e-9) | Worst residual |
+|---|---|---|
+| `steady-glide` | 199 / 199 | 0 |
+| `climb-into-stall` | 199 / 199 | 0 |
+| `dive-and-pull-out` | 188 / 199 | 2.5e-3 (Y), settling phase after the pull-out |
+| `pitch-extremes` | 194 / 199 | 1.9e-3 (Y), settling phase after the ±90 sweep |
+| `sustained-turn` | 194 / 199 | 2.6e-3 (Z), late in the held turn |
+| `single-boost` | 175 / 199 | 2.2e-2 (Z), at and after the boost tick |
+| `chained-boosts` | 169 / 199 | 2.7e-2 (Z), at and after the second boost |
+| `wall-graze` | 170 / 219 | 7.1e-1 (Z), at the collision tick, small trailing residual after |
+| `landing` | 137 / 199 | 7.3e-1 (Z), at the ground-contact tick, trailing residual after |
+
+Do not expect every profile to reach `199/199` the way `steady-glide` and `climb-into-stall` do:
+
+- **`single-boost` and `chained-boosts` are expected to deviate**, and not as a defect. The port's
+  `FlightInput` carries `fireworkBoostActive`/`fireworkTicksRemaining` for format parity with this
+  recorder, but the boost impulse itself is not yet modelled in `ElytraSimulator` — see
+  `FlightInput`'s own Javadoc. A one-step check against real boosted data will show exactly the
+  residual the missing impulse predicts, at exactly the boosted ticks.
+- **`wall-graze` and `landing` are expected to deviate from their collision tick onward**, because
+  the residual check here runs with an empty collision space — it has no way to know the wall or
+  the floor exists. The large jump at the exact collision/landing tick is the check correctly
+  noticing "the recorded velocity did something my free-flight prediction did not"; it is not
+  evidence of a bad port.
+- **`dive-and-pull-out`, `pitch-extremes` and `sustained-turn` show small (≤3e-3) residuals** in
+  the tail of each recording, after the scripted maneuver settles back to a steady trim pitch. None
+  of these three profiles involve boost or collision, so unlike the two categories above this is
+  not dismissable by construction — it is a small, genuine finding from the first time these paths
+  were held against real recorded data, worth a look from whoever owns `ElytraSimulator` next, not
+  something this guide resolves.
+
+If a profile you expect to be exact (any profile other than the five above) comes back with a
+non-trivial residual, treat that as a real signal: re-verify the script actually recorded cleanly
+(§6, structural checks) before suspecting the port.
+
+## 7. When to re-record
+
+- **A Minecraft version change** — re-record all nine, per §1. There is no partial-validity state:
+  a fixture recorded against a different Vanilla build is testing a formula that may no longer
+  match.
+- **A script changes** — the script is the source of truth, not the recording. If
+  `tools/trace-recorder/scripts/<profile>.txt` changes for any reason (a tuning adjustment, a fix
+  to a profile that was not exercising its intended behaviour), the corresponding fixture is stale
+  the moment the script is edited and must be re-recorded before the next fixture-consuming test
+  run. Never hand-edit a `.json` fixture to make a test pass — the whole point of this pipeline is
+  that the numbers come from Vanilla, not from whoever is looking at a failing assertion.
+- **The recorder itself changes** in a way that could affect sampling (the settle-tick count, the
+  stall-detection thresholds, `WorldSliceCollector`'s radius) — re-record and re-verify at least
+  `steady-glide` and one terrain profile to confirm nothing shifted.
