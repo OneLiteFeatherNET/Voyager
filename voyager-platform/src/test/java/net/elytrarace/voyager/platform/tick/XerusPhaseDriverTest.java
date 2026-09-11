@@ -6,11 +6,15 @@ import net.elytrarace.voyager.api.physics.FlightInput;
 import net.elytrarace.voyager.api.physics.FlightState;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.physics.ElytraSimulator;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.flow.RacePhase;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.race.run.RaceRun;
 
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +56,39 @@ class XerusPhaseDriverTest {
     private static final int TICK_BUDGET = 1_000;
 
     private static final UUID PLAYER = UUID.fromString("5f2b1a44-3333-4444-8888-abcdefabcdef");
+
+    // ------------------------------------------------------------------------------------------
+    // A one-ring course per map, for the run that decides when its own phase ends
+    // ------------------------------------------------------------------------------------------
+
+    /** The lane a {@link Racer} flies: constant x and y, z advancing three blocks a movement tick. */
+    private static final double LANE_X = 0.5;
+    private static final double LANE_Y = 70.0;
+    private static final double SPAWN_Z = 2.0;
+    private static final double BLOCKS_PER_TICK = 3.0;
+
+    private static final Vec3 COURSE_SPAWN = new Vec3(LANE_X, LANE_Y, SPAWN_Z);
+
+    /**
+     * The normals are tilted, so a crossing does not sit on the ring's own {@code z}:
+     * {@code 17.0 + (0.6 * (2.0 - 0.5)) / 0.8 = 18.125}, and
+     * {@code ceil((18.125 - 2.0) / 3.0)} is movement tick 6.
+     */
+    private static final MapDefinition EMBER_ASCENT = new MapDefinition("ember-ascent", "ember_arena",
+            COURSE_SPAWN,
+            List.of(new Ring(0, new Vec3(2.0, 68.0, 17.0), new Vec3(0.6, 0.0, 0.8), 5.0, 7, RingType.STANDARD)),
+            Duration.ofSeconds(3));
+
+    /**
+     * Tilted the other way and further out: {@code 26.0 + (0.6 * (72.5 - 70.0)) / 0.8 = 27.875}, and
+     * {@code ceil((27.875 - 2.0) / 3.0)} is movement tick 9.
+     */
+    private static final MapDefinition GLACIER_CHICANE = new MapDefinition("glacier-chicane", "glacier_arena",
+            COURSE_SPAWN,
+            List.of(new Ring(0, new Vec3(-1.0, 72.5, 26.0), new Vec3(0.0, 0.6, 0.8), 6.0, 11, RingType.BOOST)),
+            Duration.ofSeconds(3));
+
+    private static final List<MapDefinition> COURSES = List.of(EMBER_ASCENT, GLACIER_CHICANE);
 
     // ------------------------------------------------------------------------------------------
     // The phase loop
@@ -246,6 +283,46 @@ class XerusPhaseDriverTest {
         assertThat(flown.getLast().after()).isEqualTo(expected);
     }
 
+    /**
+     * The per-player race state this driver deliberately does not hold is a {@link RaceRun}, and the
+     * two have to agree on what tick it is across a module boundary.
+     *
+     * <p>{@code XerusPhaseDriver} knows the clock and nothing about players; a run knows a player and
+     * nothing about phases. The only thing joining them is the {@link RaceClock} handed to
+     * {@link RacePhaseListener#raceTick}, and the only way to tell a correct join from an off-by-one
+     * is to make the phase's own end depend on it: the {@code everyPlayerFinished} supplier here is
+     * the run's own {@link RaceRun#finished()}, so a run that recorded its finish a tick late would
+     * move the tick the {@code GAME} phase ends on.
+     *
+     * <p>The two courses finish on different ticks — six and nine, both well inside the phase's
+     * forty — so neither number can be a constant and the clock is visibly restarted per map.
+     */
+    @Test
+    void aRunAdvancedFromTheDriversRaceTickEndsTheGamePhaseOnTheTickItFinishedOn() {
+        Racer racer = new Racer();
+        XerusPhaseDriver driver = driver(racer, racer::finished);
+
+        run(driver);
+
+        assertThat(racer.finishClocks())
+                .containsExactly(new RaceClock(6, STEP), new RaceClock(9, STEP));
+        assertThat(racer.finishClocks()).extracting(RaceClock::elapsed)
+                .containsExactly(Duration.ofMillis(300), Duration.ofMillis(450));
+
+        // The driver stopped playing movement ticks on exactly the tick the run finished on, and the
+        // clock it reported the map finished with is the run's own finish clock.
+        assertThat(racer.events()).contains("mapFinished 0 ember-ascent @6", "mapFinished 1 glacier-chicane @9");
+        assertThat(racer.raceTicks()).hasSize(6 + 9);
+        assertThat(racer.raceTicks()).extracting(RaceClock::gameTick)
+                .containsExactly(1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        // Positive control: a phase that runs its full length is what the same courses produce when
+        // nobody's finish is reported, so the sixes and nines above are the run's doing.
+        Racer ignored = new Racer();
+        run(driver(ignored, () -> false));
+        assertThat(ignored.raceTicks()).hasSize(2 * GAME_TICKS);
+    }
+
     // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
@@ -307,6 +384,49 @@ class XerusPhaseDriverTest {
         @Override
         public void mapFinished(int mapIndex, String mapName, RaceClock clock) {
             events.add("mapFinished %s %s @%s".formatted(mapIndex, mapName, clock.gameTick()));
+        }
+    }
+
+    /**
+     * One player flying a scripted lane, whose {@link RaceRun} is advanced from the clock the driver
+     * hands to {@link #raceTick(RaceClock)} and from nothing else.
+     */
+    private static final class Racer extends RecordingListener {
+
+        private final List<RaceClock> finishClocks = new ArrayList<>();
+        private RaceRun run = RaceRun.atStart();
+        private MapDefinition course = COURSES.getFirst();
+
+        List<RaceClock> finishClocks() {
+            return List.copyOf(finishClocks);
+        }
+
+        /** What the driver's {@code everyPlayerFinished} supplier reads, with one player racing. */
+        boolean finished() {
+            return run.finished();
+        }
+
+        @Override
+        public void mapStarted(int mapIndex, String mapName) {
+            super.mapStarted(mapIndex, mapName);
+            course = COURSES.get(mapIndex);
+            run = RaceRun.atStart();
+        }
+
+        @Override
+        public void raceTick(RaceClock clock) {
+            super.raceTick(clock);
+            run = run.advance(course, clock, positionAt(clock.gameTick()), true);
+        }
+
+        @Override
+        public void mapFinished(int mapIndex, String mapName, RaceClock clock) {
+            super.mapFinished(mapIndex, mapName, clock);
+            finishClocks.add(run.finishedAt().orElseThrow());
+        }
+
+        private static Vec3 positionAt(int gameTick) {
+            return new Vec3(LANE_X, LANE_Y, SPAWN_Z + BLOCKS_PER_TICK * gameTick);
         }
     }
 
