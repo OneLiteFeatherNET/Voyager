@@ -131,7 +131,7 @@ java -jar server/build/libs/*.jar
 
 `main` is the primary branch. All feature and fix branches are cut from `main` and merged back via pull request.
 
-Releases are fully automated via [semantic-release](https://github.com/semantic-release/semantic-release). Pushing to `main` triggers a pipeline that determines the next version from commit messages, updates `CHANGELOG.md`, and publishes a GitHub Release with the Shadow JAR attached.
+Releases are automated via [Release Please](https://github.com/googleapis/release-please). Pushing to `main` opens or updates a release pull request that carries the next version (derived from the commit messages), the bumped `version` in `build.gradle.kts`, and the generated `CHANGELOG.md` entries. Merging that pull request tags the release, cuts the GitHub Release, and attaches the Shadow JAR and a CycloneDX SBOM.
 
 Version increments follow [Conventional Commits](https://www.conventionalcommits.org/):
 
