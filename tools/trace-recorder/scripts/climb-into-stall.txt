@@ -1,0 +1,5 @@
+# climb-into-stall: exercises the upward-pitch term (leanAngle < 0) and its 3.2 factor. Builds
+# trim airspeed, then pitches steeply upward and holds -- horizontal speed must visibly collapse.
+hold 40 yaw=0 pitch=-5
+ramp 10 yaw=0 pitch=-5..-70
+hold 150 yaw=0 pitch=-70
