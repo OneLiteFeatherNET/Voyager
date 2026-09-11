@@ -43,6 +43,12 @@ dependencyResolutionManagement {
             library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
             library("archunit.junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
+            version("junit", "6.1.1")
+            version("assertj", "3.27.7")
+            library("junit.bom", "org.junit", "junit-bom").versionRef("junit")
+            library("junit.jupiter", "org.junit.jupiter", "junit-jupiter").withoutVersion()
+            library("assertj", "org.assertj", "assertj-core").versionRef("assertj")
+
             // Logging — Log4j2 as SLF4J 2.x provider (Minestom ships SLF4J 2.x API)
             version("log4j2", "2.25.4")
             library("log4j2.core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j2")
@@ -66,3 +72,11 @@ include("shared:spline")
 include("plugins:game")
 include("plugins:setup")
 include("server")
+
+// Greenfield rebuild — see docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md
+include("voyager-api")
+include("voyager-physics")
+include("voyager-fitness")
+
+// Tooling that is not part of the rebuild's module graph.
+include("tools:trace-recorder")
