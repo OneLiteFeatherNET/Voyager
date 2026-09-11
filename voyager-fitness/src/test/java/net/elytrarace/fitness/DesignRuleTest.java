@@ -1,6 +1,7 @@
 package net.elytrarace.fitness;
 
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -16,13 +17,24 @@ class DesignRuleTest {
 
     // ArchUnit 1.4.2 has beInterfaces() and beEnums() but no beRecords(), so the record case is
     // expressed through JavaClass.isRecord() directly.
-    private static final ArchCondition<JavaClass> BE_A_RECORD_AN_INTERFACE_OR_AN_ENUM =
-            new ArchCondition<>("be a record, an interface or an enum") {
+    //
+    // Rule 1 sanctions exactly one class shape here: the "non-sealed abstract class BaseX" extension
+    // point a sealed domain interface permits (RingEffect permits BaseRingEffect, see the greenfield
+    // design's "Design rules, concretely" list). That class carries no I/O and no platform import —
+    // it is the closed hierarchy's hook, not an implementation — so it stays in voyager-api rather
+    // than moving to voyager-race. Matched narrowly: abstract AND named Base*, not abstract alone,
+    // so an unrelated abstract class can't sneak through the same door.
+    private static final ArchCondition<JavaClass> BE_A_RECORD_AN_INTERFACE_AN_ENUM_OR_A_SEALED_BASE =
+            new ArchCondition<>(
+                    "be a record, an interface, an enum, or a sealed hierarchy's abstract Base* extension point") {
                 @Override
                 public void check(JavaClass item, ConditionEvents events) {
-                    if (!item.isRecord() && !item.isInterface() && !item.isEnum()) {
+                    boolean isSealedExtensionPoint = item.getModifiers().contains(JavaModifier.ABSTRACT)
+                            && item.getSimpleName().startsWith("Base");
+                    if (!item.isRecord() && !item.isInterface() && !item.isEnum() && !isSealedExtensionPoint) {
                         events.add(SimpleConditionEvent.violated(item,
-                                "%s is neither a record, an interface nor an enum".formatted(item.getName())));
+                                "%s is neither a record, an interface, an enum, nor an abstract Base* "
+                                        + "extension point".formatted(item.getName())));
                     }
                 }
             };
@@ -49,8 +61,9 @@ class DesignRuleTest {
                     .and().areTopLevelClasses()
                     .and().haveSimpleNameNotEndingWith("Exception")
                     .and().haveSimpleNameNotEndingWith("package-info")
-                    .should(BE_A_RECORD_AN_INTERFACE_OR_AN_ENUM)
-                    .because("voyager-api carries interfaces, records, enums and exceptions only")
+                    .should(BE_A_RECORD_AN_INTERFACE_AN_ENUM_OR_A_SEALED_BASE)
+                    .because("voyager-api carries interfaces, records, enums and exceptions, plus rule "
+                            + "1's non-sealed abstract Base* extension point for a sealed domain interface")
                     .allowEmptyShould(false);
 
     @ArchTest
