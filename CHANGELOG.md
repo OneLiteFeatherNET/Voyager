@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.10.0...v1.10.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.kyori:adventure-text-minimessage to v4.22.0 ([#110](https://github.com/OneLiteFeatherNET/Voyager/issues/110)) ([474bbaf](https://github.com/OneLiteFeatherNET/Voyager/commit/474bbaf36700c4acb14c74bb037287f43d58d6ae))
+
 # [1.10.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.9.0...v1.10.0) (2026-09-11)
 
 
