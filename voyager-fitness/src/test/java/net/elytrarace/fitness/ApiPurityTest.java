@@ -120,4 +120,65 @@ class ApiPurityTest {
                     .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
                     .because("the race domain scores a run; storing one is voyager-persistence's job")
                     .allowEmptyShould(false);
+
+    // E4 puts voyager-platform and voyager-server on this module's classpath for the first time.
+    // They are the two modules where a stray import does the most damage, because they are the only
+    // ones with a platform to reach for — so they land with purity rules already in place, not added
+    // after the fact in the final review the way voyager-race's were in E3. The existing rules above
+    // already forbid Minestom for voyager-api and voyager-physics, and forbid Minestom-and-Xerus for
+    // voyager-race, and physicsDoesNotDependOnRaceOrPlatform already forbids voyager-platform for
+    // voyager-physics — the six rules below close the remaining gaps: Xerus for voyager-api and
+    // voyager-physics, voyager-platform for voyager-api and voyager-race, voyager-server for
+    // voyager-platform, and the DI container for every module except voyager-server.
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnXerus =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.theevilreaper.xerus..")
+                    .because("Xerus is Minestom-bound and belongs to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnPlatform =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.platform..")
+                    .because("voyager-api is the module every other module depends on; a dependency "
+                            + "back on voyager-platform would put a platform type into every module's graph")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnXerus =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.theevilreaper.xerus..")
+                    .because("Xerus is Minestom-bound and belongs to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnPlatform =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.platform..")
+                    .because("a whole race has to play out in JUnit; voyager-platform depends on "
+                            + "voyager-race, not the other way around")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule platformDoesNotDependOnServer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.server..")
+                    .because("voyager-server is the composition root that depends on voyager-platform, "
+                            + "not the other way around")
+                    .allowEmptyShould(false);
+
+    // io.airlift:guice keeps upstream Guice's com.google.inject package name (see the greenfield
+    // design, D10), so one rule scoped to that package plus io.airlift.. catches either artifact.
+    // Written as "everything outside voyager-server" rather than naming each domain module
+    // individually, so a future rebuild module is covered by construction instead of needing its own
+    // DI-purity rule remembered on top.
+    @ArchTest
+    static final ArchRule onlyServerDependsOnDiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.server..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "io.airlift..")
+                    .because("DI annotations are confined to the composition roots")
+                    .allowEmptyShould(false);
 }
