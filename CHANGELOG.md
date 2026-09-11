@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.11...v1.9.0) (2026-09-11)
+
+
+### Features
+
+* E1 foundation — build conventions, voyager-api, architecture tests ([#236](https://github.com/OneLiteFeatherNET/Voyager/issues/236)) ([ea55ff9](https://github.com/OneLiteFeatherNET/Voyager/commit/ea55ff9eafc31a32fbcf662641ae753f98514285))
+
 ## [1.8.11](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.10...v1.8.11) (2026-09-10)
 
 
