@@ -1,3 +1,10 @@
+## [1.11.7](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.6...v1.11.7) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update hibernate to v7.3.10.final ([#223](https://github.com/OneLiteFeatherNET/Voyager/issues/223)) ([56185c1](https://github.com/OneLiteFeatherNET/Voyager/commit/56185c17947f1ca42318ea2f6bff03c2886cff91))
+
 ## [1.11.6](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.5...v1.11.6) (2026-09-11)
 
 
