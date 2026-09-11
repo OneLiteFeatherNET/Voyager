@@ -8,14 +8,14 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
-            version("minestom", "2026.04.13-1.21.11")
+            version("minestom", "2026.05.11-1.21.11")
             version("hibernate", "7.3.9.Final")
-            version("flyway", "12.8.1")
+            version("flyway", "12.9.0")
             version("mariadb-client", "3.5.9")
             version("jetbrains-annotations", "26.1.0")
             version("fawe-bom", "1.56")
             version("commons-geometry-euclidean", "1.0")
-            version("archunit", "1.4.2")
+            version("archunit", "1.5.0")
             version("run-paper", "3.0.2")
             version("shadow", "9.4.3")
             version("plugin-yml", "0.6.0")
@@ -43,6 +43,12 @@ dependencyResolutionManagement {
             library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
             library("archunit.junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
+            version("junit", "6.1.1")
+            version("assertj", "3.27.7")
+            library("junit.bom", "org.junit", "junit-bom").versionRef("junit")
+            library("junit.jupiter", "org.junit.jupiter", "junit-jupiter").withoutVersion()
+            library("assertj", "org.assertj", "assertj-core").versionRef("assertj")
+
             // Logging — Log4j2 as SLF4J 2.x provider (Minestom ships SLF4J 2.x API)
             version("log4j2", "2.25.4")
             library("log4j2.core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j2")
@@ -66,3 +72,11 @@ include("shared:spline")
 include("plugins:game")
 include("plugins:setup")
 include("server")
+
+// Greenfield rebuild — see docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md
+include("voyager-api")
+include("voyager-physics")
+include("voyager-fitness")
+
+// Tooling that is not part of the rebuild's module graph.
+include("tools:trace-recorder")
