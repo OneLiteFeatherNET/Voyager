@@ -223,6 +223,68 @@ This lives in `voyager-race`, not the platform: it is domain, and it must stay p
 
 **The cup's map transition is where Minestom issue #2017 lands** — players falling below the map on an instance switch. It is closed as completed but **without a framework fix**: the reporter solved it with a chunk check and confirmed teleports, and both mechanisms are present in 26.2 (`Player.setInstance` waits for the surrounding chunks; teleport confirmation is wired in `PacketListenerManager.java:168`). Use them deliberately rather than assuming the framework does.
 
+### Der Weltlader ist Falco, nicht Minestoms `AnvilLoader`
+
+`net.onelitefeather:falco-anvil` — OneLiteFeathers eigener Anvil-`ChunkLoader`. Er ist dem
+mitgelieferten Lader in genau dem Punkt voraus, der uns betrifft: **ein Lesefehler wirft, statt den
+Chunk als abwesend zu melden**. Minestoms Lader meldet Abwesenheit, der Server generiert daraufhin
+frisch — und überschreibt beim nächsten Speichern echte Kartengeometrie mit Neugeneriertem. Für eine
+Rennstrecke ist das der Unterschied zwischen einem lauten Fehlschlag und einer stillen Zerstörung.
+
+**Nur `falco-anvil` und `falco-light`, nicht `falco-instance`.** Das ist kein Geschmacksurteil,
+sondern gemessen. Falco 2.1.0 ist gegen Minestom `2026.06.20-26.1.2` übersetzt; wir laufen auf
+`2026.08.28-26.2`, und Minestom ist in Falco `compileOnly` — die Bindung entsteht also erst zur
+Laufzeit bei uns. Ein Abgleich des Konstantenpools aller drei Falco-Jars gegen beide Minestom-Jars,
+gegen die 26.1.2-Basislinie differenziert, ergibt genau zwei Abweichungen, und beide liegen in
+`falco-instance`, Klasse `ChunkGeneration`:
+
+    GenerationUnit.absoluteStart()              Point → BlockVec
+    GeneratorImpl$SectionModifierImpl.start()   Vec   → BlockVec
+
+Beides sitzt im **Generierungspfad**. `falco-anvil` und `falco-light` sind gegen 26.2 abweichungsfrei.
+Wir laden gespeicherte Welten und generieren nichts, also brauchen wir `falco-instance` nicht — und
+dürfen es nicht nehmen, weil es zur Laufzeit auf `NoSuchMethodError` liefe. Nimmt jemand es später
+doch, ist die Voraussetzung ein Falco-Release gegen `mycelium-bom` 1.8.5 (das bereits auf
+`2026.08.28-26.2` zeigt); Falcos `main` steht noch auf 1.7.2.
+
+Katalogeintrag in `settings.gradle.kts`, und das Repository dazu:
+
+```kotlin
+            version("falco", "2.1.0")
+            library("falco.bom", "net.onelitefeather", "falco-bom").versionRef("falco")
+            library("falco.anvil", "net.onelitefeather", "falco-anvil").withoutVersion()
+            library("falco.light", "net.onelitefeather", "falco-light").withoutVersion()
+```
+
+```kotlin
+maven("https://repo.onelitefeather.dev/releases")
+```
+
+Aufbau — der Pfad ist die **Weltwurzel**, nicht `region/`:
+
+```java
+FalcoAnvilLoader loader = new FalcoAnvilLoader(worldRoot, DimensionType.OVERWORLD.key());
+instance.setChunkLoader(loader);
+instance.enableAutoChunkLoad(true);
+```
+
+Der Lader lebt so lange wie die Instanz; `close()` gehört in den Shutdown-Task und ist Sache von
+Task 9, nicht dieser Klasse. `level.dat` wird nicht gelesen — ein Verzeichnis mit `region/` genügt.
+
+**Zwei Dinge, die hier zu prüfen und nicht anzunehmen sind.**
+
+Erstens: Falco weist Welten unter Snapshot 21w43a ab und liest alles darüber **mit dem aktuellen
+Schema, ohne DataFixer**. `run/run/worlds/ElytraraceBlueAndRed` trägt DataVersion 4440 (1.21.8),
+liegt also weit über der Schwelle — aber zwischen 1.21.8 und 26.2 umbenannte Blöcke sind damit ein
+offener Punkt. Lade die Welt einmal und vergleiche die Blockverteilung gegen die Erwartung, statt
+anzunehmen, dass Namensgleichheit über vier Versionen hält.
+
+Zweitens: Falco steht unter **AGPL-3.0**, Voyager unter **MIT**. Beides gehört OneLiteFeather, die
+Auflösung ist also eine Entscheidung und kein Hindernis — aber sie ist zu treffen, bevor ein
+Artefakt das Haus verlässt, nicht danach. Notiere sie, verhandle sie nicht in dieser Task.
+
+---
+
 **Also measure #1880 here** (the auto-sync tick that resets velocity, which #2267 was closed as a duplicate of and which is still open). The spike's reading is that it probably does not reach a player at all, because the relevant line is `sendPacketToViewers` and a `Player` is not its own viewer — but that is derived, not measured. Measure it: set a velocity, let the sync interval pass, read it back.
 
 ---
