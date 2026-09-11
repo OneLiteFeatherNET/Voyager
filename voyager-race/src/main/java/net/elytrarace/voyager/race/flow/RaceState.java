@@ -1,5 +1,7 @@
 package net.elytrarace.voyager.race.flow;
 
+import net.elytrarace.voyager.race.flow.exception.IllegalPhaseTransitionException;
+
 import java.time.Duration;
 
 /**
@@ -13,8 +15,12 @@ import java.time.Duration;
 public record RaceState(RacePhase phase, int mapIndex, Duration inPhase, boolean cupFinished) {
 
     public RaceState {
+        // The same exception RaceStateMachine.advance throws for an index past the end of the cup:
+        // one value, one exception family. A mapIndex can arrive from persisted state rather than
+        // only from live code, which is the reason it gets a domain exception while inPhase below —
+        // computed here, never read in from anywhere — keeps IllegalArgumentException.
         if (mapIndex < 0) {
-            throw new IllegalArgumentException("map index must not be negative, was %d".formatted(mapIndex));
+            throw IllegalPhaseTransitionException.negativeMapIndex(mapIndex);
         }
         if (inPhase.isNegative()) {
             throw new IllegalArgumentException("time in phase must not be negative, was %s".formatted(inPhase));
