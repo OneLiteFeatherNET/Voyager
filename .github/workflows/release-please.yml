@@ -2,9 +2,12 @@ name: Release
 
 # release-please collects Conventional Commits into a release PR; merging it
 # tags the version and cuts the GitHub release. Everything that has to happen
-# for a release is chained into this same run on purpose: release-please tags
-# with GITHUB_TOKEN, and a tag pushed that way does NOT start a separate
-# `on: push: tags` workflow.
+# for a release is chained into this same run on purpose, so that publishing does
+# not depend on what a pushed tag happens to trigger. That used to be the only
+# option: a tag pushed with GITHUB_TOKEN starts no `on: push: tags` workflow at
+# all. Since the shared workflow mints an app token (so the release PR gets its
+# required checks), a tag from here WOULD start one — this repository has no
+# such workflow, and chaining stays the clearer arrangement either way.
 on:
   push:
     branches: [main]
