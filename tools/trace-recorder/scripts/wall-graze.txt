@@ -1,0 +1,7 @@
+# wall-graze: horizontal collision and the speed lost to it. Flies a shallow trim glide (yaw=0,
+# so travel is along +Z) into a stone wall placed across the flight path -- contact lands around
+# tick 169 of 220, leaving room to read the flight before and after the hit.
+# world: a stone wall spanning x=990..1010, y=250..310, 1 block thick at z=90 (blocks occupy
+# z=90..91); flat sky otherwise. Recorded at x=1000 y=300 z=0 (its own column, clear of every
+# other profile's flight path) -- the glider spawns 2 blocks above, at y=302.
+hold 220 yaw=0 pitch=-5

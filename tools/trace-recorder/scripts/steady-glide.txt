@@ -1,0 +1,3 @@
+# steady-glide: the whole tick under stable conditions. A shallow trim glide (pitch -5) held for
+# 200 ticks -- the case a correct port must reproduce bit-for-bit before anything else matters.
+hold 200 yaw=0 pitch=-5
