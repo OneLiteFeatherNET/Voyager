@@ -12,12 +12,14 @@ plugins {
 // the tree being replaced against 26.2.
 val minestomRebuildVersion = "2026.08.28-26.2"
 
-// falco-anvil 2.1.0 is compiled against Minestom 2026.06.20-26.1.2 and declares Minestom
-// compileOnly, so it links against the 26.2 pinned above at our runtime. A constant-pool comparison
-// of all three Falco modules against both Minestom jars, differenced against the 26.1.2 baseline,
-// leaves exactly two deltas and both are in falco-instance's ChunkGeneration. falco-anvil is
-// delta-free. Take that module and no other.
-val falcoVersion = "2.1.0"
+// Falco pins Minestom through mycelium-bom 1.8.5, which points at the same 2026.08.28-26.2 this
+// module pins directly above — so the loader and the server it loads into cannot drift onto two
+// Minestom versions without the build saying so. (Before 3.0.0 they could: Falco was built against
+// 26.1.2 and declared Minestom compileOnly, which made the binding ours to verify by hand.)
+// We still take falco-anvil alone. falco-instance generates worlds and we only read them;
+// falco-light is a lighting engine we have no use for until an acceptance run shows a world
+// rendering dark.
+val falcoVersion = "3.0.0"
 
 dependencies {
     api(project(":voyager-api"))
@@ -27,18 +29,6 @@ dependencies {
     api("net.minestom:minestom:$minestomRebuildVersion")
 
     api("net.onelitefeather:falco-anvil:$falcoVersion")
-
-    // Load-bearing, not an optional extra. MapInstances asks the loader for
-    // ChunkMigrationMode.IN_MEMORY, and falco-anvil's builder throws IllegalStateException at
-    // construction when a migration mode is set and no ChunkMigrator is on the classpath - so
-    // dropping this line breaks every world load rather than quietly degrading it. runtimeOnly
-    // because nothing here names a type from the migration module: Falco finds it by ServiceLoader.
-    runtimeOnly("net.onelitefeather:falco-migration:$falcoVersion")
-
-    // And again for the tests, because Gradle's testRuntimeOnly does not extend the main source
-    // set's runtimeOnly: without this line the test JVM is the one configuration the migrator is
-    // missing from, and every world load in it fails on the builder's own guard.
-    testRuntimeOnly("net.onelitefeather:falco-migration:$falcoVersion")
 
     // The logging facade both Minestom and falco-anvil already put on the runtime classpath, and
     // which neither exposes for compilation. compileOnly is what it costs: this module's published

@@ -9,11 +9,11 @@ group = "net.onelitefeather"
 subprojects {
     repositories {
         mavenCentral()
-        // Where the Falco artefacts themselves live, publicly. Resolving them still needs the
-        // authenticated OneLiteFeatherRepository below as well: falco-anvil's POM imports
-        // net.onelitefeather:mycelium-bom:1.7.2, and that version is in neither this repository
-        // (which has only 1.8.3 to 1.8.5) nor Maven Central. Both entries stay until Falco publishes
-        // against mycelium-bom 1.8.5.
+        // Where the Falco artefacts live, publicly and with no credentials — including the
+        // mycelium-bom 1.8.5 their POMs import, which is what makes that true. It was not true
+        // before Falco 3.0.0: 2.x imported mycelium-bom 1.7.2, which is in neither this repository
+        // nor Maven Central, so resolving it needed the authenticated OneLiteFeatherRepository
+        // below. Said here so nobody re-derives that conclusion from a 2.x artefact.
         maven("https://repo.onelitefeather.dev/releases")
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://maven.enginehub.org/repo/")

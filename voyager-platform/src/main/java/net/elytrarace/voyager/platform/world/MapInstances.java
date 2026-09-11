@@ -6,7 +6,6 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.world.DimensionType;
 import net.onelitefeather.falco.anvil.AnvilDiagnostics;
-import net.onelitefeather.falco.anvil.ChunkMigrationMode;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -41,14 +40,16 @@ import java.util.stream.Stream;
  * the same world have to get the same instance and the same loader. Two loaders over one set of
  * region files is a bug.
  *
- * <p><strong>Chunk migration is on, and it is not optional.</strong> Minecraft namespaced the chunk
- * status in 1.20.2: a chunk written before that stores {@code full}, and Falco's fullness check
- * accepts only {@code minecraft:full}, so every older chunk is reported as not fully generated and
- * comes back as air. Measured on the shipped world {@code ElytraraceBlueAndRed}, that is 3464 of its
- * 9429 fully generated chunks — a third of the racetrack, silently. With
- * {@link ChunkMigrationMode#IN_MEMORY} the same world reads all 9429, still with no unknown block
- * and no error. IN_MEMORY rather than ON_DISK because the translation is paid on every load and
- * never written back, which is exactly right here: nothing in this class writes to a world.
+ * <p><strong>Why the counters below are worth keeping.</strong> Minecraft namespaced the chunk
+ * status in 1.20.2, so a chunk written before that stores {@code full} rather than
+ * {@code minecraft:full}. Falco 2.x compared the stored status to that literal and reported every
+ * older chunk as not fully generated, which means it came back as air: on the shipped world
+ * {@code ElytraraceBlueAndRed} that was 3464 of its 9429 chunks — a third of the racetrack, and the
+ * only thing that said so was a partial-chunk count nobody was reading. Falco 3.0.0 parses the
+ * status as a key instead, so the bare form takes the default namespace and reads, and the same
+ * world now loads all 9429 with no unknown block and no error. The defect is fixed upstream; the
+ * lesson that a world can look loaded while a third of it is missing is why {@link WorldHealth}
+ * exists and why {@link #healthOf(String)} is worth calling after a world is opened.
  *
  * <p>The unknown-block policy stays at Falco's default — an unrecognised block name becomes air —
  * and is made visible rather than fatal. A throwing policy runs inside a chunk load, where the
@@ -256,10 +257,6 @@ public final class MapInstances implements AutoCloseable {
         AnvilDiagnostics diagnostics = new AnvilDiagnostics();
         FalcoAnvilLoader loader = FalcoAnvilLoader.builder()
                 .diagnostics(diagnostics)
-                // See the class javadoc. This throws IllegalStateException right here if
-                // falco-migration is not on the runtime classpath, which is the failure we want:
-                // the alternative to a loud one is a third of the racetrack quietly becoming air.
-                .migration(ChunkMigrationMode.IN_MEMORY)
                 .build(worldRoot, DimensionType.OVERWORLD.key());
 
         try {

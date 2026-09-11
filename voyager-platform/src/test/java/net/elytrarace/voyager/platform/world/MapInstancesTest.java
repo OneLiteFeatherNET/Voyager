@@ -20,6 +20,8 @@ import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
 import net.onelitefeather.falco.anvil.RegionFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -40,13 +42,6 @@ class MapInstancesTest {
 
     private static final String TRACK = "goldrush";
     private static final String OTHER_TRACK = "bluecanyon";
-
-    /**
-     * 1.20.1. Old enough that its chunk status is stored un-namespaced as {@code full} — Minecraft
-     * namespaced it in 1.20.2 — and new enough that the migrator will translate it: it refuses
-     * anything below data version 1519 and anything at or above the version the server writes.
-     */
-    private static final int PRE_NAMESPACE_DATA_VERSION = 3337;
 
     /**
      * Below both the migrator's floor and the loader's minimum, so the chunk is neither translated
@@ -330,16 +325,21 @@ class MapInstancesTest {
         assertThat(reported).isTrue();
     }
 
-    @Test
-    void readsAChunkWhoseStatusPredatesTheNamespacing(Env env) throws IOException {
-        // The defect this world loader exists to not have. Minecraft namespaced the chunk status in
-        // 1.20.2; Falco's fullness check accepts only "minecraft:full", so a chunk written before
-        // that is reported as not fully generated and comes back as air. On the shipped world that
-        // is 3464 of 9429 chunks. The round trip alone cannot see it — a 26.2 loader writes
-        // "minecraft:full" — so the chunk is aged on disk after it is written.
+    @ParameterizedTest(name = "status \"{0}\"")
+    @ValueSource(strings = {"full", "minecraft:full"})
+    void readsAFullyGeneratedChunkUnderEitherFormOfItsStatus(String status, Env env) throws IOException {
+        // Minecraft namespaced the chunk status in 1.20.2, so a world older than that stores the
+        // bare "full". Falco 2.x compared the stored value to the literal "minecraft:full" and
+        // reported every such chunk as not fully generated — 3464 of the shipped world's 9429
+        // chunks, silently returned as air. 3.0.0 parses it as a key, so the bare form takes the
+        // default namespace. Both forms are exercised rather than only the odd one, so the test
+        // says "either form reads" instead of leaving the ordinary case to a round trip that can
+        // only ever produce the namespaced one.
         PlacedBlock block = TRACK_BLOCKS.getFirst();
         writeWorld(env, TRACK, List.of(block));
-        patchStoredChunk(TRACK, block, MapInstancesTest::agedBeforeTheStatusWasNamespaced);
+        // Only the status is touched. The stored DataVersion is left exactly as written, so nothing
+        // but the status can be what makes this chunk readable or not.
+        patchStoredChunk(TRACK, block, chunk -> chunk.putString("Status", status));
 
         try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
             Instance instance = instances.forWorld(TRACK);
@@ -349,9 +349,7 @@ class MapInstancesTest {
             WorldHealth health = instances.healthOf(TRACK);
             assertThat(health.chunksLoaded()).isEqualTo(1L);
             assertThat(health.isSound()).isTrue();
-            // Not merely read: read because it was translated. Without the migration the same chunk
-            // is counted as partially generated instead, which is the silent third of the racetrack.
-            assertThat(instances.diagnosticsFor(TRACK).chunksMigrated()).isEqualTo(1L);
+            // The counter that carried the defect: a rejected status shows up here and nowhere else.
             assertThat(instances.diagnosticsFor(TRACK).chunksSkippedAsPartial()).isZero();
         }
     }
@@ -473,10 +471,6 @@ class MapInstancesTest {
         } catch (Exception exception) {
             throw new IOException("could not patch the stored chunk of world '%s'".formatted(world), exception);
         }
-    }
-
-    private static CompoundBinaryTag agedBeforeTheStatusWasNamespaced(CompoundBinaryTag chunk) {
-        return chunk.putString("Status", "full").putInt("DataVersion", PRE_NAMESPACE_DATA_VERSION);
     }
 
     private static CompoundBinaryTag agedBeyondWhatTheLoaderReads(CompoundBinaryTag chunk) {
