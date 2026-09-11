@@ -119,20 +119,66 @@ class ElytraSimulatorTest {
         assertThat(boosted.velocity().z()).isGreaterThan(coasting.velocity().z());
     }
 
+    /**
+     * The impulse runs after the move, not before the steps — the defect the E2a fixtures found, and
+     * worth {@code 0.69} blocks on {@code single-boost}'s first boosted tick.
+     *
+     * <p>Asserted structurally rather than against a literal, because the structure <em>is</em> the
+     * claim and it separates the two orders outright: a boosted tick reaches exactly the same
+     * position as an unboosted one, since the position follows from the velocity the glider entered
+     * the tick with, and the impulse only changes the velocity it leaves with. Applying the boost
+     * first moves the position instead, by {@code 0.55} blocks on this fixture alone.
+     *
+     * <p>The velocity leaving the tick is the impulse applied to the velocity the unboosted tick
+     * produced, exactly — not merely close to it. The equality also pins the impulse's associativity:
+     * Vanilla sums the whole impulse before adding it once
+     * ({@code movement.add(look.x * 0.1 + (look.x * 1.5 - movement.x) * 0.5, …)}), and evaluating
+     * {@code v + look.x * 0.1 + (…) * 0.5} left to right rounds twice and lands a bit or two away —
+     * enough to stop {@code single-boost} being bit-exact, and invisible to a {@code 1e-12} window.
+     */
     @Test
-    void theFireworkBoostIsAppliedBeforeTheSteps() {
-        // Pinned by hand-driving the boost formula and ElytraStep in boost-then-steps order,
-        // independently of ElytraSimulator, for entering velocity (0, 0, 0.5), pitch -5, yaw 0,
-        // gravity 0.08. Applying the boost after the steps instead feeds the unboosted velocity into
-        // every step's moveHorLength/liftForce terms and diverges by ~0.012 on z by the end of the
-        // tick — nine orders of magnitude past this tolerance.
+    void theFireworkBoostIsAppliedAfterTheMoveNotBeforeTheSteps() {
         FlightState state = gliding(100.0, new Vec3(0, 0, 0.5));
         FlightInput boosting = new FlightInput(0.0f, -5.0f, true, 1, DEFAULT_GRAVITY);
 
         FlightState boosted = ElytraSimulator.tick(state, boosting, CollisionSpace.empty());
+        FlightState coasting = ElytraSimulator.tick(state, level(), CollisionSpace.empty());
 
-        assertThat(boosted.velocity().y()).isCloseTo(0.06452415797364021, within(1.0e-12));
-        assertThat(boosted.velocity().z()).isCloseTo(1.0823864405206898, within(1.0e-12));
+        assertThat(boosted.position()).isEqualTo(coasting.position());
+
+        Vec3 expected = vanillaFireworkImpulse(coasting.velocity(), vanillaLookAngle(-5.0f, 0.0f));
+        assertThat(boosted.velocity().y()).isEqualTo(expected.y());
+        assertThat(boosted.velocity().z()).isEqualTo(expected.z());
+        // The impulse really moved the velocity, so the equality above is not vacuous.
+        assertThat(boosted.velocity().z()).isGreaterThan(coasting.velocity().z() + 0.5);
+    }
+
+    /**
+     * {@code LivingEntity.aiStep()}'s {@code 0.003} deadzone, which runs before {@code travel} and
+     * therefore before the first step. Missing from the port until the E2a fixtures found it: it is
+     * what made {@code sustained-turn}, {@code pitch-extremes} and {@code dive-and-pull-out} each
+     * diverge by {@code 2–3e-03} in a burst around a manoeuvre transition, and reinstating it made
+     * all three bit-exact.
+     *
+     * <p>Asserted as an equivalence, which is what the clamp means: a tick entered with a component
+     * under {@code 0.003} produces exactly what the same tick entered with that component at zero
+     * produces. A {@code 0.0029} vertical velocity is therefore indistinguishable from {@code 0.0},
+     * while {@code 0.0031} is not — the second assertion is what stops a simulator that zeroes
+     * everything, or nothing, from passing.
+     */
+    @Test
+    void aVelocityComponentUnderTheDeadzoneIsTreatedAsZero() {
+        FlightInput input = new FlightInput(0.0f, -5.0f, false, 0, DEFAULT_GRAVITY);
+
+        FlightState justUnder = ElytraSimulator.tick(
+                gliding(100.0, new Vec3(0.0029, -0.0029, 0.5)), input, CollisionSpace.empty());
+        FlightState atZero = ElytraSimulator.tick(
+                gliding(100.0, new Vec3(0.0, 0.0, 0.5)), input, CollisionSpace.empty());
+        FlightState justOver = ElytraSimulator.tick(
+                gliding(100.0, new Vec3(0.0031, -0.0031, 0.5)), input, CollisionSpace.empty());
+
+        assertThat(justUnder).isEqualTo(atZero);
+        assertThat(justOver).isNotEqualTo(atZero);
     }
 
     @Test
@@ -157,34 +203,52 @@ class ElytraSimulatorTest {
         }
     }
 
+    /**
+     * The half-width is {@code float} arithmetic widened to {@code double}, not the {@code double}
+     * literal {@code 0.3}: {@code EntityDimensions.makeBoundingBox} computes
+     * {@code float f = width() / 2.0F} and casts, giving {@code 0.300000011920928955078125}.
+     *
+     * <p>{@code isEqualTo}, not {@code isCloseTo}: the {@code 1.19e-08} between the two is precisely
+     * what this fixture exists to tell apart, and it is the whole of the residual {@code wall-graze}
+     * showed before the box was corrected — that recording's glider comes to rest at
+     * {@code z = 89.699999988079071}, not at {@code 89.7}. A {@code within(1.0e-9)} window, which
+     * this assertion used to carry, passed both values and hid it.
+     */
     @Test
     void theEntityWidthIsPinnedByAWallAtAKnownDistance() {
         // Entering velocity (50, 0, 0), pitch 0, yaw 0, gravity 0.08 — verified end-to-end against
         // ElytraSimulator.tick itself (not hand-derived) to reach a wall at x = [10, 11] with room
-        // to spare. The box's half-width (0.3, a 0.6-block-wide entity) is the only thing standing
-        // between the box and the wall, so the clamped position pins it: 10 - 0.3 = 9.7. A
-        // half-width of 0.05 would instead clamp to 9.95.
+        // to spare. The box's half-width is the only thing standing between the box and the wall, so
+        // the clamped position pins it: 10 - (double)(0.6F / 2.0F) = 9.699999988079071. A half-width
+        // of 0.05 would instead clamp to 9.95, and a double 0.3 to exactly 9.7.
         FlightState state = new FlightState(new Vec3(0, 10, 0), new Vec3(50, 0, 0), 0.0f, 0.0f, false);
         FlightInput input = new FlightInput(0.0f, 0.0f, false, 0, DEFAULT_GRAVITY);
 
         FlightState result = ElytraSimulator.tick(state, input, wallAt(10.0));
 
-        assertThat(result.position().x()).isCloseTo(9.7, within(1.0e-9));
+        assertThat(result.position().x()).isEqualTo(9.699999988079071);
+        assertThat(result.position().x()).isNotEqualTo(9.7);
     }
 
     @Test
     void theEntityHeightIsPinnedByACeilingAtAKnownDistance() {
         // Entering velocity (0, 10, 0), pitch 0, yaw 0, gravity 0.08 — verified end-to-end against
         // ElytraSimulator.tick itself to reach a ceiling at y = [102, 103] with room to spare. The
-        // box's height (1.8) is the only thing standing between the box's top and the ceiling, so
-        // the clamped position pins it: 102 - 1.8 = 100.2. A height of 0.5 would instead clamp to
-        // 101.5.
+        // box's height is the only thing standing between the box's top and the ceiling, so the
+        // clamped position pins it: 102 - (double) 1.8F = 100.20000004768372. A height of 0.5 would
+        // instead clamp to 101.5, and a double 1.8 to exactly 100.2.
+        //
+        // Unlike the half-width, no recorded fixture pins this one: wall-graze's wall spans
+        // y = 250..310 and landing's floor is under the feet, so no recording brings the top of the
+        // box into contact with anything. It is widened for consistency with makeBoundingBox, which
+        // holds both dimensions as float — see ElytraSimulator.BOX_HEIGHT.
         FlightState state = new FlightState(new Vec3(0, 100, 0), new Vec3(0, 10, 0), 0.0f, 0.0f, false);
         FlightInput input = new FlightInput(0.0f, 0.0f, false, 0, DEFAULT_GRAVITY);
 
         FlightState result = ElytraSimulator.tick(state, input, ceilingAt(102.0));
 
-        assertThat(result.position().y()).isCloseTo(100.2, within(1.0e-9));
+        assertThat(result.position().y()).isEqualTo(100.20000004768372);
+        assertThat(result.position().y()).isNotEqualTo(100.2);
     }
 
     @Test
@@ -235,9 +299,9 @@ class ElytraSimulatorTest {
         // DIRECTION_ALIGNMENT makes it 50 + (0 / 1 * 50 - 50) * 0.1 = 45, and DRAG multiplies by the
         // *float* 0.99F (0.99000000953674316...), giving 45.0 * 0.99F = 44.550000429153442...
         //
-        // The wall's near face is that value + 0.3 - 5e-6 = 44.84999542915344, so the box's
-        // half-width of 0.3 clamps the movement to 44.84999542915344 - 0.3 = 44.54999542915344 —
-        // 5e-6 short of what was requested.
+        // The wall's near face is that value + (double)(0.6F / 2.0F) - 5e-6 = 44.84999544107437, so
+        // the half-width clamps the movement to 44.84999544107437 - 0.30000001192092896 =
+        // 44.54999542915344 — 5e-6 short of what was requested.
         //
         // 5e-6 is under Vanilla's 1.0E-5F Mth.equal window, and Entity.move:760-762 computes BOTH
         // horizontal flags through Mth.equal before :786 hands those same flags to
@@ -248,7 +312,7 @@ class ElytraSimulatorTest {
         FlightState state = new FlightState(new Vec3(0, 10, 0), new Vec3(50, 0, 0), 0.0f, 0.0f, false);
         FlightInput input = new FlightInput(0.0f, 0.0f, false, 0, DEFAULT_GRAVITY);
 
-        FlightState result = ElytraSimulator.tick(state, input, wallAt(44.84999542915344));
+        FlightState result = ElytraSimulator.tick(state, input, wallAt(44.84999544107437));
 
         // The clamp really happened: without this the velocity assertion would also hold for a
         // resolver that simply let the box fly through the wall.
@@ -270,8 +334,9 @@ class ElytraSimulatorTest {
 
         FlightState result = ElytraSimulator.tick(state, input, wallAtZ(10.0));
 
-        // Same derivation as theEntityWidthIsPinnedByAWallAtAKnownDistance, on Z: 10 - 0.3 = 9.7.
-        assertThat(result.position().z()).isCloseTo(9.7, within(1.0e-9));
+        // Same derivation as theEntityWidthIsPinnedByAWallAtAKnownDistance, on Z:
+        // 10 - (double)(0.6F / 2.0F) = 9.699999988079071.
+        assertThat(result.position().z()).isEqualTo(9.699999988079071);
         assertThat(result.velocity().z()).isEqualTo(0.0);
         // Y is untouched by the wall, so its velocity must survive restitution unchanged.
         assertThat(result.velocity().y()).isLessThan(0.0);
@@ -325,8 +390,13 @@ class ElytraSimulatorTest {
     /**
      * The same rotation as {@link #theXTermsOfEveryStepArePinnedAtANonZeroYaw}, with the firework
      * impulse active. The impulse's {@code lookAngle.x * 1.5} term is the one every yaw-0 fixture
-     * multiplies by zero: at this yaw, changing that {@code 1.5} to {@code 1.4} moves the entering
-     * {@code x} by {@code 2.83e-2} and the resulting {@code x} by {@code 2.54e-2}.
+     * multiplies by zero — including {@code single-boost} and {@code chained-boosts}, the only
+     * recorded fixtures with a burn at all, both flown at yaw {@code 0} — so at this yaw, changing
+     * that {@code 1.5} to {@code 1.4} moves the resulting {@code x} by {@code 2.83e-2} while every
+     * recording stays green.
+     *
+     * <p>Composed steps-then-impulse, which is the order {@link
+     * #theFireworkBoostIsAppliedAfterTheMoveNotBeforeTheSteps} pins and the order Vanilla ticks.
      */
     @Test
     void theFireworkImpulsesXTermIsPinnedAtANonZeroYaw() {
@@ -335,13 +405,13 @@ class ElytraSimulatorTest {
 
         FlightState result = ElytraSimulator.tick(state, boosting, CollisionSpace.empty());
 
-        Vec3 boosted = vanillaFireworkImpulse(ENTERING_VELOCITY, vanillaLookAngle(PITCH, YAW));
-        assertThat(boosted.x()).isCloseTo(-0.18065171241760258, within(1.0e-15));
+        Vec3 stepped = vanillaUpdateFallFlyingMovement(ENTERING_VELOCITY, PITCH, YAW, DEFAULT_GRAVITY);
+        assertThat(stepped.x()).isCloseTo(0.47634234574166134, within(1.0e-15));
 
-        Vec3 expected = vanillaUpdateFallFlyingMovement(boosted, PITCH, YAW, DEFAULT_GRAVITY);
-        assertThat(expected.x()).isCloseTo(-0.21599867432561282, within(1.0e-15));
-        assertThat(expected.y()).isCloseTo(0.25454496876292027, within(1.0e-15));
-        assertThat(expected.z()).isCloseTo(0.9977951010981996, within(1.0e-15));
+        Vec3 expected = vanillaFireworkImpulse(stepped, vanillaLookAngle(PITCH, YAW));
+        assertThat(expected.x()).isCloseTo(-0.24248053954677184, within(1.0e-15));
+        assertThat(expected.y()).isCloseTo(0.2553522531991228, within(1.0e-15));
+        assertThat(expected.z()).isCloseTo(1.0329397007871652, within(1.0e-15));
 
         assertThat(result.velocity().x()).isCloseTo(expected.x(), within(1.0e-12));
         assertThat(result.velocity().y()).isCloseTo(expected.y(), within(1.0e-12));
