@@ -75,4 +75,5 @@ include("server")
 
 // Greenfield rebuild — see docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md
 include("voyager-api")
+include("voyager-physics")
 include("voyager-fitness")

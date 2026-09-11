@@ -93,11 +93,23 @@ double: -0.2181661564992912
 `Math.toRadians(pitch)` is the wrong conversion here.
 
 **3. The trigonometry is mixed, and one half is a lookup table.** The lift term uses
-`Math.cos(leanAngle)` — a true double cosine. The pitch-boost term uses `Mth.sin(leanAngle)`:
+`Math.cos(leanAngle)` — a true double cosine. The pitch-boost term uses `Mth.sin(leanAngle)`, and
+`Entity.calculateViewVector` uses both `Mth.sin` and `Mth.cos`. `net/minecraft/util/Mth.java`
+contains **exactly these two methods** on this path, and no `float` overload of either:
 
 ```java
+private static final float[] SIN = Util.make(new float[65536], sin -> {
+    for (int i = 0; i < sin.length; i++) {
+        sin[i] = (float)Math.sin(i / 10430.378350470453);
+    }
+});
+
 public static float sin(final double i) {
     return SIN[(int)((long)(i * 10430.378350470453) & 65535L)];
+}
+
+public static float cos(final double i) {
+    return SIN[(int)((long)(i * 10430.378350470453 + 16384.0) & 65535L)];
 }
 ```
 
@@ -105,6 +117,17 @@ That is a 65536-entry table returning `float`, with quantisation error orders of
 than the double `Math.sin` it superficially resembles. Reimplementing both terms with `Math.*` — the
 obvious, tidy choice — silently changes the climb behaviour. The port must use a table with the same
 size and index arithmetic.
+
+Two details of that index arithmetic are easy to get wrong, and neither shows up in a plot:
+
+- **There is no `float` overload in 26.2.** `calculateViewVector` passes `float` arguments
+  (`xRot * Mth.DEG_TO_RAD`), and they **widen to `double`** and bind to the methods above. A port
+  that assumes the "classic float form" — `SIN[(int)(i * 10430.378F + 16384.0F) & 65535]`, which
+  older Minecraft versions did carry — picks a different table entry for roughly 0.1% of angles. At
+  `-1.56955` rad the double form lands on index 12 and the float form on index 13, whose entries are
+  `9.59e-5` apart: a full table step, a hundred times the `1e-6` per-tick parity threshold.
+- **`cos` is `sin` shifted by a quarter turn of the table**, `+16384.0` added *before* the `long`
+  truncation — not `Math.cos` and not `sin(i + PI/2)`.
 
 ## Answered: does `air_drag_modifier` affect elytra drag?
 
@@ -136,6 +159,342 @@ Two further behaviours belong to the same method:
 - `onClimbable()` ends gliding immediately and falls through to normal air travel.
 - `stopFallFlying()` sets the shared flag to `true` and then to `false`, which forces a metadata
   update rather than expressing an intent.
+
+## The collision path, as it actually reads
+
+`travelFallFlying`'s `this.move(MoverType.SELF, ...)` is the second half of the tick, and the parity
+suite measures it as directly as it measures the velocity update. Source of record:
+`net/minecraft/world/entity/Entity.java` (`move`, `collide`, `collideWithShapes`,
+`restituteMovementAfterCollisions`, `getEntityBounciness`), `net/minecraft/core/Direction.java`
+(`axisStepOrder`), `net/minecraft/world/phys/shapes/Shapes.java` (`collide`) and
+`net/minecraft/world/phys/shapes/VoxelShape.java` (`collide`, `collideX`).
+
+**There is no `AABB.collideX/collideY/collideZ` in 26.2.** Earlier versions carried per-axis clamps on
+`AABB`; 26.2 clamps against `VoxelShape` instead, reached through `Shapes.collide`. Code citing the
+`AABB` names is citing a method that no longer exists.
+
+### Axis order
+
+`net/minecraft/core/Direction.java:379`:
+
+```java
+public static ImmutableList<Direction.Axis> axisStepOrder(final Vec3 movement) {
+    return Math.abs(movement.x) < Math.abs(movement.z) ? YZX_AXIS_ORDER : YXZ_AXIS_ORDER;
+}
+```
+
+with (`:48-49`) `YXZ_AXIS_ORDER = [Y, X, Z]` and `YZX_AXIS_ORDER = [Y, Z, X]`. Y always resolves
+first; whichever of X or Z has the larger magnitude resolves next. The comparison is strict, so an
+exact tie (`|dx| == |dz|`, including `0 == 0`) takes the `YXZ` branch.
+
+### The axis-separated sweep
+
+`net/minecraft/world/entity/Entity.java:1245`:
+
+```java
+private static Vec3 collideWithShapes(final Vec3 movement, final AABB boundingBox, final List<VoxelShape> shapes) {
+    if (shapes.isEmpty()) {
+        return movement;
+    }
+
+    Vec3 resolvedMovement = Vec3.ZERO;
+
+    for (Direction.Axis axis : Direction.axisStepOrder(movement)) {
+        double axisMovement = movement.get(axis);
+        if (axisMovement != 0.0) {
+            double collision = Shapes.collide(axis, boundingBox.move(resolvedMovement), shapes, axisMovement);
+            resolvedMovement = resolvedMovement.with(axis, collision);
+        }
+    }
+
+    return resolvedMovement;
+}
+```
+
+Each axis is clamped against the box already moved by the axes resolved before it
+(`boundingBox.move(resolvedMovement)`), and the same `shapes` list — collected once, from
+`boundingBox.expandTowards(movement)` in `collideBoundingBox` — serves all three. An axis whose
+component is exactly `0.0` is skipped and stays at the `Vec3.ZERO` initialiser.
+
+`Entity.collide` (`:1142`) wraps this with the step-up branch, gated on
+`maxUpStep() > 0.0F && (onGroundAfterCollision || onGround()) && (xCollision || zCollision)`, and
+short-circuits `movement.lengthSqr() == 0.0` before ever collecting colliders.
+
+### The per-axis clamp
+
+`net/minecraft/world/phys/shapes/Shapes.java:234`:
+
+```java
+public static double collide(final Direction.Axis axis, final AABB moving, final Iterable<VoxelShape> shapes, double distance) {
+    for (VoxelShape shape : shapes) {
+        if (Math.abs(distance) < 1.0E-7) {
+            return 0.0;
+        }
+
+        distance = shape.collide(axis, moving, distance);
+    }
+
+    return distance;
+}
+```
+
+`net/minecraft/world/phys/shapes/VoxelShape.java:252`:
+
+```java
+public double collide(final Direction.Axis axis, final AABB moving, final double distance) {
+    return this.collideX(AxisCycle.between(axis, Direction.Axis.X), moving, distance);
+}
+
+protected double collideX(final AxisCycle transform, final AABB moving, double distance) {
+    if (this.isEmpty()) {
+        return distance;
+    }
+
+    if (Math.abs(distance) < 1.0E-7) {
+        return 0.0;
+    }
+
+    AxisCycle inverse = transform.inverse();
+    Direction.Axis aAxis = inverse.cycle(Direction.Axis.X);
+    Direction.Axis bAxis = inverse.cycle(Direction.Axis.Y);
+    Direction.Axis cAxis = inverse.cycle(Direction.Axis.Z);
+    double maxA = moving.max(aAxis);
+    double minA = moving.min(aAxis);
+    int aMin = this.findIndex(aAxis, minA + 1.0E-7);
+    int aMax = this.findIndex(aAxis, maxA - 1.0E-7);
+    int bMin = Math.max(0, this.findIndex(bAxis, moving.min(bAxis) + 1.0E-7));
+    int bMax = Math.min(this.shape.getSize(bAxis), this.findIndex(bAxis, moving.max(bAxis) - 1.0E-7) + 1);
+    int cMin = Math.max(0, this.findIndex(cAxis, moving.min(cAxis) + 1.0E-7));
+    int cMax = Math.min(this.shape.getSize(cAxis), this.findIndex(cAxis, moving.max(cAxis) - 1.0E-7) + 1);
+    int aSize = this.shape.getSize(aAxis);
+    if (distance > 0.0) {
+        for (int a = aMax + 1; a < aSize; a++) {
+            for (int b = bMin; b < bMax; b++) {
+                for (int c = cMin; c < cMax; c++) {
+                    if (this.shape.isFullWide(inverse, a, b, c)) {
+                        double newDistance = this.get(aAxis, a) - maxA;
+                        if (newDistance >= -1.0E-7) {
+                            distance = Math.min(distance, newDistance);
+                        }
+
+                        return distance;
+                    }
+                }
+            }
+        }
+    } else if (distance < 0.0) {
+        for (int a = aMin - 1; a >= 0; a--) {
+            for (int b = bMin; b < bMax; b++) {
+                for (int c = cMin; c < cMax; c++) {
+                    if (this.shape.isFullWide(inverse, a, b, c)) {
+                        double newDistance = this.get(aAxis, a + 1) - minA;
+                        if (newDistance <= 1.0E-7) {
+                            distance = Math.max(distance, newDistance);
+                        }
+
+                        return distance;
+                    }
+                }
+            }
+        }
+    }
+
+    return distance;
+}
+```
+
+For a full unit cube — the only shape the rebuild's `CollisionSpace` exposes — this reduces to: if
+the moving box overlaps the cube on the other two axes, clamp the movement to the near face of the
+cube in the direction of travel (`other.min - box.max` moving positive, `other.max - box.min` moving
+negative), keeping whichever of that limit and the requested distance is smaller in magnitude. The
+`± 1.0E-7` on the `findIndex` calls shrinks the moving box by that amount on the perpendicular axes
+before the overlap test, which is the `VoxelShape` equivalent of the strict comparisons in
+`AABB.intersects` documented below.
+
+**Vanilla snaps a sub-`1.0E-7` remaining distance to exactly zero, and the guard's position is the
+whole of its behaviour.** `Shapes.collide:236` returns `0.0` when `Math.abs(distance) < 1.0E-7`, but
+the check sits *inside* the loop, evaluated once per shape against the distance as clamped so far.
+Two consequences follow, and they pull in opposite directions:
+
+- With an **empty** shape list the loop body never runs, so even a `5e-8` movement passes through
+  untouched. (`collideWithShapes:1246` short-circuits an empty list before this anyway.) This is not
+  a blanket "snap small movements to zero"; reading it as one — hoisting the check above the loop —
+  would freeze an entity drifting through open air.
+- Once an earlier shape has clamped the remaining distance under `1.0E-7`, the **next** shape makes
+  the result exactly `0.0`, not the residual. Because the guard runs before `shape.collide`, and the
+  perpendicular-axis overlap test lives *inside* `shape.collide`
+  (`VoxelShape.collideX:263-268`, the `findIndex` calls), any remaining shape triggers it — including
+  one the clamp would otherwise have skipped for not overlapping on this axis.
+
+`VoxelShape.collideX:261` repeats the same guard at the top of `shape.collide`. Against a distance
+the outer guard has already accepted it can never fire, so it is redundant.
+
+`MovementResolver`'s three per-axis clamps now carry this guard in the same position — at the top of
+the candidate loop, before the overlap test. Pinned by
+`MovementResolverTest.aSubEpsilonMovementWithNoCandidatesPassesThroughUnchanged` and
+`aClampLeavingLessThanTheSnapEpsilonReturnsExactlyZero`.
+
+**Which flag does the snap report?** The source settles it, and the answer is that the snap is never
+visible to the flags in its own right. `Entity.move:760-762` compares the requested movement against
+the final one and nothing in between, so what the flags see is `|requested - 0.0|`:
+
+- A snap after a large clamp (requested `1.0`, clamped to `5e-8`, snapped to `0.0`) is `1.0` away
+  from the request, well over `Mth.equal`'s `1.0E-5F` — an ordinary horizontal collision.
+- A snap of a movement that was *itself* under `1.0E-5` (requested `5e-6`, snapped to `0.0`) is
+  `Mth.equal` to the request, so **no** horizontal collision is reported even though a block stopped
+  the movement dead. Pinned by
+  `MovementResolverTest.aSnapToZeroBelowTheHorizontalToleranceReportsNoCollision`.
+- The same case on Y *is* reported, `verticalCollision` being exact (`delta.y != movement.y`). Note
+  that `verticalCollisionBelow` reads `delta.y < 0.0` — `delta` is the *requested* movement here,
+  `movement` the collided one (`:786` passes the collided vector to `restituteMovementAfterCollisions`,
+  and `setPos` is fed `pos.add(movement)`) — so a snapped-to-zero descent still counts as landing.
+
+The `1.0E-7` guard therefore never needs a flag of its own; it is a clamp like any other.
+
+### Restitution
+
+`net/minecraft/world/entity/Entity.java:760` computes the flags:
+
+```java
+boolean xCollision = !Mth.equal(delta.x, movement.x);
+boolean zCollision = !Mth.equal(delta.z, movement.z);
+this.horizontalCollision = xCollision || zCollision;
+boolean movedVertically = Math.abs(delta.y) > 0.0;
+if (movedVertically || this.isLocalInstanceAuthoritative()) {
+    this.verticalCollision = delta.y != movement.y;
+    this.verticalCollisionBelow = this.verticalCollision && delta.y < 0.0;
+    this.setOnGroundWithMovement(this.verticalCollisionBelow, this.horizontalCollision, movement);
+}
+```
+
+with `Mth.equal(double, double)` (`net/minecraft/util/Mth.java:162`) being
+`Math.abs(b - a) < 1.0E-5F`. Restitution runs (`:785-787`) only when
+
+```java
+if (this.canSimulateMovement() && (movedVertically && this.verticalCollision || this.horizontalCollision)) {
+    this.restituteMovementAfterCollisions(effectState, xCollision, zCollision, movement);
+}
+```
+
+and reads (`:803`):
+
+```java
+private void restituteMovementAfterCollisions(final BlockState effectState, final boolean xCollision, final boolean zCollision, final Vec3 movement) {
+    double restitution = this.isSuppressingBounce() ? 0.0 : this.getEntityBounciness();
+    Vec3 currentMovement = this.getDeltaMovement();
+    Vec3 movementAfterBounce = currentMovement;
+    if (xCollision) {
+        movementAfterBounce = movementAfterBounce.with(Direction.Axis.X, -currentMovement.x * restitution);
+    }
+
+    if (zCollision) {
+        movementAfterBounce = movementAfterBounce.with(Direction.Axis.Z, -currentMovement.z * restitution);
+    }
+
+    boolean bounced = restitution > 0.0 && (xCollision || zCollision);
+    if (this.verticalCollision) {
+        if (this.verticalCollisionBelow) {
+            restitution = !(-currentMovement.y < this.getEffectiveGravity()) && !this.isSuppressingBounce() && !effectState.is(BlockTags.SUPPRESSES_BOUNCE)
+                ? Math.max(restitution, this.getBlockBounciness(effectState.getBlock()))
+                : 0.0;
+        }
+
+        double gravityCompensation;
+        double effectiveDrag;
+        if (restitution > 0.0) {
+            double portionWithMovement = movement.y / currentMovement.y;
+            gravityCompensation = portionWithMovement * this.getEffectiveGravity();
+            effectiveDrag = Mth.lerp(portionWithMovement, 1.0, this.getAirDrag());
+            bounced = true;
+        } else {
+            gravityCompensation = 0.0;
+            effectiveDrag = 1.0;
+        }
+
+        movementAfterBounce = movementAfterBounce.with(Direction.Axis.Y, (gravityCompensation - currentMovement.y) * effectiveDrag * restitution);
+    }
+
+    if (bounced) {
+        this.gameEvent(GameEvent.BOUNCE);
+        this.syncPosition = true;
+    }
+
+    this.setDeltaMovement(movementAfterBounce);
+}
+```
+
+`getEntityBounciness()` (`:855`) is `return 0.0;` for every entity, and `getBlockBounciness` is
+non-zero only for slime and beds. At `restitution = 0.0` every branch collapses: the X and Z terms
+become `-v * 0.0 = 0.0`, and the Y term becomes `(0.0 - v.y) * 1.0 * 0.0 = 0.0`. A collided axis'
+velocity therefore becomes exactly `0.0`, not a fraction of itself — which is what the rebuild
+implements.
+
+**Horizontal restitution gates on the *tolerant* flags; only the vertical flag is exact.** The
+`xCollision` and `zCollision` handed to `restituteMovementAfterCollisions` at `:786` are the very
+same locals computed at `:760-761` as `!Mth.equal(...)` — there is no second, exact per-axis pair
+anywhere in `Entity.move`. They are therefore `false` whenever the clamp moved that component by
+less than `1.0E-5F`, and a horizontal clamp inside `(0, 1.0E-5)` is not a collision for any purpose:
+`horizontalCollision` stays `false`, no restitution runs, and the velocity on that axis survives
+even though the *position* was clamped. Only `verticalCollision` is exact (`delta.y != movement.y`,
+`:762`).
+
+The rebuild followed this until commit `dcfe98e`, which split `MovementResult` into an exact
+per-axis pair for restitution to read and a tolerant `horizontalCollision` for reporting. That split
+was wrong and has been reverted: `MovementResult.xCollision()` and `zCollision()` are now the
+tolerant flags, `verticalCollision()` stays exact, and `horizontalCollision()` is derived as
+`xCollision || zCollision` exactly as Vanilla derives it. `ElytraSimulator.restitute` reads the same
+three flags Vanilla's restitution reads.
+
+Pinned by `MovementResolverTest.aSubToleranceClampReportsNoAxisCollisionEither` (a `5e-6` clamp
+reports neither flag) and `ElytraSimulatorTest.restitutionPreservesVelocityOnASubToleranceHorizontalClamp`
+(the same clamp end to end: position moved, velocity untouched).
+
+### The firework rocket impulse
+
+`net/minecraft/world/entity/projectile/FireworkRocketEntity.java:127-142`, applied to the attached
+entity from the rocket's own `tick()` — outside `updateFallFlyingMovement`, so the velocity the
+update reads already includes that tick's impulse:
+
+```java
+if (this.attachedToEntity.isFallFlying()) {
+    Vec3 lookAngle = this.attachedToEntity.getLookAngle();
+    double power = 1.5;
+    double powerAdd = 0.1;
+    Vec3 movement = this.attachedToEntity.getDeltaMovement();
+    this.attachedToEntity
+        .setDeltaMovement(
+            movement.add(
+                lookAngle.x * 0.1 + (lookAngle.x * 1.5 - movement.x) * 0.5,
+                lookAngle.y * 0.1 + (lookAngle.y * 1.5 - movement.y) * 0.5,
+                lookAngle.z * 0.1 + (lookAngle.z * 1.5 - movement.z) * 0.5
+            )
+        );
+}
+```
+
+`docs/reference/firework-boost.md` documents the legacy Minestom boost system, whose impulse is a
+different formula entirely. That document is not a description of Vanilla and must not be used as
+one; this block is.
+
+### The view vector
+
+`net/minecraft/world/entity/Entity.java:1967`, the source of the `lookAngle` every branch above reads
+(`getLookAngle()` is `calculateViewVector(getXRot(), getYRot())`, `:2576`):
+
+```java
+public final Vec3 calculateViewVector(final float xRot, final float yRot) {
+    float realXRot = xRot * Mth.DEG_TO_RAD;
+    float realYRot = -yRot * Mth.DEG_TO_RAD;
+    float yCos = Mth.cos(realYRot);
+    float ySin = Mth.sin(realYRot);
+    float xCos = Mth.cos(realXRot);
+    float xSin = Mth.sin(realXRot);
+    return new Vec3(ySin * xCos, -xSin, yCos * xCos);
+}
+```
+
+Both conversions are the `float` multiplication of fidelity trap 2, and all four trigonometric calls
+go through the `Mth` table of trap 3.
 
 ## Bounding-box intersection is strict on all three axes
 
