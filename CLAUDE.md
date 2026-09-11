@@ -4,46 +4,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Voyager (internally "ElytraRace") is a Minecraft elytra racing minigame (Mario Kart style — fly through cups of maps, each map has rings that give points). Multi-module Java project built with Gradle 9.4.
+Voyager is a Minecraft elytra racing minigame — fly through cups of maps, each map has rings that
+give points. Multi-module Java project built with Gradle 9.5.1.
 
-**Migration in progress:** Game plugin is being migrated from Paper to Minestom. Setup plugin stays on Paper.
+**The repository currently contains two trees.** The greenfield rebuild is being built alongside the
+tree it replaces; both build, both test, and `main` stays green throughout. The design that governs
+the rebuild is `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md`, and it — not this
+file — is the authority for the design rules until the rebuild lands.
 
-### Key Decisions (approved)
-- **Java**: 25 (Minestom requirement)
-- **Game Server**: Minestom 2026.x as standalone server (own main(), no extensions)
-- **Setup Server**: Paper API 1.21.5 (unchanged)
-- **World Format**: Anvil (direct loading, compatible with Paper setup)
-- **Conversation API**: Complete rewrite (platform-agnostic)
-- **Deployment**: CloudNet v4 (primary), Cloud-Native/K8s (later)
-- **Commits**: Conventional Commits, no Co-Author
-- **Version Catalog**: Defined programmatically in `settings.gradle.kts` via `dependencyResolutionManagement { versionCatalogs { ... } }` — do NOT use `gradle/libs.versions.toml`
+### The rebuild (`voyager-*`)
+
+| Module | Contents |
+|---|---|
+| `voyager-api` | Interfaces, records, enums, exceptions. No implementation, no I/O. |
+| `voyager-fitness` | Test-only. ArchUnit over every `voyager-*` module. |
+
+Further modules — `voyager-physics`, `voyager-race`, `voyager-persistence`, `voyager-platform`,
+`voyager-server`, `voyager-setup` — arrive in later stages. See the spec's delivery plan.
+
+### The tree being replaced
+
+`server`, `plugins/game`, `plugins/setup`, `shared/common`, `shared/conversation-api`,
+`shared/database`, `shared/spline`. Do not add features here. It is deleted in one cut once the
+rebuild reaches a flyable build with a green Vanilla trace suite.
+
+## Key Decisions
+
+- **Java**: 25 for every `voyager-*` module. Vanilla itself requires Java 25 since Minecraft 26.1.
+- **Target**: Minecraft 26.2, Minestom `2026.08.28-26.2`. Mojang moved to calendar versioning in
+  2026; there is no 1.22, it became 26.1. `settings.gradle.kts` still pins the old tree to Minestom
+  `2026.04.13-1.21.11` — that version applies only to `server`/`plugins/*`, not to the rebuild.
+- **Dependency injection**: `io.airlift:guice:10`, with DI annotations confined to the composition
+  roots.
+- **Commits**: Conventional Commits, no Co-Author line beyond the configured attribution.
+- **Version Catalog**: declared programmatically in `settings.gradle.kts`. Do not add
+  `gradle/libs.versions.toml`.
 
 ## Build Commands
 
 ```bash
-./gradlew build                          # Build all modules
-./gradlew :plugins:game:build           # Build only the game plugin
-./gradlew :plugins:setup:build          # Build only the setup plugin
-./gradlew :plugins:game:test            # Run game plugin tests
-./gradlew :plugins:game:shadowJar       # Build fat JAR for game plugin
-./gradlew :plugins:game:runServer       # Run a local Paper 1.21.5 test server
-./gradlew :plugins:game:test --tests "net.elytrarace.game.ElytraRaceTest.testPluginLoads"  # Run a single test
-./gradlew :server:build                  # Build server module
-./gradlew :server:test                   # Run server tests
-./gradlew :server:shadowJar             # Build fat JAR
-java -jar server/build/libs/*.jar        # Run standalone server
+./gradlew build                    # Everything, both trees
+./gradlew :voyager-api:test        # The rebuild's API module
+./gradlew :voyager-fitness:test    # Architecture rules over the whole rebuild
 ```
 
-Tests use JUnit 5 with MockBukkit (plugins) or Minestom Testing (server) for API mocking. JaCoCo coverage reports are generated automatically after tests.
+The tree being replaced still has to build and still gets maintained until it is cut:
 
-## Module Structure
+```bash
+./gradlew :server:build            # Minestom game server
+./gradlew :server:shadowJar        # Fat JAR -> server/build/libs/server-<version>.jar
+./gradlew :server:runServer        # Build that JAR and run it from run/ (also runServerDev, -Debug, -Hotswap)
+./gradlew :plugins:setup:runServer # Paper 1.21.8 test server with FAWE and VoidGen downloaded
+```
 
-- **`server`** — Standalone Minestom game server. Handles gameplay, physics, scoring, cup flow, and UI. Entry point: `net.elytrarace.server.VoyagerServer` (own `main()`). Depends on `shared/common`, `shared/database`.
-- **`plugins/game`** — Legacy Paper game plugin (`ElytraRace-Game`). Being replaced by `server`. Entry point: `net.elytrarace.game.ElytraRace`
-- **`plugins/setup`** — Setup plugin (`ElytraRace-Setup`) for map/cup/portal configuration via in-game conversations. Depends on FastAsyncWorldEdit. Entry point: `net.elytrarace.setup.ElytraRace`
-- **`shared/common`** — Shared utilities: ECS framework, map/cup services, file handling (Gson-based JSON), language/i18n, spline math, builders (Bukkit-frei)
-- **`shared/conversation-api`** — Player conversation/prompt system, plattform-agnostisch (Bukkit-frei)
-- **`shared/database`** — Hibernate ORM + HikariCP + MariaDB persistence layer for player data
+`java -jar server/build/libs/server-<version>.jar [host] [port]` runs the same JAR outside Gradle;
+both arguments are optional. `:plugins:game:shadowJar` and `:plugins:game:runServer` (Paper 1.21.5)
+exist too, but `plugins/game` is the Paper game plugin the Minestom `server` module already replaced.
+
+Tests use JUnit 6 with AssertJ across both trees. `server` adds Minestom Testing and Mockito;
+`plugins/setup` has plain JUnit tests; `plugins/game` has no tests at all. Architecture rules for the
+rebuild live in `voyager-fitness` and are declared with `allowEmptyShould(false)` — a rule that
+passes because it matched nothing is a defect, not a pass.
 
 ## Architecture
 
@@ -60,14 +81,14 @@ Game-specific components are in `plugins/game/src/.../components/` (GameState, P
 Game phases (Lobby → Preparation → Game → End) are managed via [Xerus](https://github.com/OneLiteFeatherNET/Xerus) (`net.theevilreaper.xerus.api.phase.*`). Phases have start/finish lifecycle with callbacks. `LinearPhaseSeries` chains phases sequentially.
 
 ### Elytra velocity authority
-Normal elytra flight is client-authoritative, matching vanilla Minecraft. `ElytraPhysicsSystem` runs the vanilla formula every tick to keep a server-tracked velocity for ring collision and boost math, but it does NOT call `player.setVelocity()`. Velocity is only sent to the client for external forces: firework boost burns (`FireworkBoostSystem`), ring `BOOST`/`SLOW` effects (`RingEffectSystem`), and out-of-bounds resets (`OutOfBoundsSystem`). See [ADR-0002](docs/decisions/0002-elytra-flight-client-authority.md) and [docs/elytra-physics-reference.md](docs/elytra-physics-reference.md) §7.
+Normal elytra flight is client-authoritative, matching vanilla Minecraft. `ElytraPhysicsSystem` (`server`) runs the vanilla formula every tick to keep a server-tracked velocity for ring collision and boost math, but it does NOT call `player.setVelocity()`. Velocity is only sent to the client for external forces: firework boost burns (`FireworkBoostSystem`), ring `BOOST`/`SLOW` effects (`RingEffectSystem`), and out-of-bounds resets (`OutOfBoundsSystem`). See [docs/elytra-physics-reference.md](docs/elytra-physics-reference.md) §7 for the formula as implemented here, and [docs/reference/elytra-physics-26.2.md](docs/reference/elytra-physics-26.2.md) for the decompiled-source-verified 26.2 formulas the rebuild targets. No ADR documents this decision yet.
 
 ### Data Flow
 Map and cup definitions are stored as JSON files (via `GsonFileHandler`). The setup plugin uses a conversation-based wizard to create these configs. The game plugin loads them at runtime through `MapService`/`CupService`.
 
-## Dependencies (via version catalog in settings.gradle.kts)
+## Dependencies (via version catalog in settings.gradle.kts, old tree)
 
-- **Minestom** 2026.03.25-1.21.11 — Standalone Minecraft server (server module)
+- **Minestom** 2026.04.13-1.21.11 — Standalone Minecraft server (server module). The rebuild targets `2026.08.28-26.2`; see Key Decisions.
 - **Minestom Testing** — Test framework for Minestom (server module tests)
 - **Paper API** 1.21.5 — Minecraft server API (plugins only)
 - **Cloud** (Incendo) — Command framework
@@ -88,162 +109,80 @@ docker compose -f docker/mariadb/compose.yml up -d
 ## Code Conventions
 
 - Base package: `net.elytrarace`
-- Java 25 with `--release 25` (server module), Java 21 with `--release 21` (plugins, shared)
 - UTF-8 source encoding
+- Commits follow Conventional Commits (feat:, fix:, docs:, refactor:, test:, chore:, ci:) — no Co-Author line
+
+### The rebuild (`voyager-*`)
+
+- Packages live under `net.elytrarace.voyager..` (e.g. `voyager-api` at `net.elytrarace.voyager.api`).
+  The tree being replaced owns `net.elytrarace.api`, `net.elytrarace.server` and `net.elytrarace.setup`,
+  so the rebuild keeps its own sub-root and fitness rules stay unambiguous.
+- Domain exceptions live in an `exception` subpackage next to the domain they belong to (e.g.
+  `net.elytrarace.voyager.api.math.exception`, `net.elytrarace.voyager.api.physics.exception`), each
+  with its own `package-info.java` — not one repo-wide exception package.
+- Build exception messages and similar output with `String.formatted(...)`, not `+` concatenation.
+- For everything else — when `sealed` is worth it, record vs. class, nullability, interface size,
+  numeric types in physics code — load `.claude/skills/java-style/SKILL.md` rather than looking here;
+  restating it here is the drift this rewrite exists to stop.
+
+### The tree being replaced
+
+- Java 25 with `--release 25` (server module), Java 21 with `--release 21` (plugins, shared)
 - Interface + Impl pattern for services (e.g., `GameService` / `GameServiceImpl`, `CupService` / `CupServiceImpl`)
 - Builder pattern for DTOs (e.g., `MapDTOBuilder`, `CupDTOBuilder`)
 - Components are named `*Component`, systems are named `*System`
-- Commits follow Conventional Commits (feat:, fix:, docs:, refactor:, test:, chore:, ci:) — no Co-Author line
 - User-facing strings use `Component.translatable("key", args)` backed by `.properties` files. Placeholders use MiniMessage `<arg:N>` syntax — never `{N}` (MessageFormat). The `{N}` form renders as literal text because `PluginTranslationRegistry` disables the MessageFormat path. See [docs/guides/how-to-add-a-translation.md](docs/guides/how-to-add-a-translation.md).
 
 ## Design Reference Rules (from ManisGame)
 
-The following rules are derived from [ManisGame](https://github.com/OneLiteFeatherNET/ManisGame) and are **mandatory** for all new code.
+Ten rules, originally derived from [ManisGame](https://github.com/OneLiteFeatherNET/ManisGame),
+apply across the whole project, not just to one tree — the design spec carries them forward in
+full for the rebuild and applies them module by module. The rebuild is where they are actually
+enforced today: mechanically where `voyager-fitness` already has a test for one (rules 5 and 9),
+and as judgment calls in `.claude/skills/java-style/SKILL.md` otherwise, which also explains when a
+rule legitimately doesn't apply. The tree being replaced is where they were written down without
+being enforced — see the skill's baseline reality check for how far short `server` falls.
 
-### 1. Sealed Interface Hierarchy
-
-Domain interfaces in `shared/common` must use `sealed` + `permits BaseSomething` where a controlled extension point is intended. The `Base*` implementation is `non-sealed abstract` so consumers extend it instead of the root interface.
-
-```java
-public sealed interface Scare permits BaseScare { ... }
-
-public abstract non-sealed class BaseScare implements Scare { ... }
-```
-
-### 2. Factory as abstract utility class with `@ApiStatus.Internal`
-
-Factory classes are `abstract` with a `private` constructor, annotated `@ApiStatus.Internal`. All factory methods are annotated `@Contract(pure = true, value = "... -> new")`.
-
-```java
-@ApiStatus.Internal
-public abstract class ScareFactory {
-    private ScareFactory() {}
-
-    @Contract(pure = true, value = "_, _, _ -> new")
-    public static Scare create(ScareCategory category, Key key, Map<Class<?>, T> components) { ... }
-}
-```
-
-### 3. Provider/Registry as sealed interface with static `create()`
-
-- Provider/Registry interfaces are `sealed`; the implementation is `final`.
-- Static `create()` factory method lives on the interface.
-- Backing storage uses `ConcurrentHashMap`; returned collections are `@Unmodifiable`.
-- The single implementation is named `Default*`.
-
-```java
-public sealed interface ScareProvider permits DefaultScareProvider {
-    @Contract(pure = true)
-    static ScareProvider create() { return new DefaultScareProvider(); }
-
-    boolean add(Scare scare);
-    @Unmodifiable Collection<Scare> getScares();
-}
-
-public final class DefaultScareProvider implements ScareProvider {
-    private final Map<Key, Scare> scaresByKey = new ConcurrentHashMap<>();
-    // ...
-}
-```
-
-### 4. Components as Java `record`s
-
-Data components are `record`s. The compact constructor validates invariants. A static `of(Annotation)` factory enables annotation-driven creation.
-
-```java
-public record TitleComponent(Component header, Component subHeader, long fadeIn, long stay, long fadeOut)
-        implements ScareComponent {
-
-    public TitleComponent {
-        Check.argCondition(fadeIn < 0, "fadeIn must be greater than 0");
-    }
-
-    @Contract(pure = true, value = "_ -> new")
-    public static TitleComponent of(TitleMeta titleMeta) { ... }
-}
-```
-
-### 5. `@NotNullByDefault` on packages
-
-Every package declares a `package-info.java` with `@NotNullByDefault`. Nullability is the exception, not the default.
-
-```java
-@NotNullByDefault
-package net.theevilreaper.manis.scare;
-
-import org.jetbrains.annotations.NotNullByDefault;
-```
-
-### 6. Enum DSL pattern
-
-Enums with external representations cache `VALUES`, provide `byName()`/`byId()` lookup methods, and return `@Nullable` or `Optional`.
-
-```java
-public enum ScareCategory {
-    SOUND("sound"), TITLE("title");
-
-    private static final ScareCategory[] VALUES = values(); // cached!
-    private final String dslKey;
-
-    ScareCategory(String dslKey) { this.dslKey = dslKey; }
-
-    public static @Nullable ScareCategory byName(String name) {
-        ScareCategory category = null;
-        for (int i = 0; i < VALUES.length && category == null; i++) {
-            if (VALUES[i].dslKey.equalsIgnoreCase(name)) category = VALUES[i];
-        }
-        return category;
-    }
-}
-```
-
-### 7. Functional interface as injectable Creator
-
-Abstract factories must be injectable via a `@FunctionalInterface` Creator so tests can substitute a different factory implementation.
-
-```java
-@FunctionalInterface
-public interface ScareCreator {
-    <T extends ScareComponent> Scare apply(ScareCategory category, Key key, Map<Class<?>, T> components);
-}
-// Usage: passed to adapters/loaders so tests can inject a different factory.
-```
-
-### 8. Gson Adapter naming
-
-- Deserializer classes are named `*Adapter` and live in an `adapter` subpackage.
-- Component adapters live in `adapter.component`.
-- All adapter classes are `final`.
-
-```java
-// package scare.adapter
-public final class ScareAdapter implements JsonDeserializer<Scare> { ... }
-
-// package scare.adapter.component
-public final class TitleComponentAdapter implements JsonDeserializer<TitleComponent> { ... }
-```
-
-### 9. Exception hierarchy
-
-All domain exceptions extend `RuntimeException`, carry the `Exception` suffix, and use domain-specific names.
-
-Examples: `MissingAnnotationException`, `InvalidDataException`, `InvalidCategoryException`.
-
-### 10. Module API boundary
-
-- `shared/api` — pure interfaces, enums, exceptions; zero implementation.
-- `shared/common` — implementations of shared logic; NO platform-specific imports.
-- `extensions/*` or `server` — platform-specific code; may import Minestom API.
+1. **Sealed interface hierarchy** — a domain interface needing a controlled extension point is
+   `sealed … permits BaseX`, with a `non-sealed abstract BaseX` implementation.
+2. **Factory as abstract utility class** — `abstract`, private constructor,
+   `@ApiStatus.Internal`, `@Contract(pure = true, ...)` on every factory method.
+3. **Provider/Registry as sealed interface** — `sealed` with a static `create()`, one `final
+   Default*` implementation backed by `ConcurrentHashMap`, `@Unmodifiable` return collections.
+4. **Components as records** — data components are `record`s; invariants live in the compact
+   constructor; a static `of(Annotation)` factory enables annotation-driven creation.
+5. **`@NotNullByDefault` on packages** — every package with sources declares it in a
+   `package-info.java`; `@Nullable` is the deliberate exception. Checked by
+   `NullabilityConventionTest` in `voyager-fitness`.
+6. **Enum DSL pattern** — enums with an external representation cache `VALUES` and expose
+   `byName()`/`byId()` returning `@Nullable`/`Optional`.
+7. **Injectable Creator** — an abstract factory is exposed through a `@FunctionalInterface`
+   Creator so tests can substitute a different implementation.
+8. **Gson adapter naming** — deserializers are named `*Adapter`, live in an `adapter` subpackage
+   (`adapter.component` for component adapters), and are `final`.
+9. **Exception hierarchy** — domain exceptions extend `RuntimeException`, carry the `Exception`
+   suffix, and use domain-specific names. Checked by `DesignRuleTest` in `voyager-fitness`.
+10. **Module API boundary** — pure interfaces/records/enums/exceptions live in the API module
+    with zero implementation; implementation code carries no platform-specific imports; platform
+    code is isolated to its own module.
 
 ### Module Isolation
 
-- `shared/common`, `shared/phase`, `shared/conversation-api`, `shared/spline` must NOT import `net.minestom.*`.
+- `shared/common`, `shared/conversation-api`, `shared/spline` must NOT import `net.minestom.*`.
 - `server` module must NOT import `org.bukkit.*` (Paper).
 - `shared/database` must NOT import server- or game-specific classes.
 
 ### ArchUnit Enforcement
 
-These rules are enforced by ArchUnit tests in `server/src/test/java/net/elytrarace/arch/`.
+Rules for the rebuild live in `voyager-fitness/src/test/java/net/elytrarace/fitness/`. That module
+depends on every `voyager-*` module carrying production sources, and `FitnessCoverageTest` holds each
+of them to two conditions: ArchUnit imported at least one of its classes, and at least one declared
+`@ArchTest` rule names its package prefix. A module added to the build without an entry in that
+test's project-to-prefix map fails it, and an entry that is on the classpath but has no rule naming
+it fails it too — the previous suite declared rules for four modules its classpath never contained,
+so they never ran.
+
+The old tree's rules remain in `server/src/test/java/net/elytrarace/arch/`, unchanged.
 
 ## Agent Team Workflow (MANDATORY)
 
@@ -270,7 +209,7 @@ Each agent has a codename (persona) used in agent-to-agent references; invoke vi
 | Bedrock | `voyager-minecraft-expert` | Vanilla mechanics, elytra physics, protocol, collision |
 | Drift | `voyager-game-designer` | Gameplay loops, balancing, ring/map/cup design, feedback timing |
 | Thrust | `voyager-game-developer` | Physics code, ring collision, scoring, cup system, game loop |
-| Origami | `voyager-paper-expert` | Setup plugin, Paper API, MockBukkit tests |
+| Origami | `voyager-paper-expert` | Setup plugin, Paper API, FastAsyncWorldEdit |
 | Vault | `voyager-database-expert` | Hibernate entities, repositories, queries, schema changes |
 | Hangar | `voyager-devops-expert` | CI/CD, GitHub Actions, CloudNet v4, Docker, deployment |
 | Scout | `voyager-researcher` | Deep research before decisions (Context7, WebSearch, WebFetch) |
