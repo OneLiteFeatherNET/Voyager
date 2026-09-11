@@ -116,7 +116,15 @@ This is the task where precision is most easily lost, and the one where a mistak
 3. The cell-class filter: corners never, faces only for a block with a large collision shape, edges only for a moving piston.
 4. The intersection test, before a candidate is emitted.
 
-**Minestom has no `hasLargeCollisionShape`** — zero grep hits across all sources. It is derivable from the shape: a block has one exactly when its boxes leave the unit cell, checkable through `relativeStart()`/`relativeEnd()`. Minestom's own tall-block detection uses `relativeEnd().y() > 1`. **That is an approximation, not a translation — mark it as one in the code.**
+**Minestom has no `hasLargeCollisionShape`** — zero grep hits across all sources. But an exact
+translation exists and should be used rather than an approximation: Vanilla's own formula is in the
+decompile at `BlockBehaviour.Cache` — a shape is large when `min(axis) < 0.0 || max(axis) > 1.0` on
+any axis — and that transcribes directly onto `relativeStart()`/`relativeEnd()`.
+
+An earlier draft of this plan proposed Minestom's own tall-block heuristic, `relativeEnd().y() > 1`.
+**That is wrong and was measured to be wrong:** `piston_head` is large on X or Z depending on
+facing, and `piston_head[facing=up]` is large by reaching *below* its cell, with
+`relativeStart().y() == -0.25`. Four tests catch the difference.
 
 `ShapeImpl.boundingBoxes()` exists only on the record, not on the `Shape` interface. Every block's runtime type is `ShapeImpl`, confirmed by probe, but it is still an implementation type: put the cast behind one method in `BlockShapes` so a Minestom upgrade breaks in one place instead of twenty.
 
