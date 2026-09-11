@@ -2,7 +2,7 @@ plugins {
     id("java")
 }
 
-version = "1.11.10" // x-release-please-version
+version = "1.12.0" // x-release-please-version
 
 group = "net.onelitefeather"
 
