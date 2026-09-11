@@ -43,7 +43,7 @@ dependencyResolutionManagement {
             library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
             library("archunit.junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
-            version("junit", "6.1.1")
+            version("junit", "6.1.2")
             version("assertj", "3.27.7")
             library("junit.bom", "org.junit", "junit-bom").versionRef("junit")
             library("junit.jupiter", "org.junit.jupiter", "junit-jupiter").withoutVersion()
