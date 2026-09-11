@@ -52,4 +52,12 @@ class DesignRuleTest {
                     .should(BE_A_RECORD_AN_INTERFACE_OR_AN_ENUM)
                     .because("voyager-api carries interfaces, records, enums and exceptions only")
                     .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule race_domain_exceptions_are_runtime_exceptions =
+            classes().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .and().haveSimpleNameEndingWith("Exception")
+                    .should().beAssignableTo(RuntimeException.class)
+                    .as("domain exceptions in net.elytrarace.voyager.race.. extend RuntimeException")
+                    .allowEmptyShould(false);
 }
