@@ -6,6 +6,7 @@ import net.elytrarace.voyager.api.physics.FlightState;
 import net.elytrarace.voyager.physics.ElytraSimulator;
 import net.elytrarace.voyager.physics.TickTrace;
 import net.elytrarace.voyager.physics.step.ElytraStep;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * The gate on stage E2: every fixture E2a recorded from a live Paper 26.2 server, replayed against
@@ -52,6 +54,43 @@ import static org.assertj.core.api.Assertions.assertThat;
  * #theRecordedProfilesAreAllOnTheClasspath} keeps that from silently becoming zero fixtures.
  */
 class VanillaParityTest {
+
+    /**
+     * Vanilla's elytra tick is not bit-identical across CPU architectures, and neither is this port,
+     * because both compute the lift term with {@link Math#cos(double)}. {@code Math.cos} is only
+     * required to be within one ulp and may differ between implementations;
+     * {@link StrictMath#cos(double)} is the reproducible one. On the amd64 JVM these fixtures were
+     * recorded against, the two disagree on 5 of the 77 distinct pitches in {@code pitch-extremes},
+     * by one ulp each — exactly enough to fail an assertion that demands zero.
+     *
+     * <p>A fixture is therefore only a valid oracle on an architecture whose {@code Math.cos}
+     * matches the one that produced it. Switching the port to {@code StrictMath} would not fix
+     * that: it would make the port disagree with Vanilla on the very machine the recording came
+     * from. Measured, not assumed — swapping both trigonometric call sites turns this suite red on
+     * amd64, which is how this guard came to exist.
+     *
+     * <p>So this is an architecture check, not a tolerance. Where the trigonometry differs, no
+     * faithful port can reproduce the fixture, and the suite says so rather than quietly relaxing.
+     * Re-record on that architecture to gate it there.
+     */
+    @BeforeAll
+    static void requireTheArchitectureTheFixturesWereRecordedOn() {
+        int divergences = 0;
+        for (float pitch = -90.0f; pitch <= 90.0f; pitch += 0.5f) {
+            float lean = pitch * (float) (Math.PI / 180.0);
+            if (Double.doubleToRawLongBits(Math.cos(lean))
+                    != Double.doubleToRawLongBits(StrictMath.cos(lean))) {
+                divergences++;
+            }
+        }
+        assumeTrue(divergences > 0,
+                "this JVM's Math.cos agrees with StrictMath.cos on every sampled lean angle, so its "
+                        + "trigonometry differs from the amd64 JVM these fixtures were recorded "
+                        + "against, where the two disagree by one ulp on some angles. Vanilla itself "
+                        + "would produce different numbers here, so the fixtures are not a valid "
+                        + "oracle on this architecture — re-record to gate it.");
+    }
+
 
     private static List<RecordedGlide> recordings() {
         return TraceFixtures.load();

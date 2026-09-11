@@ -674,3 +674,21 @@ clients most often occupy.
 
 `AABB.intersects(BlockPos)` expands the position to `[x, x+1]` per axis before applying the same
 predicate, so block collision inherits the strict semantics unchanged.
+
+## The thresholds are architecture-bound
+
+The parity suite asserts exactly zero, and that bound is only meaningful on a CPU architecture whose
+`Math.cos` matches the one the fixtures were recorded against.
+
+`Math.cos` is specified to within one ulp and is free to differ between implementations;
+`StrictMath.cos` is the reproducible one. Vanilla computes the lift term with `Math.cos`, so
+**Vanilla's own elytra tick is not bit-identical across architectures either**. Measured on the
+amd64 JVM these fixtures came from: the two functions disagree on 5 of the 77 distinct pitches in
+`pitch-extremes`, and on 12 of 361 lean angles sampled at half a degree across the full range — one
+ulp each time, which is exactly enough to fail an assertion demanding zero. The 65536-entry sine
+table is unaffected; `Math.sin` and `StrictMath.sin` agree on every entry here.
+
+Switching the port to `StrictMath` is not the fix and was tried: it turns the suite red on amd64,
+because it makes the port disagree with Vanilla on the machine the recording came from. The port
+stays faithful and `VanillaParityTest` carries an architecture guard instead, which skips with an
+explanation rather than relaxing a bound. To gate another architecture, re-record there.
