@@ -91,4 +91,33 @@ class ApiPurityTest {
                     .resideInAnyPackage("net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform..")
                     .because("physics is a pure simulation core that race and platform depend on, not vice versa")
                     .allowEmptyShould(false);
+
+    // voyager-race is the module whose defining property is that a whole race runs without a server,
+    // and until these three rules landed nothing enforced it: race appeared in this file only as a
+    // forbidden target of physics, never as a subject. Xerus is named explicitly because the spec
+    // names it ("Xerus is Minestom-bound and therefore may not appear in voyager-race") and because
+    // E4 is the stage that first puts it on a neighbouring module's classpath, which is exactly when
+    // an unenforced prohibition turns into an argument.
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnMinestomOrXerus =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.minestom..", "net.theevilreaper.xerus..")
+                    .because("a whole race has to play out in JUnit; Minestom and the Minestom-bound "
+                            + "Xerus phase system belong to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnPaper =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
+                    .because("Paper is dropped entirely by the rebuild")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnPersistenceTechnology =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
+                    .because("the race domain scores a run; storing one is voyager-persistence's job")
+                    .allowEmptyShould(false);
 }

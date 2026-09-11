@@ -36,4 +36,12 @@ public record Vec3(double x, double y, double z) {
     public double length() {
         return Math.sqrt(lengthSquared());
     }
+
+    public double dot(Vec3 other) {
+        return x * other.x + y * other.y + z * other.z;
+    }
+
+    public double distanceTo(Vec3 other) {
+        return minus(other).length();
+    }
 }
