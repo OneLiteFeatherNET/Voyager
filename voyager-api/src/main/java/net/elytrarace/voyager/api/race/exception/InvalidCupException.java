@@ -12,6 +12,10 @@ public final class InvalidCupException extends RuntimeException {
     }
 
     public static InvalidCupException emptyMapNames() {
-        return new InvalidCupException("cup map names must not be empty");
+        return new InvalidCupException("cup map names must not be null or empty");
+    }
+
+    public static InvalidCupException missingMode() {
+        return new InvalidCupException("cup mode must not be null");
     }
 }

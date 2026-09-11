@@ -16,6 +16,13 @@ import java.time.Duration;
  * {@code RaceStateMachineTest}'s cup-rotation test for the transition the old tree's linear phase
  * series could never make — it loads map two and then advances past {@code END} with no way back
  * into {@code GAME}.
+ *
+ * <p><strong>A {@code PRACTICE} cup never finishes.</strong> It returns to {@code LOBBY} on the
+ * same map after every {@code END}, forever: {@link RaceState#cupFinished()} is never set, and the
+ * rest of {@link CupDefinition#mapNames()} beyond the active index is inert. That is deliberate —
+ * practice is a retry loop, not a rotation — but it means a driver written as
+ * {@code while (!state.cupFinished())} hangs on one. A practice session ends when something outside
+ * this class decides it does: the last player leaving, an operator stopping it, a tick budget.
  */
 @ApiStatus.Internal
 public abstract class RaceStateMachine {

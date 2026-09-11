@@ -35,6 +35,22 @@ class CupDefinitionTest {
                 .isInstanceOf(InvalidCupException.class);
     }
 
+    /**
+     * A null in either of the two components that were previously unchecked. The package is
+     * {@code @NotNullByDefault}, so this is defence against a deserialiser rather than against a
+     * caller who can read — but a record that checks one component and trusts the next is the worst
+     * of both, which is what these pin.
+     */
+    @Test
+    void rejectsANullMapListAndANullModeTheSameWayItRejectsANullName() {
+        assertThatThrownBy(() -> new CupDefinition("winter-cup", null, GameMode.RACE))
+                .isInstanceOf(InvalidCupException.class);
+        assertThatThrownBy(() -> new CupDefinition("winter-cup", MAP_NAMES, null))
+                .isInstanceOf(InvalidCupException.class);
+        assertThatThrownBy(() -> new CupDefinition(null, MAP_NAMES, GameMode.RACE))
+                .isInstanceOf(InvalidCupException.class);
+    }
+
     @Test
     void copiesItsMapListSoACallerCannotChangeItAfterwards() {
         List<String> mutable = new ArrayList<>(MAP_NAMES);
