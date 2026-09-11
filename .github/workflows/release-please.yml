@@ -43,9 +43,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      # semantic-release built this in its prepareCmd; release-please already
-      # wrote the version into gradle.properties via extra-files, so the build
-      # picks it up without a sed.
+      # semantic-release built this in its prepareCmd. release-please writes the
+      # version into build.gradle.kts via extra-files, so the checked-out tag
+      # already carries it and the build needs no sed.
       - name: Build the shadow JAR
         run: ./gradlew :server:shadowJar
 

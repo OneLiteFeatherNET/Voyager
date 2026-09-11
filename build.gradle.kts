@@ -2,10 +2,9 @@ plugins {
     id("java")
 }
 
-version = "1.8.8" // x-release-please-version
+version = "1.11.10" // x-release-please-version
 
 group = "net.onelitefeather"
-// version is managed by semantic-release via gradle.properties
 
 subprojects {
     repositories {
