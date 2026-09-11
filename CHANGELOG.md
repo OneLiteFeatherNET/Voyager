@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.9.0...v1.10.0) (2026-09-11)
+
+
+### Features
+
+* E2b physics port — Vanilla elytra tick and the trace replay harness ([#238](https://github.com/OneLiteFeatherNET/Voyager/issues/238)) ([9f720cf](https://github.com/OneLiteFeatherNET/Voyager/commit/9f720cf0eb14470ef6b4aa8d37a315f09b3e2f64))
+
 # [1.9.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.8.11...v1.9.0) (2026-09-11)
 
 
