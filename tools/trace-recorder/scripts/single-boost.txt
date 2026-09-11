@@ -1,0 +1,5 @@
+# single-boost: firework boost applied once during an otherwise steady glide -- isolates the
+# boost's blend/strength from any interaction with a second boost.
+hold 30 yaw=0 pitch=-5
+boost
+hold 169 yaw=0 pitch=-5
