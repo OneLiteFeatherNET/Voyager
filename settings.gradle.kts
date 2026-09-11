@@ -77,3 +77,6 @@ include("server")
 include("voyager-api")
 include("voyager-physics")
 include("voyager-fitness")
+
+// Tooling that is not part of the rebuild's module graph.
+include("tools:trace-recorder")

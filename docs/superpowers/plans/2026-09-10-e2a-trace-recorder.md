@@ -85,8 +85,10 @@ Add to `settings.gradle.kts` after the greenfield includes:
 include("tools:trace-recorder")
 ```
 
+**The command must be runnable from the server console**, so the spike needs no Minecraft client and no human pilot. That means spawning at fixed coordinates in a loaded world rather than at the sender's location — a `ConsoleCommandSender` has no location.
+
 Write a plugin whose `onEnable` registers one command, `/probe`, that:
-1. spawns a `Zombie` at the sender's location plus 20 blocks of altitude,
+1. spawns a `Zombie` in the main world at a fixed, high, empty coordinate (for example `0, 200, 0`), loading the chunk first,
 2. equips an `ELYTRA` in the chest slot, makes it invulnerable, silent and persistent,
 3. calls `setGliding(true)`,
 4. schedules a repeating task at every tick for 100 ticks that sets rotation to a fixed pitch of `-5f` and yaw `0f`, then logs tick index, `getLocation()` and `getVelocity()`,
@@ -94,7 +96,9 @@ Write a plugin whose `onEnable` registers one command, `/probe`, that:
 
 - [ ] **Step 2: Run it and read the log**
 
-Download a Paper 26.2 server (`https://fill.papermc.io/v3/projects/paper` lists 26.2; the v2 API is sunset), accept the EULA, drop the shadow jar in `plugins/`, start it, join with any client, run `/probe`.
+Download a Paper 26.2 server (`https://fill.papermc.io/v3/projects/paper` lists 26.2; the v2 API is sunset), accept the EULA, drop the shadow jar in `plugins/`, start it, and run `/probe` **on the server console** — no client, no player.
+
+Run the server headless with a generous timeout; first start generates a world and takes a while. Feed the command to its standard input, and read the answers from `logs/latest.log`.
 
 Record verbatim in the report: the first ten and last ten logged lines.
 
@@ -164,6 +168,7 @@ package net.elytrarace.tools.recorder.format;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.elytrarace.tools.recorder.format.exception.InvalidTraceException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -206,9 +211,10 @@ class TraceFileTest {
 
     @Test
     void rejectsNonFiniteSamples() {
-        TraceTick broken = new TraceTick(0, 0.0, Double.NaN, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f, false, false, 0);
-
-        assertThatThrownBy(() -> new TraceFile(metadata(), List.of(broken)))
+        // The construction must sit inside the lambda: TraceTick validates in its own compact
+        // constructor, so building it outside would throw before the assertion runs and the test
+        // would be permanently red against a correct implementation.
+        assertThatThrownBy(() -> new TraceTick(0, 0.0, Double.NaN, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f, false, false, 0))
                 .isInstanceOf(InvalidTraceException.class);
     }
 
@@ -516,6 +522,15 @@ class FlightScriptParserTest {
     }
 
     @Test
+    void rampInterpolatesInFloatNotDouble() {
+        // The tolerance in the test above cannot see the difference; this one is the guard.
+        // Computing in double and narrowing at the end yields 13.333333f here instead.
+        FlightScript script = FlightScriptParser.parse("ramp 4 yaw=0 pitch=0..40");
+
+        assertThat(script.inputAt(1).pitch()).isEqualTo(13.333334f);
+    }
+
+    @Test
     void boostOccupiesOneTickAndInheritsThePreviousRotation() {
         FlightScript script = FlightScriptParser.parse("""
                 hold 2 yaw=0 pitch=-5
@@ -669,12 +684,14 @@ class WorldSliceCollectorTest {
     void collectsTheFloorBlocksWithinTheRadius() {
         List<BlockBox> slice = WorldSliceCollector.collect(List.of(at(0, 0.5, 1.5, 0.5)), 1.0, FLOOR);
 
-        // x and z in [-1, 1] around block 0 -> 3 x 3 columns, all at y == 0
-        assertThat(slice).hasSize(9);
-        assertThat(slice).allSatisfy(box -> {
-            assertThat(box.minY()).isEqualTo(0.0);
-            assertThat(box.maxY()).isEqualTo(1.0);
-        });
+        // The window is named block by block, not counted. A count alone cannot tell
+        // [-1, 1] from [0, 2] -- both are three columns per axis -- and the floor is
+        // unbounded horizontally, so a shifted or asymmetric scan range would still
+        // find nine solid blocks and still report y == 0 for every one of them.
+        assertThat(slice).containsExactlyInAnyOrder(
+                new BlockBox(-1, 0, -1, 0, 1, 0), new BlockBox(-1, 0, 0, 0, 1, 1), new BlockBox(-1, 0, 1, 0, 1, 2),
+                new BlockBox(0, 0, -1, 1, 1, 0), new BlockBox(0, 0, 0, 1, 1, 1), new BlockBox(0, 0, 1, 1, 1, 2),
+                new BlockBox(1, 0, -1, 2, 1, 0), new BlockBox(1, 0, 0, 2, 1, 1), new BlockBox(1, 0, 1, 2, 1, 2));
     }
 
     @Test
@@ -703,6 +720,18 @@ class WorldSliceCollectorTest {
                 new BlockBox(0, 0, 0, 1, 1, 1),
                 new BlockBox(8, 0, 0, 9, 1, 1));
     }
+
+    @Test
+    void flooringNegativePositionsRoundsDownRatherThanTowardsZero() {
+        // Every other test sits at a positive coordinate, where Math.floor and an int
+        // cast agree. They disagree below zero: (int) -0.5 is 0, Math.floor(-0.5) is -1.
+        // Recordings fly through negative coordinates, so the wrong one shifts the whole
+        // slice by a block on that side of the origin and the replay resolves the wrong
+        // collisions.
+        List<BlockBox> slice = WorldSliceCollector.collect(List.of(at(0, -0.5, 0.5, -3.25)), 0.0, FLOOR);
+
+        assertThat(slice).containsExactly(new BlockBox(-1, 0, -4, 0, 1, -3));
+    }
 }
 ```
 
@@ -715,12 +744,12 @@ Expected: FAIL — `package net.elytrarace.tools.recorder.world does not exist`.
 
 `WorldSliceCollector` is an `abstract` utility with a private constructor and `@ApiStatus.Internal`. `collect` walks every tick, floors its position to block coordinates, scans the cube of blocks within `ceil(radius)` on each axis, asks the `SolidBlockSource`, and emits a unit `BlockBox` per solid block. Results are deduplicated by block coordinate and returned as an unmodifiable list.
 
-Note the coordinate mapping the tests pin: a position of `0.5` floors to block `0`, whose box spans `0.0` to `1.0`. A radius of `0.0` therefore yields exactly the column the entity is over.
+Note the coordinate mapping the tests pin: a position of `0.5` floors to block `0`, whose box spans `0.0` to `1.0`. A radius of `0.0` therefore yields exactly the column the entity is over. Flooring is `Math.floor`, never an `int` cast -- they agree only above zero, and a recording crosses the origin.
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `./gradlew :tools:trace-recorder:test`
-Expected: PASS, 20 tests.
+Expected: PASS -- the module's whole suite, with the six new tests among them.
 
 - [ ] **Step 5: Commit**
 
@@ -759,6 +788,8 @@ package net.elytrarace.tools.recorder.capture;
 import net.elytrarace.tools.recorder.format.TraceFile;
 import net.elytrarace.tools.recorder.format.exception.InvalidTraceException;
 import net.elytrarace.tools.recorder.script.FlightScript;
+import net.elytrarace.tools.recorder.format.BlockBox;
+import net.elytrarace.tools.recorder.format.TraceTick;
 import net.elytrarace.tools.recorder.script.FlightScriptParser;
 import net.elytrarace.tools.recorder.world.SolidBlockSource;
 import org.junit.jupiter.api.Test;
@@ -770,8 +801,17 @@ class TraceCollectorTest {
 
     private static final SolidBlockSource EMPTY = (x, y, z) -> false;
 
+    /** A floor filling y == 0, so the collected slice is observable rather than always empty. */
+    private static final SolidBlockSource FLOOR = (x, y, z) -> y == 0;
+
     private static TraceCollector collector(String script) {
         return new TraceCollector("26.2", "test-profile", 0.08, FlightScriptParser.parse(script));
+    }
+
+    private static TraceCollector recordOneTickAt(double x, double y, double z) {
+        TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
+        collector.record(new GliderSample(x, y, z, 0.0, -0.08, 0.0, 0.0f, -5.0f, false, false, 0));
+        return collector;
     }
 
     private static GliderSample sample(double y) {
@@ -805,6 +845,7 @@ class TraceCollectorTest {
         TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
         collector.record(sample(100.0));
 
+        assertThat(collector.finish(EMPTY, 1.0).metadata().minecraftVersion()).isEqualTo("26.2");
         assertThat(collector.finish(EMPTY, 1.0).metadata().gravity()).isEqualTo(0.08);
         assertThat(collector.finish(EMPTY, 1.0).metadata().profile()).isEqualTo("test-profile");
     }
@@ -844,6 +885,47 @@ class TraceCollectorTest {
         assertThat(collector.nextInput().yaw()).isEqualTo(42.0f);
         assertThat(collector.nextInput().pitch()).isEqualTo(-7.0f);
     }
+
+    @Test
+    void mapsEverySampleFieldOntoItsTick() {
+        // Every other sample here leaves x, z and both horizontal velocities at 0.0 and both
+        // flags at false, so a field written into the wrong slot would be invisible. Every
+        // component below holds a value distinct from all the others, including the two
+        // booleans, so any misrouting changes an assertion.
+        TraceCollector collector = collector("hold 1 yaw=0 pitch=-5");
+        collector.record(new GliderSample(1.5, 2.5, 3.5, 0.25, -0.5, 0.75, 12.0f, -34.0f, true, false, 7));
+
+        TraceTick tick = collector.finish(EMPTY, 1.0).ticks().get(0);
+
+        assertThat(tick.posX()).isEqualTo(1.5);
+        assertThat(tick.posY()).isEqualTo(2.5);
+        assertThat(tick.posZ()).isEqualTo(3.5);
+        assertThat(tick.velX()).isEqualTo(0.25);
+        assertThat(tick.velY()).isEqualTo(-0.5);
+        assertThat(tick.velZ()).isEqualTo(0.75);
+        assertThat(tick.yaw()).isEqualTo(12.0f);
+        assertThat(tick.pitch()).isEqualTo(-34.0f);
+        assertThat(tick.onGround()).isTrue();
+        assertThat(tick.fireworkBoostActive()).isFalse();
+        assertThat(tick.fireworkTicksRemaining()).isEqualTo(7);
+    }
+
+    @Test
+    void finishCollectsTheWorldSliceAroundTheFlownPathAtTheGivenRadius() {
+        // Every other test passes EMPTY, where the slice is [] whatever finish does with the
+        // radius or the recorded path. These three pin both: the radius reaches the collector
+        // (one column at 0.0, nine at 1.0) and the slice follows the position that was
+        // actually recorded rather than the origin.
+        // posY is 0.5, not 1.5: at radius 0.0 the scan window is the single block the entity
+        // is over, so a position at y=1.5 floors to block y=1 and can never reach a floor at
+        // y == 0. The same slip broke two of Task 4's fixtures.
+        assertThat(recordOneTickAt(0.5, 0.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
+                .containsExactly(new BlockBox(0, 0, 0, 1, 1, 1));
+        assertThat(recordOneTickAt(0.5, 0.5, 0.5).finish(FLOOR, 1.0).metadata().worldSlice())
+                .hasSize(9);
+        assertThat(recordOneTickAt(8.5, 0.5, 0.5).finish(FLOOR, 0.0).metadata().worldSlice())
+                .containsExactly(new BlockBox(8, 0, 0, 9, 1, 1));
+    }
 }
 ```
 
@@ -861,7 +943,7 @@ Expected: FAIL — `package net.elytrarace.tools.recorder.capture does not exist
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `./gradlew :tools:trace-recorder:test`
-Expected: PASS, 27 tests.
+Expected: PASS -- the module's whole suite, with the nine new tests among them.
 
 - [ ] **Step 5: Commit**
 
@@ -986,7 +1068,7 @@ other order produces a trace offset by one tick, which replays as constant drift
 
 ---
 
-### Task 7: The eight profiles and the procedure
+### Task 7: The nine profiles and the procedure
 
 **Files:**
 - Create: `tools/trace-recorder/scripts/steady-glide.txt`
@@ -1015,22 +1097,50 @@ Each script targets a behaviour the port could get wrong in a way steady flight 
 | `pitch-extremes` | Pitch at ±90°, where `lookHorLength` approaches zero | A port that adds its own guard where Vanilla has one, or omits Vanilla's |
 | `wall-graze` | Horizontal collision and the speed lost to it | Collision handled at the wrong point in the tick |
 | `landing` | Ground contact ending the glide | `onGround` handling and the end of fall flying |
+| `sustained-turn` | Yaw changing while gliding — the only profile where the look vector's x component is not zero | Any error in the yaw half of the look vector, the x drag term, or the direction-alignment step |
 
 - [ ] **Step 1: Write the eight scripts**
 
 Write each as a `.txt` in the script format, with a leading `#` comment naming the profile and one line saying what it is for. Keep every profile at or under 250 ticks — long enough for drift to show, short enough to read a fixture by eye.
 
+**The nine profiles have to work as a set, not only one at a time.** The `steady-glide` fixture
+recorded in Task 6 flies at `yaw = 0` on all 200 ticks, and its `velX` is exactly `0.0` on all 200 —
+at `yaw = 0` the look vector's x component vanishes and the whole x axis of the tick drops out of
+the arithmetic. Eight profiles that all fly straight would hand E2b a reference suite in which the x
+axis is a constant zero, and the physics port would then be calibrated against it. That is the same
+degeneracy that has been found and fixed in this stage's own tests four times; it must not be baked
+into the reference data.
+
+So before recording, check the scripts as a group: at least one profile must hold a `yaw` other than
+zero, and at least one must change `yaw` while gliding. `sustained-turn` is that profile — do not
+drop it to save a recording.
+
 `wall-graze` and `landing` need terrain. Document in each script's comment what the world must contain, and place a `# world:` line stating it, for example `# world: a stone wall at x=40, flat ground at y=64`.
 
 - [ ] **Step 2: Record all eight**
 
-Run each through `/record` on the same server and world. Verify each fixture the way Task 6 Step 4 verified `steady-glide`, and additionally check that the profile does what its name says — the stall profile must show horizontal speed collapsing, the wall graze must show a discontinuity in horizontal speed, the landing must end with `onGround` true.
+**Before recording anything, set `entity-activation-range.monsters: 0` in the server's `spigot.yml` and restart.** Without it every recording on this server dies at an entity age of exactly 200 ticks, and Task 7's profiles run longer than that.
+
+The cause is not a bug in the recorder and not worth rediscovering: Paper's `ActivationRange#checkIfActive` grants a hard 200-tick grace period after spawn — below `Entity.tickCount` 200 it returns active unconditionally — and from tick 200 on, `activateEntities` derives `activatedTick` **only** from `Level#players()`. A recording driven from the console has no player online, so the glider can never become active again: `inactiveTick()` runs, `tickCount` keeps counting, `travel()` does not. The `(currentTick - activatedTick - 1) % 20 == 0` fallback wakes it irregularly, which is why the gap size varies while the failure point does not.
+
+A range of `0` makes `initializeEntityActivationState` set `defaultActivationState = true`, which bypasses the check without needing a player. Measured: 250 ticks clean three times, 600 ticks clean, `entityTick` gapless. **It does not change the physics** — a 250-tick probe with the setting is bit-identical to a stock recording at the matching index. Without it the safe ceiling is 198 ticks.
+
+Run each through `/record` on the same server and world. Verify each fixture the way Task 6 Step 4 verified `steady-glide`, and additionally check that the profile does what its name says — the stall profile must show horizontal speed collapsing, the wall graze must show a discontinuity in horizontal speed, the landing must end with `onGround` true, and `sustained-turn` must show `velX` taking values other than zero.
+
+**The world slice has never once been exercised end to end.** Task 6's `steady-glide` recording came
+back with `worldSlice: 0 boxes` — correct for a profile flown through empty sky at y=202, but it
+means the whole path from `BukkitSolidBlockSource` through `WorldSliceCollector` into the fixture is
+so far proven only by unit tests against fake block sources. `wall-graze` and `landing` are the first
+recordings that can prove it. Treat a non-empty `worldSlice` in both as a pass condition of this
+task, and check the boxes actually correspond to the terrain the script's `# world:` line describes —
+a slice with the wrong coordinates is worse than an empty one, because a replay would resolve
+collisions against geometry that was never there.
 
 A profile that does not show its behaviour is a broken script, not a broken port. Fix the script and re-record.
 
 - [ ] **Step 3: Write the procedure**
 
-Create `docs/guides/how-to-record-a-trace.md` covering: which Paper build to use and where to get it, how to build and install the plugin, the world each profile needs, how to run a recording, how to tell a good fixture from a broken one, and when to re-record — specifically, that a Minecraft version change invalidates every fixture and that the scripts, not the recordings, are the source of truth.
+Create `docs/guides/how-to-record-a-trace.md` covering: which Paper build to use and where to get it, **the `entity-activation-range.monsters: 0` setting and why a recording silently stops at entity age 200 without it**, how to build and install the plugin, the world each profile needs, how to run a recording, how to tell a good fixture from a broken one, and when to re-record — specifically, that a Minecraft version change invalidates every fixture and that the scripts, not the recordings, are the source of truth.
 
 State plainly what the fixtures prove and what they do not, repeating the boundary from this plan's header: they validate the formula, not the client-server path.
 

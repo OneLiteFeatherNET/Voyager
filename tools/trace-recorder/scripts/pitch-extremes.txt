@@ -1,0 +1,9 @@
+# pitch-extremes: sweeps pitch through +-90, where lookHorLength approaches (and at exactly +-90,
+# reaches) zero -- the guard every additive term in updateFallFlyingMovement carries.
+hold 10 yaw=0 pitch=-5
+ramp 20 yaw=0 pitch=-5..-90
+hold 30 yaw=0 pitch=-90
+ramp 40 yaw=0 pitch=-90..90
+hold 30 yaw=0 pitch=90
+ramp 20 yaw=0 pitch=90..-5
+hold 50 yaw=0 pitch=-5
