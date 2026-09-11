@@ -169,6 +169,20 @@ class ApiPurityTest {
                             + "not the other way around")
                     .allowEmptyShould(false);
 
+    // Minestom's Shape interface does not expose the boxes a shape is made of; only the ShapeImpl
+    // record does, so reading them needs a cast to an implementation type. That cast is confined to
+    // BlockShapes so a Minestom upgrade that changes the runtime type breaks in one place — a
+    // constraint the brief for this stage states in prose, which is the kind of statement that
+    // quietly stops being true. Now it cannot: a second class reaching for ShapeImpl turns this red.
+    @ArchTest
+    static final ArchRule onlyBlockShapesReachesForMinestomsShapeImplementation =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.platform.collision.BlockShapes")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("net.minestom.server.collision.ShapeImpl")
+                    .because("the one cast past Minestom's Shape interface lives in BlockShapes alone")
+                    .allowEmptyShould(false);
+
     // io.airlift:guice keeps upstream Guice's com.google.inject package name (see the greenfield
     // design, D10), so one rule scoped to that package plus io.airlift.. catches either artifact.
     // Written as "everything outside voyager-server" rather than naming each domain module
