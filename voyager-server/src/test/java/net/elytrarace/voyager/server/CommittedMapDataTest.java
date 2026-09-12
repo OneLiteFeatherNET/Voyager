@@ -4,12 +4,14 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.platform.catalog.CatalogConsistency;
 import net.elytrarace.voyager.platform.catalog.JsonCupCatalog;
 import net.elytrarace.voyager.platform.catalog.JsonMapCatalog;
+import net.elytrarace.voyager.race.line.RacingLine;
 
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
@@ -128,4 +130,101 @@ class CommittedMapDataTest {
         assertThatCode(() -> CatalogConsistency.requireEveryCupMapResolves(cups, maps))
                 .doesNotThrowAnyException();
     }
+    /**
+     * The sixteen guide points of the committed course, and the pair that share a gap.
+     *
+     * <p>These order indices are the ones the old {@code guides.json} carries, and the conversion
+     * carries them across unchanged. 2450 and 2475 both sit between rings 24 and 25 — the case that
+     * makes "more than one guide per gap" a rule rather than a hypothetical, and the case an
+     * implementation that keyed guides by gap loses half of without saying anything.
+     */
+    @Test
+    void theCommittedRacecourseCarriesTheSixteenGuidePointsItWasBuiltWith() {
+        MapDefinition map = committedCourse();
+
+        assertThat(map.guideLine().points()).extracting(GuidePoint::orderIndex)
+                .containsExactly(150, 250, 350, 450, 550, 650, 850, 950, 1_050, 1_450, 1_950, 2_150,
+                        2_450, 2_475, 2_550, 2_650);
+        assertThat(map.guideLine().points()).extracting(GuidePoint::afterRing)
+                .contains(24, 24)
+                .doesNotContain(-1, 34);
+        // Seeded, and stated here so a change to either is a deliberate edit of this test as well.
+        assertThat(map.guideLine().lookAheadRings()).isEqualTo(2);
+        assertThat(map.guideLine().particleSpacing()).isEqualTo(1.0);
+    }
+
+    /**
+     * Every guide bends the line without materially lengthening it: going ring, guide, ring is
+     * between 1.00 and 1.20 times going ring to ring directly.
+     *
+     * <p>This is the measurement that says the interleaving rule is the right one. A guide read into
+     * the wrong gap is still a valid file and still draws a line — it just sends it across the map and
+     * back, which this factor sees immediately and nothing else in the data does. The band is the one
+     * measured over all sixteen before any of this was written; the worst of them is 1.196, at order
+     * index 950, where two rings are only 20 blocks apart.
+     */
+    @Test
+    void everyGuidePointOfTheCommittedRacecourseBendsItsGapWithoutLengtheningIt() {
+        MapDefinition map = committedCourse();
+
+        for (GuidePoint guide : map.guideLine().points()) {
+            Vec3 before = map.rings().get(guide.afterRing()).center();
+            Vec3 after = map.rings().get(guide.afterRing() + 1).center();
+            double viaTheGuide = before.distanceTo(guide.position()) + guide.position().distanceTo(after);
+
+            assertThat(viaTheGuide / before.distanceTo(after))
+                    .as("detour factor of the guide at order index %s", guide.orderIndex())
+                    .isBetween(1.00, 1.20);
+        }
+    }
+
+    /**
+     * The line the racers are shown, over the real course: through every ring, 1666 blocks for a
+     * course that is 1588 straight, and a stretch a racer can afford to be sent.
+     *
+     * <p>The last of those is the budget, and it is here rather than in a comment because it is a
+     * property of this course's geometry and nothing else: a particle is a packet, so the widest
+     * two-ring stretch of this line is the worst tick one racer costs. 198 packets, on one tick in
+     * four — about 25 a tick averaged. Halving {@code particleSpacing} in the file above doubles both
+     * numbers, which is the one edit that can make this feature unaffordable.
+     */
+    @Test
+    void theRacingLineOfTheCommittedRacecourseRunsThroughItAndFitsInTheBudget() {
+        MapDefinition map = committedCourse();
+        RacingLine line = RacingLine.of(map);
+
+        assertThat(line.ringCount()).isEqualTo(35);
+        for (Ring ring : map.rings()) {
+            assertThat(line.points().get(line.ringPoints().get(ring.index())))
+                    .as("ring %s on the line", ring.index())
+                    .isEqualTo(ring.center());
+        }
+        assertThat(line.points()).containsAll(
+                map.guideLine().points().stream().map(GuidePoint::position).toList());
+
+        double straight = 0.0;
+        for (int i = 1; i < map.rings().size(); i++) {
+            straight += map.rings().get(i - 1).center().distanceTo(map.rings().get(i).center());
+        }
+        double drawn = 0.0;
+        for (int i = 1; i < line.points().size(); i++) {
+            drawn += line.points().get(i - 1).distanceTo(line.points().get(i));
+        }
+        assertThat(straight).isCloseTo(1_587.9, Offset.offset(0.1));
+        assertThat(drawn / straight).isBetween(1.00, 1.20);
+
+        int widestStretch = 0;
+        for (int passed = 0; passed < line.ringCount(); passed++) {
+            int lastRing = Math.min(passed + map.guideLine().lookAheadRings(), line.ringCount() - 1);
+            widestStretch = Math.max(widestStretch, line.between(passed, lastRing).size());
+        }
+        assertThat(widestStretch)
+                .as("particles one racer is sent on the worst refresh of this course")
+                .isBetween(150, 220);
+    }
+
+    private static MapDefinition committedCourse() {
+        return new JsonMapCatalog(RESOURCES.resolve("maps")).byName("elytraraceblueandred").orElseThrow();
+    }
+
 }

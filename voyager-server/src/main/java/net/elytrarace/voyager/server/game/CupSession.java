@@ -9,6 +9,7 @@ import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.render.GuideLineRenderer;
 import net.elytrarace.voyager.platform.tick.FlightTick;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.tick.RacePhaseListener;
@@ -74,6 +75,13 @@ import java.util.function.Supplier;
  * by the round trip, which that class's javadoc names as the one thing the reading cannot be exact
  * about.
  *
+ * <h2>What a racer is shown</h2>
+ *
+ * <p>{@link #raceTick} also draws each racer the stretch of racing line ahead of them, through
+ * {@code GuideLineRenderer}. Per racer rather than per world, because two racers at different rings
+ * need different stretches; after the run has advanced rather than before, because a racer who
+ * passed a ring on this tick is heading for the next one from this tick.
+ *
  * <h2>When the cup starts</h2>
  *
  * <p>Not at boot. A cup started with nobody online runs its whole rotation to an empty world: the
@@ -104,6 +112,14 @@ public final class CupSession implements RacePhaseListener {
     private final Duration step;
     private final Supplier<Collection<Player>> players;
     private final CupStandings standings = new CupStandings();
+
+    /**
+     * The racing line, drawn per racer. Built here rather than injected for the same reason the three
+     * objects {@link #create} builds are: it is implementation detail of how a cup is played — it
+     * holds one sampled line per map and nothing else, and nothing outside a running race has a use
+     * for it.
+     */
+    private final GuideLineRenderer lines = new GuideLineRenderer();
 
     /** The last simulated tick per player, kept only so {@link #describe()} can show the drift. */
     private final Map<UUID, FlightTick> lastSimulated = new HashMap<>();
@@ -357,6 +373,10 @@ public final class CupSession implements RacePhaseListener {
             RaceRun advanced = runs.advance(id, map, clock,
                     Vectors.toDomain(racer.getPosition()), racer.isFlyingWithElytra());
             report(racer, map, advanced, wasFinished, clock);
+            // After the advance, not before it: a racer who passed a ring on this tick is heading for
+            // the next one from this tick, and showing them the stretch they have just flown out of
+            // for another four ticks is the one moment the line would be visibly wrong.
+            lines.render(racer, map, advanced.progress().passedCount(), clock.gameTick());
         }
     }
 

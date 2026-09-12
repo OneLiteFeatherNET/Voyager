@@ -1,9 +1,11 @@
 package net.elytrarace.tools.converter;
 
 import net.elytrarace.tools.converter.exception.InvalidCourseException;
+import net.elytrarace.tools.converter.legacy.LegacyGuide;
 import net.elytrarace.tools.converter.legacy.LegacyLocation;
 import net.elytrarace.tools.converter.legacy.LegacyPortal;
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 
@@ -207,4 +209,85 @@ class CourseConverterTest {
         assertThat(ring.normal().y()).as("normal y of ring %s", ring.index()).isCloseTo(expected.y(), TIGHT);
         assertThat(ring.normal().z()).as("normal z of ring %s", ring.index()).isCloseTo(expected.z(), TIGHT);
     }
+    // ----------------------------------------------------------------------------------------
+    // Guide points
+    // ----------------------------------------------------------------------------------------
+
+    /**
+     * The guide's order index is carried across unchanged when the recorded portals start at 1, which
+     * is what the real file does — ring n at (n - 1) * 100 in the old numbering is ring n - 1 at
+     * (n - 1) * 100 in the new one.
+     *
+     * <p>Two guides in one gap, and the second one first in file order: the conversion preserves both
+     * and does not reorder them, because ordering the line is the map's job and dropping one would be
+     * the silent failure the committed course's own 2450/2475 pair is waiting to catch.
+     */
+    @Test
+    void carriesAGuidesOrderIndexAcrossUnchangedWhenTheRecordedRingsStartAtOne() {
+        List<GuidePoint> points = CourseConverter.toGuidePoints(
+                List.of(guide(175, 20.5, 76.25, 80.75), guide(150, -79.36, -17.16, 76.31)), course(1));
+
+        assertThat(points).extracting(GuidePoint::orderIndex).containsExactly(175, 150);
+        assertThat(points).extracting(GuidePoint::position).containsExactly(
+                new Vec3(20.5, 76.25, 80.75), new Vec3(-79.36, -17.16, 76.31));
+    }
+
+    /**
+     * A course whose recorded portals do not start at 1 has its guides shifted by the same amount its
+     * rings were renumbered by.
+     *
+     * <p>The real file starts at 1 and this is an identity there, which is exactly why it is asserted
+     * on a file that does not: "the guides happen to line up" is a coincidence that stops being true
+     * without anything saying so. Portals starting at 5 means ring 5 became ring 0, so a guide written
+     * at 450 — between recorded rings 5 and 6 — is a guide at 50, between rings 0 and 1.
+     */
+    @Test
+    void shiftsGuidesByTheSameRenumberingTheRingsGot() {
+        List<GuidePoint> points = CourseConverter.toGuidePoints(List.of(guide(450, 1.0, 2.0, 3.0)), course(5));
+
+        assertThat(points).extracting(GuidePoint::orderIndex).containsExactly(50);
+        assertThat(points.getFirst().afterRing()).isZero();
+    }
+
+    @Test
+    void convertsACourseWithNoGuideFileAtAllIntoNoGuidePoints() {
+        assertThat(CourseConverter.toGuidePoints(List.of(), course(1))).isEmpty();
+    }
+
+    /**
+     * A guide that does not land between two rings of this course stops the conversion.
+     *
+     * <p>The three-ring fixture spans order indices 0 to 200, so 250 is past its last ring. That is
+     * what a guide file written against a different, longer version of the course looks like, and
+     * carrying it across would put a control point beyond the finish where nothing would ever draw it
+     * — or, one gap earlier, bend the line somewhere nobody chose.
+     */
+    @Test
+    void refusesAGuideThatDoesNotLandBetweenTwoOfThisCoursesRings() {
+        assertThatThrownBy(() -> CourseConverter.toGuidePoints(List.of(guide(250, 1.0, 2.0, 3.0)), course(1)))
+                .isInstanceOf(InvalidCourseException.class)
+                .hasMessageContaining("rings 2 and 3");
+        assertThatThrownBy(() -> CourseConverter.toGuidePoints(List.of(guide(-50, 1.0, 2.0, 3.0)), course(1)))
+                .isInstanceOf(InvalidCourseException.class)
+                .hasMessageContaining("rings -1 and 0");
+    }
+
+    @Test
+    void refusesAGuideMissingACoordinateOrItsOrderIndex() {
+        // Boxed on purpose: a missing y and a y of zero are different things, and the old files are
+        // full of coordinates that are legitimately zero.
+        assertThatThrownBy(() -> CourseConverter.toGuidePoints(
+                List.of(new LegacyGuide(150, 1.0, null, 3.0)), course(1)))
+                .isInstanceOf(InvalidCourseException.class)
+                .hasMessageContaining("incomplete");
+        assertThatThrownBy(() -> CourseConverter.toGuidePoints(
+                List.of(new LegacyGuide(null, 1.0, 2.0, 3.0)), course(1)))
+                .isInstanceOf(InvalidCourseException.class)
+                .hasMessageContaining("incomplete");
+    }
+
+    private static LegacyGuide guide(int orderIndex, double x, double y, double z) {
+        return new LegacyGuide(orderIndex, x, y, z);
+    }
+
 }

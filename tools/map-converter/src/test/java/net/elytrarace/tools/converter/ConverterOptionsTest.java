@@ -25,7 +25,9 @@ class ConverterOptionsTest {
                 "--spawn", "nether-sprint=-8,71,3",
                 "--reference-time-seconds", "46.7",
                 "--points", "25",
-                "--mode", "PRACTICE"));
+                "--mode", "PRACTICE",
+                "--look-ahead-rings", "5",
+                "--particle-spacing", "2.5"));
 
         assertThat(options.source()).isEqualTo(Path.of("run/run/data"));
         assertThat(options.out()).isEqualTo(Path.of("voyager-server/src/main/resources"));
@@ -36,15 +38,43 @@ class ConverterOptionsTest {
         assertThat(options.referenceTime()).isEqualTo(Duration.ofMillis(46_700));
         assertThat(options.points()).isEqualTo(25);
         assertThat(options.mode()).isEqualTo(GameMode.PRACTICE);
+        // Neither is its own default, and 5 is not 2.5 doubled by accident of parsing order.
+        assertThat(options.lookAheadRings()).isEqualTo(5);
+        assertThat(options.particleSpacing()).isEqualTo(2.5);
     }
 
     @Test
-    void seedsTheTwoValuesTheOldDataDoesNotCarry() {
+    void seedsTheValuesTheOldDataDoesNotCarry() {
         ConverterOptions options = ConverterOptions.parse(MINIMUM);
 
         assertThat(options.referenceTime()).isEqualTo(Duration.ofSeconds(60));
         assertThat(options.points()).isEqualTo(10);
         assertThat(options.mode()).isEqualTo(GameMode.RACE);
+        // The racing line's two: how far ahead it reaches and how densely it is drawn. Both are
+        // provisional and neither has been flown — see ConverterOptions for where they come from.
+        assertThat(options.lookAheadRings()).isEqualTo(2);
+        assertThat(options.particleSpacing()).isEqualTo(1.0);
+    }
+
+    @Test
+    void refusesALookAheadOrASpacingTheServerCouldNotHonour() {
+        // The spacing floor is GuideLine's, not this tool's: a file the server would refuse to read
+        // should not be written in the first place.
+        assertThatThrownBy(() -> ConverterOptions.parse(withOption("--particle-spacing", "0.05")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("0.25");
+        assertThatThrownBy(() -> ConverterOptions.parse(withOption("--look-ahead-rings", "0")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("at least 1");
+        assertThatThrownBy(() -> ConverterOptions.parse(withOption("--particle-spacing", "wide")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static List<String> withOption(String option, String value) {
+        List<String> arguments = new java.util.ArrayList<>(MINIMUM);
+        arguments.add(option);
+        arguments.add(value);
+        return arguments;
     }
 
     @Test

@@ -26,10 +26,16 @@ class MapDefinitionTest {
      */
     private static final BoostConfig BOOST = new BoostConfig(14, 33);
 
+    /**
+     * Three rings ahead and 1.75 blocks between particles: neither is a value any default in this
+     * repository uses, so a map that fell back to one instead of keeping what it was handed shows up.
+     */
+    private static final GuideLine NO_GUIDES = new GuideLine(List.of(), 3, 1.75);
+
     @Test
     void keepsWhatItWasGiven() {
         MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
-                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST);
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
 
         assertThat(map.name()).isEqualTo("nether-sprint");
         assertThat(map.world()).isEqualTo("world_nether");
@@ -37,6 +43,7 @@ class MapDefinitionTest {
         assertThat(map.rings()).containsExactlyElementsOf(RINGS);
         assertThat(map.referenceTime()).isEqualTo(Duration.ofSeconds(45));
         assertThat(map.boostConfig()).isEqualTo(BOOST);
+        assertThat(map.guideLine()).isEqualTo(NO_GUIDES);
     }
 
     @Test
@@ -44,34 +51,69 @@ class MapDefinitionTest {
         // A loader that sorts by file order rather than by index would produce exactly this, and a
         // tracker testing rings.get(passedCount) would then demand them in the wrong sequence.
         assertThatThrownBy(() -> new MapDefinition("m", "w", Vec3.ZERO,
-                List.of(ring(1, 100.0), ring(0, 200.0)), Duration.ofSeconds(45), BOOST))
+                List.of(ring(1, 100.0), ring(0, 200.0)), Duration.ofSeconds(45), BOOST, NO_GUIDES))
                 .isInstanceOf(InvalidMapException.class);
     }
 
     @Test
     void rejectsAnEmptyRingList() {
-        assertThatThrownBy(() -> new MapDefinition("m", "w", Vec3.ZERO, List.of(), Duration.ofSeconds(45), BOOST))
+        assertThatThrownBy(() -> new MapDefinition("m", "w", Vec3.ZERO, List.of(),
+                Duration.ofSeconds(45), BOOST, NO_GUIDES))
                 .isInstanceOf(InvalidMapException.class);
     }
 
     @Test
     void rejectsANonPositiveReferenceTime() {
-        assertThatThrownBy(() -> new MapDefinition("m", "w", Vec3.ZERO, RINGS, Duration.ZERO, BOOST))
+        assertThatThrownBy(() -> new MapDefinition("m", "w", Vec3.ZERO, RINGS, Duration.ZERO, BOOST, NO_GUIDES))
                 .isInstanceOf(InvalidMapException.class);
     }
 
     @Test
     void rejectsABlankNameOrWorld() {
-        assertThatThrownBy(() -> new MapDefinition("  ", "w", Vec3.ZERO, RINGS, Duration.ofSeconds(45), BOOST))
+        assertThatThrownBy(() -> new MapDefinition("  ", "w", Vec3.ZERO, RINGS,
+                Duration.ofSeconds(45), BOOST, NO_GUIDES))
                 .isInstanceOf(InvalidMapException.class);
-        assertThatThrownBy(() -> new MapDefinition("m", "", Vec3.ZERO, RINGS, Duration.ofSeconds(45), BOOST))
+        assertThatThrownBy(() -> new MapDefinition("m", "", Vec3.ZERO, RINGS,
+                Duration.ofSeconds(45), BOOST, NO_GUIDES))
                 .isInstanceOf(InvalidMapException.class);
+    }
+
+    /**
+     * A guide point bends the line between two rings, so it has to have two rings to sit between. With
+     * two rings the course spans order indices 0 to 100, and 150 is past its end: a line reaching it
+     * would run off the far side of the last ring rather than bend anything.
+     */
+    @Test
+    void rejectsAGuidePointPastTheLastRing() {
+        assertThatThrownBy(() -> new MapDefinition("m", "w", Vec3.ZERO, RINGS, Duration.ofSeconds(45), BOOST,
+                new GuideLine(List.of(new GuidePoint(150, new Vec3(4.0, 64.0, 250.0))), 3, 1.75)))
+                .isInstanceOf(InvalidMapException.class)
+                .hasMessageContaining("outside 0..100");
+    }
+
+    /** And the same in front of the first ring, which integer division would report as ring 0. */
+    @Test
+    void rejectsAGuidePointInFrontOfTheFirstRing() {
+        assertThatThrownBy(() -> new MapDefinition("m", "w", Vec3.ZERO, RINGS, Duration.ofSeconds(45), BOOST,
+                new GuideLine(List.of(new GuidePoint(-50, new Vec3(4.0, 64.0, 50.0))), 3, 1.75)))
+                .isInstanceOf(InvalidMapException.class)
+                .hasMessageContaining("outside 0..100");
+    }
+
+    @Test
+    void keepsAGuidePointThatSitsBetweenTwoOfItsRings() {
+        GuidePoint guide = new GuidePoint(50, new Vec3(4.0, 64.0, 150.0));
+
+        MapDefinition map = new MapDefinition("m", "w", Vec3.ZERO, RINGS, Duration.ofSeconds(45), BOOST,
+                new GuideLine(List.of(guide), 3, 1.75));
+
+        assertThat(map.guideLine().points()).containsExactly(guide);
     }
 
     @Test
     void copiesItsRingListSoACallerCannotChangeItAfterwards() {
         List<Ring> mutable = new java.util.ArrayList<>(RINGS);
-        MapDefinition map = new MapDefinition("m", "w", Vec3.ZERO, mutable, Duration.ofSeconds(45), BOOST);
+        MapDefinition map = new MapDefinition("m", "w", Vec3.ZERO, mutable, Duration.ofSeconds(45), BOOST, NO_GUIDES);
 
         mutable.clear();
 

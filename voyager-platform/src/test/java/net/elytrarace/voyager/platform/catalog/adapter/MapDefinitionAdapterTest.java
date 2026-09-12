@@ -6,7 +6,9 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.exception.InvalidBoostConfigException;
+import net.elytrarace.voyager.api.race.exception.InvalidGuideLineException;
 import net.elytrarace.voyager.api.race.exception.InvalidMapException;
 
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,14 @@ class MapDefinitionAdapterTest {
                   "type": "BOOST"
                 }
               ],
+              "guideLine": {
+                "lookAheadRings": 4,
+                "particleSpacing": 1.5,
+                "points": [
+                  { "orderIndex": 75, "position": { "x": 41.0, "y": -42.0, "z": 63.0 } },
+                  { "orderIndex": 25, "position": { "x": 63.0, "y": -48.0, "z": 58.0 } }
+                ]
+              },
               "notes": [ "PROVISIONAL seed", "another line" ]
             }
             """;
@@ -107,6 +117,78 @@ class MapDefinitionAdapterTest {
                 MAP.replace("\"cooldownTicks\": 41", "\"cooldownTicks\": 18"), MapDefinition.class))
                 .isInstanceOf(InvalidBoostConfigException.class)
                 .hasMessageContaining("cannot express");
+    }
+
+    /**
+     * Both numbers and both points, and the points sorted into the order the line reaches them
+     * regardless of the order the file lists them in.
+     *
+     * <p>The fixture lists 75 before 25 on purpose. Nothing else in this file can tell a reader that
+     * preserved file order from one that ordered by order index, and the difference is a line that
+     * doubles back between two guides in the same gap. 4 and 1.5 are likewise neither of each other's
+     * values nor any default in the repository.
+     */
+    @Test
+    void readsTheGuideLineAndOrdersItsPointsByOrderIndex() {
+        MapDefinition map = Adapters.GSON.fromJson(MAP, MapDefinition.class);
+
+        assertThat(map.guideLine().lookAheadRings()).isEqualTo(4);
+        assertThat(map.guideLine().particleSpacing()).isEqualTo(1.5);
+        assertThat(map.guideLine().points()).containsExactly(
+                new GuidePoint(25, new Vec3(63, -48, 58)),
+                new GuidePoint(75, new Vec3(41, -42, 63)));
+    }
+
+    @Test
+    void readsACourseWithNoGuidePointsAtAll() {
+        // Legal, and the shape three of the four maps in the repository have: the line is then the
+        // rings alone. The empty array is still required — "this course needs no guides" is a thing
+        // the file says, not a thing a missing block implies.
+        MapDefinition map = Adapters.GSON.fromJson(withNoGuidePoints(MAP), MapDefinition.class);
+
+        assertThat(map.guideLine().points()).isEmpty();
+        assertThat(map.guideLine().lookAheadRings()).isEqualTo(4);
+    }
+
+    @Test
+    void refusesAMapMissingItsGuideLine() {
+        // Not defaulted, for the same reason the boost tuning is not. lookAheadRings decides whether a
+        // racer is shown the next stretch or the whole course at once, and a built-in fallback would
+        // be a course tuned by a number that is nowhere in the data.
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withNoGuideLine(MAP), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("missing the field 'guideLine'");
+    }
+
+    /** The guide points replaced by an empty array. The ring field also called "points" is left alone. */
+    private static String withNoGuidePoints(String map) {
+        return map.replaceAll("(?s)\"points\": \\[\\s*\\{.*?\\]", "\"points\": []");
+    }
+
+    /** The whole {@code guideLine} block removed, from its key up to the {@code notes} that follow it. */
+    private static String withNoGuideLine(String map) {
+        return map.substring(0, map.indexOf("  \"guideLine\"")) + map.substring(map.indexOf("  \"notes\""));
+    }
+
+    @Test
+    void refusesAGuideLineMissingItsLookAhead() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(
+                MAP.replace("\"lookAheadRings\": 4,", ""), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("missing the field 'lookAheadRings'");
+    }
+
+    /**
+     * A guide point on a ring's own slot has no defined position in the line, and the record refuses
+     * it. The refusal has to survive the read rather than being swallowed into a default, exactly as
+     * the boost config's does.
+     */
+    @Test
+    void letsTheGuidePointItselfRefuseAnOrderIndexOnARingsSlot() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(
+                MAP.replace("\"orderIndex\": 75", "\"orderIndex\": 100"), MapDefinition.class))
+                .isInstanceOf(InvalidGuideLineException.class)
+                .hasMessageContaining("ring 1's own slot");
     }
 
     @Test
