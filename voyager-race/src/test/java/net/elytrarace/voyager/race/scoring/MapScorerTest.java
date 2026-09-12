@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.race.scoring;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
@@ -27,7 +28,7 @@ class MapScorerTest {
 
     // Two rings worth 9 and 25 — 34 in total — and a sixty-second reference time.
     private static final MapDefinition TWO_RING_MAP = new MapDefinition("two-ring", "world_a", Vec3.ZERO,
-            List.of(ring(0, 9), ring(1, 25)), Duration.ofSeconds(60));
+            List.of(ring(0, 9), ring(1, 25)), Duration.ofSeconds(60), new BoostConfig(12, 25));
 
     // Three rings worth 4, 17 and 31 — 52 in total — and a thirty-second reference time, deliberately
     // different from TWO_RING_MAP on the ring count, the point values and the reference time, so a
@@ -35,7 +36,7 @@ class MapScorerTest {
     // so summing the LAST n rings instead of the first n (48 rather than 21 for two of three) is
     // distinguishable.
     private static final MapDefinition THREE_RING_MAP = new MapDefinition("three-ring", "world_b", Vec3.ZERO,
-            List.of(ring(0, 4), ring(1, 17), ring(2, 31)), Duration.ofSeconds(30));
+            List.of(ring(0, 4), ring(1, 17), ring(2, 31)), Duration.ofSeconds(30), new BoostConfig(19, 44));
 
     @Test
     void scoresAFinishedRunAsRingPointsPlusMedalPoints() {

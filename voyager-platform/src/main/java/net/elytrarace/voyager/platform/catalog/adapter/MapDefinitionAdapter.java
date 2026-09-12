@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 
@@ -24,6 +25,12 @@ import java.util.List;
  * designer edits by hand and {@code 46.7} is what a lap time looks like. It is converted to a
  * {@link Duration} at millisecond resolution — one server tick is fifty of those, so nothing that
  * matters is lost, and {@link MapDefinition} refuses a value that rounds to zero.
+ *
+ * <p>{@code boostConfig} is read as two tick counts rather than the milliseconds the old format used
+ * for its cooldown. The server counts a burn in ticks and nothing else, so a millisecond value here
+ * would be converted on every load and would let a file ask for a cooldown of 2010 ms that no server
+ * can honour — the rounding would be invisible in the file and visible in the race. The conversion
+ * happened once, in {@code tools/map-converter}, and the committed file carries the answer.
  *
  * <p>A {@code notes} array is expected in these files and deliberately not read. The three values
  * the old data never carried — the spawn, the reference time and a ring's score — were seeded during
@@ -56,6 +63,25 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
                 JsonFields.string(json, "world", what),
                 context.deserialize(JsonFields.required(json, "spawn", what), Vec3.class),
                 rings,
-                Duration.ofMillis(Math.round(seconds * 1000.0)));
+                Duration.ofMillis(Math.round(seconds * 1000.0)),
+                boostConfig(json, what));
+    }
+
+    /**
+     * Reads the per-map boost tuning, required like every other field here.
+     *
+     * <p>Required rather than defaulted for the reason {@code JsonFields} exists at all: an absent
+     * boost configuration has no harmless value. Falling back to some built-in default would let a
+     * map file that forgot the block, or misspelt it, race with tuning nobody chose and nobody can
+     * find in the data — and the design's whole claim about configuration is that there is one type
+     * and the value lives in the file.
+     */
+    private static BoostConfig boostConfig(JsonObject json, String what) {
+        JsonObject boost = JsonFields.object(
+                JsonFields.required(json, "boostConfig", what), "%s field 'boostConfig'".formatted(what));
+        String where = "%s boost config".formatted(what);
+        return new BoostConfig(
+                JsonFields.integer(boost, "burnDurationTicks", where),
+                JsonFields.integer(boost, "cooldownTicks", where));
     }
 }

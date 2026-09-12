@@ -3,6 +3,7 @@ package net.elytrarace.tools.converter;
 import com.google.gson.JsonObject;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.MapDefinition;
@@ -26,7 +27,8 @@ class CatalogWriterTest {
                     new Ring(0, new Vec3(85, -54, 54), new Vec3(-1, 0, 0), Math.sqrt(13), 10, RingType.STANDARD),
                     new Ring(1, new Vec3(2, -31, 69), new Vec3(-2.0 / 3, 2.0 / 3, -1.0 / 3), 3, 25,
                             RingType.BOOST)),
-            Duration.ofMillis(46_700));
+            Duration.ofMillis(46_700),
+            new BoostConfig(18, 41));
 
     @Test
     void writesEveryFieldAMapDefinitionIsRebuiltFrom() {
@@ -41,6 +43,22 @@ class CatalogWriterTest {
         assertThat(json.get("referenceTimeSeconds").getAsDouble()).isEqualTo(46.7);
         assertThat(json.getAsJsonArray("notes")).singleElement()
                 .satisfies(note -> assertThat(note.getAsString()).isEqualTo("a note"));
+    }
+
+    /**
+     * Both boost numbers, in ticks and under their own object. 18 and 41 are distinct and not
+     * multiples of one another, so a writer that emitted one field twice shows here.
+     */
+    @Test
+    void writesTheBoostTuningAsTwoTickCounts() {
+        JsonObject json = CatalogWriter.toJson(MAP, List.of());
+
+        JsonObject boost = json.getAsJsonObject("boostConfig");
+        assertThat(boost.get("burnDurationTicks").getAsInt()).isEqualTo(18);
+        assertThat(boost.get("cooldownTicks").getAsInt()).isEqualTo(41);
+        assertThat(boost.has("cooldownMs"))
+                .describedAs("milliseconds were the old format; a server counts in ticks")
+                .isFalse();
     }
 
     @Test

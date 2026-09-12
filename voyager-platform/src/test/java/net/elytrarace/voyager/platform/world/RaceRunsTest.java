@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.world;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -54,7 +55,7 @@ class RaceRunsTest {
             List.of(
                     new Ring(0, new Vec3(0.0, 64.0, 28.0), new Vec3(0.6, 0.0, 0.8), 6.0, 7, RingType.STANDARD),
                     new Ring(1, new Vec3(2.5, 67.0, 61.0), new Vec3(0.0, -0.6, 0.8), 7.0, 11, RingType.BOOST)),
-            Duration.ofSeconds(4));
+            Duration.ofSeconds(4), new BoostConfig(12, 25));
 
     private static final int FIRST_RING_TICK = 5;
     private static final int LAST_RING_TICK = 12;

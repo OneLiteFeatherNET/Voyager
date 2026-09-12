@@ -3,8 +3,10 @@ package net.elytrarace.voyager.platform.catalog.adapter;
 import com.google.gson.JsonParseException;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.exception.InvalidBoostConfigException;
 import net.elytrarace.voyager.api.race.exception.InvalidMapException;
 
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ class MapDefinitionAdapterTest {
               "world": "ElytraraceBlueAndRed",
               "spawn": { "x": 109.0, "y": -62.0, "z": 54.0 },
               "referenceTimeSeconds": 46.7,
+              "boostConfig": { "burnDurationTicks": 18, "cooldownTicks": 41 },
               "rings": [
                 {
                   "index": 0,
@@ -56,6 +59,54 @@ class MapDefinitionAdapterTest {
         // 46.7 s, not 46 and not 47: the value is a lap time a designer edits, and rounding it to
         // whole seconds would move every medal bracket on the map.
         assertThat(map.referenceTime()).isEqualTo(Duration.ofMillis(46_700));
+    }
+
+    /**
+     * Both numbers, in ticks. 18 and 41 are distinct, not multiples of one another, and neither is
+     * the Vanilla-derived default of 30 — so an adapter that read one field into the other, or that
+     * fell back to a built-in, produces a value that is nowhere in this fixture.
+     */
+    @Test
+    void readsTheBoostTuningAsTwoTickCounts() {
+        MapDefinition map = Adapters.GSON.fromJson(MAP, MapDefinition.class);
+
+        assertThat(map.boostConfig()).isEqualTo(new BoostConfig(18, 41));
+    }
+
+    @Test
+    void refusesAMapMissingItsBoostTuning() {
+        // Not defaulted, for the reason every other field here is not: an absent boost configuration
+        // has no harmless value, and a map racing on tuning nobody chose is not findable in the data.
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(MAP.replaceAll("\\s*\"boostConfig\".*\n", "\n"),
+                MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("missing the field 'boostConfig'");
+    }
+
+    @Test
+    void refusesABoostConfigMissingOneOfItsTwoNumbers() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(
+                MAP.replace("\"burnDurationTicks\": 18, ", ""), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("missing the field 'burnDurationTicks'");
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(
+                MAP.replace(", \"cooldownTicks\": 41", ""), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("missing the field 'cooldownTicks'");
+    }
+
+    /**
+     * The one invariant that is not about this file being well formed: a cooldown no longer than the
+     * burn lets two rockets burn on one racer at once, which the simulation's boolean input cannot
+     * express. {@code BoostConfig} refuses it and the refusal has to survive the read rather than
+     * being swallowed into some default.
+     */
+    @Test
+    void letsTheBoostConfigItselfRefuseACooldownThatDoesNotOutlastTheBurn() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(
+                MAP.replace("\"cooldownTicks\": 41", "\"cooldownTicks\": 18"), MapDefinition.class))
+                .isInstanceOf(InvalidBoostConfigException.class)
+                .hasMessageContaining("cannot express");
     }
 
     @Test

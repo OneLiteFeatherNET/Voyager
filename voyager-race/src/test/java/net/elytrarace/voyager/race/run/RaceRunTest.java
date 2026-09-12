@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.race.run;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -69,7 +70,7 @@ class RaceRunTest {
                     new Ring(1, new Vec3(2.5, 67.0, 61.0), new Vec3(0.0, -0.6, 0.8), 7.0, 11, RingType.BOOST),
                     new Ring(2, new Vec3(-1.0, 63.0, 94.0), new Vec3(-0.36, 0.48, 0.8), 8.0, 21,
                             RingType.CHECKPOINT)),
-            Duration.ofSeconds(4));
+            Duration.ofSeconds(4), new BoostConfig(12, 25));
 
     /**
      * A second course whose only ring sits at crossing {@code z} 5.5625 — between the spawn and the
@@ -78,7 +79,7 @@ class RaceRunTest {
      */
     private static final MapDefinition START_LINE = new MapDefinition("start-line", "ridge_arena", SPAWN,
             List.of(new Ring(0, new Vec3(0.0, 64.0, 6.5), new Vec3(0.6, 0.0, 0.8), 6.0, 5, RingType.STANDARD)),
-            Duration.ofSeconds(4));
+            Duration.ofSeconds(4), new BoostConfig(19, 44));
 
     /** Ring counts after which the elytra closes; the course has three rings. */
     private static final int NEVER_STOPS_GLIDING = Integer.MAX_VALUE;

@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.race;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupCatalog;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
@@ -144,7 +145,7 @@ class CupPlaythroughTest {
                             RingType.CHECKPOINT),
                     new Ring(3, new Vec3(1.0, 67.0, 121.0), new Vec3(0.48, 0.64, 0.6), 9.0, 33, RingType.STANDARD),
                     new Ring(4, new Vec3(-1.5, 63.5, 152.0), new Vec3(-0.36, 0.48, 0.8), 10.0, 41, RingType.BOOST)),
-            Duration.ofSeconds(3));
+            Duration.ofSeconds(3), new BoostConfig(12, 25));
 
     /**
      * Map two: four rings, a 5 s reference time, spawn at {@code z = 3} — a different start line, so
@@ -158,7 +159,7 @@ class CupPlaythroughTest {
                             RingType.SLOW),
                     new Ring(2, new Vec3(2.5, 64.5, 168.0), new Vec3(0.8, 0.0, 0.6), 9.5, 31, RingType.STANDARD),
                     new Ring(3, new Vec3(0.5, 65.5, 223.0), new Vec3(0.36, -0.48, 0.8), 11.0, 43, RingType.STANDARD)),
-            Duration.ofSeconds(5));
+            Duration.ofSeconds(5), new BoostConfig(19, 44));
 
     private static final String CUP_NAME = "frostfire-cup";
 

@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.server.game;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.MapCatalog;
@@ -16,14 +17,19 @@ import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.minestom.server.ServerFlag;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.metadata.projectile.FireworkRocketMeta;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.server.world.DimensionType;
 import net.minestom.testing.Env;
@@ -89,6 +95,23 @@ class CupSessionTest {
     private static final Block DUNE_FLOOR = Block.DIAMOND_BLOCK;
 
     /**
+     * Map one's boost tuning: a 4-tick burn and a 9-tick cooldown.
+     *
+     * <p>Short enough that a whole burn and the cooldown after it fit inside a 20-tick race phase,
+     * and small enough that the count of boosted ticks can be asserted exactly rather than
+     * approximately. 4 and 9 are not multiples of one another and neither is the Vanilla-derived
+     * default of 30, so a session reading the wrong field, or falling back to a built-in, produces a
+     * number that appears nowhere in this file.
+     */
+    private static final BoostConfig RIDGE_BOOST = new BoostConfig(4, 9);
+
+    /**
+     * Map two's, and deliberately different on both numbers: a boost read from map one's tuning while
+     * map two is being raced would burn for 4 rather than 6.
+     */
+    private static final BoostConfig DUNE_BOOST = new BoostConfig(6, 13);
+
+    /**
      * One ring, 10 blocks down +z of the spawn and 8 blocks <em>above</em> it, worth 7.
      *
      * <p>The 8 is load-bearing and not decoration: the launch aims its horizontal impulse along the
@@ -98,13 +121,13 @@ class CupSessionTest {
      */
     private static final MapDefinition RIDGE_RUN = new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN,
             List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7)),
-            Duration.ofMillis(400));
+            Duration.ofMillis(400), RIDGE_BOOST);
 
     /** Two rings, so a run that passed one of them has still not finished. Worth 13 each. */
     private static final MapDefinition DUNE_RUN = new MapDefinition("dune-run", DUNE, DUNE_SPAWN,
             List.of(ring(0, DUNE_SPAWN.plus(new Vec3(0, 0, 10)), 13),
                     ring(1, DUNE_SPAWN.plus(new Vec3(0, 0, 20)), 13)),
-            Duration.ofMillis(650));
+            Duration.ofMillis(650), DUNE_BOOST);
 
     private static final CupDefinition CUP =
             new CupDefinition("grand_tour", List.of("ridge-run", "dune-run"), GameMode.RACE);
@@ -209,6 +232,15 @@ class CupSessionTest {
         fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
 
         assertThat(fixture.racer.getEquipment(EquipmentSlot.CHESTPLATE).material()).isEqualTo(Material.ELYTRA);
+        // And rockets that carry their flight duration. A plain stack would look identical in an
+        // inventory and claim a one-gunpowder rocket in its tooltip, against a server that burns the
+        // three-gunpowder length — a discrepancy a player notices and cannot explain.
+        ItemStack rockets = fixture.racer.getInventory().getItemStack(0);
+        assertThat(rockets.material()).isEqualTo(Material.FIREWORK_ROCKET);
+        assertThat(rockets.get(DataComponents.FIREWORKS))
+                .describedAs("the rocket declares a flight duration")
+                .isNotNull()
+                .satisfies(fireworks -> assertThat(fireworks.flightDuration()).isEqualTo(3));
         assertThat(fixture.racer.isFlyingWithElytra())
                 .describedAs("the server starts the glide; a racer who has to know the trick never races")
                 .isTrue();
@@ -463,6 +495,211 @@ class CupSessionTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // The firework boost
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * The measurement the whole boost turns on: a burn configured for 4 ticks reaches the simulation
+     * on exactly 4 ticks.
+     *
+     * <p>Counted by reading {@code FlightTick.input()} — the input the simulator was actually handed
+     * — rather than by asking the tracker, which would only assert the tracker against itself. It is
+     * also the assertion that catches the ordering inside {@code tick()}: advancing the burn before
+     * the sample is taken spends a tick nothing observed, and this count comes back 3.
+     */
+    @Test
+    void aBoostReachesTheSimulationOnExactlyTheMapsOwnNumberOfTicks(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+
+        assertThat(fixture.session.requestBoost(fixture.racer))
+                .describedAs("the racer is gliding on map one and has boosted nothing yet")
+                .isTrue();
+
+        int boostedTicks = fixture.countBoostedTicks(12);
+
+        assertThat(boostedTicks).isEqualTo(RIDGE_BOOST.burnDurationTicks());
+    }
+
+    /**
+     * The second map's tuning is the one used on the second map. A session that read the first map's
+     * boost config, or one it cached when the cup started, burns for 4 here instead of 6.
+     */
+    @Test
+    void theSecondMapsOwnBurnLengthIsUsedOnTheSecondMap(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("dune-run")
+                && fixture.session.describe().contains("phase GAME"));
+
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+
+        assertThat(fixture.countBoostedTicks(15))
+                .describedAs("map two burns for %s, map one for %s",
+                        DUNE_BOOST.burnDurationTicks(), RIDGE_BOOST.burnDurationTicks())
+                .isEqualTo(DUNE_BOOST.burnDurationTicks());
+    }
+
+    /**
+     * The other half of a boost, and the only half a client can see: a real firework rocket entity,
+     * in the world being raced, naming this racer as its shooter. The simulation's side of the boost
+     * is silent by design, so without this a session that told the tracker and spawned nothing would
+     * pass every other boost test in this class — and a player would press the button and see, and
+     * feel, nothing.
+     */
+    @Test
+    void aBoostSpawnsARocketAttachedToTheRacerInTheWorldBeingRaced(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        assertThat(rocketsAround(fixture.racer)).isEmpty();
+
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+
+        List<Entity> rockets = rocketsAround(fixture.racer);
+        assertThat(rockets).hasSize(1);
+        assertThat(((FireworkRocketMeta) rockets.getFirst().getEntityMeta()).getShooterEntityId())
+                .isEqualTo(fixture.racer.getEntityId());
+    }
+
+    /** A refused boost lights nothing: no rocket, no cooldown packet, nothing for a player to see. */
+    @Test
+    void aRefusedBoostSpawnsNoRocket(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+        int afterOne = rocketsAround(fixture.racer).size();
+
+        assertThat(fixture.session.requestBoost(fixture.racer)).isFalse();
+
+        assertThat(rocketsAround(fixture.racer))
+                .describedAs("the refused second request added no second rocket")
+                .hasSize(afterOne);
+    }
+
+    /** A rocket used during the cooldown is refused, and the burn already running is not restarted. */
+    @Test
+    void aSecondRocketDuringTheCooldownIsRefused(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+        fixture.runUntil(tick -> tick >= 1);
+
+        assertThat(fixture.session.requestBoost(fixture.racer)).isFalse();
+
+        assertThat(fixture.session.describe())
+                .describedAs("the refused request left the first burn counting down as it was")
+                .contains("boost burning 3 tick(s)");
+    }
+
+    /**
+     * A boost asked for between maps has no tuning to start a burn under, so it is refused rather
+     * than started on some default or on whichever map happened to be current last.
+     *
+     * <p>The racer is put into a glide by hand first, and that is the point of the test rather than
+     * an incidental setup step: with the gliding flag down, the refusal would come from the tracker's
+     * own check and this would prove nothing about the map guard. Gliding, the only thing left that
+     * can refuse is "no map is being raced".
+     */
+    @Test
+    void aBoostAskedForWhileNoMapIsBeingRacedIsRefused(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.racer.setFlyingWithElytra(true);
+
+        assertThat(fixture.session.requestBoost(fixture.racer))
+                .describedAs("the cup is still in map one's lobby")
+                .isFalse();
+
+        fixture.run(tick -> { });
+        fixture.racer.setFlyingWithElytra(true);
+
+        assertThat(fixture.session.requestBoost(fixture.racer))
+                .describedAs("the cup has finished")
+                .isFalse();
+        assertThat(rocketsAround(fixture.racer))
+                .describedAs("nothing was lit either time")
+                .isEmpty();
+    }
+
+    /** A racer who is not gliding gets no burn: Vanilla's rocket boosts a fall-flying entity only. */
+    @Test
+    void aBoostAskedForOnFootIsRefusedAndReachesTheSimulationNotAtAll(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.racer.setFlyingWithElytra(false);
+
+        assertThat(fixture.session.requestBoost(fixture.racer)).isFalse();
+
+        assertThat(fixture.countBoostedTicks(6)).isZero();
+    }
+
+    /**
+     * A racer who disconnects mid-burn leaves no burn and no cooldown behind. Without it the next
+     * player to be handed that UUID — a reconnect — comes back into the remains of a cooldown for a
+     * boost they cannot see.
+     */
+    @Test
+    void forgetsTheBurnOfARacerWhoDisconnectsMidBoost(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+        assertThat(fixture.session.describe()).contains("boost burning");
+
+        fixture.session.forget(fixture.racer.getUuid());
+
+        assertThat(fixture.session.describe())
+                .describedAs("neither burning nor cooling down")
+                .contains("boost ready");
+    }
+
+    /**
+     * A burn and its cooldown do not cross a map boundary.
+     *
+     * <p>The skip is what makes this bite, and it is the whole point of the arrangement. Played out
+     * normally, map one's race phase is 20 ticks and the cooldown is 9, so it would have run out on
+     * its own long before map two began — and a session that forgot nothing would look identical to
+     * one that did. Skipping ends map one within a tick of the boost, so the cooldown is still
+     * running when map two launches: a cooldown carried across refuses map two's first boost for a
+     * rocket used on map one.
+     */
+    @Test
+    void aBurnAndItsCooldownDoNotSurviveTheMapTheyWereLitOn(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+        assertThat(fixture.session.requestSkip()).isTrue();
+
+        fixture.runUntil(tick -> fixture.session.describe().contains("dune-run")
+                && fixture.session.describe().contains("phase GAME"));
+
+        assertThat(fixture.session.describe())
+                .describedAs("map one's cooldown had %s of its %s ticks left when the map ended",
+                        "several", RIDGE_BOOST.cooldownTicks())
+                .contains("boost ready");
+        assertThat(fixture.session.requestBoost(fixture.racer))
+                .describedAs("map two's first boost is not refused by map one's cooldown")
+                .isTrue();
+    }
+
+    /**
+     * A restarted cup owes nobody the abandoned one's cooldown.
+     *
+     * <p>The restart is taken one tick after the boost, so the 9-tick cooldown is unambiguously still
+     * running: a session that carried it over refuses the first boost of the cup it has just started,
+     * which is a race that begins with a rocket the player cannot use and no explanation for it.
+     */
+    @Test
+    void restartingTheCupDropsACooldownTakenOnTheRunThatWasAbandoned(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+
+        fixture.session.start(true);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+
+        assertThat(fixture.session.describe()).contains("boost ready");
+        assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
+    }
+
+    // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
 
@@ -502,6 +739,24 @@ class CupSessionTest {
                     return;
                 }
             }
+        }
+
+        /**
+         * Ticks {@code budget} times and counts the ticks on which the simulator was handed an active
+         * firework boost for this racer. Reads {@code FlightTick.input()}, which is the value the
+         * physics actually saw, rather than asking the tracker what it thinks it reported.
+         */
+        int countBoostedTicks(int budget) {
+            int boosted = 0;
+            for (int tick = 0; tick < budget; tick++) {
+                session.tick();
+                ticksPlayed++;
+                Optional<FlightTick> simulated = session.lastSimulated(racer.getUuid());
+                if (simulated.isPresent() && simulated.get().input().fireworkBoostActive()) {
+                    boosted++;
+                }
+            }
+            return boosted;
         }
 
         void teleport(Vec3 position) {
@@ -557,6 +812,12 @@ class CupSessionTest {
                 TIMINGS, STEP, () -> field);
         session.start(false);
         return new Fixture(instances, runs, session, racer);
+    }
+
+    private static List<Entity> rocketsAround(Player racer) {
+        return racer.getInstance().getEntities().stream()
+                .filter(entity -> entity.getEntityType() == EntityType.FIREWORK_ROCKET)
+                .toList();
     }
 
     private static Ring ring(int index, Vec3 center, int points) {
