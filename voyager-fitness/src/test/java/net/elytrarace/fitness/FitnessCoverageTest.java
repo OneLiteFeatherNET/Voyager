@@ -42,7 +42,9 @@ class FitnessCoverageTest {
     private static final Map<String, String> PACKAGE_PREFIX_BY_PROJECT = Map.of(
             ":voyager-api", "net.elytrarace.voyager.api",
             ":voyager-physics", "net.elytrarace.voyager.physics",
-            ":voyager-race", "net.elytrarace.voyager.race");
+            ":voyager-race", "net.elytrarace.voyager.race",
+            ":voyager-platform", "net.elytrarace.voyager.platform",
+            ":voyager-server", "net.elytrarace.voyager.server");
 
     private static final String FITNESS_PACKAGE = "net.elytrarace.fitness";
 

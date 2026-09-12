@@ -27,10 +27,12 @@ import java.time.Duration;
  * </pre>
  *
  * <p>So {@code inPhase} is <strong>not</strong> a race clock: a finish time taken from it reads one
- * step short. A finish is timed by counting the movement ticks the driver actually played — see
- * {@code CupPlaythroughTest}, which scores a finisher on {@code TICK.multipliedBy(gameTick)} and
- * asserts the result is not the phase duration. Giving a race run a type that owns both clocks is
- * E4's job (finding F2); until then this paragraph is the contract.
+ * step short. <strong>{@link RaceClock} is the race clock</strong> — it counts the movement ticks the
+ * driver actually played, and stands one step ahead of this field on every one of them. E4 Task 5
+ * decided that and named it in a type rather than leaving it to this paragraph; see
+ * {@code RaceClockTest}, which asserts the gap tick by tick, and {@code CupPlaythroughTest}, which
+ * scores a finisher on {@code TICK.multipliedBy(gameTick)} — the same quantity {@link RaceClock}
+ * now carries — and asserts the result is not the phase duration.
  */
 public record RaceState(RacePhase phase, int mapIndex, Duration inPhase, boolean cupFinished) {
 

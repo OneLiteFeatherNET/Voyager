@@ -1,0 +1,580 @@
+{
+  "name": "elytraraceblueandred",
+  "world": "ElytraraceBlueAndRed",
+  "spawn": {
+    "x": 109.0,
+    "y": -62.0,
+    "z": 54.0
+  },
+  "referenceTimeSeconds": 60.0,
+  "rings": [
+    {
+      "index": 0,
+      "center": {
+        "x": 85.0,
+        "y": -54.0,
+        "z": 54.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 1,
+      "center": {
+        "x": 2.0,
+        "y": -31.0,
+        "z": 69.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 2,
+      "center": {
+        "x": -84.0,
+        "y": -15.0,
+        "z": 64.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 3,
+      "center": {
+        "x": -61.0,
+        "y": 7.0,
+        "z": -30.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 4,
+      "center": {
+        "x": -31.0,
+        "y": 18.0,
+        "z": -73.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 5,
+      "center": {
+        "x": -2.0,
+        "y": 9.0,
+        "z": -66.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 6,
+      "center": {
+        "x": 4.0,
+        "y": 21.0,
+        "z": -31.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 7,
+      "center": {
+        "x": 47.0,
+        "y": 9.0,
+        "z": -35.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 8,
+      "center": {
+        "x": 49.0,
+        "y": 7.0,
+        "z": -3.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 9,
+      "center": {
+        "x": 66.0,
+        "y": 9.0,
+        "z": 24.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 10,
+      "center": {
+        "x": 75.0,
+        "y": 26.0,
+        "z": 19.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 11,
+      "center": {
+        "x": 53.0,
+        "y": 45.0,
+        "z": -18.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 12,
+      "center": {
+        "x": 25.0,
+        "y": 65.0,
+        "z": -31.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 13,
+      "center": {
+        "x": 7.0,
+        "y": 66.0,
+        "z": -13.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 14,
+      "center": {
+        "x": -11.0,
+        "y": 62.0,
+        "z": -10.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 15,
+      "center": {
+        "x": -47.0,
+        "y": 62.0,
+        "z": -9.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 16,
+      "center": {
+        "x": -96.0,
+        "y": 68.0,
+        "z": 2.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 17,
+      "center": {
+        "x": -120.0,
+        "y": 80.0,
+        "z": 1.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 18,
+      "center": {
+        "x": -72.0,
+        "y": 95.0,
+        "z": -8.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 19,
+      "center": {
+        "x": -5.0,
+        "y": 102.0,
+        "z": -36.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 20,
+      "center": {
+        "x": 56.0,
+        "y": 118.0,
+        "z": -32.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 21,
+      "center": {
+        "x": 77.0,
+        "y": 120.0,
+        "z": -61.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 22,
+      "center": {
+        "x": 52.0,
+        "y": 128.0,
+        "z": -97.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 23,
+      "center": {
+        "x": -4.0,
+        "y": 131.0,
+        "z": -106.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 24,
+      "center": {
+        "x": -48.0,
+        "y": 132.0,
+        "z": -96.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 25,
+      "center": {
+        "x": -103.0,
+        "y": 133.0,
+        "z": -79.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 26,
+      "center": {
+        "x": -104.0,
+        "y": 152.0,
+        "z": -66.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 27,
+      "center": {
+        "x": -66.0,
+        "y": 156.0,
+        "z": 5.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 28,
+      "center": {
+        "x": 24.0,
+        "y": 165.0,
+        "z": 40.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 29,
+      "center": {
+        "x": 43.0,
+        "y": 180.0,
+        "z": 15.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 30,
+      "center": {
+        "x": 26.0,
+        "y": 218.0,
+        "z": -3.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 31,
+      "center": {
+        "x": 14.0,
+        "y": 241.0,
+        "z": -20.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 32,
+      "center": {
+        "x": 4.0,
+        "y": 280.0,
+        "z": -7.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 33,
+      "center": {
+        "x": -1.0,
+        "y": 313.0,
+        "z": -1.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 34,
+      "center": {
+        "x": -1.0,
+        "y": 319.0,
+        "z": -1.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    }
+  ],
+  "notes": [
+    "Converted from the old map.json/portals.json format by tools/map-converter. Every ring normal below was derived from the recorded rim points and oriented by the bisector of the flight path; see CourseConverter for why that rule and not the three simpler ones.",
+    "spawn — read from the world\u0027s level.dat (SpawnX/SpawnY/SpawnZ), not derived.",
+    "referenceTimeSeconds — PROVISIONAL seed of 60.0 s, not a measurement. It decides medal tiers only. Replace it with a real lap once someone has flown one.",
+    "points — PROVISIONAL seed of 10 on every ring, carried over from the loader in the tree being replaced. The old data records no per-ring variation, so there is nothing here to preserve; a balancing pass edits this file.",
+    "This file is data, not code: edit the seeds above here rather than in the server.",
+    "35 rings, indexed 0..34."
+  ]
+}
