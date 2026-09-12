@@ -7,6 +7,10 @@
     "z": 54.0
   },
   "referenceTimeSeconds": 60.0,
+  "boostConfig": {
+    "burnDurationTicks": 30,
+    "cooldownTicks": 40
+  },
   "rings": [
     {
       "index": 0,
@@ -574,6 +578,8 @@
     "spawn — read from the world\u0027s level.dat (SpawnX/SpawnY/SpawnZ), not derived.",
     "referenceTimeSeconds — PROVISIONAL seed of 60.0 s, not a measurement. It decides medal tiers only. Replace it with a real lap once someone has flown one.",
     "points — PROVISIONAL seed of 10 on every ring, carried over from the loader in the tree being replaced. The old data records no per-ring variation, so there is nothing here to preserve; a balancing pass edits this file.",
+    "boostConfig.burnDurationTicks — PROVISIONAL seed of 30, derived rather than measured: Vanilla\u0027s rocket lifetime is 10 * flightDuration + random(6) + random(7), and this is that formula\u0027s deterministic core for flightDuration 3, the strongest rocket a player can craft. The random part is dropped on purpose — two identical boosts have to be worth the same in a race. The old file carried no burn at all. A balancing pass edits this number.",
+    "boostConfig.cooldownTicks — carried from the old map.json\u0027s cooldownMs of 2000, converted once into the ticks a server counts in: 40. It is measured from the tick a boost STARTS, and has to stay longer than the burn — two rockets burning on one racer at once is a case the simulation\u0027s boolean boost input cannot express.",
     "This file is data, not code: edit the seeds above here rather than in the server.",
     "35 rings, indexed 0..34."
   ]

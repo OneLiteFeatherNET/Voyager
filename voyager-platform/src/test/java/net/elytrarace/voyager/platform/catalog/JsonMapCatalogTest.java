@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.catalog;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -44,6 +45,7 @@ class JsonMapCatalogTest {
         assertThat(map.world()).isEqualTo("ElytraraceBlueAndRed");
         assertThat(map.spawn()).isEqualTo(new Vec3(109, -62, 54));
         assertThat(map.referenceTime()).isEqualTo(Duration.ofMillis(46_700));
+        assertThat(map.boostConfig()).isEqualTo(new BoostConfig(18, 41));
         assertThat(map.rings()).extracting(Ring::index).containsExactly(0, 1);
         assertThat(map.rings()).extracting(Ring::type).containsExactly(RingType.STANDARD, RingType.BOOST);
         assertThat(map.rings()).extracting(Ring::points).containsExactly(10, 25);

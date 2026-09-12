@@ -11,12 +11,28 @@ import org.jetbrains.annotations.ApiStatus;
  *
  * <p>Normal elytra flight is client-authoritative, matching Vanilla: the client flies, and the
  * server tracks its own copy of the physics result silently alongside it, never calling
- * {@code Player#setVelocity} for it. A velocity reaches Minestom only for the three external
- * forces that legitimately override the client's own flight — a firework boost burn, a ring
- * {@code BOOST}/{@code SLOW} effect, and an out-of-bounds reset. Nothing else in voyager-platform
- * converts or sends a velocity; that restriction is the entire reason this is one class instead of
- * an inline call at each of the three sites — a single place to look when a velocity turns up that
- * should not have.
+ * {@code Player#setVelocity} for it. A velocity reaches Minestom only for an external force that
+ * legitimately overrides the client's own flight. Nothing else in the rebuild converts or sends a
+ * velocity; that restriction is the entire reason this is one class instead of an inline call at
+ * each site — a single place to look when a velocity turns up that should not have.
+ *
+ * <p><strong>The list of those forces has changed twice and is written here rather than guessed.</strong>
+ * It is currently three:
+ *
+ * <ol>
+ *   <li>the launch that starts a map, which turns a standing racer into a gliding one
+ *       ({@code Racers.launch});</li>
+ *   <li>a ring {@code BOOST}/{@code SLOW} effect;</li>
+ *   <li>an out-of-bounds reset.</li>
+ * </ol>
+ *
+ * <p>The <strong>firework boost is deliberately not on that list</strong>, and it used to be. The
+ * tree being replaced computed the boost server-side and pushed it with {@code setVelocity}; the
+ * rebuild spawns a real firework rocket entity with the racer as its shooter and lets the client
+ * boost itself with Vanilla's own impulse, exactly as Vanilla does ({@code Rockets} in
+ * voyager-server). No velocity is sent for it at all. If a real client ever turns out not to respond
+ * to the entity, this class is the sanctioned fallback and the boost becomes a fourth entry — but
+ * that is a measurement nobody has taken, not a plan.
  *
  * <p>The domain simulates velocity in blocks per tick, matching Vanilla's per-tick movement
  * formulas (see voyager-physics). {@code Player#setVelocity} expects blocks per second, so

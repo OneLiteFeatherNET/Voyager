@@ -35,6 +35,20 @@ public record ConverterOptions(
      */
     public static final int DEFAULT_POINTS = 10;
 
+    /**
+     * Seeded, and provisional: 80 ticks, which is the four seconds the tree being replaced's
+     * {@code BoostConfig.DEFAULT} used for a map that named no cooldown of its own.
+     *
+     * <p>Unlike the spawn, the reference time and the ring score, this is not a command-line option,
+     * and neither is the burn. Both have an answer that does not depend on taste: a cooldown the old
+     * file already carries is carried across, and a burn it does not carry is
+     * {@code BoostConfig.VANILLA_BURN_TICKS}, which is a derivation from Vanilla rather than a knob.
+     * A flag would only offer a way to write a third number into committed data without recording
+     * where it came from — and the file, not the command line, is where this value is meant to be
+     * edited.
+     */
+    public static final int DEFAULT_COOLDOWN_TICKS = 80;
+
     /** The usage text, printed on any argument this cannot make sense of. */
     public static final String USAGE = """
             Usage: map-converter --source <dir> --out <dir> --spawn <world-dir>=<x>,<y>,<z> [...]

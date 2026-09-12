@@ -1,11 +1,13 @@
 package net.elytrarace.voyager.server.game;
 
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.tick.FlightTick;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
@@ -50,6 +52,10 @@ import java.util.function.Supplier;
  *   <li>{@code FlightTickDriver.tick()} — samples every online player and advances the server's own
  *       flight simulation. It runs first so that anything later in the tick asking what the server
  *       thinks a racer's velocity is gets this tick's answer rather than the previous one.</li>
+ *   <li>{@code FireworkBoostTracker.advance()} — counts every burn and cooldown down by one. It runs
+ *       <em>after</em> the flight driver has sampled, not before, so a burn configured for 30 ticks
+ *       drives 30 of them: the sampler reads this tick's remaining count, and advancing first would
+ *       spend a tick of it before anything observed it. See that class's javadoc.</li>
  *   <li>{@code XerusPhaseDriver.onUpdate()} — advances the cup, which calls back into this class's
  *       {@link #mapStarted}, {@link #raceTick} and {@link #mapFinished}.</li>
  * </ol>
@@ -63,8 +69,10 @@ import java.util.function.Supplier;
  * that is what {@code FlightTickDriver} is for — and is not yet the authority on anything.
  *
  * <p>The two are printed side by side in {@link #describe()} so the drift is a reading rather than an
- * assumption. They will diverge whenever a firework is burning, because {@code LivePlayerSampler}
- * does not yet report a boost; that is E5's, and it is a known gap rather than a surprise.
+ * assumption. A burning firework no longer adds to it — {@code LivePlayerSampler} reports the burn
+ * and the simulation applies Vanilla's impulse — but the server's burn window and the client's differ
+ * by the round trip, which that class's javadoc names as the one thing the reading cannot be exact
+ * about.
  *
  * <h2>When the cup starts</h2>
  *
@@ -91,6 +99,7 @@ public final class CupSession implements RacePhaseListener {
     private final RaceRuns runs;
     private final FlightTickDriver flight;
     private final CurrentMapBlocks blocks;
+    private final FireworkBoostTracker boosts;
     private final RaceTimings timings;
     private final Duration step;
     private final Supplier<Collection<Player>> players;
@@ -104,8 +113,8 @@ public final class CupSession implements RacePhaseListener {
     private boolean skipRequested;
 
     private CupSession(CupDefinition cup, MapCatalog maps, MapInstances instances, MapTransition transition,
-            RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks, RaceTimings timings,
-            Duration step, Supplier<Collection<Player>> players) {
+            RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts,
+            RaceTimings timings, Duration step, Supplier<Collection<Player>> players) {
         this.cup = cup;
         this.maps = maps;
         this.instances = instances;
@@ -113,16 +122,18 @@ public final class CupSession implements RacePhaseListener {
         this.runs = runs;
         this.flight = flight;
         this.blocks = blocks;
+        this.boosts = boosts;
         this.timings = timings;
         this.step = step;
         this.players = players;
     }
 
     /**
-     * Builds a session and the two objects only it has a use for: the block source the flight
-     * simulation reads through, and the sampler that observes live players.
+     * Builds a session and the three objects only it has a use for: the block source the flight
+     * simulation reads through, the tracker the burn is counted by, and the sampler that observes
+     * live players.
      *
-     * <p>A factory rather than a public constructor because those two are package-private. They are
+     * <p>A factory rather than a public constructor because two of those three are package-private. They are
      * implementation detail of how a cup is played, not of how one is wired, and keeping them out of
      * the signature keeps the Guice module from having to know they exist.
      *
@@ -134,9 +145,11 @@ public final class CupSession implements RacePhaseListener {
             MapTransition transition, RaceRuns runs, FlightTracker tracker, RaceTimings timings,
             Duration step, Supplier<Collection<Player>> players) {
         CurrentMapBlocks blocks = new CurrentMapBlocks();
+        FireworkBoostTracker boosts = new FireworkBoostTracker();
         FlightTickDriver flight = new FlightTickDriver(
-                new LivePlayerSampler(players), tracker, new MinestomCollisionSpace(blocks));
-        return new CupSession(cup, maps, instances, transition, runs, flight, blocks, timings, step, players);
+                new LivePlayerSampler(players, boosts), tracker, new MinestomCollisionSpace(blocks));
+        return new CupSession(cup, maps, instances, transition, runs, flight, blocks, boosts, timings,
+                step, players);
     }
 
     /** The cup being played. */
@@ -171,6 +184,9 @@ public final class CupSession implements RacePhaseListener {
         }
         standings.clear();
         lastSimulated.clear();
+        // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
+        // must not still be running when the new first map launches its racers.
+        boosts.clear();
         currentMap = null;
         forgetPendingSkip();
         RaceTimings played = skipLobby
@@ -225,6 +241,9 @@ public final class CupSession implements RacePhaseListener {
         for (FlightTick simulated : flight.tick()) {
             lastSimulated.put(simulated.playerId(), simulated);
         }
+        // After the sample the line above took, never before it — FireworkBoostTracker's javadoc has
+        // the reason, and it is an off-by-one nothing downstream can see.
+        boosts.advance();
         XerusPhaseDriver current = driver;
         if (current == null) {
             return;
@@ -267,7 +286,32 @@ public final class CupSession implements RacePhaseListener {
     public void forget(UUID playerId) {
         flight.forget(playerId);
         runs.forget(playerId);
+        boosts.forget(playerId);
         lastSimulated.remove(playerId);
+    }
+
+    /**
+     * A racer asked to boost. Answers whether a rocket was actually lit.
+     *
+     * <p>The rule lives in {@code FireworkBoostTracker} and the entity in {@code Rockets}; this is
+     * the one place that knows both, plus the third thing neither of them can know — which map is
+     * being raced, and therefore whose tuning applies. A boost asked for between maps is refused
+     * here, before the tracker is consulted, because there is no configuration to start a burn under.
+     *
+     * @param racer who used a rocket
+     * @return whether a burn started, so the caller can tell a refusal from a boost
+     */
+    public boolean requestBoost(Player racer) {
+        MapDefinition map = currentMap;
+        if (map == null) {
+            return false;
+        }
+        BoostConfig config = map.boostConfig();
+        if (!boosts.requestBoost(racer.getUuid(), config, racer.isFlyingWithElytra())) {
+            return false;
+        }
+        Rockets.fire(racer, config);
+        return true;
     }
 
     @Override
@@ -334,6 +378,10 @@ public final class CupSession implements RacePhaseListener {
             MapScore score = MapScorer.score(held.get().progress(), map, held.get().timeOnCourse(timings.race()));
             standings.record(id, mapIndex, score);
             Racers.standDown(racer);
+            // The burn and the cooldown end with the map. A rocket still burning when the next map's
+            // launch fires would add an impulse to a launch nothing tuned for one, and a cooldown
+            // carried across would refuse the first boost of a map for a boost taken on the last.
+            boosts.forget(id);
         }
         standings.closeMap(mapIndex, cup.mode());
 
@@ -460,8 +508,24 @@ public final class CupSession implements RacePhaseListener {
         String shadow = simulated == null
                 ? "not simulated"
                 : "simulated %s v=%s".formatted(simulated.after().position(), simulated.after().velocity());
-        return "%s: %s, gliding=%s, client %s, %s".formatted(
-                racer.getUsername(), progress, racer.isFlyingWithElytra(), racer.getPosition(), shadow);
+        return "%s: %s, gliding=%s, boost %s, client %s, %s".formatted(
+                racer.getUsername(), progress, racer.isFlyingWithElytra(), describeBoost(id),
+                racer.getPosition(), shadow);
+    }
+
+    /**
+     * A racer's boost state in three words. Worth a place on the line for the same reason
+     * {@code collision world:} is: a boost that is never reported to the simulation and a boost that
+     * was never asked for look identical from outside, and this is the only way to ask which happened
+     * while somebody is flying.
+     */
+    private String describeBoost(UUID playerId) {
+        int burning = boosts.ticksRemaining(playerId);
+        if (burning > 0) {
+            return "burning %s tick(s)".formatted(burning);
+        }
+        int cooldown = boosts.cooldownTicksRemaining(playerId);
+        return cooldown > 0 ? "cooling down %s tick(s)".formatted(cooldown) : "ready";
     }
 
     private String nameOf(UUID playerId) {

@@ -23,7 +23,9 @@ import org.jetbrains.annotations.ApiStatus;
  * joins with no elytra, or who has one and never jumps and holds, produces a flight that never
  * starts and a race in which nothing happens — no ring is ever crossed, no run ever finishes, and
  * the failure looks exactly like a broken collision check. The tree being replaced handed out an
- * elytra and a firework and left the take-off to the player; that is the trick this removes.
+ * elytra and a firework and left the take-off to the player; that is the trick this removes. The
+ * firework itself stays — {@link Rockets} is what it does now — but it is the way up a course, not
+ * the way into the air.
  *
  * <p>So the server starts the glide. At the first tick of a map's {@code GAME} phase every racer is
  * already standing on the map's spawn (that is {@code MapTransition}'s work), and
@@ -41,10 +43,14 @@ import org.jetbrains.annotations.ApiStatus;
  * first reading.
  *
  * <p>The impulse goes out through {@code VelocityExit}, which is the only door a velocity may leave
- * by ({@code ApiPurityTest.onlyVelocityExitSendsAVelocityToMinestom}). It is a fourth external force
- * alongside the firework boost, the ring {@code BOOST}/{@code SLOW} effects and the out-of-bounds
- * reset, and it is one for the same reason they are: the server is deliberately overriding a
- * client-authoritative flight, at one named moment, rather than steering it.
+ * by ({@code ApiPurityTest.onlyVelocityExitSendsAVelocityToMinestom}). It is one of the external
+ * forces that class enumerates, alongside the ring {@code BOOST}/{@code SLOW} effects and the
+ * out-of-bounds reset, and it is one for the same reason they are: the server is deliberately
+ * overriding a client-authoritative flight, at one named moment, rather than steering it.
+ *
+ * <p>The firework boost is <em>not</em> one of them, and this is the class whose javadoc used to say
+ * it was. A rocket is a real entity the client boosts itself with — see {@link Rockets} — so nothing
+ * about it passes through {@code VelocityExit}.
  */
 @ApiStatus.Internal
 public abstract class Racers {
@@ -58,6 +64,10 @@ public abstract class Racers {
     /**
      * How many rockets a racer carries. The committed course climbs from y = -62 to y = 319, so a
      * boost is not a luxury on it; it is the only way up.
+     *
+     * <p>A full stack rather than a budget, and it is never spent — see {@link Rockets#item(int)}.
+     * What limits a racer is the map's cooldown, which is a rule the game states, rather than a count
+     * that runs out at a moment nothing announced.
      */
     private static final int ROCKETS = 64;
 
@@ -76,7 +86,7 @@ public abstract class Racers {
         player.setInvulnerable(true);
         player.getInventory().clear();
         player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
-        player.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, ROCKETS));
+        player.getInventory().setItemStack(0, Rockets.item(ROCKETS));
     }
 
     /**

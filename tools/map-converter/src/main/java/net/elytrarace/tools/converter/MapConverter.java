@@ -6,12 +6,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import net.elytrarace.tools.converter.exception.InvalidCourseException;
+import net.elytrarace.tools.converter.legacy.LegacyBoostConfig;
 import net.elytrarace.tools.converter.legacy.LegacyCupFile;
 import net.elytrarace.tools.converter.legacy.LegacyKey;
 import net.elytrarace.tools.converter.legacy.LegacyMapFile;
 import net.elytrarace.tools.converter.legacy.LegacyPortal;
 import net.elytrarace.tools.converter.legacy.LegacyUuid;
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
@@ -53,6 +55,9 @@ import java.util.stream.Stream;
 public final class MapConverter {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    /** One server tick at 20 TPS, the divisor the old {@code cooldownMs} is converted with. */
+    private static final long MILLIS_PER_TICK = 50L;
 
     private MapConverter() {
     }
@@ -100,9 +105,10 @@ public final class MapConverter {
                     world(legacyMap, worldDirectory),
                     options.spawnFor(worldDirectory),
                     rings,
-                    options.referenceTime());
+                    options.referenceTime(),
+                    boostConfig(legacyMap));
 
-            if (mapFiles.put(name, CatalogWriter.toJson(map, mapNotes(map, options))) != null) {
+            if (mapFiles.put(name, CatalogWriter.toJson(map, mapNotes(map, options, legacyMap))) != null) {
                 throw new InvalidCourseException(
                         "two maps under %s convert to the name '%s'".formatted(mapsIn, name));
             }
@@ -156,7 +162,33 @@ public final class MapConverter {
         return names;
     }
 
-    private static List<String> mapNotes(MapDefinition map, ConverterOptions options) {
+    /**
+     * The boost tuning, taken from the old file where it exists and seeded where it does not.
+     *
+     * <p>The two halves come from different places on purpose. The <strong>cooldown</strong> is real
+     * authored data — {@code ElytraraceBlueAndRed} carries {@code cooldownMs: 2000}, which is a
+     * balancing decision somebody made about that course — so it is carried across, converted once
+     * into the ticks a server actually counts in. The <strong>burn</strong> is missing from that file
+     * entirely, because the old server derived it from a default rather than from the map, so it is
+     * seeded from {@link BoostConfig#VANILLA_BURN_TICKS} — Vanilla's own deterministic lifetime for
+     * the strongest rocket a player can craft — rather than from a number invented here.
+     *
+     * <p>Rounding the cooldown to the nearest tick is the honest conversion and it can only move the
+     * value by at most half a tick; {@code BoostConfig} then refuses the result if it is not longer
+     * than the burn, which is where an old file whose two numbers cannot both be honoured stops.
+     */
+    private static BoostConfig boostConfig(LegacyMapFile legacyMap) {
+        LegacyBoostConfig legacy = legacyMap.boostConfig();
+        Integer burn = legacy == null ? null : legacy.burnDurationTicks();
+        Long cooldownMs = legacy == null ? null : legacy.cooldownMs();
+        return new BoostConfig(
+                burn == null ? BoostConfig.VANILLA_BURN_TICKS : burn,
+                cooldownMs == null
+                        ? ConverterOptions.DEFAULT_COOLDOWN_TICKS
+                        : Math.toIntExact(Math.round(cooldownMs / (double) MILLIS_PER_TICK)));
+    }
+
+    private static List<String> mapNotes(MapDefinition map, ConverterOptions options, LegacyMapFile legacyMap) {
         return List.of(
                 "Converted from the old map.json/portals.json format by tools/map-converter. Every "
                         + "ring normal below was derived from the recorded rim points and oriented by "
@@ -170,8 +202,51 @@ public final class MapConverter {
                         + "tree being replaced. The old data records no per-ring variation, so there is "
                         + "nothing here to preserve; a balancing pass edits this file.")
                         .formatted(options.points()),
+                boostBurnNote(map, legacyMap),
+                boostCooldownNote(map, legacyMap),
                 "This file is data, not code: edit the seeds above here rather than in the server.",
                 "%s rings, indexed 0..%s.".formatted(map.rings().size(), map.rings().size() - 1));
+    }
+
+    /**
+     * Whether the burn was carried or seeded, said in the file rather than left to be worked out.
+     * The distinction matters to the next reader for exactly the reason the reference-time note
+     * exists: a seed nobody marked becomes a measurement the first time somebody trusts it.
+     */
+    private static String boostBurnNote(MapDefinition map, LegacyMapFile legacyMap) {
+        LegacyBoostConfig legacy = legacyMap.boostConfig();
+        if (legacy != null && legacy.burnDurationTicks() != null) {
+            return ("boostConfig.burnDurationTicks — carried from the old map.json's own "
+                    + "burnDurationTicks of %s.").formatted(legacy.burnDurationTicks());
+        }
+        return ("boostConfig.burnDurationTicks — PROVISIONAL seed of %s, derived rather than "
+                + "measured: Vanilla's rocket lifetime is 10 * flightDuration + random(6) + "
+                + "random(7), and this is that formula's deterministic core for flightDuration 3, "
+                + "the strongest rocket a player can craft. The random part is dropped on purpose "
+                + "— two identical boosts have to be worth the same in a race. The old file "
+                + "carried no burn at all. A balancing pass edits this number.")
+                .formatted(map.boostConfig().burnDurationTicks());
+    }
+
+    /**
+     * Whether the cooldown was carried or seeded, and — when carried — what it was before the one
+     * conversion into ticks, so the arithmetic can be checked without the old file in hand.
+     */
+    private static String boostCooldownNote(MapDefinition map, LegacyMapFile legacyMap) {
+        LegacyBoostConfig legacy = legacyMap.boostConfig();
+        if (legacy != null && legacy.cooldownMs() != null) {
+            return ("boostConfig.cooldownTicks — carried from the old map.json's cooldownMs of %s, "
+                    + "converted once into the ticks a server counts in: %s. It is measured from "
+                    + "the tick a boost STARTS, and has to stay longer than the burn — two rockets "
+                    + "burning on one racer at once is a case the simulation's boolean boost input "
+                    + "cannot express.").formatted(legacy.cooldownMs(), map.boostConfig().cooldownTicks());
+        }
+        return ("boostConfig.cooldownTicks — PROVISIONAL seed of %s (%s s), the default the tree "
+                + "being replaced used where a map carried none. It is measured from the tick a "
+                + "boost STARTS, and has to stay longer than the burn — two rockets burning on one "
+                + "racer at once is a case the simulation's boolean boost input cannot express.")
+                .formatted(map.boostConfig().cooldownTicks(),
+                        map.boostConfig().cooldownTicks() * MILLIS_PER_TICK / 1000.0);
     }
 
     private static List<String> cupNotes(ConverterOptions options) {

@@ -5,13 +5,16 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import net.elytrarace.tools.converter.exception.InvalidCourseException;
+import net.elytrarace.tools.converter.legacy.LegacyBoostConfig;
 import net.elytrarace.tools.converter.legacy.LegacyCupFile;
 import net.elytrarace.tools.converter.legacy.LegacyKey;
 import net.elytrarace.tools.converter.legacy.LegacyMapFile;
 import net.elytrarace.tools.converter.legacy.LegacyPortal;
 import net.elytrarace.tools.converter.legacy.LegacyUuid;
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.exception.InvalidBoostConfigException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -62,6 +65,71 @@ class MapConverterTest {
         assertThat(sprint.getAsJsonObject("spawn").get("x").getAsDouble()).isEqualTo(-8.0);
         assertThat(sprint.getAsJsonArray("rings").get(0).getAsJsonObject().get("points").getAsInt())
                 .isEqualTo(25);
+    }
+
+    /**
+     * The two shapes of the old {@code boostConfig}, converted side by side in one run.
+     *
+     * <p>{@code blue-world} carries the real course's shape — a {@code cooldownMs} and no burn at all
+     * — so its cooldown is carried across in ticks and its burn is seeded from Vanilla.
+     * {@code sprint-world} carries the synthetic maps' shape, both numbers, and both differ from the
+     * other map's: a converter that read one map's tuning into the other file, or that seeded both,
+     * cannot produce all four of these numbers.
+     */
+    @Test
+    void carriesEachMapsOwnBoostTuningAcrossAndSeedsOnlyWhatIsMissing(@TempDir Path root) throws IOException {
+        Path source = sourceWithTwoMapsAndACup(root);
+
+        MapConverter.convert(options(source, root));
+
+        JsonObject blue = read(root.resolve("out/maps/blueandred.json")).getAsJsonObject("boostConfig");
+        assertThat(blue.get("cooldownTicks").getAsInt())
+                .describedAs("2000 ms is 40 ticks")
+                .isEqualTo(40);
+        assertThat(blue.get("burnDurationTicks").getAsInt())
+                .describedAs("no burn in the old file, so Vanilla's deterministic core")
+                .isEqualTo(BoostConfig.VANILLA_BURN_TICKS);
+
+        JsonObject sprint = read(root.resolve("out/maps/sprint.json")).getAsJsonObject("boostConfig");
+        assertThat(sprint.get("burnDurationTicks").getAsInt())
+                .describedAs("carried, not seeded — 24 is not the Vanilla default")
+                .isEqualTo(24);
+        assertThat(sprint.get("cooldownTicks").getAsInt())
+                .describedAs("3500 ms is 70 ticks")
+                .isEqualTo(70);
+    }
+
+    /**
+     * A map file with no {@code boostConfig} block at all — the shape a hand-written old file could
+     * take — converts on the two seeds rather than failing. The result is still a legal pairing,
+     * which is the thing worth asserting: 80 must outlast 30.
+     */
+    @Test
+    void seedsBothNumbersForAMapFileThatCarriesNoBoostBlockAtAll(@TempDir Path root) throws IOException {
+        Path source = sourceWithTwoMapsAndACup(root);
+        writeMap(source.resolve("maps/blue-world"), BLUE, "blueandred", "blue-world", null);
+
+        MapConverter.convert(options(source, root));
+
+        JsonObject blue = read(root.resolve("out/maps/blueandred.json")).getAsJsonObject("boostConfig");
+        assertThat(blue.get("burnDurationTicks").getAsInt()).isEqualTo(BoostConfig.VANILLA_BURN_TICKS);
+        assertThat(blue.get("cooldownTicks").getAsInt()).isEqualTo(ConverterOptions.DEFAULT_COOLDOWN_TICKS);
+    }
+
+    /**
+     * An old file whose two numbers cannot both be honoured stops the conversion rather than being
+     * quietly adjusted. A cooldown of 1000 ms is 20 ticks against a 24-tick burn, which would let one
+     * racer hold two burning rockets — the case the simulation's boolean boost input cannot express.
+     */
+    @Test
+    void refusesAnOldFileWhoseCooldownWouldNotOutlastItsBurn(@TempDir Path root) throws IOException {
+        Path source = sourceWithTwoMapsAndACup(root);
+        writeMap(source.resolve("maps/sprint-world"), SPRINT, "sprint", "sprint-world",
+                new LegacyBoostConfig(24, 1_000L));
+
+        assertThatThrownBy(() -> MapConverter.convert(options(source, root)))
+                .isInstanceOf(InvalidBoostConfigException.class)
+                .hasMessageContaining("cannot express");
     }
 
     @Test
@@ -126,14 +194,19 @@ class MapConverterTest {
 
     private static Path sourceWithTwoMapsAndACup(Path root) throws IOException {
         Path source = root.resolve("in");
-        writeMap(source.resolve("maps/blue-world"), BLUE, "blueandred", "blue-world");
+        // The real ElytraraceBlueAndRed's shape: a cooldown and no burn at all.
+        writeMap(source.resolve("maps/blue-world"), BLUE, "blueandred", "blue-world",
+                new LegacyBoostConfig(null, 2_000L));
         writePortals(source.resolve("maps/blue-world"), List.of(
                 LegacyPortals.ring(1, new int[] {85, -54, 54}, "STANDARD", LegacyPortals.octagon(UP, SOUTH, 2, 3)),
                 LegacyPortals.ring(2, new int[] {2, -31, 69}, "BOOST",
                         LegacyPortals.oppositeFirst(new int[] {1, 2, 2}, new int[] {2, 1, -2})),
                 LegacyPortals.ring(3, new int[] {-86, -15, 64}, "STANDARD", LegacyPortals.octagon(UP, SOUTH, 1, 4))));
 
-        writeMap(source.resolve("maps/sprint-world"), SPRINT, "sprint", "sprint-world");
+        // The synthetic maps' shape: both numbers, and both different from the other map's, so a
+        // converter that read one map's tuning into the other file fails here rather than passing.
+        writeMap(source.resolve("maps/sprint-world"), SPRINT, "sprint", "sprint-world",
+                new LegacyBoostConfig(24, 3_500L));
         writePortals(source.resolve("maps/sprint-world"), List.of(
                 LegacyPortals.ring(1, new int[] {0, 80, 0}, "STANDARD", LegacyPortals.octagon(UP, SOUTH, 2, 3)),
                 LegacyPortals.ring(2, new int[] {-40, 80, 0}, "STANDARD", LegacyPortals.octagon(UP, SOUTH, 2, 3))));
@@ -142,9 +215,10 @@ class MapConverterTest {
         return source;
     }
 
-    private static void writeMap(Path directory, LegacyUuid uuid, String name, String world) throws IOException {
+    private static void writeMap(Path directory, LegacyUuid uuid, String name, String world,
+            LegacyBoostConfig boost) throws IOException {
         Files.createDirectories(directory);
-        write(directory.resolve("map.json"), new LegacyMapFile(uuid, new LegacyKey("map", name), world));
+        write(directory.resolve("map.json"), new LegacyMapFile(uuid, new LegacyKey("map", name), world, boost));
     }
 
     private static void writePortals(Path directory, List<LegacyPortal> portals) throws IOException {

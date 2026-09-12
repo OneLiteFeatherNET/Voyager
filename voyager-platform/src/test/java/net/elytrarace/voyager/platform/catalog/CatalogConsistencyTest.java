@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.catalog;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
@@ -31,7 +32,7 @@ class CatalogConsistencyTest {
         MapDefinition any = new MapDefinition(
                 "ignored", "ignored", Vec3.ZERO,
                 List.of(new Ring(0, Vec3.ZERO, new Vec3(0, 1, 0), 3, 10, RingType.STANDARD)),
-                Duration.ofSeconds(60));
+                Duration.ofSeconds(60), new BoostConfig(12, 25));
         return name -> known.contains(name) ? Optional.of(any) : Optional.empty();
     }
 
