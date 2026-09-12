@@ -18,6 +18,7 @@ import net.elytrarace.voyager.server.game.CupSession;
 import net.elytrarace.voyager.server.game.Racers;
 import net.elytrarace.voyager.server.inject.VoyagerModule;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.GlobalEventHandler;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
@@ -111,11 +112,29 @@ public final class VoyagerServer {
         }
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
 
-        // Before anything can say anything. Minestom 26.2 renders every outgoing translatable
-        // component through Adventure's GlobalTranslator per connection out of the box
-        // (MinestomAdventure.COMPONENT_TRANSLATOR defaults to GlobalTranslator::render), so
-        // registering the bundle is the whole of the wiring — and a server that could not find it
-        // would not fail, it would speak to players in dotted translation keys.
+        // Before anything can say anything — and the flag is checked before the bundle is even read,
+        // because without it reading the bundle is pointless.
+        //
+        // Registering the bundle is NOT the whole of the wiring, contrary to what this comment used
+        // to claim. PlayerSocketConnection.writePacketSync gates the entire translation path on
+        // ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which reads the system property
+        // `minestom.automatic-component-translation` and defaults to FALSE. With it off, every
+        // translatable goes to the client untranslated and the player reads `voyager.map.banner`
+        // instead of a sentence — which is exactly what shipped, and what a screenshot found rather
+        // than a test.
+        //
+        // The flag is `static final`, read once when ServerFlag first loads, so System.setProperty
+        // here would be a race against class loading rather than a fix. It belongs in the JVM's own
+        // arguments, and the run tasks set it. Refusing to start is the point: the failure is
+        // otherwise silent, cosmetic-looking and permanent.
+        if (!ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION) {
+            LOGGER.error("Voyager refused to start: Minestom's automatic component translation is off, "
+                    + "so every message would reach players as a raw translation key. Start the JVM with "
+                    + "-Dminestom.automatic-component-translation=true (the Gradle run tasks do).");
+            System.exit(1);
+            return;
+        }
+
         VoyagerTranslator translations;
         try {
             translations = VoyagerTranslator.fromClasspath();

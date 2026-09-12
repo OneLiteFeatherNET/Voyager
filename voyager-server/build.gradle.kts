@@ -108,6 +108,11 @@ fun JavaExec.voyagerRunDefaults() {
     // -PdataPath / -PworldsPath override the defaults without editing this file; the property names
     // are the ones VoyagerServer reads, so what Gradle sets and what the server looks for are the
     // same two strings.
+    // Minestom gates its whole translation path on this and defaults it to OFF, so without it every
+    // message reaches the client as a raw key like `voyager.map.banner`. ServerFlag reads it once as
+    // a `static final`, so it has to be a JVM argument and not a System.setProperty in main.
+    systemProperty("minestom.automatic-component-translation", "true")
+
     providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
     providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
     providers.gradleProperty("cup").orNull?.let { systemProperty("VOYAGER_CUP", it) }
