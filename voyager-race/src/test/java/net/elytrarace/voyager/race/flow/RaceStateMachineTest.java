@@ -17,6 +17,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * other. Equal durations would let a machine that reads the wrong {@link RaceTimings} field pass
  * every test here; two maps (or maps sharing a name) would not distinguish "moved to the next map"
  * from "stayed on the same one."
+ *
+ * <p>That now includes the two {@code END} durations, which are 3 s between maps and 7 s after the
+ * last one. With one value for both — which is what this record used to have — a machine that
+ * played the wrong one could not be told from one that played the right one, and "the results
+ * screen after the cup is the same length as the gap between two maps" is the exact defect the
+ * split exists to prevent.
  */
 class RaceStateMachineTest {
 
@@ -24,16 +30,9 @@ class RaceStateMachineTest {
     private static final CupDefinition RACE_CUP = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
     private static final CupDefinition PRACTICE_CUP = new CupDefinition("warmup", MAP_NAMES, GameMode.PRACTICE);
 
-    private static final RaceTimings TIMINGS =
-            new RaceTimings(Duration.ofSeconds(5), Duration.ofSeconds(20), Duration.ofSeconds(3));
+    private static final RaceTimings TIMINGS = new RaceTimings(
+            Duration.ofSeconds(5), Duration.ofSeconds(20), Duration.ofSeconds(3), Duration.ofSeconds(7));
     private static final Duration STEP = Duration.ofSeconds(1);
-
-    @Test
-    void defaultTimingsMatchTheOldTree() {
-        assertThat(RaceTimings.DEFAULT.lobby()).isEqualTo(Duration.ofSeconds(120));
-        assertThat(RaceTimings.DEFAULT.race()).isEqualTo(Duration.ofSeconds(300));
-        assertThat(RaceTimings.DEFAULT.end()).isEqualTo(Duration.ofSeconds(100));
-    }
 
     @Test
     void lobbyHoldsUntilItsDurationElapsesThenMovesToGameWithResetTime() {
@@ -123,12 +122,59 @@ class RaceStateMachineTest {
         assertThat(state.mapIndex()).isEqualTo(2);
         assertThat(state.cupFinished()).isFalse();
 
+        // The last map's END is the long one — 7 s, not the 3 s that ended the two before it. Two
+        // seconds in, the tick that would have rotated after map 0 or map 1 does nothing here.
         state = new RaceState(RacePhase.END, state.mapIndex(), Duration.ofSeconds(2), false);
+        state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, STEP, false);
+        assertThat(state.phase()).isEqualTo(RacePhase.END);
+        assertThat(state.mapIndex()).isEqualTo(2);
+        assertThat(state.cupFinished()).isFalse();
+
+        state = new RaceState(RacePhase.END, state.mapIndex(), Duration.ofSeconds(6), false);
         state = RaceStateMachine.advance(state, RACE_CUP, TIMINGS, STEP, false);
 
         assertThat(state.phase()).isEqualTo(RacePhase.END);
         assertThat(state.mapIndex()).isEqualTo(2);
         assertThat(state.cupFinished()).isTrue();
+    }
+
+    /**
+     * The split, asserted from both sides on the same tick count.
+     *
+     * <p>Six seconds into an {@code END}, the map in the middle of a rotation is long over and the
+     * last one is not — the same state, the same step, two different answers, decided only by
+     * whether another map follows. A machine that used one duration for both, or that swapped them,
+     * fails one of these two whichever way round it is wrong.
+     */
+    @Test
+    void theLastMapGetsTheLongResultsScreenAndEveryOtherMapTheShortOne() {
+        RaceState fiveSecondsIn = new RaceState(RacePhase.END, 0, Duration.ofSeconds(5), false);
+
+        RaceState afterAMiddleMap = RaceStateMachine.advance(fiveSecondsIn, RACE_CUP, TIMINGS, STEP, false);
+        assertThat(afterAMiddleMap.phase()).isEqualTo(RacePhase.LOBBY);
+        assertThat(afterAMiddleMap.mapIndex()).isEqualTo(1);
+
+        RaceState afterTheLastMap = RaceStateMachine.advance(
+                new RaceState(RacePhase.END, 2, Duration.ofSeconds(5), false), RACE_CUP, TIMINGS, STEP, false);
+        assertThat(afterTheLastMap.phase()).isEqualTo(RacePhase.END);
+        assertThat(afterTheLastMap.cupFinished()).isFalse();
+    }
+
+    /**
+     * A {@code PRACTICE} cup is never on its last map, because it never leaves the one it is on. It
+     * therefore plays the between-maps screen every time — a retry is a gap, not a ceremony — and a
+     * machine that read "map index is the last index" rather than "another map follows" would give
+     * practice the cup-end screen forever.
+     */
+    @Test
+    void practiceAlwaysPlaysTheBetweenMapsResultsScreenEvenOnTheLastMapIndex() {
+        RaceState onTheLastIndex = new RaceState(RacePhase.END, 2, Duration.ofSeconds(2), false);
+
+        RaceState next = RaceStateMachine.advance(onTheLastIndex, PRACTICE_CUP, TIMINGS, STEP, false);
+
+        assertThat(next.phase()).isEqualTo(RacePhase.LOBBY);
+        assertThat(next.mapIndex()).isEqualTo(2);
+        assertThat(next.cupFinished()).isFalse();
     }
 
     @Test

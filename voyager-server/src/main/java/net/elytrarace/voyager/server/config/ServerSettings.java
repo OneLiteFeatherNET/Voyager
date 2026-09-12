@@ -68,8 +68,8 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     private static final String DEFAULT_WORLDS_PATH = "run/worlds";
 
     /**
-     * The lobby, race and results lengths a production run uses: {@link RaceTimings#DEFAULT}, which
-     * is the tree being replaced's 120 s / 300 s / 100 s.
+     * The lobby, race and results lengths a production run uses: {@link RaceTimings#DEFAULT} — a
+     * 20 s lobby, the unchanged 300 s race cap, 8 s of results between maps and 20 s after the last.
      */
     private static final RaceTimings PRODUCTION_TIMINGS = RaceTimings.DEFAULT;
 
@@ -79,8 +79,9 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
      * and the results screen are what a debugging session spends its afternoon on, so those are the
      * two that shrink.
      */
-    private static final RaceTimings DEV_TIMINGS =
-            new RaceTimings(Duration.ofSeconds(10), PRODUCTION_TIMINGS.race(), Duration.ofSeconds(10));
+    private static final RaceTimings DEV_TIMINGS = new RaceTimings(
+            Duration.ofSeconds(10), PRODUCTION_TIMINGS.race(),
+            Duration.ofSeconds(5), Duration.ofSeconds(10));
 
     public ServerSettings {
         if (host.isBlank()) {

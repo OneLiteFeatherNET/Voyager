@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.server.command;
 
+import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.command.CommandSender;
@@ -39,11 +40,10 @@ public final class RaceCommand extends Command {
         }
         addSyntax((sender, context) -> {
             session.start(true);
-            sender.sendMessage(Component.text("Cup '%s' restarted, lobby skipped".formatted(session.cup().name())));
+            sender.sendMessage(Messages.cupRestarted(session.cup().name()));
         }, ArgumentType.Literal("start"));
-        addSyntax((sender, context) -> sender.sendMessage(Component.text(session.requestSkip()
-                ? "Ending the current map on the next tick"
-                : "Nothing is racing — a skip is not banked for the next map")),
+        addSyntax((sender, context) -> sender.sendMessage(
+                session.requestSkip() ? Messages.skipTaken() : Messages.skipRefused()),
                 ArgumentType.Literal("skip"));
     }
 
@@ -51,6 +51,14 @@ public final class RaceCommand extends Command {
      * Sends {@link CupSession#describe()} one line per message. Adventure renders an embedded newline
      * in chat, but one message per line is what keeps a long status readable in a console sender's
      * log as well, and the console is where an acceptance run reads it from.
+     *
+     * <p><strong>The one place in the rebuild that builds a component from a raw string on purpose,
+     * and the fitness rule naming translated output names it as its single exception.</strong> This
+     * is an operator diagnostic — coordinates, tick counts, a gliding flag, the drift between the
+     * client's position and the server's simulation — assembled by {@code CupSession.describe()} as
+     * one block of plain text. There is nothing here to translate: it has no audience but somebody
+     * debugging, and turning a dump of numbers into forty translation keys would make it harder to
+     * read and impossible to extend without editing a bundle.
      */
     private static void status(CommandSender sender, CupSession session) {
         for (String line : session.describe().split("\n")) {

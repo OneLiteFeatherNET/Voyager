@@ -8,6 +8,8 @@ import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.text.Messages;
+import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
 import net.elytrarace.voyager.server.command.RaceCommand;
@@ -108,6 +110,22 @@ public final class VoyagerServer {
             return;
         }
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
+
+        // Before anything can say anything. Minestom 26.2 renders every outgoing translatable
+        // component through Adventure's GlobalTranslator per connection out of the box
+        // (MinestomAdventure.COMPONENT_TRANSLATOR defaults to GlobalTranslator::render), so
+        // registering the bundle is the whole of the wiring — and a server that could not find it
+        // would not fail, it would speak to players in dotted translation keys.
+        VoyagerTranslator translations;
+        try {
+            translations = VoyagerTranslator.fromClasspath();
+            translations.install();
+        } catch (RuntimeException exception) {
+            LOGGER.error("Voyager refused to start: {}", exception.getMessage());
+            System.exit(1);
+            return;
+        }
+        LOGGER.info("Loaded {} message(s) from {}", translations.size(), VoyagerTranslator.BUNDLE_RESOURCE);
 
         MinecraftServer server = MinecraftServer.init();
 
@@ -217,7 +235,13 @@ public final class VoyagerServer {
                 // CupSession's class javadoc.
                 LOGGER.info("First player online — starting cup '{}'", session.cup().name());
                 session.start(false);
+                return;
             }
+            // A player who joins into a running cup is not moved and holds no run until the next map
+            // starts. That is inherited behaviour and this line does not change it — but until now
+            // such a player stood in a racing world with no elytra behaviour and no explanation of
+            // why, which is indistinguishable from a broken server.
+            event.getPlayer().sendMessage(Messages.joinedMidCup());
         });
 
         events.addListener(PlayerUseItemEvent.class, event -> {
