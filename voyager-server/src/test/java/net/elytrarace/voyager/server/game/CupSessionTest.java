@@ -11,12 +11,14 @@ import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTick;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.scoring.MapScore;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.ServerFlag;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
@@ -32,9 +34,18 @@ import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.network.packet.server.play.ActionBarPacket;
+import net.minestom.server.network.packet.server.play.BossBarPacket;
+import net.minestom.server.network.packet.server.play.SetTitleSubTitlePacket;
+import net.minestom.server.network.packet.server.play.SetTitleTextPacket;
+import net.minestom.server.network.packet.server.play.SetTitleTimePacket;
+import net.minestom.server.network.packet.server.play.SoundEffectPacket;
+import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.server.world.DimensionType;
+import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.EnvTest;
+import net.minestom.testing.TestConnection;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
 
 import org.junit.jupiter.api.AfterEach;
@@ -143,8 +154,8 @@ class CupSessionTest {
      * on, so it has to be long enough that map two's phase genuinely runs out rather than being ended
      * by anything else.
      */
-    private static final RaceTimings TIMINGS =
-            new RaceTimings(Duration.ofMillis(100), Duration.ofSeconds(1), Duration.ofMillis(100));
+    private static final RaceTimings TIMINGS = new RaceTimings(
+            Duration.ofMillis(100), Duration.ofSeconds(1), Duration.ofMillis(100), Duration.ofMillis(100));
 
     @TempDir
     Path tempDir;
@@ -701,6 +712,233 @@ class CupSessionTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // The start, which now happens three seconds before the launch
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * A map is entered once, however many callbacks want it entered.
+     *
+     * <p>Two of them do: the start countdown moves the racers three seconds early so the chunks and
+     * the screen have settled by the launch, and {@code mapStarted} does it as well for a lobby too
+     * short to have counted anything. Both call the same guarded step. Without the guard the racer
+     * is told about the map twice on every map of every cup — which is the visible half; the
+     * invisible half is a second teleport and a second fresh run.
+     */
+    @Test
+    void aMapIsAnnouncedOnceEvenThoughTheCountdownAndTheLaunchBothEnterIt(Env env) throws IOException {
+        Fixture fixture = start(env);
+        Collector<SystemChatPacket> chat = fixture.connection.trackIncoming(SystemChatPacket.class);
+
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+
+        Component ridgeBanner = Messages.mapBanner(1, 2, RIDGE_RUN.name(), RIDGE_RUN.rings().size(),
+                RIDGE_RUN.referenceTime());
+        assertThat(chat.collect().stream().map(SystemChatPacket::message).filter(ridgeBanner::equals))
+                .hasSize(1);
+    }
+
+    /**
+     * The window the countdown opened, and the reason {@code mapStarted} still runs the transition.
+     *
+     * <p>Moving the racers three seconds early means a player can connect <em>between</em> the move
+     * and the launch. Without the second transition that player is launched into a race holding no
+     * run at all: they glide, they cross rings, and nothing counts any of it — which is the exact
+     * failure the whole start sequence exists to remove, reintroduced by the fix for it.
+     */
+    @Test
+    void aRacerWhoConnectsDuringTheCountdownStillGetsARun(Env env) throws IOException {
+        Fixture fixture = start(env);
+
+        Player[] latecomer = new Player[1];
+        fixture.runUntil(tick -> {
+            if (tick == 1) {
+                latecomer[0] = fixture.addLatecomer(RIDGE, RIDGE_RUN);
+            }
+            return fixture.session.describe().contains("phase GAME");
+        });
+
+        assertThat(latecomer[0]).isNotNull();
+        assertThat(fixture.runs.of(latecomer[0].getUuid()))
+                .describedAs("a racer launched without a run flies a race nothing counts")
+                .isPresent();
+        assertThat(latecomer[0].isFlyingWithElytra()).isTrue();
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // What the racer is actually sent
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * A ring is acknowledged out loud, in the tick it was crossed.
+     *
+     * <p>Sound is the channel this whole design leans on: it costs no screen space at 33 blocks a
+     * second and has no read latency, and it is the only confirmation a racer gets per ring — there
+     * is deliberately no chat line and no title. A tick loop that computed the pass and forgot to say
+     * so would look identical from every other assertion in this class.
+     *
+     * <p>Identified by <strong>volume</strong>, which is not incidental. Ridge has one ring, so its
+     * ring is also its last, and the last ring plays the same sound event a diamond result does.
+     * The two differ by volume — 0.8 for the ring, 1.0 for the medal — so the ring's own packet is
+     * the one this can name without the medal's standing in for it.
+     */
+    @Test
+    void sendsTheRingSoundWhenARingIsCrossed(Env env) throws IOException {
+        Fixture fixture = start(env);
+        Collector<SoundEffectPacket> sounds = fixture.connection.trackIncoming(SoundEffectPacket.class);
+
+        fixture.run(tick -> {
+            if (fixture.session.describe().contains("ridge-run") && tick == 5) {
+                fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+            }
+        });
+
+        assertThat(fixture.scoreOn(0).medal()).isNotEqualTo(MedalTier.DNF);
+        assertThat(sounds.collect())
+                .filteredOn(packet -> packet.soundEvent().key().asString()
+                        .equals("minecraft:ui.toast.challenge_complete"))
+                .filteredOn(packet -> packet.volume() == 0.8f)
+                .describedAs("the ring's own acknowledgement, not the medal's")
+                .hasSize(1);
+    }
+
+    /**
+     * A racer is told what each map was worth and how the cup ended.
+     *
+     * <p>Chat is the surface with memory: it is the only thing still on screen when the next map's
+     * countdown starts, and it is where a result goes when the title that carried it has faded. The
+     * lines are compared against the ones {@code Messages} builds rather than against text, so this
+     * stays a statement about the result being sent and not about its wording — the wording is
+     * pinned once, in {@code MessageBundleTest}.
+     */
+    @Test
+    void tellsTheRacerWhatTheMapWasWorthAndHowTheCupEnded(Env env) throws IOException {
+        Fixture fixture = start(env);
+        Collector<SystemChatPacket> chat = fixture.connection.trackIncoming(SystemChatPacket.class);
+
+        fixture.run(tick -> {
+            if (fixture.session.describe().contains("ridge-run") && tick == 5) {
+                fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+            }
+        });
+
+        MapScore ridge = fixture.scoreOn(0);
+        assertThat(ridge.medal()).isNotEqualTo(MedalTier.DNF);
+
+        List<Component> lines = chat.collect().stream().map(SystemChatPacket::message).toList();
+        assertThat(lines)
+                .describedAs("the map result, with the placement bonus already awarded")
+                .contains(Messages.mapResult(RIDGE_RUN.name(), ridge.ringPoints(), ridge.medalPoints(),
+                        ridge.medal(), ridge.placementBonus(), ridge.total()));
+        assertThat(lines)
+                .describedAs("and the standings the cup ends on")
+                .contains(Messages.cupHeading(CUP.name()));
+    }
+
+    /**
+     * The countdown is on the screen before the launch, and so is the target.
+     *
+     * <p>Everything the start sequence is for happens in the lobby: the digits, the course under
+     * them, and a boss bar naming the medal on offer while the racer is still standing on the spawn.
+     * The arithmetic that decides <em>which</em> digit is {@code StartCountdownTest}'s; what this
+     * asserts is that any of it is sent at all, which nothing else here would notice.
+     *
+     * <p>The fixture's lobby is two ticks, so one digit fits — which is the degraded case on purpose,
+     * and the one that proves a short lobby shortens the count rather than delaying the race.
+     */
+    @Test
+    void countsTheRacerDownBeforeTheLaunchAndPutsTheTargetOnScreenWithIt(Env env) throws IOException {
+        Fixture fixture = start(env);
+        Collector<SetTitleTextPacket> titles = fixture.connection.trackIncoming(SetTitleTextPacket.class);
+        Collector<SetTitleSubTitlePacket> subtitles =
+                fixture.connection.trackIncoming(SetTitleSubTitlePacket.class);
+        Collector<SetTitleTimePacket> timings = fixture.connection.trackIncoming(SetTitleTimePacket.class);
+        Collector<BossBarPacket> bars = fixture.connection.trackIncoming(BossBarPacket.class);
+
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+
+        assertThat(titles.collect().stream().map(SetTitleTextPacket::title))
+                .describedAs("the last digit and then GO")
+                .contains(Messages.countdownDigit(1), Messages.go());
+        assertThat(subtitles.collect().stream().map(SetTitleSubTitlePacket::subtitle))
+                .contains(Messages.countdownSubtitle(RIDGE_RUN.name(), RIDGE_RUN.rings().size(),
+                        RIDGE_RUN.referenceTime()));
+        assertThat(timings.collect())
+                .describedAs("no fade-in: a digit that fades in is a digit that arrives late")
+                .isNotEmpty()
+                .allMatch(packet -> packet.fadeIn() == 0);
+        assertThat(bars.collect())
+                .describedAs("the target is on screen before the clock starts")
+                .anyMatch(packet -> packet.action() instanceof BossBarPacket.AddAction);
+    }
+
+    /**
+     * The boss bar comes down when the map does.
+     *
+     * <p>It is the run's memory — how much course is behind you, which medal is still reachable — and
+     * all of that stops being true the moment the racer lands. Left up, it sits over the results
+     * screen showing a countdown to a band that has already been awarded.
+     */
+    @Test
+    void takesTheBossBarDownWhenAMapEnds(Env env) throws IOException {
+        Fixture fixture = start(env);
+        Collector<BossBarPacket> bars = fixture.connection.trackIncoming(BossBarPacket.class);
+
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase END"));
+
+        assertThat(bars.collect())
+                .describedAs("the bar goes up during the countdown")
+                .anyMatch(packet -> packet.action() instanceof BossBarPacket.AddAction);
+        assertThat(bars.collect())
+                .describedAs("and comes down when the map ends")
+                .anyMatch(packet -> packet.action() instanceof BossBarPacket.RemoveAction);
+    }
+
+    /**
+     * A racer who has finished is shown the clock they finished on, not the one still running.
+     *
+     * <p>Their medal is decided, so a boss bar counting down a band they can no longer lose and an
+     * action bar still ticking upward are both counting nothing — and the second one is worse,
+     * because the number under their crosshair is no longer their time.
+     *
+     * <p>Two racers, because with one the phase ends the tick they finish and there is nothing left
+     * to observe. The second racer never crosses anything, so the phase runs to its own limit and the
+     * first racer's HUD keeps being rendered for fifteen more ticks with nothing left to change.
+     */
+    @Test
+    void freezesAFinishersClockWhileTheRestOfTheFieldIsStillFlying(Env env) throws IOException {
+        Fixture fixture = start(env);
+        Collector<ActionBarPacket> actionBars = fixture.connection.trackIncoming(ActionBarPacket.class);
+
+        // Stopped at the end of the first map, not run to the end of the cup: the second map would
+        // put a fresh, running clock on the same action bar and the last packets would be its.
+        fixture.runUntil(tick -> {
+            if (tick == 1) {
+                fixture.addLatecomer(RIDGE, RIDGE_RUN);
+            }
+            if (fixture.session.describe().contains("ridge-run") && tick == 5) {
+                fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+            }
+            return fixture.session.describe().contains("phase END");
+        });
+
+        assertThat(fixture.scoreOn(0).medal())
+                .describedAs("the first racer has to have finished for there to be a clock to freeze")
+                .isNotEqualTo(MedalTier.DNF);
+
+        List<Component> sent = actionBars.collect().stream().map(ActionBarPacket::text).toList();
+        assertThat(sent.getLast())
+                .describedAs("the map ends by clearing the bar rather than leaving a stale clock to fade")
+                .isEqualTo(Component.empty());
+
+        List<Component> flightHuds = sent.stream().filter(text -> !Component.empty().equals(text)).toList();
+        assertThat(flightHuds).describedAs("the HUD is rendered at 10 Hz for a whole race").hasSizeGreaterThan(6);
+        List<Component> afterTheFlashHasCleared = flightHuds.subList(flightHuds.size() - 3, flightHuds.size());
+        assertThat(afterTheFlashHasCleared)
+                .describedAs("a finished racer's HUD has nothing left to change")
+                .containsOnly(afterTheFlashHasCleared.getFirst());
+    }
+
+    // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
 
@@ -711,13 +949,32 @@ class CupSessionTest {
         private final RaceRuns runs;
         private final CupSession session;
         private final Player racer;
+        private final TestConnection connection;
+        private final List<Player> field;
+        private final Env env;
         private int ticksPlayed;
 
-        private Fixture(MapInstances worlds, RaceRuns runs, CupSession session, Player racer) {
+        private Fixture(MapInstances worlds, RaceRuns runs, CupSession session, Player racer,
+                TestConnection connection, List<Player> field, Env env) {
             this.worlds = worlds;
             this.runs = runs;
             this.session = session;
             this.racer = racer;
+            this.connection = connection;
+            this.field = field;
+            this.env = env;
+        }
+
+        /** Connects a second racer into a cup that is already running, and adds them to the field. */
+        Player addLatecomer(String world, MapDefinition map) {
+            Pos spawn = spawnOf(map);
+            Instance instance = worlds.forWorld(world);
+            instance.loadChunk(spawn.chunkX(), spawn.chunkZ()).join();
+            Player latecomer = env.createConnection().connect(instance, spawn);
+            racers.add(latecomer);
+            Racers.prepare(latecomer);
+            field.add(latecomer);
+            return latecomer;
         }
 
         /** Ticks until the cup finishes, or until the budget runs out. */
@@ -783,8 +1040,10 @@ class CupSessionTest {
         }
 
         void release() {
-            racer.remove(true);
-            racers.remove(racer);
+            for (Player player : List.copyOf(field)) {
+                player.remove(true);
+                racers.remove(player);
+            }
             worlds.close();
             if (CupSessionTest.this.worlds == worlds) {
                 CupSessionTest.this.worlds = null;
@@ -804,15 +1063,18 @@ class CupSessionTest {
         Instance first = instances.forWorld(RIDGE);
         Pos spawn = spawnOf(RIDGE_RUN);
         first.loadChunk(spawn.chunkX(), spawn.chunkZ()).join();
-        Player racer = env.createConnection().connect(first, spawn);
+        TestConnection connection = env.createConnection();
+        Player racer = connection.connect(first, spawn);
         racers.add(racer);
         Racers.prepare(racer);
 
-        Collection<Player> field = List.of(racer);
+        // Mutable, because a player joining while a cup is already running is a case worth testing
+        // and a fixed field could not produce one.
+        List<Player> field = new ArrayList<>(List.of(racer));
         CupSession session = CupSession.create(CUP, MAPS, instances, transition, runs, new FlightTracker(),
                 TIMINGS, STEP, () -> field);
         session.start(false);
-        return new Fixture(instances, runs, session, racer);
+        return new Fixture(instances, runs, session, racer, connection, field, env);
     }
 
     private static List<Entity> rocketsAround(Player racer) {

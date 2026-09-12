@@ -43,9 +43,12 @@ class XerusPhaseDriverTest {
 
     private static final Duration STEP = Duration.ofMillis(50);
 
-    /** Lobby 1 s, race 2 s, end 0.5 s — 20, 40 and 10 ticks, all three different. */
-    private static final RaceTimings TIMINGS =
-            new RaceTimings(Duration.ofSeconds(1), Duration.ofSeconds(2), Duration.ofMillis(500));
+    /**
+     * Lobby 1 s, race 2 s, end 0.5 s — 20, 40 and 10 ticks, all three different, and the same 10 for
+     * both ends so that {@code TICKS_PER_MAP} means what it says on both maps.
+     */
+    private static final RaceTimings TIMINGS = new RaceTimings(
+            Duration.ofSeconds(1), Duration.ofSeconds(2), Duration.ofMillis(500), Duration.ofMillis(500));
 
     private static final int LOBBY_TICKS = 20;
     private static final int GAME_TICKS = 40;
@@ -124,6 +127,50 @@ class XerusPhaseDriverTest {
         assertThat(started.state().inPhase()).isEqualTo(STEP.multipliedBy(2));
     }
 
+    /**
+     * The lobby is reported every tick, with the time still to come after that tick.
+     *
+     * <p>This is what a start countdown is driven by, and the value has to be the time <em>left</em>
+     * rather than the time spent — a countdown built on the wrong one counts up. The first lobby tick
+     * of a one-second lobby leaves 950 ms and the last leaves 50 ms; there is no tick reporting zero,
+     * because the tick that would have is the tick that enters {@code GAME}, and that one reports
+     * {@code mapStarted} instead.
+     */
+    @Test
+    void everyLobbyTickReportsHowMuchLobbyIsLeftAfterIt() {
+        RecordingListener listener = new RecordingListener();
+        XerusPhaseDriver driver = driver(listener, () -> false);
+        driver.start();
+
+        for (int tick = 0; tick < LOBBY_TICKS; tick++) {
+            driver.onUpdate();
+        }
+
+        assertThat(listener.lobbyRemaining()).hasSize(LOBBY_TICKS - 1);
+        assertThat(listener.lobbyRemaining().getFirst()).isEqualTo(TIMINGS.lobby().minus(STEP));
+        assertThat(listener.lobbyRemaining().getLast()).isEqualTo(STEP);
+        assertThat(listener.lobbyRemaining()).doesNotContain(Duration.ZERO);
+        assertThat(listener.events()).contains("mapStarted 0 ember-ascent");
+        assertThat(listener.events().indexOf("mapStarted 0 ember-ascent"))
+                .as("every lobby tick is reported before the map starts")
+                .isGreaterThan(listener.events().indexOf("lobbyTick 0 ember-ascent %s".formatted(STEP.toMillis())));
+    }
+
+    /** The second map's lobby names the second map, so a countdown cannot announce the wrong course. */
+    @Test
+    void theSecondMapsLobbyNamesTheSecondMap() {
+        RecordingListener listener = new RecordingListener();
+        XerusPhaseDriver driver = driver(listener, () -> false);
+        driver.start();
+
+        for (int tick = 0; tick < TICKS_PER_MAP + 1; tick++) {
+            driver.onUpdate();
+        }
+
+        assertThat(listener.events()).contains("lobbyTick 1 glacier-chicane %s".formatted(
+                TIMINGS.lobby().minus(STEP).toMillis()));
+    }
+
     @Test
     void aWholeCupRunsToItsOwnEndAndFinishesTheXerusPhaseWithIt() {
         RecordingListener listener = new RecordingListener();
@@ -150,7 +197,9 @@ class XerusPhaseDriverTest {
 
         run(driver);
 
-        assertThat(listener.events().stream().filter(event -> !event.startsWith("raceTick")).toList())
+        assertThat(listener.events().stream()
+                .filter(event -> !event.startsWith("raceTick") && !event.startsWith("lobbyTick"))
+                .toList())
                 .containsExactly(
                         "mapStarted 0 ember-ascent",
                         "mapFinished 0 ember-ascent @40",
@@ -367,6 +416,18 @@ class XerusPhaseDriverTest {
 
         int ticksOnCurrentMap() {
             return ticksOnCurrentMap;
+        }
+
+        private final List<Duration> lobbyRemaining = new ArrayList<>();
+
+        List<Duration> lobbyRemaining() {
+            return List.copyOf(lobbyRemaining);
+        }
+
+        @Override
+        public void lobbyTick(int mapIndex, String mapName, Duration remaining) {
+            events.add("lobbyTick %s %s %s".formatted(mapIndex, mapName, remaining.toMillis()));
+            lobbyRemaining.add(remaining);
         }
 
         @Override

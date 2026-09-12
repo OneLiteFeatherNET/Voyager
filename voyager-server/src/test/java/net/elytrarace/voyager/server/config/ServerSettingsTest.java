@@ -217,7 +217,10 @@ class ServerSettingsTest {
     }
 
     /**
-     * Dev mode shortens the lobby and the results screen and leaves the race length alone. That last
+     * Dev mode shortens the lobby and <em>both</em> results screens and leaves the race length
+     * alone. Both, because one of them being shortened is not evidence about the other and a dev run
+     * that still sat through twenty seconds after the last map would be the wait this flag exists to
+     * remove. That last
      * part is the assertion worth having: a shortened race length is not a faster test, it is a
      * different one — every {@code DNF} is scored on the phase length, and the committed course has a
      * 60 s reference time that a 30 s phase could never reach.
@@ -227,7 +230,8 @@ class ServerSettingsTest {
         ServerSettings dev = new ServerSettings("0.0.0.0", 25565, data(), worlds(), Optional.empty(), true);
 
         assertThat(dev.timings().lobby()).isLessThan(RaceTimings.DEFAULT.lobby());
-        assertThat(dev.timings().end()).isLessThan(RaceTimings.DEFAULT.end());
+        assertThat(dev.timings().endBetweenMaps()).isLessThan(RaceTimings.DEFAULT.endBetweenMaps());
+        assertThat(dev.timings().endAfterLastMap()).isLessThan(RaceTimings.DEFAULT.endAfterLastMap());
         assertThat(dev.timings().race()).isEqualTo(RaceTimings.DEFAULT.race());
     }
 

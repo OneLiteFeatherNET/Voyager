@@ -90,6 +90,18 @@ public abstract class Racers {
     }
 
     /**
+     * Turns {@code player} toward the map's first ring without touching their flight.
+     *
+     * <p>Called when a map's start countdown begins, so the racer spends those three seconds looking
+     * at the course they are about to fly rather than at whatever direction the teleport left them
+     * in — {@code MapDefinition.spawn()} is a {@link Vec3} with no yaw, so that direction is north
+     * whichever way the course runs.
+     */
+    public static void faceCourse(Player player, MapDefinition map) {
+        player.lookAt(Vectors.toMinestom(map.rings().getFirst().center()));
+    }
+
+    /**
      * Turns {@code player} toward the map's first ring, starts the glide and launches them.
      *
      * <p>The facing comes from the ring data rather than from the spawn, because

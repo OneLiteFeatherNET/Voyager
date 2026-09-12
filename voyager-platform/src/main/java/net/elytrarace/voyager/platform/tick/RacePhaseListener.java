@@ -2,6 +2,8 @@ package net.elytrarace.voyager.platform.tick;
 
 import net.elytrarace.voyager.race.flow.RaceClock;
 
+import java.time.Duration;
+
 /**
  * What {@link XerusPhaseDriver} reports as it drives a cup: a map starting, a movement tick to play,
  * a map ending.
@@ -15,6 +17,22 @@ import net.elytrarace.voyager.race.flow.RaceClock;
  * override something.
  */
 public interface RacePhaseListener {
+
+    /**
+     * One tick of a {@code LOBBY} phase, with the map that lobby leads into and how much of it is
+     * left after this tick.
+     *
+     * <p>This exists so a race can have a start. The last three seconds of a lobby are the start
+     * countdown, and a countdown needs to know when it is three seconds from a launch — which is a
+     * question about the lobby, not about the race, and the only place that can answer it is the
+     * thing holding the phase durations.
+     *
+     * <p>{@code remaining} is never negative: the tick that would take it past zero is the tick that
+     * enters {@code GAME}, and that tick reports {@link #mapStarted} instead. A lobby of zero length
+     * reports nothing at all, which is what makes a skipped lobby degrade to a launch rather than
+     * delay one.
+     */
+    void lobbyTick(int mapIndex, String mapName, Duration remaining);
 
     /**
      * A map's {@code GAME} phase has begun. Fired before that phase's first

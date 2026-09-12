@@ -95,6 +95,10 @@ public final class XerusPhaseDriver extends TickedPhase {
         // tick sees the state that tick is being played against and not the one it came from.
         state = next;
 
+        if (next.phase() == RacePhase.LOBBY) {
+            listener.lobbyTick(next.mapIndex(), mapNameAt(next.mapIndex()), remainingLobby(next));
+        }
+
         boolean enteringGame = next.phase() == RacePhase.GAME && previous.phase() != RacePhase.GAME;
         if (enteringGame) {
             clock = RaceClock.startingAt(step);
@@ -123,6 +127,21 @@ public final class XerusPhaseDriver extends TickedPhase {
     /** The race clock of the current {@code GAME} phase; see {@link RaceClock}. */
     public RaceClock clock() {
         return clock;
+    }
+
+    /**
+     * How much lobby is left after the tick {@code state} describes.
+     *
+     * <p>{@code inPhase} is the lobby time this tick has taken the phase <em>to</em>, because the
+     * state was advanced before this is read — so the subtraction is the time still to come and not
+     * the time still to come plus one tick. Clamped at zero for the same reason the state machine
+     * carries an overshoot: a step that lands exactly on the boundary has already become
+     * {@code GAME}, so a negative here would mean the phase was misread rather than that the lobby
+     * ran long.
+     */
+    private Duration remainingLobby(RaceState state) {
+        Duration remaining = timings.lobby().minus(state.inPhase());
+        return remaining.isNegative() ? Duration.ZERO : remaining;
     }
 
     private String mapNameAt(int mapIndex) {

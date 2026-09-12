@@ -31,9 +31,16 @@ class RaceClockTest {
     /** One Minecraft tick at 20 TPS. */
     private static final Duration STEP = Duration.ofMillis(50);
 
-    /** Lobby 1 s, race 4 s, end 1 s — 20, 80 and 20 ticks. All three differ, as in E3's fixtures. */
-    private static final RaceTimings TIMINGS =
-            new RaceTimings(Duration.ofSeconds(1), Duration.ofSeconds(4), Duration.ofSeconds(1));
+    /**
+     * Lobby 1 s, race 4 s, end 1 s — 20, 80 and 20 ticks. All three differ, as in E3's fixtures.
+     *
+     * <p>Both {@code END} durations are the same here on purpose: this cup has one map, so only the
+     * after-the-last-map value is ever read, and a second value would be a number no assertion in
+     * this class could tell from the first. The split is exercised where it decides something, in
+     * {@code RaceStateMachineTest} and {@code RaceTimingsTest}.
+     */
+    private static final RaceTimings TIMINGS = new RaceTimings(
+            Duration.ofSeconds(1), Duration.ofSeconds(4), Duration.ofSeconds(1), Duration.ofSeconds(1));
 
     private static final int GAME_TICKS = 80;
 
