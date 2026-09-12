@@ -1,0 +1,11 @@
+{
+  "name": "test_cup",
+  "mode": "RACE",
+  "mapNames": [
+    "elytraraceblueandred"
+  ],
+  "notes": [
+    "Converted from the old cups.json by tools/map-converter. The old format named its maps by UUID; those were traded for map names against the map.json files beside them, and a UUID with no map behind it stopped the conversion.",
+    "mode — PROVISIONAL seed of RACE. The old format carries no game mode at all, because a cup was always played the same way."
+  ]
+}

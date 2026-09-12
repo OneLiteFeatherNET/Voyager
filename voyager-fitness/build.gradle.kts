@@ -9,6 +9,8 @@ dependencies {
     testImplementation(project(":voyager-api"))
     testImplementation(project(":voyager-physics"))
     testImplementation(project(":voyager-race"))
+    testImplementation(project(":voyager-platform"))
+    testImplementation(project(":voyager-server"))
     testImplementation(libs.archunit.junit5)
 }
 

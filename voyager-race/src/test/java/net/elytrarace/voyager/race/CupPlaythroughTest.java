@@ -12,13 +12,13 @@ import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.race.effect.RingEffect;
 import net.elytrarace.voyager.race.collision.RingPass;
 import net.elytrarace.voyager.race.effect.RingEffectRegistry;
+import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.flow.RacePhase;
 import net.elytrarace.voyager.race.flow.RaceState;
 import net.elytrarace.voyager.race.flow.RaceStateMachine;
 import net.elytrarace.voyager.race.flow.RaceTimings;
-import net.elytrarace.voyager.race.progress.ProgressTracker;
-import net.elytrarace.voyager.race.progress.ProgressUpdate;
 import net.elytrarace.voyager.race.progress.RingProgress;
+import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.CupScorer;
 import net.elytrarace.voyager.race.scoring.MapScore;
@@ -50,10 +50,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <h2>How the harness works</h2>
  *
  * <p>{@link RaceStateMachine} is stepped one 50 ms tick at a time. On every tick whose resulting phase
- * is {@link RacePhase#GAME}, each racer is placed at a scripted position and {@link ProgressTracker}
- * is asked what that tick's movement passed. Each racer flies a fixed lane — constant {@code x} and
- * {@code y}, {@code z} advancing at a per-map speed from the map's own spawn {@code z} — so every ring
- * crossing is a closed-form consequence of the fixture and can be recomputed by hand:
+ * is {@link RacePhase#GAME}, the {@link RaceClock} is advanced, each racer is placed at a scripted
+ * position, and their {@link RaceRun} is advanced against it. Each racer flies a fixed lane —
+ * constant {@code x} and {@code y}, {@code z} advancing at a per-map speed from the map's own spawn
+ * {@code z} — so every ring crossing is a closed-form consequence of the fixture and can be
+ * recomputed by hand:
  *
  * <pre>
  *   crossing z  = ring.cz + (nx * (ring.cx - laneX) + ny * (ring.cy - laneY)) / nz
@@ -230,8 +231,8 @@ class CupPlaythroughTest {
         RaceState state = RaceState.initial();
         MapDefinition activeMap = null;
         int activeMapIndex = NOT_FINISHED;
-        int gameTick = 0;
-        Map<String, Run> runs = Map.of();
+        RaceClock clock = RaceClock.startingAt(TICK);
+        Map<String, Racing> runs = Map.of();
         int tick = 0;
 
         while (!state.cupFinished() && tick < TICK_BUDGET) {
@@ -242,7 +243,7 @@ class CupPlaythroughTest {
             // finish — so GAME always ends on its 8 s limit. That is what makes the recorded finish
             // times falsifiable: a time taken from the end of the phase would read 8.000 s for
             // everyone.
-            boolean everyRacerFinished = activeMap != null && everyRacerFinished(runs, activeMap);
+            boolean everyRacerFinished = activeMap != null && everyRacerFinished(runs);
             everyRacerFinishedWasSignalled = everyRacerFinishedWasSignalled || everyRacerFinished;
 
             RaceState next = RaceStateMachine.advance(state, cup, TIMINGS, TICK, everyRacerFinished);
@@ -251,12 +252,14 @@ class CupPlaythroughTest {
                 activeMapIndex = next.mapIndex();
                 activeMap = MAP_CATALOG.byName(cup.mapNames().get(activeMapIndex)).orElseThrow();
                 MAP_INDICES_THAT_REACHED_GAME.add(activeMapIndex);
-                gameTick = 0;
+                clock = RaceClock.startingAt(TICK);
                 runs = freshRuns();
             }
             if (next.phase() == RacePhase.GAME) {
-                gameTick++;
-                flyOneTick(activeMap, activeMapIndex, gameTick, runs);
+                // Advanced before the tick it names, so gameTick() is the tick being played — the
+                // order XerusPhaseDriver keeps and RaceClock's javadoc requires.
+                clock = clock.advanced();
+                flyOneTick(activeMap, activeMapIndex, clock, runs);
             }
             if (state.phase() == RacePhase.GAME && next.phase() != RacePhase.GAME) {
                 scoreTheMap(activeMapIndex, activeMap, cup.mode(), runs);
@@ -271,65 +274,50 @@ class CupPlaythroughTest {
         cupScores = accumulateCupScores();
     }
 
-    private static Map<String, Run> freshRuns() {
-        Map<String, Run> runs = new LinkedHashMap<>();
+    private static Map<String, Racing> freshRuns() {
+        Map<String, Racing> runs = new LinkedHashMap<>();
         for (Racer racer : RACERS) {
-            runs.put(racer.name(), new Run());
+            runs.put(racer.name(), Racing.atStart());
         }
         return runs;
     }
 
-    private static boolean everyRacerFinished(Map<String, Run> runs, MapDefinition map) {
-        return runs.values().stream().allMatch(run -> run.progress.passedCount() == map.rings().size());
+    private static boolean everyRacerFinished(Map<String, Racing> runs) {
+        return runs.values().stream().allMatch(racing -> racing.run().finished());
     }
 
-    private static void flyOneTick(MapDefinition map, int mapIndex, int gameTick, Map<String, Run> runs) {
+    private static void flyOneTick(MapDefinition map, int mapIndex, RaceClock clock, Map<String, Racing> runs) {
         for (Racer racer : RACERS) {
-            Run run = runs.get(racer.name());
-            Vec3 position = racer.positionOn(map, mapIndex, gameTick);
-            boolean gliding = racer.glidingWith(mapIndex, run.progress.passedCount());
+            Racing racing = runs.get(racer.name());
+            Vec3 position = racer.positionOn(map, mapIndex, clock.gameTick());
+            boolean gliding = racer.glidingWith(mapIndex, racing.run().progress().passedCount());
 
-            // run.previous is null on the first tick of the phase — the tick after a teleport has no
-            // segment to test. No ring sits within one tick of any spawn, so nothing is lost by it.
-            ProgressUpdate update =
-                    ProgressTracker.advance(run.progress, map.rings(), run.previous, position, gliding);
-
-            run.previous = position;
-            run.progress = update.progress();
-
-            Ring passed = update.passed();
-            if (passed == null) {
-                continue;
-            }
-            run.passedOnGameTick.add(gameTick);
-            Optional<RingEffect> effect = EFFECTS.effectFor(passed.type());
-            if (effect.isPresent()) {
-                run.velocity = effect.get().apply(run.velocity);
-                run.effectsApplied++;
-            }
-            if (run.progress.passedCount() == map.rings().size()) {
-                run.finishedOnGameTick = gameTick;
-            }
+            // The run's previous position is null on the first tick of the phase — the tick after a
+            // teleport has no segment to test. No ring sits within one tick of any spawn, so nothing
+            // is lost by it.
+            RaceRun advanced = racing.run().advance(map, clock, position, gliding);
+            runs.put(racer.name(), racing.after(advanced, EFFECTS));
         }
     }
 
-    private static void scoreTheMap(int mapIndex, MapDefinition map, GameMode mode, Map<String, Run> runs) {
+    private static void scoreTheMap(int mapIndex, MapDefinition map, GameMode mode, Map<String, Racing> runs) {
         // Each score goes in tagged with the racer it belongs to and comes back the same way, so
         // nothing here is index-aligned by hand with RACERS.
         List<Placement<String>> beforePlacement = new ArrayList<>(RACERS.size());
         for (Racer racer : RACERS) {
-            Run run = runs.get(racer.name());
-            Duration elapsed = run.finishedOnGameTick == NOT_FINISHED
-                    ? TICK.multipliedBy(GAME_TICKS)
-                    : TICK.multipliedBy(run.finishedOnGameTick);
-            beforePlacement.add(new Placement<>(racer.name(), MapScorer.score(run.progress, map, elapsed)));
+            RaceRun run = runs.get(racer.name()).run();
+            // The DNF rule — an unfinished run is scored against the whole phase — is the run's, not
+            // the harness's. This used to be a conditional on a -1 sentinel here.
+            beforePlacement.add(new Placement<>(racer.name(),
+                    MapScorer.score(run.progress(), map, run.timeOnCourse(TIMINGS.race()))));
         }
 
         for (Placement<String> awarded : PlacementBonus.award(beforePlacement, mode)) {
-            Run run = runs.get(awarded.key());
-            RESULTS.add(new Result(mapIndex, map.name(), awarded.key(), run.progress,
-                    List.copyOf(run.passedOnGameTick), run.finishedOnGameTick, awarded.score(), run.velocity,
-                    run.effectsApplied));
+            Racing racing = runs.get(awarded.key());
+            RaceRun run = racing.run();
+            RESULTS.add(new Result(mapIndex, map.name(), awarded.key(), run.progress(),
+                    run.passedOnGameTick(), run.finishedAt().map(RaceClock::gameTick).orElse(NOT_FINISHED),
+                    awarded.score(), racing.velocity(), racing.effectsApplied()));
         }
     }
 
@@ -696,15 +684,34 @@ class CupPlaythroughTest {
         }
     }
 
-    /** One racer's mutable state over one map. */
-    private static final class Run {
+    /**
+     * One racer over one map: the {@link RaceRun} — which is now a production type, not something
+     * this harness had to invent — and the two things that are deliberately <em>not</em> part of a
+     * run.
+     *
+     * <p>The carried velocity is one of them. On a server it is the flight state
+     * {@code FlightTickDriver} simulates and {@code VelocityExit} writes back, so a copy inside
+     * {@link RaceRun} would be a second one and the two would diverge silently. The harness keeps it
+     * exactly where a driver keeps it: alongside the run, applied from the ring the run reports it
+     * just passed. The effect count is bookkeeping on top of that, and is here for the same reason.
+     */
+    private record Racing(RaceRun run, Vec3 velocity, int effectsApplied) {
 
-        private final List<Integer> passedOnGameTick = new ArrayList<>();
-        private RingProgress progress = RingProgress.atStart();
-        private Vec3 previous;
-        private int finishedOnGameTick = NOT_FINISHED;
-        private Vec3 velocity = NOMINAL_VELOCITY;
-        private int effectsApplied;
+        static Racing atStart() {
+            return new Racing(RaceRun.atStart(), NOMINAL_VELOCITY, 0);
+        }
+
+        /** This racer after {@code advanced}, with any effect of the ring that tick passed applied. */
+        Racing after(RaceRun advanced, RingEffectRegistry effects) {
+            Ring passed = advanced.justPassed();
+            if (passed == null) {
+                return new Racing(advanced, velocity, effectsApplied);
+            }
+            Optional<RingEffect> effect = effects.effectFor(passed.type());
+            return effect
+                    .map(applied -> new Racing(advanced, applied.apply(velocity), effectsApplied + 1))
+                    .orElseGet(() -> new Racing(advanced, velocity, effectsApplied));
+        }
     }
 
     /** What one racer's run on one map came to, frozen for the assertions to read. */
