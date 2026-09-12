@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
@@ -18,9 +19,10 @@ import java.util.List;
  * {@code ElytraraceBlueAndRed} through the real catalogue and checks the values this writer put in
  * it. If the shapes disagree, that test is what says so.
  *
- * <p><strong>Why the notes are in the file.</strong> Three of the values a {@code MapDefinition}
- * needs do not exist in the old data — the spawn, the reference time and a ring's score — so each
- * was seeded. The design spec classes all three as versioned JSON owned by the game designer, which
+ * <p><strong>Why the notes are in the file.</strong> Four of the values a {@code MapDefinition}
+ * needs do not exist in every old file — the spawn, the reference time, a ring's score and the burn
+ * half of the boost tuning — so each was seeded where it was missing. The design spec classes all of
+ * them as versioned JSON owned by the game designer, which
  * means a balancing pass has to be a data change rather than a code change; a seed that is not
  * marked as one becomes a measurement the first time somebody reads the file without this context.
  * The notes are for the reader and are ignored on load.
@@ -43,6 +45,7 @@ public final class CatalogWriter {
         // Seconds rather than an ISO-8601 duration string: this number is meant to be edited by a
         // designer reading the notes below it, and "60.0" invites that where "PT1M" does not.
         json.addProperty("referenceTimeSeconds", map.referenceTime().toMillis() / 1000.0);
+        json.add("boostConfig", boostConfig(map.boostConfig()));
 
         JsonArray rings = new JsonArray();
         for (Ring ring : map.rings()) {
@@ -67,6 +70,21 @@ public final class CatalogWriter {
         cup.mapNames().forEach(mapNames::add);
         json.add("mapNames", mapNames);
         json.add("notes", notes(notes));
+        return json;
+    }
+
+    /**
+     * Both numbers in ticks, unlike the old format's {@code cooldownMs}.
+     *
+     * <p>The conversion from milliseconds is done once, here, rather than on every load: a server
+     * counts a burn in ticks and in nothing else, so a file carrying 2010 ms would be asking for
+     * something no server can do, and the rounding that made it 40 ticks anyway would be invisible in
+     * the file and visible in the race.
+     */
+    private static JsonObject boostConfig(BoostConfig boost) {
+        JsonObject json = new JsonObject();
+        json.addProperty("burnDurationTicks", boost.burnDurationTicks());
+        json.addProperty("cooldownTicks", boost.cooldownTicks());
         return json;
     }
 

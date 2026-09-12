@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.server;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.MapDefinition;
@@ -92,6 +93,27 @@ class CommittedMapDataTest {
 
         assertThat(map.referenceTime()).isEqualTo(Duration.ofSeconds(60));
         assertThat(map.rings()).extracting(Ring::points).containsOnly(10);
+    }
+
+    /**
+     * The boost tuning of the shipped course, and the two different places its two numbers came from.
+     *
+     * <p>40 ticks is the old {@code map.json}'s own {@code cooldownMs: 2000}, converted once — real
+     * authored data about this course, carried across rather than re-decided. 30 ticks is
+     * {@code BoostConfig.VANILLA_BURN_TICKS}, seeded because the old file carried no burn at all.
+     * Pinned here so that a balancing pass is a visible change to this test rather than a number that
+     * moved, exactly as the reference time and the ring scores above are.
+     */
+    @Test
+    void theCommittedBoostTuningIsTheOldFilesCooldownAndTheVanillaDerivedBurn() {
+        MapDefinition map = new JsonMapCatalog(RESOURCES.resolve("maps"))
+                .byName("elytraraceblueandred").orElseThrow();
+
+        assertThat(map.boostConfig()).isEqualTo(new BoostConfig(30, 40));
+        assertThat(map.boostConfig().burnDurationTicks()).isEqualTo(BoostConfig.VANILLA_BURN_TICKS);
+        assertThat(map.boostConfig().cooldownTicks() * 50L)
+                .describedAs("the old file's cooldownMs, back out of the ticks it was converted into")
+                .isEqualTo(2_000L);
     }
 
     @Test

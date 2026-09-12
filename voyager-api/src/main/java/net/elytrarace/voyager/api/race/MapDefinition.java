@@ -19,8 +19,14 @@ import java.util.List;
  * from anything else — a loader that sorted by file order rather than by index, say — would let the
  * game demand rings in the wrong sequence, so that guarantee is enforced here rather than trusted to
  * every caller.
+ *
+ * <p>{@link #boostConfig()} is per map rather than per server because a course decides how much a
+ * rocket is worth on it: a 380-block climb and a flat sprint want different answers, and the old tree
+ * already stored the tuning in the map file for that reason. Its own invariants — including the one
+ * that keeps two rockets from ever burning on one racer at once — live in {@link BoostConfig}.
  */
-public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime) {
+public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
+        BoostConfig boostConfig) {
 
     public MapDefinition {
         if (name == null || name.isBlank()) {

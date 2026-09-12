@@ -21,7 +21,9 @@ import net.minestom.server.event.GlobalEventHandler;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
+import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.Material;
 import net.minestom.server.timer.ExecutionType;
 import net.minestom.server.timer.TaskSchedule;
 
@@ -216,6 +218,19 @@ public final class VoyagerServer {
                 LOGGER.info("First player online — starting cup '{}'", session.cup().name());
                 session.start(false);
             }
+        });
+
+        events.addListener(PlayerUseItemEvent.class, event -> {
+            if (event.getItemStack().material() != Material.FIREWORK_ROCKET) {
+                return;
+            }
+            // Cancelled whatever the answer, and deliberately. Minestom would not consume the rocket
+            // on its own — a firework carries no CONSUMABLE component — but cancelling makes the
+            // server's position explicit and, through the inventory resync the cancel triggers, keeps
+            // a client that predicted a consumption from drifting a rocket ahead of the stack it
+            // actually holds. The stack is never spent: the cooldown is what limits a racer.
+            event.setCancelled(true);
+            session.requestBoost(event.getPlayer());
         });
 
         events.addListener(PlayerDisconnectEvent.class, event -> {

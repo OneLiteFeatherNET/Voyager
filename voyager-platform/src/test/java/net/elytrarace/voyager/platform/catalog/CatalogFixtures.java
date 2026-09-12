@@ -26,6 +26,7 @@ final class CatalogFixtures {
               "world": "%s",
               "spawn": { "x": 109.0, "y": -62.0, "z": 54.0 },
               "referenceTimeSeconds": 46.7,
+              "boostConfig": { "burnDurationTicks": 18, "cooldownTicks": 41 },
               "rings": [
                 {
                   "index": 0,
