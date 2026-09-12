@@ -38,9 +38,12 @@ import java.util.regex.Pattern;
  *
  * <p>Every user-facing string leaves the code. A call site builds a {@code Component.translatable}
  * (through {@link Messages}, which is the only place that names a key) and Minestom renders it on the
- * way out, per connection, in that player's locale — {@code MinestomAdventure.COMPONENT_TRANSLATOR}
- * is {@code GlobalTranslator::render} out of the box on 26.2, so {@link #install()} is the whole of
- * the wiring. No caller ever renders by hand.
+ * way out, per connection, in that player's locale. {@link #install()} is only half the wiring:
+ * {@code PlayerSocketConnection.writePacketSync} gates the whole translation path on
+ * {@code ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION}, whose system property
+ * {@code minestom.automatic-component-translation} defaults to <em>false</em> on 26.2. With it off
+ * this class is installed, correct, and completely bypassed — players read dotted keys. The server's
+ * bootstrap refuses to start without it. No caller ever renders by hand.
  *
  * <h2>Why not {@code TranslationStore}</h2>
  *
