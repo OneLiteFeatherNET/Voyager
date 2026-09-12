@@ -8,6 +8,8 @@ import com.google.gson.JsonParseException;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 
@@ -32,9 +34,10 @@ import java.util.List;
  * can honour — the rounding would be invisible in the file and visible in the race. The conversion
  * happened once, in {@code tools/map-converter}, and the committed file carries the answer.
  *
- * <p>A {@code notes} array is expected in these files and deliberately not read. The three values
- * the old data never carried — the spawn, the reference time and a ring's score — were seeded during
- * conversion, and the notes are how a file says so to the person editing it. Unknown fields in
+ * <p>A {@code notes} array is expected in these files and deliberately not read. The values the old
+ * data never carried — the spawn, the reference time, a ring's score and how far ahead the racing
+ * line reaches — were seeded during conversion, and the notes are how a file says so to the person
+ * editing it. Unknown fields in
  * general are ignored rather than rejected: every field this record needs is required by name above,
  * so a misspelt one already fails as an absent one, and rejecting the rest would make a comment an
  * error.
@@ -64,7 +67,37 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
                 context.deserialize(JsonFields.required(json, "spawn", what), Vec3.class),
                 rings,
                 Duration.ofMillis(Math.round(seconds * 1000.0)),
-                boostConfig(json, what));
+                boostConfig(json, what),
+                guideLine(json, what, context));
+    }
+
+    /**
+     * Reads the racing line: the control points that bend it, and the two numbers that decide how it
+     * is drawn.
+     *
+     * <p>Required, like the boost tuning above it and for the same reason — but note what is
+     * <em>not</em> being defaulted here. A course with no guide points at all is perfectly normal and
+     * says so with an empty {@code points} array; what has no harmless default is
+     * {@code lookAheadRings}, which decides whether the racer is shown the next stretch or the whole
+     * 1588-block course at once. A file that omitted the block and silently got somebody's idea of a
+     * sensible look-ahead would be a course tuned by a constant nobody can find from the data.
+     */
+    private static GuideLine guideLine(JsonObject json, String what, JsonDeserializationContext context) {
+        JsonObject line = JsonFields.object(
+                JsonFields.required(json, "guideLine", what), "%s field 'guideLine'".formatted(what));
+        String where = "%s guide line".formatted(what);
+
+        List<GuidePoint> points = new ArrayList<>();
+        for (JsonElement point : JsonFields.array(line, "points", where)) {
+            JsonObject guide = JsonFields.object(point, "%s guide point".formatted(what));
+            int orderIndex = JsonFields.integer(guide, "orderIndex", where);
+            points.add(new GuidePoint(orderIndex,
+                    context.deserialize(JsonFields.required(guide, "position",
+                            "%s guide point %s".formatted(what, orderIndex)), Vec3.class)));
+        }
+        return new GuideLine(points,
+                JsonFields.integer(line, "lookAheadRings", where),
+                JsonFields.number(line, "particleSpacing", where));
     }
 
     /**

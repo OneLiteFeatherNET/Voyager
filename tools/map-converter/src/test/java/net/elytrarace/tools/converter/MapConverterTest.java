@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import net.elytrarace.tools.converter.exception.InvalidCourseException;
 import net.elytrarace.tools.converter.legacy.LegacyBoostConfig;
 import net.elytrarace.tools.converter.legacy.LegacyCupFile;
+import net.elytrarace.tools.converter.legacy.LegacyGuide;
 import net.elytrarace.tools.converter.legacy.LegacyKey;
 import net.elytrarace.tools.converter.legacy.LegacyMapFile;
 import net.elytrarace.tools.converter.legacy.LegacyPortal;
@@ -50,7 +51,9 @@ class MapConverterTest {
                 Map.of("blue-world", new Vec3(109, -62, 54), "sprint-world", new Vec3(-8, 71, 3)),
                 Duration.ofMillis(46_700),
                 25,
-                GameMode.PRACTICE));
+                GameMode.PRACTICE,
+                3,
+                1.25));
 
         // Named by the map's own name, not by its directory: the directory is "blue-world".
         JsonObject blue = read(root.resolve("out/maps/blueandred.json"));
@@ -157,6 +160,40 @@ class MapConverterTest {
                 .hasMessageContaining("which no map.json under the source claims");
     }
 
+    /**
+     * The guide points cross into the new format, and a map with no guide file crosses as a course
+     * whose line is its rings alone.
+     *
+     * <p>Both cases are in one run on purpose: {@code blue-world} has a {@code guides.json} and
+     * {@code sprint-world} does not, which is the split the real repository has — one converted course
+     * with guides and three synthetic ones without. A converter that read the first map's guide file
+     * for every map, or that refused a map without one, fails on one of these two maps.
+     */
+    @Test
+    void carriesTheGuidePointsAcrossAndLeavesAMapWithNoGuideFileWithNone(@TempDir Path root) throws IOException {
+        Path source = sourceWithTwoMapsAndACup(root);
+
+        MapConverter.convert(options(source, root));
+
+        JsonObject blue = read(root.resolve("out/maps/blueandred.json")).getAsJsonObject("guideLine");
+        // Both points, in order index order, whatever order the file listed them in.
+        assertThat(blue.getAsJsonArray("points")).hasSize(2);
+        assertThat(blue.getAsJsonArray("points").get(0).getAsJsonObject().get("orderIndex").getAsInt())
+                .isEqualTo(150);
+        assertThat(blue.getAsJsonArray("points").get(0).getAsJsonObject()
+                .getAsJsonObject("position").get("x").getAsDouble()).isEqualTo(-41.0);
+        assertThat(blue.getAsJsonArray("points").get(1).getAsJsonObject().get("orderIndex").getAsInt())
+                .isEqualTo(175);
+        // Seeded from the options, not from a constant: 3 and 1.25 are neither of the converter's
+        // own defaults.
+        assertThat(blue.get("lookAheadRings").getAsInt()).isEqualTo(3);
+        assertThat(blue.get("particleSpacing").getAsDouble()).isEqualTo(1.25);
+
+        JsonObject sprint = read(root.resolve("out/maps/sprint.json")).getAsJsonObject("guideLine");
+        assertThat(sprint.getAsJsonArray("points")).isEmpty();
+        assertThat(sprint.get("lookAheadRings").getAsInt()).isEqualTo(3);
+    }
+
     @Test
     void writesNothingWhenAnyMapFails(@TempDir Path root) throws IOException {
         Path source = sourceWithTwoMapsAndACup(root);
@@ -189,7 +226,9 @@ class MapConverterTest {
                 Map.of("blue-world", new Vec3(109, -62, 54), "sprint-world", new Vec3(-8, 71, 3)),
                 Duration.ofMillis(46_700),
                 25,
-                GameMode.PRACTICE);
+                GameMode.PRACTICE,
+                3,
+                1.25);
     }
 
     private static Path sourceWithTwoMapsAndACup(Path root) throws IOException {
@@ -202,6 +241,13 @@ class MapConverterTest {
                 LegacyPortals.ring(2, new int[] {2, -31, 69}, "BOOST",
                         LegacyPortals.oppositeFirst(new int[] {1, 2, 2}, new int[] {2, 1, -2})),
                 LegacyPortals.ring(3, new int[] {-86, -15, 64}, "STANDARD", LegacyPortals.octagon(UP, SOUTH, 1, 4))));
+
+        // Two guides between the same pair of rings, the later one written first — the shape the real
+        // guides.json has at order indices 2450 and 2475, and the shape that loses a point if a
+        // converter keeps one guide per gap or a reader trusts file order.
+        writeGuides(source.resolve("maps/blue-world"), List.of(
+                new LegacyGuide(175, -20.5, -40.25, 61.75),
+                new LegacyGuide(150, -41.0, -44.5, 58.25)));
 
         // The synthetic maps' shape: both numbers, and both different from the other map's, so a
         // converter that read one map's tuning into the other file fails here rather than passing.
@@ -219,6 +265,11 @@ class MapConverterTest {
             LegacyBoostConfig boost) throws IOException {
         Files.createDirectories(directory);
         write(directory.resolve("map.json"), new LegacyMapFile(uuid, new LegacyKey("map", name), world, boost));
+    }
+
+    private static void writeGuides(Path directory, List<LegacyGuide> guides) throws IOException {
+        Files.createDirectories(directory);
+        write(directory.resolve("guides.json"), guides);
     }
 
     private static void writePortals(Path directory, List<LegacyPortal> portals) throws IOException {

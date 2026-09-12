@@ -1,9 +1,11 @@
 package net.elytrarace.tools.converter;
 
 import net.elytrarace.tools.converter.exception.InvalidCourseException;
+import net.elytrarace.tools.converter.legacy.LegacyGuide;
 import net.elytrarace.tools.converter.legacy.LegacyLocation;
 import net.elytrarace.tools.converter.legacy.LegacyPortal;
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 
@@ -63,6 +65,59 @@ public final class CourseConverter {
     public static final double MINIMUM_FLOW_MARGIN = 0.35;
 
     private CourseConverter() {
+    }
+
+    /**
+     * Converts the old {@code guides.json} into the control points that bend the racing line.
+     *
+     * <p><strong>The order axis moves.</strong> The old wizard wrote guides against the recorded
+     * portal numbering, where ring {@code n} occupies {@code (n - 1) * 100} — measured against the
+     * real file and true of all sixteen of its guides. {@link #toRings} renumbers the rings to
+     * {@code 0..n-1}, so the same axis for the rebuild puts ring {@code i} at {@code i * 100}, and a
+     * course whose recorded indices start anywhere but 1 needs its guides shifted by the same amount
+     * the rings were. For {@code ElytraraceBlueAndRed} the shift is zero and this is an identity; it
+     * is written out anyway because "the guides happen to line up" is the kind of coincidence that
+     * stops being true silently.
+     *
+     * <p>Nothing here is derived and nothing is seeded: a guide point is a position somebody placed,
+     * carried across as written. What is checked is that it still lands between two rings of this
+     * course, because an order index that survived a re-numbering it was not written for would put
+     * the line somewhere nobody chose.
+     *
+     * @param guides  the entries of one {@code guides.json}, in file order; empty for a course with no
+     *                guide file at all, which is legal
+     * @param portals the same portals {@link #toRings} was given, read only for their numbering
+     * @return the guide points on the rebuild's order axis, in file order
+     * @throws InvalidCourseException if a guide is missing a coordinate or its order index, or if it
+     *                                does not fall between two rings of this course
+     */
+    public static List<GuidePoint> toGuidePoints(List<LegacyGuide> guides, List<LegacyPortal> portals) {
+        Integer first = portals.getFirst().index();
+        if (first == null) {
+            throw new InvalidCourseException("the first portal has no index to place the guide points against");
+        }
+        int shift = (first - 1) * GuidePoint.RING_ORDER_STRIDE;
+        int lastRing = portals.size() - 1;
+
+        List<GuidePoint> points = new ArrayList<>(guides.size());
+        for (LegacyGuide guide : guides) {
+            if (guide.orderIndex() == null || guide.x() == null || guide.y() == null || guide.z() == null) {
+                throw new InvalidCourseException(
+                        ("a guide point is incomplete: orderIndex=%s, x=%s, y=%s, z=%s")
+                                .formatted(guide.orderIndex(), guide.x(), guide.y(), guide.z()));
+            }
+            int orderIndex = guide.orderIndex() - shift;
+            int afterRing = Math.floorDiv(orderIndex, GuidePoint.RING_ORDER_STRIDE);
+            if (afterRing < 0 || afterRing >= lastRing) {
+                throw new InvalidCourseException(
+                        ("the guide point recorded at order index %s falls between rings %s and %s, "
+                                + "which this %s-ring course does not have; the guide file and the "
+                                + "portal file disagree about the course")
+                                .formatted(guide.orderIndex(), afterRing, afterRing + 1, portals.size()));
+            }
+            points.add(new GuidePoint(orderIndex, new Vec3(guide.x(), guide.y(), guide.z())));
+        }
+        return List.copyOf(points);
     }
 
     /**

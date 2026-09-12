@@ -5,6 +5,8 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupCatalog;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalTier;
@@ -18,6 +20,7 @@ import net.elytrarace.voyager.race.flow.RacePhase;
 import net.elytrarace.voyager.race.flow.RaceState;
 import net.elytrarace.voyager.race.flow.RaceStateMachine;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.race.line.RacingLine;
 import net.elytrarace.voyager.race.progress.RingProgress;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.CupScore;
@@ -132,6 +135,29 @@ class CupPlaythroughTest {
     private static final double ONE_THIRD = 1.0 / 3.0;
 
     /**
+     * Map one's one guide point, in the gap between rings 2 and 3 — order index 250, which is ring
+     * 2's slot of 200 plus half a gap. Fifteen blocks off the straight chord between those two ring
+     * centres, which is far more than the curve wanders on its own (under a block anywhere on this
+     * course), so a racing line that dropped it is not a slightly different line, it is a different
+     * shape.
+     */
+    private static final GuidePoint EMBER_GUIDE = new GuidePoint(250, new Vec3(14.0, 71.0, 107.0));
+
+    /**
+     * Map two's two guide points, both between rings 1 and 2. Two in one gap because that is the case
+     * the committed course has and the case a per-gap implementation silently loses: order indices
+     * 2450 and 2475 of {@code ElytraraceBlueAndRed} both sit between rings 24 and 25. They are
+     * declared in the wrong order because nothing in the format says a file lists its guides in the
+     * order the line reaches them — the order index does, and {@code GuideLine} sorts on it, which
+     * {@code GuideLineTest} is what pins. What this fixture adds is the other half: that both guides of
+     * one gap survive as far as the line, which a per-gap implementation would fail even with the sort
+     * in place.
+     */
+    private static final GuidePoint GLACIER_EARLY_GUIDE = new GuidePoint(150, new Vec3(-18.0, 70.0, 129.0));
+
+    private static final GuidePoint GLACIER_LATE_GUIDE = new GuidePoint(175, new Vec3(-15.0, 72.0, 149.0));
+
+    /**
      * Map one: five rings, a 3 s reference time, spawn at {@code z = 0}. Normals are tilted in x, in
      * y, in both, and negatively in x across the course; two of them have all three components
      * non-zero.
@@ -145,7 +171,8 @@ class CupPlaythroughTest {
                             RingType.CHECKPOINT),
                     new Ring(3, new Vec3(1.0, 67.0, 121.0), new Vec3(0.48, 0.64, 0.6), 9.0, 33, RingType.STANDARD),
                     new Ring(4, new Vec3(-1.5, 63.5, 152.0), new Vec3(-0.36, 0.48, 0.8), 10.0, 41, RingType.BOOST)),
-            Duration.ofSeconds(3), new BoostConfig(12, 25));
+            Duration.ofSeconds(3), new BoostConfig(12, 25),
+            new GuideLine(List.of(EMBER_GUIDE), 2, 1.0));
 
     /**
      * Map two: four rings, a 5 s reference time, spawn at {@code z = 3} — a different start line, so
@@ -159,7 +186,8 @@ class CupPlaythroughTest {
                             RingType.SLOW),
                     new Ring(2, new Vec3(2.5, 64.5, 168.0), new Vec3(0.8, 0.0, 0.6), 9.5, 31, RingType.STANDARD),
                     new Ring(3, new Vec3(0.5, 65.5, 223.0), new Vec3(0.36, -0.48, 0.8), 11.0, 43, RingType.STANDARD)),
-            Duration.ofSeconds(5), new BoostConfig(19, 44));
+            Duration.ofSeconds(5), new BoostConfig(19, 44),
+            new GuideLine(List.of(GLACIER_LATE_GUIDE, GLACIER_EARLY_GUIDE), 3, 2.0));
 
     private static final String CUP_NAME = "frostfire-cup";
 
@@ -661,6 +689,52 @@ class CupPlaythroughTest {
         assertThat(resultFor(1, "Pike").velocity()).isEqualTo(new Vec3(0.0, 0.0, 2.0));
         assertThat(resultFor(1, "Wren").effectsApplied()).isZero();
         assertThat(resultFor(1, "Wren").velocity()).isEqualTo(NOMINAL_VELOCITY);
+    }
+
+    /**
+     * The line each map shows its racers is the line through that map's own rings <em>and</em> its own
+     * guide points, in order index order.
+     *
+     * <p>The two courses are deliberately different cases. Map one has one guide, in the gap between
+     * rings 2 and 3. Map two has two in the same gap, declared in reverse order — the case a per-gap
+     * implementation drops one half of and an unsorted one draws backwards.
+     *
+     * <p>The bend is what is asserted, not the presence of a point in a list. A line that ignored a
+     * guide is still a line through the same rings, and it stays within a block of the chord between
+     * them; these guides sit fifteen and eighteen blocks off it. So the distance from the chord is the
+     * measurement that can tell the two apart, and it is checked per gap rather than over the whole
+     * line, where a course this long would dilute it.
+     */
+    @Test
+    void eachMapsRacingLineIsBentByThatMapsOwnGuidePoints() {
+        RacingLine ember = RacingLine.of(EMBER_ASCENT);
+        assertThat(ember.points()).contains(EMBER_GUIDE.position());
+        assertThat(farthestFromTheChord(ember.between(2, 3)))
+                .as("map one's line leaves the ring 2 -> 3 chord to reach its guide")
+                .isGreaterThan(14.0);
+        assertThat(farthestFromTheChord(ember.between(0, 1)))
+                .as("a gap with no guide in it is still nearly straight")
+                .isLessThan(1.0);
+
+        RacingLine glacier = RacingLine.of(GLACIER_CHICANE);
+        List<Vec3> bentGap = glacier.between(1, 2);
+        assertThat(bentGap).containsSubsequence(GLACIER_EARLY_GUIDE.position(), GLACIER_LATE_GUIDE.position());
+        assertThat(farthestFromTheChord(bentGap))
+                .as("map two's line leaves the ring 1 -> 2 chord to reach both of its guides")
+                .isGreaterThan(17.0);
+    }
+
+    /** How far the stretch strays from the straight line between its own two ends, in blocks. */
+    private static double farthestFromTheChord(List<Vec3> stretch) {
+        Vec3 from = stretch.getFirst();
+        Vec3 chord = stretch.getLast().minus(from);
+        double lengthSquared = chord.lengthSquared();
+        double farthest = 0.0;
+        for (Vec3 point : stretch) {
+            double along = Math.clamp(point.minus(from).dot(chord) / lengthSquared, 0.0, 1.0);
+            farthest = Math.max(farthest, point.distanceTo(from.plus(chord.scale(along))));
+        }
+        return farthest;
     }
 
     // ------------------------------------------------------------------------------------------
