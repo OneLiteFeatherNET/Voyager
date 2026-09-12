@@ -50,7 +50,7 @@ dependencyResolutionManagement {
             library("assertj", "org.assertj", "assertj-core").versionRef("assertj")
 
             // Logging — Log4j2 as SLF4J 2.x provider (Minestom ships SLF4J 2.x API)
-            version("log4j2", "2.25.5")
+            version("log4j2", "2.26.0")
             library("log4j2.core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j2")
             library("log4j2.slf4j2", "org.apache.logging.log4j", "log4j-slf4j2-impl").versionRef("log4j2")
 
