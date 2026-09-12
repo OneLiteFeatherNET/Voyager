@@ -4,12 +4,19 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.MedalBrackets;
+import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.hud.HudState;
+import net.elytrarace.voyager.platform.hud.RaceFeedback;
+import net.elytrarace.voyager.platform.hud.RaceHud;
+import net.elytrarace.voyager.platform.hud.StartCountdown;
 import net.elytrarace.voyager.platform.render.GuideLineRenderer;
+import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTick;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.tick.RacePhaseListener;
@@ -25,6 +32,8 @@ import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.elytrarace.voyager.race.scoring.MapScorer;
+import net.elytrarace.voyager.race.scoring.MedalCountdown;
+import net.elytrarace.voyager.race.scoring.MedalOutlook;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -100,6 +109,9 @@ public final class CupSession implements RacePhaseListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CupSession.class);
 
+    /** {@link #preparedMapIndex} when no map of the current cup has been entered yet. */
+    private static final int NO_MAP = -1;
+
     private final CupDefinition cup;
     private final MapCatalog maps;
     private final MapInstances instances;
@@ -121,11 +133,27 @@ public final class CupSession implements RacePhaseListener {
      */
     private final GuideLineRenderer lines = new GuideLineRenderer();
 
+    /** The flight HUD, for the same reason {@link #lines} is built here rather than injected. */
+    private final RaceHud hud = new RaceHud();
+
+    /** The last three seconds of the current lobby. Reset per map; see {@link #lobbyTick}. */
+    private final StartCountdown countdown = new StartCountdown();
+
     /** The last simulated tick per player, kept only so {@link #describe()} can show the drift. */
     private final Map<UUID, FlightTick> lastSimulated = new HashMap<>();
 
     private @Nullable XerusPhaseDriver driver;
     private @Nullable MapDefinition currentMap;
+
+    /**
+     * Which map of the rotation has already been moved to, or {@link #NO_MAP} for none.
+     *
+     * <p>A map is entered by the start countdown three seconds before its {@code GAME} phase begins,
+     * and by {@link #mapStarted} if no countdown ran — a lobby of zero length has no ticks to count
+     * in. This is what stops the second of those from happening twice.
+     */
+    private int preparedMapIndex = NO_MAP;
+
     private boolean skipRequested;
 
     private CupSession(CupDefinition cup, MapCatalog maps, MapInstances instances, MapTransition transition,
@@ -204,15 +232,22 @@ public final class CupSession implements RacePhaseListener {
         // must not still be running when the new first map launches its racers.
         boosts.clear();
         currentMap = null;
+        preparedMapIndex = NO_MAP;
+        countdown.reset();
+        for (Player racer : players.get()) {
+            hud.standDown(racer);
+        }
         forgetPendingSkip();
         RaceTimings played = skipLobby
-                ? new RaceTimings(Duration.ZERO, timings.race(), timings.end())
+                ? new RaceTimings(Duration.ZERO, timings.race(), timings.endBetweenMaps(),
+                        timings.endAfterLastMap())
                 : timings;
         XerusPhaseDriver next = new XerusPhaseDriver(cup, played, step, this::gamePhaseEndsNow, this);
         driver = next;
         next.start();
-        LOGGER.info("Cup '{}' started: {} map(s), mode {}, lobby {}, race {}, results {}",
-                cup.name(), cup.mapNames().size(), cup.mode(), played.lobby(), played.race(), played.end());
+        LOGGER.info("Cup '{}' started: {} map(s), mode {}, lobby {}, race {}, results {} between maps "
+                        + "and {} after the last", cup.name(), cup.mapNames().size(), cup.mode(),
+                played.lobby(), played.race(), played.endBetweenMaps(), played.endAfterLastMap());
     }
 
     /**
@@ -303,6 +338,7 @@ public final class CupSession implements RacePhaseListener {
         flight.forget(playerId);
         runs.forget(playerId);
         boosts.forget(playerId);
+        hud.forget(playerId);
         lastSimulated.remove(playerId);
     }
 
@@ -330,20 +366,52 @@ public final class CupSession implements RacePhaseListener {
         return true;
     }
 
+    /**
+     * The start countdown, run out of the tail of the lobby.
+     *
+     * <p>The map is entered on the first tick that has a digit to show — three seconds before the
+     * launch — so the racer is standing on the spawn, facing the first ring, with the chunks around
+     * them already there and the boss bar already naming the target, while the count runs. Before
+     * this, a map began by teleporting a player and firing them into the air in the same tick, into a
+     * world whose chunks were still arriving.
+     *
+     * <p>Nothing here touches the race clock. The {@code GAME} phase still begins with the launch on
+     * its first tick, and the three seconds come out of the lobby, which is time nobody was playing
+     * in anyway.
+     */
+    @Override
+    public void lobbyTick(int mapIndex, String mapName, Duration remaining) {
+        if (preparedMapIndex != mapIndex) {
+            countdown.reset();
+        }
+        int digit = countdown.show(remaining);
+        if (digit == StartCountdown.NONE) {
+            return;
+        }
+        MapDefinition map = enterMap(mapIndex, mapName);
+        Component subtitle = Messages.countdownSubtitle(
+                map.name(), map.rings().size(), map.referenceTime());
+        HudState armed = startingState(mapIndex, map);
+        for (Player racer : players.get()) {
+            RaceFeedback.countdown(racer, digit, subtitle);
+            hud.arm(racer, armed);
+        }
+    }
+
     @Override
     public void mapStarted(int mapIndex, String mapName) {
-        MapDefinition map = maps.byName(mapName).orElseThrow(() -> new IllegalStateException(
-                ("cup '%s' plays a map named '%s' that the map catalogue does not hold; "
-                        + "CatalogConsistency.requireEveryCupMapResolves runs at boot and should have "
-                        + "refused this cup").formatted(cup.name(), mapName)));
-        currentMap = map;
-        Instance instance = instances.forWorld(map.world());
-        blocks.follow(instance);
+        MapDefinition map = enterMap(mapIndex, mapName);
 
+        // The transition runs again here even when the countdown already made it, and that is
+        // deliberate: a player who connected during those three seconds holds no run, and a launch
+        // into a race that is not tracking you is the exact failure this whole start exists to
+        // remove. Nobody has moved and no race tick has been played since, so re-running it lands
+        // every racer on the same spawn with the same fresh run.
         List<Player> racers = List.copyOf(players.get());
         transition.advanceTo(map, racers);
         for (Player racer : racers) {
             Racers.launch(racer, map);
+            RaceFeedback.go(racer);
         }
 
         WorldHealth health = instances.healthOf(map.world());
@@ -352,9 +420,40 @@ public final class CupSession implements RacePhaseListener {
         if (!health.isSound()) {
             LOGGER.warn("World '{}' is not sound: {}", map.world(), health.describe());
         }
-        broadcast(Component.text("Map %s/%s: %s — %s rings, reference %s".formatted(
-                mapIndex + 1, cup.mapNames().size(), map.name(), map.rings().size(),
-                seconds(map.referenceTime()))));
+    }
+
+    /**
+     * Moves the cup onto {@code mapIndex}: the world, the block source, the racers and the chat
+     * banner, once.
+     *
+     * <p>Called by whichever of the two gets there first. With a lobby the countdown does it three
+     * seconds early; with no lobby — {@code /race start}, or a dev run with the lobby skipped — there
+     * is no lobby tick to do it in and {@link #mapStarted} does it on the launch tick instead. A dev
+     * flag that reintroduced a three-second wait would defeat its own purpose, so the countdown
+     * degrades rather than delays, and this is the seam that lets it.
+     */
+    private MapDefinition enterMap(int mapIndex, String mapName) {
+        MapDefinition held = currentMap;
+        if (preparedMapIndex == mapIndex && held != null) {
+            return held;
+        }
+        MapDefinition map = maps.byName(mapName).orElseThrow(() -> new IllegalStateException(
+                ("cup '%s' plays a map named '%s' that the map catalogue does not hold; "
+                        + "CatalogConsistency.requireEveryCupMapResolves runs at boot and should have "
+                        + "refused this cup").formatted(cup.name(), mapName)));
+        currentMap = map;
+        preparedMapIndex = mapIndex;
+        Instance instance = instances.forWorld(map.world());
+        blocks.follow(instance);
+
+        List<Player> racers = List.copyOf(players.get());
+        transition.advanceTo(map, racers);
+        for (Player racer : racers) {
+            Racers.faceCourse(racer, map);
+        }
+        broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), map.name(),
+                map.rings().size(), map.referenceTime()));
+        return map;
     }
 
     @Override
@@ -373,6 +472,7 @@ public final class CupSession implements RacePhaseListener {
             RaceRun advanced = runs.advance(id, map, clock,
                     Vectors.toDomain(racer.getPosition()), racer.isFlyingWithElytra());
             report(racer, map, advanced, wasFinished, clock);
+            hud.render(racer, flightState(map, advanced, clock));
             // After the advance, not before it: a racer who passed a ring on this tick is heading for
             // the next one from this tick, and showing them the stretch they have just flown out of
             // for another four ticks is the one moment the line would be visibly wrong.
@@ -398,6 +498,7 @@ public final class CupSession implements RacePhaseListener {
             MapScore score = MapScorer.score(held.get().progress(), map, held.get().timeOnCourse(timings.race()));
             standings.record(id, mapIndex, score);
             Racers.standDown(racer);
+            hud.standDown(racer);
             // The burn and the cooldown end with the map. A rocket still burning when the next map's
             // launch fires would add an impulse to a launch nothing tuned for one, and a cooldown
             // carried across would refuse the first boost of a map for a boost taken on the last.
@@ -408,7 +509,7 @@ public final class CupSession implements RacePhaseListener {
         LOGGER.info("Map {}/{} '{}' finished after {} tick(s), {}",
                 mapIndex + 1, cup.mapNames().size(), mapName, clock.gameTick(), seconds(clock.elapsed()));
         for (Player racer : players.get()) {
-            announceMapScore(racer, mapIndex);
+            announceMapScore(racer, map, mapIndex);
         }
     }
 
@@ -474,44 +575,124 @@ public final class CupSession implements RacePhaseListener {
         skipRequested = false;
     }
 
+    /**
+     * What a racer is told in the tick a ring was passed, or the tick their run ended.
+     *
+     * <p>A ring is a <strong>sound</strong> and a green flash on the counter that is already on
+     * screen, and nothing else — no chat line and no title. On this course a racer crosses a ring
+     * every 1.4 to 2.1 seconds for a minute, so anything per-ring that costs a <em>read</em> is
+     * noise by ring five, and thirty-five chat lines is a wall of text that buries the result that
+     * follows it.
+     */
     private void report(Player racer, MapDefinition map, RaceRun run, boolean wasFinished, RaceClock clock) {
         Ring passed = run.justPassed();
         if (passed != null) {
-            racer.sendActionBar(Component.text("Ring %s/%s  +%s  %s".formatted(
-                    run.progress().passedCount(), map.rings().size(), passed.points(), seconds(clock.elapsed()))));
+            RaceFeedback.ringPassed(racer, passed.index(), map.rings().size());
         }
         if (run.finished() && !wasFinished) {
-            racer.sendMessage(Component.text("Finished %s in %s".formatted(map.name(), seconds(clock.elapsed()))));
+            racer.sendMessage(Messages.finished(map.name(), clock.elapsed()));
             LOGGER.info("{} finished '{}' on tick {} ({})",
                     racer.getUsername(), map.name(), clock.gameTick(), seconds(clock.elapsed()));
         }
     }
 
-    private void announceMapScore(Player racer, int mapIndex) {
+    /**
+     * A map's result, to one racer: a title they can read now that they have landed, and a chat line
+     * that is still there when the next map starts.
+     *
+     * <p>The title region is off limits for the whole race — it is exactly where the next ring
+     * appears — which is why it is finally worth something here.
+     */
+    private void announceMapScore(Player racer, MapDefinition map, int mapIndex) {
         MapScore score = standings.scoreOn(racer.getUuid(), mapIndex);
         if (score == null) {
             return;
         }
-        racer.sendMessage(Component.text(
-                "Map %s: %s point(s) — %s from rings, %s for %s, %s for placement".formatted(
-                        mapIndex + 1, score.total(), score.ringPoints(), score.medalPoints(),
-                        score.medal(), score.placementBonus())));
+        int ringCount = map.rings().size();
+        int ringsPassed = runs.of(racer.getUuid()).map(run -> run.progress().passedCount()).orElse(0);
+        if (score.medal() == MedalTier.DNF) {
+            racer.sendMessage(Messages.mapResultDnf(map.name(), ringsPassed, ringCount, score.total()));
+            RaceFeedback.mapResult(racer, MedalTier.DNF,
+                    Messages.mapResultSubtitleDnf(ringsPassed, ringCount, score.total()));
+            return;
+        }
+        racer.sendMessage(Messages.mapResult(map.name(), score.ringPoints(), score.medalPoints(),
+                score.medal(), score.placementBonus(), score.total()));
+        RaceFeedback.mapResult(racer, score.medal(), Messages.mapResultSubtitle(
+                score.completionTime().orElse(clockLengthOf(map)), score.total()));
     }
 
+    /**
+     * The cup's final standings: the block everybody sees, and one title each saying where they
+     * came.
+     */
     private void announceCupResult() {
         List<CupStanding> order = standings.cupOrder();
         LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.name(), order.size());
-        broadcast(Component.text("Cup '%s' finished".formatted(cup.name())));
+        broadcast(Messages.cupHeading(cup.name()));
+        int mapCount = cup.mapNames().size();
         int place = 1;
         for (CupStanding standing : order) {
             CupScore score = standing.score();
-            String line = "%s. %s — %s point(s), %s map(s) finished, best %s".formatted(
-                    place, nameOf(standing.playerId()), score.totalPoints(), score.mapsFinished(),
+            LOGGER.info("  {}. {} — {} point(s), {} map(s) finished, best {}",
+                    place, standing.playerId(), score.totalPoints(), score.mapsFinished(),
                     score.bestTime().map(CupSession::seconds).orElse("-"));
-            LOGGER.info("  {}", line);
-            broadcast(Component.text(line));
+            broadcast(Messages.cupRow(place, displayName(standing.playerId()), score.totalPoints(),
+                    score.mapsFinished(), mapCount, score.bestTime()));
+            announceCupPlace(standing.playerId(), place, score.totalPoints());
             place++;
         }
+    }
+
+    /** The cup title, to the one racer it names, if they are still online to see it. */
+    private void announceCupPlace(UUID playerId, int place, int points) {
+        for (Player racer : players.get()) {
+            if (racer.getUuid().equals(playerId)) {
+                RaceFeedback.cupResult(racer, Messages.cupSubtitle(place, points));
+                return;
+            }
+        }
+    }
+
+    /**
+     * The HUD value for a racer mid-flight.
+     *
+     * <p>A racer who has already crossed the last ring is shown the clock they <em>finished</em> on,
+     * not the one still running: their medal is decided and a boss bar counting down a band they can
+     * no longer lose would be counting nothing.
+     */
+    private HudState flightState(MapDefinition map, RaceRun run, RaceClock clock) {
+        Duration elapsed = run.finishedAt().map(RaceClock::elapsed).orElse(clock.elapsed());
+        List<Integer> ringTicks = run.passedOnGameTick();
+        int lastRingTick = ringTicks.isEmpty() ? 0 : ringTicks.getLast();
+        return new HudState(clock.gameTick(), elapsed, run.progress().passedCount(), map.rings().size(),
+                lastRingTick, preparedMapIndex + 1, cup.mapNames().size(), map.name(),
+                outlookAt(elapsed, map));
+    }
+
+    /** The HUD value shown during the start countdown: nothing flown yet, and the best medal on offer. */
+    private HudState startingState(int mapIndex, MapDefinition map) {
+        return new HudState(0, Duration.ZERO, 0, map.rings().size(), 0, mapIndex + 1,
+                cup.mapNames().size(), map.name(), outlookAt(Duration.ZERO, map));
+    }
+
+    /**
+     * {@code MedalBrackets.DEFAULT}, which is the same constant {@code MapScorer} classifies a
+     * finished run with — so the band the boss bar showed on the last tick of a race and the medal
+     * the results screen awards cannot disagree.
+     */
+    private static MedalOutlook outlookAt(Duration elapsed, MapDefinition map) {
+        return MedalCountdown.outlook(elapsed, map.referenceTime(), MedalBrackets.DEFAULT);
+    }
+
+    /**
+     * The time to print for a score that somehow carries no completion time on a non-DNF medal.
+     *
+     * <p>{@code MapScorer} always records one for a finisher, so this is an assertion rather than a
+     * branch anybody takes; the map's reference time is the least misleading thing to fall back on.
+     */
+    private static Duration clockLengthOf(MapDefinition map) {
+        return map.referenceTime();
     }
 
     /**
@@ -548,6 +729,10 @@ public final class CupSession implements RacePhaseListener {
         return cooldown > 0 ? "cooling down %s tick(s)".formatted(cooldown) : "ready";
     }
 
+    /**
+     * A racer's name for the diagnostic {@code /race} prints, which is an operator's surface and
+     * wants the raw id when there is nothing better.
+     */
     private String nameOf(UUID playerId) {
         for (Player racer : players.get()) {
             if (racer.getUuid().equals(playerId)) {
@@ -555,6 +740,22 @@ public final class CupSession implements RacePhaseListener {
             }
         }
         return playerId.toString();
+    }
+
+    /**
+     * A racer's name for the standings a player reads.
+     *
+     * <p>Somebody who disconnected before the cup ended is {@code (left)}, not 36 characters of
+     * hexadecimal in the middle of a results table. The UUID is still in the log line beside it,
+     * where somebody debugging can use it and nobody else has to read it.
+     */
+    private Component displayName(UUID playerId) {
+        for (Player racer : players.get()) {
+            if (racer.getUuid().equals(playerId)) {
+                return Messages.racerName(racer.getUsername());
+            }
+        }
+        return Messages.departed();
     }
 
     private void broadcast(Component message) {

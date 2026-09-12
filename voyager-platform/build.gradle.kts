@@ -28,6 +28,14 @@ dependencies {
 
     api("net.minestom:minestom:$minestomRebuildVersion")
 
+    // MiniMessage, which Minestom does not ship: it brings adventure-api 5.2.0 (and the bom that
+    // pins it) but not the MiniMessage serializer. Pinned to the same 5.2.0 Minestom already
+    // resolves, inline and with the reason at the point of use, exactly as the Minestom pin above
+    // is — a different Adventure version here would put two copies of the same interfaces on one
+    // classpath. `api` because voyager-server's tests deserialize the same strings this module
+    // registers, and because the palette's TagResolver is part of this module's surface.
+    api("net.kyori:adventure-text-minimessage:5.2.0")
+
     api("net.onelitefeather:falco-anvil:$falcoVersion")
 
     // Gson, and only here. The catalogue reads the committed map and cup JSON; every module that

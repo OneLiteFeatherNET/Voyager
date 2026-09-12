@@ -87,16 +87,22 @@ public abstract class RaceStateMachine {
 
     private static RaceState advanceEnd(RaceState state, CupDefinition cup, RaceTimings timings, Duration inPhase,
             int mapCount) {
-        if (inPhase.compareTo(timings.end()) < 0) {
+        // Which END this is decides how long it lasts, and it is the same question that decides
+        // where the phase goes next — so it is asked once, here, before either is answered. A
+        // PRACTICE cup always has another map: it is the same map, retried, which is a gap between
+        // attempts rather than the end of anything.
+        boolean anotherMapFollows =
+                cup.mode() == GameMode.PRACTICE || state.mapIndex() + 1 < mapCount;
+        Duration end = timings.end(anotherMapFollows);
+        if (inPhase.compareTo(end) < 0) {
             return new RaceState(RacePhase.END, state.mapIndex(), inPhase, false);
         }
-        Duration overshoot = inPhase.minus(timings.end());
+        Duration overshoot = inPhase.minus(end);
         if (cup.mode() == GameMode.PRACTICE) {
             return new RaceState(RacePhase.LOBBY, state.mapIndex(), overshoot, false);
         }
-        int nextMapIndex = state.mapIndex() + 1;
-        if (nextMapIndex < mapCount) {
-            return new RaceState(RacePhase.LOBBY, nextMapIndex, overshoot, false);
+        if (anotherMapFollows) {
+            return new RaceState(RacePhase.LOBBY, state.mapIndex() + 1, overshoot, false);
         }
         // The one place the overshoot is deliberately dropped: no phase follows a finished cup, so
         // there is nothing for it to be carried into. The terminal state's clock reads zero because

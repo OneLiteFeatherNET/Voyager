@@ -111,9 +111,14 @@ class CupPlaythroughTest {
     /**
      * Lobby 2 s, race 8 s, end 1 s — all three different, so a machine reading the wrong
      * {@link RaceTimings} field could not pass. In ticks: 40, 160, 20.
+     *
+     * <p>The two {@code END} durations are equal here deliberately: this test asserts a whole cup's
+     * tick count against {@code 2 * (lobby + game + end)}, which is a claim about the rotation
+     * running to its end and not about how long a results screen is. Making them differ would only
+     * make that arithmetic harder to read; the split is asserted in {@code RaceStateMachineTest}.
      */
-    private static final RaceTimings TIMINGS =
-            new RaceTimings(Duration.ofSeconds(2), Duration.ofSeconds(8), Duration.ofSeconds(1));
+    private static final RaceTimings TIMINGS = new RaceTimings(
+            Duration.ofSeconds(2), Duration.ofSeconds(8), Duration.ofSeconds(1), Duration.ofSeconds(1));
 
     private static final int LOBBY_TICKS = 40;
     private static final int GAME_TICKS = 160;
@@ -406,7 +411,8 @@ class CupPlaythroughTest {
         // 40 lobby + 160 game + 20 end ticks per map, twice over.
         assertThat(TICK.multipliedBy(LOBBY_TICKS)).isEqualTo(TIMINGS.lobby());
         assertThat(TICK.multipliedBy(GAME_TICKS)).isEqualTo(TIMINGS.race());
-        assertThat(TICK.multipliedBy(END_TICKS)).isEqualTo(TIMINGS.end());
+        assertThat(TICK.multipliedBy(END_TICKS)).isEqualTo(TIMINGS.endBetweenMaps());
+        assertThat(TICK.multipliedBy(END_TICKS)).isEqualTo(TIMINGS.endAfterLastMap());
         assertThat(ticksSimulated).isEqualTo(EXPECTED_TICKS);
         assertThat(EXPECTED_TICKS).isEqualTo(2 * (LOBBY_TICKS + GAME_TICKS + END_TICKS));
 

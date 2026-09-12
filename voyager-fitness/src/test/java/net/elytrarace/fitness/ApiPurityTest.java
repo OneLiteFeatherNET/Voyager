@@ -263,6 +263,48 @@ class ApiPurityTest {
                             + "whole race play out in JUnit")
                     .allowEmptyShould(false);
 
+    // Task 13 put a translated, coloured player-facing layer on a build whose entire vocabulary was
+    // five uncoloured Component.text strings scattered through a tick loop. Nothing would stop it
+    // rotting back: a Component.text("Ring 12/35") added to a hot path compiles, works, looks fine
+    // in a screenshot, and can never be translated, recoloured or found by somebody asking where the
+    // game says a thing. So the boundary is a rule rather than a paragraph.
+    //
+    // Matched by call target name and owner, because Component.text is a static interface method
+    // with a dozen overloads and a rule pinned to one signature would be walked past by the next
+    // one. Component.empty() is deliberately NOT matched: it is the absence of a string, which is
+    // how the action bar is cleared and how a title says "no subtitle", and neither is something to
+    // translate.
+    //
+    // ONE EXCEPTION, and it is named rather than pattern-matched so that a second one has to be
+    // argued for: RaceCommand's status output. /race prints an operator diagnostic — coordinates,
+    // tick counts, a gliding flag, the drift between the client's position and the server's
+    // simulation — assembled by CupSession.describe() as one block of plain text. It has no
+    // audience but somebody debugging, and forty translation keys for a dump of numbers would make
+    // it harder to read and impossible to extend without editing a bundle.
+    private static final DescribedPredicate<JavaCall<?>> BUILD_A_TEXT_COMPONENT_FROM_A_STRING =
+            JavaCall.Predicates.target(HasName.Predicates.name("text"))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.assignableTo("net.kyori.adventure.text.Component"))))
+                    .as("build a text component out of a literal");
+
+    @ArchTest
+    static final ArchRule onlyTheTextPackageBuildsAUserFacingString =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.platform.text..")
+                    .and().doNotHaveFullyQualifiedName(
+                            "net.elytrarace.voyager.server.command.RaceCommand")
+                    .should().callMethodWhere(BUILD_A_TEXT_COMPONENT_FROM_A_STRING)
+                    .as("no classes in net.elytrarace.voyager.api.., net.elytrarace.voyager.physics.., "
+                            + "net.elytrarace.voyager.race.., net.elytrarace.voyager.platform.. or "
+                            + "net.elytrarace.voyager.server.. outside the text package should build "
+                            + "a Component.text")
+                    .because("every user-facing string is a translation key resolved through "
+                            + "net.elytrarace.voyager.platform.text.Messages, so that it can be "
+                            + "translated, coloured from one palette and found in one file; the one "
+                            + "exception is /race's operator diagnostic, which is a dump of numbers "
+                            + "with no audience but somebody debugging")
+                    .allowEmptyShould(false);
+
     @ArchTest
     static final ArchRule onlyServerDependsOnDiContainer =
             noClasses().that().resideInAPackage("net.elytrarace.voyager..")
