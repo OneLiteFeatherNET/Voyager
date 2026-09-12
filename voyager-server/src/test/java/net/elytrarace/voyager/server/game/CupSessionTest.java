@@ -4,6 +4,7 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalTier;
@@ -121,13 +122,13 @@ class CupSessionTest {
      */
     private static final MapDefinition RIDGE_RUN = new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN,
             List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7)),
-            Duration.ofMillis(400), RIDGE_BOOST);
+            Duration.ofMillis(400), RIDGE_BOOST, new GuideLine(List.of(), 2, 1.0));
 
     /** Two rings, so a run that passed one of them has still not finished. Worth 13 each. */
     private static final MapDefinition DUNE_RUN = new MapDefinition("dune-run", DUNE, DUNE_SPAWN,
             List.of(ring(0, DUNE_SPAWN.plus(new Vec3(0, 0, 10)), 13),
                     ring(1, DUNE_SPAWN.plus(new Vec3(0, 0, 20)), 13)),
-            Duration.ofMillis(650), DUNE_BOOST);
+            Duration.ofMillis(650), DUNE_BOOST, new GuideLine(List.of(), 4, 1.5));
 
     private static final CupDefinition CUP =
             new CupDefinition("grand_tour", List.of("ridge-run", "dune-run"), GameMode.RACE);

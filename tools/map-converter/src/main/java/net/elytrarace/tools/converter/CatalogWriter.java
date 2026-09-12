@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 
@@ -19,9 +21,10 @@ import java.util.List;
  * {@code ElytraraceBlueAndRed} through the real catalogue and checks the values this writer put in
  * it. If the shapes disagree, that test is what says so.
  *
- * <p><strong>Why the notes are in the file.</strong> Four of the values a {@code MapDefinition}
- * needs do not exist in every old file — the spawn, the reference time, a ring's score and the burn
- * half of the boost tuning — so each was seeded where it was missing. The design spec classes all of
+ * <p><strong>Why the notes are in the file.</strong> Six of the values a {@code MapDefinition}
+ * needs do not exist in every old file — the spawn, the reference time, a ring's score, the burn
+ * half of the boost tuning, and both numbers of the guide line — so each was seeded where it was
+ * missing. The design spec classes all of
  * them as versioned JSON owned by the game designer, which
  * means a balancing pass has to be a data change rather than a code change; a seed that is not
  * marked as one becomes a measurement the first time somebody reads the file without this context.
@@ -46,6 +49,7 @@ public final class CatalogWriter {
         // designer reading the notes below it, and "60.0" invites that where "PT1M" does not.
         json.addProperty("referenceTimeSeconds", map.referenceTime().toMillis() / 1000.0);
         json.add("boostConfig", boostConfig(map.boostConfig()));
+        json.add("guideLine", guideLine(map.guideLine()));
 
         JsonArray rings = new JsonArray();
         for (Ring ring : map.rings()) {
@@ -85,6 +89,31 @@ public final class CatalogWriter {
         JsonObject json = new JsonObject();
         json.addProperty("burnDurationTicks", boost.burnDurationTicks());
         json.addProperty("cooldownTicks", boost.cooldownTicks());
+        return json;
+    }
+
+    /**
+     * The racing line: two numbers and the control points that bend it.
+     *
+     * <p>A point is written as an order index and a {@code position} object rather than the old
+     * format's flat {@code x}/{@code y}/{@code z}, so that every coordinate in the file — the spawn, a
+     * ring's centre, a ring's normal, a guide's position — has the same shape and is read by the same
+     * three lines. The old format's flatness was an artefact of a wizard writing one file per concept;
+     * here they are all in one file.
+     */
+    private static JsonObject guideLine(GuideLine line) {
+        JsonObject json = new JsonObject();
+        json.addProperty("lookAheadRings", line.lookAheadRings());
+        json.addProperty("particleSpacing", line.particleSpacing());
+
+        JsonArray points = new JsonArray();
+        for (GuidePoint point : line.points()) {
+            JsonObject guide = new JsonObject();
+            guide.addProperty("orderIndex", point.orderIndex());
+            guide.add("position", vector(point.position()));
+            points.add(guide);
+        }
+        json.add("points", points);
         return json;
     }
 

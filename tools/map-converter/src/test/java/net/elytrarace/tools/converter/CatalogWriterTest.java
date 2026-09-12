@@ -6,6 +6,8 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -28,7 +30,8 @@ class CatalogWriterTest {
                     new Ring(1, new Vec3(2, -31, 69), new Vec3(-2.0 / 3, 2.0 / 3, -1.0 / 3), 3, 25,
                             RingType.BOOST)),
             Duration.ofMillis(46_700),
-            new BoostConfig(18, 41));
+            new BoostConfig(18, 41),
+            new GuideLine(List.of(new GuidePoint(50, new Vec3(41, -42, 63))), 3, 1.25));
 
     @Test
     void writesEveryFieldAMapDefinitionIsRebuiltFrom() {
@@ -101,4 +104,39 @@ class CatalogWriterTest {
         assertThat(json.getAsJsonArray("notes")).extracting(element -> element.getAsString())
                 .containsExactly("first", "second");
     }
+    /**
+     * The racing line: both numbers, and each point as an order index plus a {@code position} object.
+     *
+     * <p>A {@code position} object rather than the old format's flat x/y/z, so every coordinate in the
+     * file — spawn, centre, normal, guide — has one shape and is read by one three-line reader. The
+     * numbers are 3 and 1.25, neither of them the converter's own defaults of 2 and 1.0, so a writer
+     * that emitted a constant rather than the map's own value cannot pass.
+     */
+    @Test
+    void writesTheGuideLineAsTwoNumbersAndOrderedPoints() {
+        JsonObject line = CatalogWriter.toJson(MAP, List.of("a note")).getAsJsonObject("guideLine");
+
+        assertThat(line.get("lookAheadRings").getAsInt()).isEqualTo(3);
+        assertThat(line.get("particleSpacing").getAsDouble()).isEqualTo(1.25);
+        assertThat(line.getAsJsonArray("points")).singleElement().satisfies(element -> {
+            JsonObject point = element.getAsJsonObject();
+            assertThat(point.get("orderIndex").getAsInt()).isEqualTo(50);
+            assertThat(point.getAsJsonObject("position").get("x").getAsDouble()).isEqualTo(41.0);
+            assertThat(point.getAsJsonObject("position").get("y").getAsDouble()).isEqualTo(-42.0);
+            assertThat(point.getAsJsonObject("position").get("z").getAsDouble()).isEqualTo(63.0);
+        });
+    }
+
+    @Test
+    void writesAnEmptyPointsArrayForACourseWithNoGuides() {
+        MapDefinition noGuides = new MapDefinition(MAP.name(), MAP.world(), MAP.spawn(), MAP.rings(),
+                MAP.referenceTime(), MAP.boostConfig(), new GuideLine(List.of(), 2, 1.0));
+
+        JsonObject line = CatalogWriter.toJson(noGuides, List.of("a note")).getAsJsonObject("guideLine");
+
+        // Present and empty, not absent: the reader requires the field, so "this course needs no
+        // guides" has to be something the file says rather than something a missing block implies.
+        assertThat(line.getAsJsonArray("points")).isEmpty();
+    }
+
 }

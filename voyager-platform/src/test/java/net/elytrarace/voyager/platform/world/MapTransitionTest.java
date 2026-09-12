@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.world;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -449,7 +450,7 @@ class MapTransitionTest {
         return new MapDefinition(name, world, spawn,
                 List.of(new Ring(0, new Vec3(spawn.x(), spawn.y(), spawn.z() + 30.0), new Vec3(0.0, 0.0, 1.0),
                         6.0, 7, RingType.STANDARD)),
-                Duration.ofSeconds(4), new BoostConfig(12, 25));
+                Duration.ofSeconds(4), new BoostConfig(12, 25), new GuideLine(List.of(), 4, 2.0));
     }
 
     private record PlacedBlock(int x, int y, int z, Block block) {

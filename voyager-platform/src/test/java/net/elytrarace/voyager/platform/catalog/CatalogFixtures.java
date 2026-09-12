@@ -15,8 +15,8 @@ import java.nio.file.Path;
  * exactly one test of its own, in {@code voyager-server}, and it says so in its name.
  *
  * <p>The values here are deliberately not round: a centre of {@code (85, -54, 54)} and a normal of
- * {@code (-1, 0, 0)} have nothing in common with a spawn of {@code (109, -62, 54)}, so a reader that
- * put one where another belongs cannot pass.
+ * {@code (-1, 0, 0)} have nothing in common with a spawn of {@code (109, -62, 54)} or with the one
+ * guide point at {@code (41, -42, 63)}, so a reader that put one where another belongs cannot pass.
  */
 final class CatalogFixtures {
 
@@ -45,6 +45,13 @@ final class CatalogFixtures {
                   "type": "BOOST"
                 }
               ],
+              "guideLine": {
+                "lookAheadRings": 2,
+                "particleSpacing": 1.5,
+                "points": [
+                  { "orderIndex": 50, "position": { "x": 41.0, "y": -42.0, "z": 63.0 } }
+                ]
+              },
               "notes": [ "a note the reader must ignore" ]
             }
             """;

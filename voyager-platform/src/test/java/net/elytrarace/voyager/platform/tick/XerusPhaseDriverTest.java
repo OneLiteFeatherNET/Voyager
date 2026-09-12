@@ -7,6 +7,7 @@ import net.elytrarace.voyager.api.physics.FlightState;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -78,7 +79,7 @@ class XerusPhaseDriverTest {
     private static final MapDefinition EMBER_ASCENT = new MapDefinition("ember-ascent", "ember_arena",
             COURSE_SPAWN,
             List.of(new Ring(0, new Vec3(2.0, 68.0, 17.0), new Vec3(0.6, 0.0, 0.8), 5.0, 7, RingType.STANDARD)),
-            Duration.ofSeconds(3), new BoostConfig(12, 25));
+            Duration.ofSeconds(3), new BoostConfig(12, 25), new GuideLine(List.of(), 3, 1.5));
 
     /**
      * Tilted the other way and further out: {@code 26.0 + (0.6 * (72.5 - 70.0)) / 0.8 = 27.875}, and
@@ -87,7 +88,7 @@ class XerusPhaseDriverTest {
     private static final MapDefinition GLACIER_CHICANE = new MapDefinition("glacier-chicane", "glacier_arena",
             COURSE_SPAWN,
             List.of(new Ring(0, new Vec3(-1.0, 72.5, 26.0), new Vec3(0.0, 0.6, 0.8), 6.0, 11, RingType.BOOST)),
-            Duration.ofSeconds(3), new BoostConfig(19, 44));
+            Duration.ofSeconds(3), new BoostConfig(19, 44), new GuideLine(List.of(), 2, 0.75));
 
     private static final List<MapDefinition> COURSES = List.of(EMBER_ASCENT, GLACIER_CHICANE);
 

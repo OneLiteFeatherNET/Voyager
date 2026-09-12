@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import net.elytrarace.tools.converter.exception.InvalidCourseException;
 import net.elytrarace.tools.converter.legacy.LegacyBoostConfig;
 import net.elytrarace.tools.converter.legacy.LegacyCupFile;
+import net.elytrarace.tools.converter.legacy.LegacyGuide;
 import net.elytrarace.tools.converter.legacy.LegacyKey;
 import net.elytrarace.tools.converter.legacy.LegacyMapFile;
 import net.elytrarace.tools.converter.legacy.LegacyPortal;
@@ -15,6 +16,8 @@ import net.elytrarace.tools.converter.legacy.LegacyUuid;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 
@@ -98,6 +101,8 @@ public final class MapConverter {
             LegacyMapFile legacyMap = read(directory.resolve("map.json"), LegacyMapFile.class);
             List<LegacyPortal> portals = readList(directory.resolve("portals.json"), LegacyPortal.class);
 
+            List<LegacyGuide> guides = readOptionalList(directory.resolve("guides.json"), LegacyGuide.class);
+
             String name = value(legacyMap.name(), directory.resolve("map.json"));
             List<Ring> rings = CourseConverter.toRings(portals, options.points());
             MapDefinition map = new MapDefinition(
@@ -106,7 +111,9 @@ public final class MapConverter {
                     options.spawnFor(worldDirectory),
                     rings,
                     options.referenceTime(),
-                    boostConfig(legacyMap));
+                    boostConfig(legacyMap),
+                    new GuideLine(CourseConverter.toGuidePoints(guides, portals), options.lookAheadRings(),
+                            options.particleSpacing()));
 
             if (mapFiles.put(name, CatalogWriter.toJson(map, mapNotes(map, options, legacyMap))) != null) {
                 throw new InvalidCourseException(
@@ -115,8 +122,8 @@ public final class MapConverter {
             if (legacyMap.uuid() != null) {
                 nameByUuid.put(legacyMap.uuid().toUuid(), name);
             }
-            System.out.printf("map '%s' — %s rings, world '%s', spawn %s%n",
-                    name, rings.size(), map.world(), map.spawn());
+            System.out.printf("map '%s' — %s rings, %s guide point(s), world '%s', spawn %s%n",
+                    name, rings.size(), map.guideLine().points().size(), map.world(), map.spawn());
         }
         if (mapFiles.isEmpty()) {
             throw new InvalidCourseException("no map directory under %s holds a map.json".formatted(mapsIn));
@@ -189,7 +196,7 @@ public final class MapConverter {
     }
 
     private static List<String> mapNotes(MapDefinition map, ConverterOptions options, LegacyMapFile legacyMap) {
-        return List.of(
+        List<String> notes = new ArrayList<>(List.of(
                 "Converted from the old map.json/portals.json format by tools/map-converter. Every "
                         + "ring normal below was derived from the recorded rim points and oriented by "
                         + "the bisector of the flight path; see CourseConverter for why that rule and "
@@ -203,9 +210,47 @@ public final class MapConverter {
                         + "nothing here to preserve; a balancing pass edits this file.")
                         .formatted(options.points()),
                 boostBurnNote(map, legacyMap),
-                boostCooldownNote(map, legacyMap),
-                "This file is data, not code: edit the seeds above here rather than in the server.",
-                "%s rings, indexed 0..%s.".formatted(map.rings().size(), map.rings().size() - 1));
+                boostCooldownNote(map, legacyMap)));
+        notes.addAll(guideLineNotes(map));
+        notes.add("This file is data, not code: edit the seeds above here rather than in the server.");
+        notes.add("%s rings, indexed 0..%s.".formatted(map.rings().size(), map.rings().size() - 1));
+        return List.copyOf(notes);
+    }
+
+    /**
+     * Where the racing line came from: the guide points are authored data, the two numbers beside
+     * them are not.
+     *
+     * <p>The split is the same one the boost tuning has, and worth saying in the file for the same
+     * reason. A guide point is a position a builder placed to steer the line around terrain, carried
+     * across exactly as written — nothing about it was derived and there is nothing in it to tune. How
+     * far ahead the line reaches and how densely it is drawn are seeds nobody has flown: they decide
+     * what a racer sees, not where the course goes, and the first person to fly the map is the one who
+     * should set them.
+     */
+    private static List<String> guideLineNotes(MapDefinition map) {
+        int count = map.guideLine().points().size();
+        String points = count == 0
+                ? "guideLine.points — none. This course has no guides.json, so its racing line is the "
+                        + "line through its rings alone, which is legal and means no straight ring-to-ring "
+                        + "segment needed bending around terrain."
+                : ("guideLine.points — %s point(s), carried from the old guides.json exactly as "
+                        + "written. They are not rings: nothing is scored at one, and they exist only "
+                        + "to pull the line off a straight ring-to-ring segment that would cut through "
+                        + "terrain. orderIndex places a point between two rings, where ring i sits at "
+                        + "i * %s; more than one guide between the same pair of rings is normal.")
+                        .formatted(count, GuidePoint.RING_ORDER_STRIDE);
+        return List.of(
+                points,
+                ("guideLine.lookAheadRings — PROVISIONAL seed of %s, reasoned rather than flown: the "
+                        + "line is drawn from the ring a racer is heading for to %s ring(s) past it, "
+                        + "which on this course is a few seconds of flight. Drawing the whole course "
+                        + "at once tells a racer nothing about which strand is next.")
+                        .formatted(map.guideLine().lookAheadRings(), map.guideLine().lookAheadRings()),
+                ("guideLine.particleSpacing — PROVISIONAL seed of %s block(s) between particles, the "
+                        + "value the tree being replaced used for the same partial-line mode. Halving "
+                        + "it doubles what one racer's stretch costs to send every refresh.")
+                        .formatted(map.guideLine().particleSpacing()));
     }
 
     /**
@@ -297,6 +342,19 @@ public final class MapConverter {
             throw new InvalidCourseException("%s is empty".formatted(file));
         }
         return parsed;
+    }
+
+    /**
+     * Reads a list that a map directory may simply not have.
+     *
+     * <p>Only {@code guides.json} is like this, and it is not an oversight in the old data: a course
+     * whose rings can be joined by straight lines without cutting through anything needs no guide
+     * points, and three of the four maps in the repository have no such file. An absent file is
+     * therefore an empty list, while a present but unreadable or empty one still stops the conversion
+     * — "there are no guides" and "the guides could not be read" are different answers.
+     */
+    private static <T> List<T> readOptionalList(Path file, Class<T> element) {
+        return Files.isRegularFile(file) ? readList(file, element) : List.of();
     }
 
     private static <T> List<T> readList(Path file, Class<T> element) {
