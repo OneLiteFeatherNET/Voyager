@@ -8,7 +8,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("paper", "1.21.5-R0.1-SNAPSHOT")
-            version("minestom", "2026.05.11-1.21.11")
+            version("minestom", "2026.05.17-1.21.11")
             version("hibernate", "7.3.10.Final")
             version("flyway", "12.9.0")
             version("mariadb-client", "3.5.10")
