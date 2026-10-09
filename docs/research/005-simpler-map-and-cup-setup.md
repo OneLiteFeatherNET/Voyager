@@ -249,8 +249,8 @@ Each candidate names one Conventional Commits type and scope, as the OpenSpec ru
 | ID | Candidate change | Type(scope) | Slice | One-line scope | Depends on | MoSCoW | E6 relation |
 |---|---|---|---|---|---|---|---|
 | Q1 | Single load point for catalogs | refactor(platform) | Map, cup | Route all catalog reads through `CatalogDirectory.readAll` | none | Must | Independent |
-| Q2 | Derive ring index and default world | feat(platform) | Map | Index from list position; world defaults to map id; breaking for shipped files | none | Should | Independent |
-| Q3 | Schema version and JSON Schema | feat(platform) | Map, cup | Add `schemaVersion`; publish `$schema` and validate on load | none | Should | Independent |
+| Q2 | Derive ring index and default world | feat(platform) | Map | Index from list position; world defaults to map id; breaking for shipped files. **Implemented by `simplify-map-data-format`:** a declared index must equal its position; world defaults to the map `name` exactly (not a lowercased id) and is not breaking, since no shipped file changes value | none | Should | Independent |
+| Q3 | Schema version and JSON Schema | feat(platform) | Map, cup | Add `schemaVersion`; publish `$schema` and validate on load. **Implemented by `simplify-map-data-format`:** the version is refused above 1; the schema is published for editors and checked in a test, and is not validated on load (design decision 5) | none | Should | Independent |
 | Q4 | Scope cup consistency to the selected cup | feat(platform) | Cup | Fully validate the selected cup; warn for the others | none | Must | Independent |
 | Q5 | Name both selection switches in errors | fix(platform) | Cup | Hint names `-Pcup` and `-DVOYAGER_CUP` | none | Should | Independent |
 | Q6 | Validate task for maps, cups and worlds (implemented by `add-catalog-validate-task`) | feat(build) | All | Implements NFR-007's validate-and-exit mode; reports every problem | Q4 | Must | Independent; closes the NFR-007 gap |

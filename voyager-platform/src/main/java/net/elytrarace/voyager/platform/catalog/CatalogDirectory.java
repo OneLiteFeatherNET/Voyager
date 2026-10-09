@@ -7,10 +7,8 @@ import com.google.gson.JsonParseException;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.catalog.adapter.CupDefinitionAdapter;
 import net.elytrarace.voyager.platform.catalog.adapter.MapDefinitionAdapter;
-import net.elytrarace.voyager.platform.catalog.adapter.RingAdapter;
 import net.elytrarace.voyager.platform.catalog.adapter.Vec3Adapter;
 import net.elytrarace.voyager.platform.catalog.exception.DuplicateCatalogEntryException;
 import net.elytrarace.voyager.platform.catalog.exception.MalformedCatalogFileException;
@@ -47,12 +45,12 @@ final class CatalogDirectory {
 
     /**
      * One Gson for both halves of the loader, built once. Registering the adapters here rather than inside
-     * each catalogue is what makes {@code RingAdapter} able to ask for a {@code Vec3} through the
-     * deserialisation context instead of constructing its own reader.
+     * each catalogue lets {@code MapDefinitionAdapter} ask for a {@code Vec3} through the deserialisation
+     * context instead of constructing its own reader. A ring is not registered: it is never a top-level
+     * value, and {@code MapDefinitionAdapter} reads each one with its position in the array.
      */
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(Vec3.class, new Vec3Adapter())
-            .registerTypeAdapter(Ring.class, new RingAdapter())
             .registerTypeAdapter(MapDefinition.class, new MapDefinitionAdapter())
             .registerTypeAdapter(CupDefinition.class, new CupDefinitionAdapter())
             .create();

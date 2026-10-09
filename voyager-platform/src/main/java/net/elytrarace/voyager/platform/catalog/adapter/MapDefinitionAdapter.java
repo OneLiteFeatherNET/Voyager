@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.catalog.adapter;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -34,13 +35,17 @@ import java.util.List;
  * can honour — the rounding would be invisible in the file and visible in the race. The conversion
  * happened once, in {@code tools/map-converter}, and the committed file carries the answer.
  *
+ * <p>Two fields may be left out because the loader derives them: {@code world}, which is the map's
+ * {@code name}, and each ring's {@code index}, which is its position in the array. Every other field this
+ * record needs is required by name above, so a misspelt one already fails as an absent one — with
+ * {@code world} the misspelling is not caught here, and the boot check that the world directory exists
+ * is what catches it.
+ *
  * <p>A {@code notes} array is expected in these files and deliberately not read. The values the old
  * data never carried — the spawn, the reference time, a ring's score and how far ahead the racing
  * line reaches — were seeded during conversion, and the notes are how a file says so to the person
- * editing it. Unknown fields in
- * general are ignored rather than rejected: every field this record needs is required by name above,
- * so a misspelt one already fails as an absent one, and rejecting the rest would make a comment an
- * error.
+ * editing it. Unknown fields in general are ignored rather than rejected, and rejecting them would make
+ * a comment an error.
  */
 @ApiStatus.Internal
 public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinition> {
@@ -50,10 +55,12 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
         JsonObject json = JsonFields.object(element, "a map");
         String name = JsonFields.string(json, "name", "a map");
         String what = "map '%s'".formatted(name);
+        SchemaVersion.read(json, what);
 
+        JsonArray ringElements = JsonFields.array(json, "rings", what);
         List<Ring> rings = new ArrayList<>();
-        for (JsonElement ring : JsonFields.array(json, "rings", what)) {
-            rings.add(context.deserialize(ring, Ring.class));
+        for (int position = 0; position < ringElements.size(); position++) {
+            rings.add(RingAdapter.read(ringElements.get(position), position));
         }
 
         double seconds = JsonFields.number(json, "referenceTimeSeconds", what);
@@ -63,12 +70,31 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
 
         return new MapDefinition(
                 name,
-                JsonFields.string(json, "world", what),
+                world(json, name, what),
                 context.deserialize(JsonFields.required(json, "spawn", what), Vec3.class),
                 rings,
                 Duration.ofMillis(Math.round(seconds * 1000.0)),
                 boostConfig(json, what),
                 guideLine(json, what, context));
+    }
+
+    /**
+     * Reads the world directory the map races in.
+     *
+     * <p>When the file omits {@code world} the world is the map's {@code name}, byte for byte. A stated
+     * world is kept exactly as written, including when it differs from the name, because the shipped
+     * course's world directory is named with capitals its map name does not have. A stated world that is
+     * blank is refused here, naming the field, rather than left to the record's less specific message.
+     */
+    private static String world(JsonObject json, String name, String what) {
+        if (!JsonFields.present(json, "world")) {
+            return name;
+        }
+        String world = JsonFields.string(json, "world", what);
+        if (world.isBlank()) {
+            throw new JsonParseException("%s field 'world' must not be blank".formatted(what));
+        }
+        return world;
     }
 
     /**
