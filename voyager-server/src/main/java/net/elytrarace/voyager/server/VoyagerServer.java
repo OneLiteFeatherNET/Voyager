@@ -1,8 +1,6 @@
 package net.elytrarace.voyager.server;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Stage;
+import io.avaje.inject.BeanScope;
 
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
@@ -16,7 +14,6 @@ import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.elytrarace.voyager.server.game.Racers;
-import net.elytrarace.voyager.server.inject.VoyagerModule;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Pos;
@@ -52,10 +49,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *       a wrong working directory is a one-line refusal naming the absolute path rather than a
  *       stack trace forty lines into a server log.</li>
  *   <li><strong>{@code MinecraftServer.init()}.</strong> The registries have to exist before the
- *       injector asks for an {@code InstanceManager}.</li>
- *   <li><strong>The graph, in {@link Stage#PRODUCTION}.</strong> Guice then instantiates every
- *       singleton eagerly, which is what turns a malformed map file or a cup naming a map nothing
- *       provides into a boot failure instead of a surprise ten minutes into a rotation.</li>
+ *       graph asks for an {@code InstanceManager}.</li>
+ *   <li><strong>The graph, built eagerly.</strong> {@link #openGraph} constructs every singleton now,
+ *       which is what turns a malformed map file or a cup naming a map nothing provides into a boot
+ *       failure instead of a surprise ten minutes into a rotation.</li>
  *   <li><strong>Every world the cup plays, resolved and reported.</strong> {@code MapInstances}
  *       refuses a world with no region data behind it, so this is where "that world is not on disk"
  *       lands — before a client can connect, rather than when the map comes up.</li>
@@ -148,22 +145,22 @@ public final class VoyagerServer {
 
         MinecraftServer server = MinecraftServer.init();
 
-        Injector injector;
+        BeanScope graph;
         try {
-            // PRODUCTION, not the default DEVELOPMENT: every singleton is built now, so a malformed
-            // map file, a duplicate definition or a cup naming a map nothing provides is a refusal
-            // here rather than an exception on whichever tick first asked for it.
-            injector = Guice.createInjector(Stage.PRODUCTION, new VoyagerModule(settings));
+            // Every singleton is built now, so a malformed map file, a duplicate definition or a cup
+            // naming a map nothing provides is a refusal here rather than an exception on whichever
+            // tick first asked for it.
+            graph = openGraph(settings);
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start while building the object graph", exception);
             System.exit(1);
             return;
         }
 
-        CupDefinition cup = injector.getInstance(CupDefinition.class);
-        MapCatalog maps = injector.getInstance(MapCatalog.class);
-        MapInstances instances = injector.getInstance(MapInstances.class);
-        CupSession session = injector.getInstance(CupSession.class);
+        CupDefinition cup = graph.get(CupDefinition.class);
+        MapCatalog maps = graph.get(MapCatalog.class);
+        MapInstances instances = graph.get(MapInstances.class);
+        CupSession session = graph.get(CupSession.class);
 
         List<MapDefinition> rotation;
         Instance firstWorld;
@@ -184,11 +181,35 @@ public final class VoyagerServer {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
         scheduleTick(session);
-        registerShutdownTask(instances, rotation);
+        registerShutdownTask(graph, instances, rotation);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
         server.start(settings.host(), settings.port());
         LOGGER.info("Voyager started. {}", session.describe().trim());
+    }
+
+    /**
+     * Builds the object graph for {@code settings}, with every singleton constructed before this returns.
+     *
+     * <p>Eager construction is what turns a malformed map file, a duplicate definition or a cup naming a
+     * map nothing provides into a refusal here, rather than an exception on whichever tick first asked for
+     * it. The scope is built without a JVM shutdown hook: {@code main} closes it from Minestom's own
+     * shutdown task, where it is ordered with the world handles instead of racing them.
+     *
+     * @return the scope; the caller closes it when the server stops
+     * @throws IllegalStateException if a bean cannot be built; the message and the cause name the failing
+     *     bean or configured value
+     */
+    static BeanScope openGraph(ServerSettings settings) {
+        try {
+            return BeanScope.builder()
+                    .bean(ServerSettings.class, settings)
+                    .shutdownHook(false)
+                    .build();
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException(
+                    "the object graph did not build: %s".formatted(exception.getMessage()), exception);
+        }
     }
 
     /**
@@ -328,7 +349,8 @@ public final class VoyagerServer {
      * save path is precisely how a bug anywhere else turns into a corrupted racetrack nobody notices
      * until a player flies into the hole.
      */
-    private static void registerShutdownTask(MapInstances instances, List<MapDefinition> rotation) {
+    private static void registerShutdownTask(BeanScope graph, MapInstances instances,
+            List<MapDefinition> rotation) {
         MinecraftServer.getSchedulerManager().buildShutdownTask(() -> {
             LOGGER.info("Shutting down");
             for (MapDefinition map : rotation) {
@@ -340,6 +362,9 @@ public final class VoyagerServer {
             } catch (RuntimeException exception) {
                 LOGGER.warn("A world handle did not close cleanly", exception);
             }
+            // After the world handles, so a bean's preDestroy hook, should one ever be added, runs
+            // once nothing is still reading a world through it.
+            graph.close();
         });
     }
 }

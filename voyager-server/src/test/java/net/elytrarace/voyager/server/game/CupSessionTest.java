@@ -942,7 +942,7 @@ class CupSessionTest {
     // Fixture
     // ------------------------------------------------------------------------------------------
 
-    /** Everything one cup needs, assembled the way {@code VoyagerModule} assembles it. */
+    /** Everything one cup needs, assembled the way the composition root assembles it. */
     private final class Fixture {
 
         private final MapInstances worlds;
