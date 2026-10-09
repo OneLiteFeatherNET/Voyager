@@ -112,26 +112,32 @@ THE SYSTEM SHALL forbid `io.avaje.inject..` outside `..server..` and `..setup..`
 - **WHEN** a class in `voyager-race` imports `io.avaje.inject..`
 - **THEN** the DI rule fails the build
 
-### Requirement: Platform classes carry constructor injection only
+### Requirement: Platform classes carry no DI annotation
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL forbid `@Singleton`, `@Named` and avaje annotations on `..platform..` classes, and SHALL allow `@Inject` on `..platform..` constructors only.
+THE SYSTEM SHALL forbid any `jakarta.inject..` or `io.avaje.inject..` annotation on `..platform..` classes, their constructors,
+methods and fields.
 
 #### Scenario: Avaje annotation in platform
 - **WHEN** a class in `..platform..` carries `@Factory` or `@Bean`
 - **THEN** the DI rule fails the build
 
-#### Scenario: Inject on a platform method
-- **WHEN** a method of a platform class is annotated `@Inject`
-- **THEN** the rule fails, because only constructors may be injected
+#### Scenario: Inject on a platform constructor
+- **WHEN** a constructor of a platform class is annotated `@Inject`
+- **THEN** the DI rule fails the build, because platform classes are wired by the composition root
 
-### Requirement: jakarta.inject is confined in the inner rings
+### Requirement: jakarta.inject is confined to the composition roots
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL forbid `jakarta.inject..` in `voyager-race`, in addition to `voyager-api` and `voyager-physics`, which the existing rules already forbid.
+THE SYSTEM SHALL forbid `jakarta.inject..` in `voyager-api`, `voyager-physics`, `voyager-race` and `voyager-platform`, and outside
+`..server..` and `..setup..` in every rebuild module.
 
 #### Scenario: Inject in a use case
 - **WHEN** a class in `..race..` carries `@Inject`
+- **THEN** the DI rule fails the build
+
+#### Scenario: Inject in a platform class
+- **WHEN** a class in `..platform..` carries `@Inject`
 - **THEN** the DI rule fails the build
 ### Requirement: Mutable static state and clock reads are forbidden in the inner rings
 **Priority:** MoSCoW Should
