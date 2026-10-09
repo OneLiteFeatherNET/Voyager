@@ -12,7 +12,7 @@ Maps and cups are read by two parallel classes, `JsonMapCatalog` and `JsonCupCat
 
 - Add one load point in `voyager-platform` `catalog`, `CatalogLoader`, that reads `maps/` and `cups/` from a data directory.
 - `CatalogLoader.read(Path)` returns a `CatalogReading`: an immutable `CatalogSnapshot` of the definitions that parsed, and the list of every `CatalogProblem` found, as data, in a deterministic order. Nothing is thrown for a bad file. Other changes (scoped cup validation, the validate task, hot reload) consume this list.
-- `CatalogLoader.load(Path)` returns the `CatalogSnapshot`, or throws the cause of the **first** problem in today's order: `maps/` before `cups/`, then the cross-catalogue check. The thrown exception is today's exception object with today's message.
+- `CatalogLoader.load(Path)` returns the `CatalogSnapshot`, or throws the cause of the **first** problem in today's order: `cups/` before `maps/`, then the cross-catalogue check. That is the order boot fails in today (avaje builds `JsonCupCatalog` before `JsonMapCatalog`), not the order the source lines suggest. The thrown exception is today's exception object with today's message.
 - The cup-to-map consistency check becomes part of the load, not a separate step the composition root must remember to call.
 - **BREAKING (within the rebuild only):** `JsonMapCatalog` and `JsonCupCatalog` are removed. Their callers in `voyager-server` take the snapshot or the `MapCatalog` / `CupCatalog` ports. No file format changes.
 - **Behaviour preserved:** a valid data directory produces the same map and cup definitions and the same cup selection as today; an invalid one refuses boot with the same exception type, the same message and the same first problem as today.

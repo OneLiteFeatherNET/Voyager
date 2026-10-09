@@ -22,15 +22,15 @@ smallest production change (Green), then cleanup (Refactor). Unit tests use `@Te
 
 - [ ] 3.1 Red: `CatalogLoaderTest.readReturnsEveryMalformedMapFileAsAProblem`: two malformed map files give a reading with two `CatalogProblem`s, sorted by file name, each whose `cause()` is a `MalformedCatalogFileException`. Nothing is thrown.
 - [ ] 3.2 Green: `CatalogDirectory.readAll` records per-file failures as `CatalogProblem` and continues; add `CatalogProblem` and `CatalogReading` (records) in `platform.catalog`.
-- [ ] 3.3 Red: `CatalogLoaderTest.missingCupsDirectoryIsOneProblemAndMapsAreStillRead`: `cups/` absent and `maps/` valid gives exactly one problem naming `cups/`, and the snapshot still holds the maps.
+- [ ] 3.3 Red: `CatalogLoaderTest.missingCupsDirectoryIsOneProblemAndMapsAreStillRead`: `cups/` absent and `maps/` valid gives exactly one problem naming `cups/`, listed first (cups are read first, as boot does today), and the snapshot still holds the maps.
 - [ ] 3.4 Green: read both directories independently in `CatalogLoader.read`.
-- [ ] 3.5 Red: `CatalogLoaderTest.duplicateMapNameIsAProblemNamingBothFiles`: two files with the same name give one problem whose message names both paths and the name; two reads of the same directory give equal readings.
+- [ ] 3.5 Red: `CatalogLoaderTest.duplicateMapNameIsAProblemNamingBothFiles`: two files with the same name give one problem whose message names both paths and the name; two reads of the same directory give equal readings, and the problem is listed after every `cups/` problem.
 - [ ] 3.6 Green: pass 3.5 by keeping sorted order and recording the duplicate as a problem.
 
 ## 4. Boot policy: the first problem refuses (platform)
 
-- [ ] 4.1 Red: `CatalogLoaderTest.loadRefusesWithTheFirstMalformedFileExceptionAndItsMessage`: two malformed map files; `load` throws `MalformedCatalogFileException` whose message equals today's message for the first file in sorted order.
-- [ ] 4.2 Green: `CatalogLoader.load` calls `read`, then throws the `cause()` of the first problem in the order maps, cups, cross-catalogue check. Pass 4.1.
+- [ ] 4.1 Red: `CatalogLoaderTest.loadRefusesWithTheFirstMalformedFileExceptionAndItsMessage`: two malformed map files; `load` throws `MalformedCatalogFileException` whose message equals today's message for the first file in sorted order. Add `loadRefusesWithTheCupFileWhenAMapAndACupAreBothMalformed`: the cup file is named, as boot names it today.
+- [ ] 4.2 Green: `CatalogLoader.load` calls `read`, then throws the `cause()` of the first problem in the order cups, maps, cross-catalogue check. Pass 4.1.
 - [ ] 4.3 Red: `CatalogLoaderTest.loadRefusesWithTodaysUnresolvedCupMapException`: a valid cup naming an unknown map; `load` throws `UnresolvedCupMapException` with today's message, listing the dangling entries.
 - [ ] 4.4 Red: `CatalogLoaderTest.crossCatalogueCheckIsSkippedWhenAMapFileIsMalformed`: a malformed map file and a cup naming a map; `load` throws the malformed-file exception, and no "plays unknown map" text appears anywhere in the thrown chain.
 - [ ] 4.5 Green: `CatalogConsistency` takes the two name-to-definition maps and returns its dangling references as today's single `UnresolvedCupMapException`; `CatalogLoader` runs it only when neither directory has a problem. Pass 4.3 and 4.4.
