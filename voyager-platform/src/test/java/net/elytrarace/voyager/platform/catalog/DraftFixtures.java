@@ -29,7 +29,7 @@ public final class DraftFixtures {
         List<Ring> rings = List.of(
                 new Ring(0, new Vec3(85, -54, 54), new Vec3(-1, 0, 0), RADIUS, 10, RingType.STANDARD),
                 new Ring(1, new Vec3(80, -54, 54), new Vec3(-1, 0, 0), RADIUS, 10, RingType.BOOST));
-        GuideLine guide = new GuideLine(List.of(new GuidePoint(0, new Vec3(84, -54, 54))), 2, 1.0);
+        GuideLine guide = new GuideLine(List.of(new GuidePoint(50, new Vec3(84, -54, 54))), 2, 1.0);
         return new MapDraft(id, id.value(), new Vec3(109, -62, 54), rings, 60.0, new BoostConfig(30, 40), guide);
     }
 }

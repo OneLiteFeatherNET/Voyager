@@ -20,6 +20,11 @@ public final class InvalidDraftException extends RuntimeException {
                 null);
     }
 
+    /** A stored draft that cannot be read back into a draft, with the file and the field named in {@code detail}. */
+    public static InvalidDraftException unreadable(MapId id, String detail) {
+        return new InvalidDraftException("draft '%s' cannot be read: %s".formatted(id.value(), detail), null);
+    }
+
     public static InvalidDraftException nonPositiveReferenceTime(MapId id, double seconds) {
         return new InvalidDraftException(
                 "draft '%s' has a reference time of %s seconds; it must be finite and positive".formatted(id.value(), seconds),
