@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.server;
 
+import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 
@@ -22,11 +23,13 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * The validate-and-exit run: exit 0 for a configuration with no error, exit 1 for one with any, the
@@ -190,6 +193,70 @@ class ConfigCheckRunTest {
 
         assertThat(suppliedInstances).hasValue(1);
         assertThat(MinecraftServer.isStarted()).isFalse();
+    }
+
+    /**
+     * Boot refuses for the cup it plays and warns about the rest: a malformed cup file that is not played
+     * does not appear among the refusals.
+     */
+    @Test
+    void aBrokenUnplayedCupDoesNotRefuseBoot(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        Files.writeString(data.resolve("cups").resolve("zz-broken.json"), "");
+
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings(data, worlds, "test_cup"),
+                env.process().instance());
+
+        assertThat(refusals).isEmpty();
+    }
+
+    /**
+     * A played cup that names a map nothing provides refuses boot, and only its own entry is listed: the
+     * unplayed cup file that does not parse is left to the warning.
+     */
+    @Test
+    void aBrokenPlayedCupRefusesBootWithItsOwnEntryAndNotAnUnplayedCupFile(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        Path played = data.resolve("cups").resolve("played.json");
+        Files.writeString(played, """
+                {"name": "played", "mode": "RACE", "mapNames": ["no-such-map"]}
+                """);
+        Files.writeString(data.resolve("cups").resolve("zz-broken.json"), "");
+
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings(data, worlds, "played"),
+                env.process().instance());
+
+        assertThat(refusals).extracting(ConfigProblem::source, ConfigProblem::key).containsExactly(
+                tuple(played.toAbsolutePath().toString(), "no-such-map"));
+    }
+
+    /**
+     * Nothing named and two cup files, one of them broken: no cup can be called the one played, so the
+     * ambiguity refuses boot and the broken file is listed beside it.
+     */
+    @Test
+    void anUnnamedSelectionWithABrokenSecondCupFileRefusesBoot(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        Path broken = Files.writeString(data.resolve("cups").resolve("zz-broken.json"), "");
+        ServerSettings unnamed = new ServerSettings("127.0.0.1", 25572, data, worlds, Optional.empty(), false);
+
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(unnamed, env.process().instance());
+
+        assertThat(refusals).extracting(ConfigProblem::key)
+                .containsExactlyInAnyOrder("file", ServerSettings.CUP_PROPERTY);
+        assertThat(refusals).extracting(ConfigProblem::source).contains(broken.toAbsolutePath().toString());
     }
 
     private static Map<String, String> properties(Path data, Path worlds) {
