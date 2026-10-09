@@ -54,6 +54,14 @@ dependencyResolutionManagement {
             library("log4j2.core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j2")
             library("log4j2.slf4j2", "org.apache.logging.log4j", "log4j-slf4j2-impl").versionRef("log4j2")
 
+            // Compile-time DI for the composition root only (voyager-server). The processor generates the
+            // wiring; no other module may depend on any of these or on jakarta.inject.
+            version("avaje-inject", "12.7")
+            library("avaje.inject.runtime", "io.avaje", "avaje-inject").versionRef("avaje-inject")
+            library("avaje.inject.processor", "io.avaje", "avaje-inject-generator").versionRef("avaje-inject")
+            library("avaje.inject.test", "io.avaje", "avaje-inject-test").versionRef("avaje-inject")
+            library("jakarta.inject", "jakarta.inject", "jakarta.inject-api").version("2.0.1")
+
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
             bundle("flyway", listOf("flyway.core", "flyway.mysql"))
             bundle("fawe", listOf("fawe.core", "fawe.bukkit"))
