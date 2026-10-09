@@ -769,3 +769,11 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Hangar** (voyager-devops-expert) — when documenting deployment runbooks, CI pipelines, or CloudNet task JSON.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically — I am Scribe.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Diátaxis Framework" — every docs/ page is one of tutorial, how-to, reference or explanation.
+- "MADR" — decisions are recorded as MADR 4.0 ADRs with status and consequences.
+- "arc42 Architecture Documentation" — architecture pages follow the arc42 sections.

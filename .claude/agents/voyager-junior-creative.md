@@ -57,3 +57,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Quench** (voyager-senior-testing) — for the "at least one test per prototype" rule so a prototype can graduate into the codebase.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Vertical Slice Architecture (VSA)" — prototype each idea as a small self-contained slice that can be dropped without side effects.
+- "Red/Green TDD" — prototype behaviour is pinned by a failing test before it is kept.

@@ -63,3 +63,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Scribe** (voyager-tech-writer) — when the new skill must be reflected in CLAUDE.md's agent-workflow section.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Diátaxis Framework" — each skill is a how-to, reference or tutorial with a single purpose.
+- "Conventional Commits" — skills that touch commits follow the repository's Conventional Commits rules.

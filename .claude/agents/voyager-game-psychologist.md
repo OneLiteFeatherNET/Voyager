@@ -528,3 +528,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Spark** (voyager-junior-creative) — when a flow-breaking mechanic needs unconventional reframing (e.g., comeback routes, variable-reward alternatives) before conventional solutions are chosen.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists — I am Pulse.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "EARS-Requirements" — phrase each player-facing requirement as an observable trigger and response, such as feedback timing.
+- "MoSCoW" — rank retention and motivation changes by impact on the core loop.

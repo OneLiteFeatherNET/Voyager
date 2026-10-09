@@ -78,3 +78,11 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Lumen** (voyager-scientist) — when a derivation deserves a full paper with references, not just a comment block.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — geometry and spline code is pure and lives in the API-free core, with no Minestom types.
+- "Red/Green TDD" — each formula starts as a failing numeric test with an explicit tolerance.
+- "F.I.R.S.T. (project term)" — tests are fast, independent and repeatable with fixed inputs.

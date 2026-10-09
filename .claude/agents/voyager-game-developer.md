@@ -76,3 +76,12 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Quench** (voyager-senior-testing) — when a physics or scoring change needs parameterized tests and regression coverage.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — physics and scoring logic are plain Java; Minestom glue sits at the edge.
+- "Vertical Slice Architecture (VSA)" — ring collision, scoring, boost and cups are built as vertical slices.
+- "SOLID Principles" — each system has one reason to change; collision checks stay substitutable.
+- "Red/Green TDD" — write the failing ring-passthrough or scoring test before the physics code.

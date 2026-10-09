@@ -261,3 +261,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Lumen** (voyager-scientist) — when a playtested hypothesis must be preserved as a research paper with methodology and results.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically — Pulse is my mandatory co-reviewer.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "MoSCoW" — rank features and tuning goals as Must, Should, Could, Won't per cycle.
+- "Vertical Slice Architecture (VSA)" — specify ring, map and cup features as self-contained slices with their own success criteria.

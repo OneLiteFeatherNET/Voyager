@@ -86,3 +86,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Pulse** (voyager-game-psychologist) — when an agent's scope touches gameplay feel, to avoid the new agent bypassing Pulse's review gate.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — agent definitions state their role and boundaries; keep each agent's scope pointing inward to the shared rules it cites.
+- "SOLID Principles" — one responsibility per agent; split overlapping roles rather than widening one.

@@ -72,3 +72,12 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Piston** (voyager-java-performance) — when a JMH micro-benchmark is required in CI to prevent performance regression.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Red/Green TDD" — every change starts with a failing test that is then made green and refactored.
+- "Testing Pyramid" — many fast unit tests, fewer integration tests, few in-process server tests.
+- "TDD, Chicago School" — prefer state-based assertions on real collaborators in unit tests.
+- "F.I.R.S.T. (project term)" — tests are fast, independent, repeatable and self-validating, with injected Clock and @TempDir.

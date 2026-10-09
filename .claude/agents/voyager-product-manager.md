@@ -69,3 +69,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Beacon** (voyager-social-media) — when a milestone is done and the community needs an announcement.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically — I am Compass.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "EARS-Requirements" — every acceptance criterion is written in EARS form so it can be verified.
+- "MoSCoW" — scope each milestone as Must, Should, Could, Won't before work starts.

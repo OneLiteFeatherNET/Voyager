@@ -193,3 +193,13 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Hangar** (voyager-devops-expert) — when the decision has deployment implications (CloudNet task config, JVM flags, module packaging).
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Vertical Slice Architecture (VSA)" — race, ring, cup and map setup are slices; each slice owns its code end to end.
+- "Clean Architecture" — dependencies point inward; voyager-api stays pure, Minestom lives only in voyager-platform and voyager-server.
+- "Hexagonal Architecture (Ports & Adapters)" — Minestom, persistence and setup are adapters behind ports owned by the domain.
+- "MADR" — every architecture decision is a MADR record under docs/ with options and trade-offs.
+- "arc42 Architecture Documentation" — system views follow the arc42 section structure.
