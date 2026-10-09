@@ -19,6 +19,15 @@ dependencies {
 
     implementation("io.airlift:guice:$guiceVersion")
 
+    // avaje-inject generates the composition root's wiring at compile time (no reflection). The
+    // processor runs in this module only; the runtime finds the generated modules through
+    // ServiceLoader. jakarta.inject is the JSR-330 annotation set the wiring reads. Nothing outside
+    // voyager-server may depend on any of these, see ApiPurityTest.
+    implementation(libs.avaje.inject.runtime)
+    annotationProcessor(libs.avaje.inject.processor)
+    implementation(libs.jakarta.inject)
+    testImplementation(libs.avaje.inject.test)
+
     // Same reasoning as voyager-platform's line: Minestom and falco-anvil both put slf4j-api on the
     // runtime classpath and neither exposes it for compilation, so a module that logs needs it
     // compileOnly. A second pin is not a second version — it is the one Minestom already resolves.
@@ -72,6 +81,9 @@ val prepareRunData by tasks.registering(Copy::class) {
 
 tasks.shadowJar {
     archiveClassifier.set("")
+    // Defensive: keeps every META-INF/services file, including avaje's InjectExtension, merged rather
+    // than overwritten by whichever dependency is copied last.
+    mergeServiceFiles()
     manifest {
         attributes["Main-Class"] = "net.elytrarace.voyager.server.VoyagerServer"
     }
