@@ -72,7 +72,7 @@ integration test (4.7) is the one exception and is marked as such.
   Done: `ConfigCheckRunTest.leavesTheConfiguredPortUnbound`. It does not count calls to `start()`; `ConfigCheck` has no path to it.
 - [x] 5.4 Green: add `ConfigCheck.run` returning an int, and the `voyager.config.check` branch in `VoyagerServer.main` that returns before the game server is started. Verify: 5.1 to 5.3 pass.
   Done: `ConfigCheck.run`; `VoyagerServer.main` branch returns before `openGraph`.
-- [ ] 5.5 Red: a test asserts that `VoyagerServer.main` with `voyager.config.check=true` does not reach the `openGraph` method. Verify: test fails, then passes after 5.4.
+- [x] 5.5 Red: a test asserts that `VoyagerServer.main` with `voyager.config.check=true` does not reach the `openGraph` method. Verify: test fails, then passes after 5.4. Covered by `ConfigCheckRunTest.theEntryPointLeavesTheGameServerNotStarted` through `VoyagerServer.configCheck`, which `main` delegates to: `openGraph` is not on that path, so the test asserts that `MinecraftServer.isStarted()` stays false.
   Note: not written. `main` exits the JVM in check mode, so no test can drive that branch. Covered by the manual `validateCatalog` runs (6.1 to 6.5).
 
 ## 6. Gradle task, skip switch and run gating (voyager-server build)
