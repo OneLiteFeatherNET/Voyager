@@ -142,6 +142,42 @@ class CatalogValidationTest {
     }
 
     @Test
+    void reportsASchemaVersionAboveTheSupportedMaximumAsAProblemNamingTheFile() throws IOException {
+        String future = CatalogFixtures.MAP.formatted("future", "ElytraraceFuture")
+                .replace("\"name\"", "\"schemaVersion\": 2,\n  \"name\"");
+        write(data().resolve("maps"), "future.json", future);
+        map(data().resolve("maps"), "ok.json", "ok", "ElytraraceOk");
+        cup(data().resolve("cups"), "c.json", "c", "RACE", "ok");
+        worldWithRegionData("ElytraraceOk");
+
+        List<ConfigProblem> problems = CatalogValidation.validate(data(), worlds(), new CountingHealth());
+
+        assertThat(problems).singleElement().satisfies(problem -> {
+            assertThat(problem.source()).isEqualTo(data().resolve("maps/future.json").toAbsolutePath().toString());
+            assertThat(problem.severity()).isEqualTo(Severity.ERROR);
+            assertThat(problem.message()).contains("schemaVersion 2").contains("up to schemaVersion 1");
+        });
+    }
+
+    @Test
+    void reportsARingIndexThatIsNotItsPositionAsAProblemNamingTheFile() throws IOException {
+        String misindexed = CatalogFixtures.MAP.formatted("blue", "ElytraraceBlue")
+                .replace("\"index\": 1", "\"index\": 7");
+        write(data().resolve("maps"), "blue.json", misindexed);
+        map(data().resolve("maps"), "ok.json", "ok", "ElytraraceOk");
+        cup(data().resolve("cups"), "c.json", "c", "RACE", "ok");
+        worldWithRegionData("ElytraraceOk");
+
+        List<ConfigProblem> problems = CatalogValidation.validate(data(), worlds(), new CountingHealth());
+
+        assertThat(problems).singleElement().satisfies(problem -> {
+            assertThat(problem.source()).isEqualTo(data().resolve("maps/blue.json").toAbsolutePath().toString());
+            assertThat(problem.severity()).isEqualTo(Severity.ERROR);
+            assertThat(problem.message()).contains("position 1").contains("declares index 7");
+        });
+    }
+
+    @Test
     void aValidConfigurationYieldsNoProblemAndTheSameResultOnEveryRun() throws IOException {
         map(data().resolve("maps"), "blue.json", "blue", "ElytraraceBlue");
         map(data().resolve("maps"), "red.json", "red", "ElytraraceRed");
