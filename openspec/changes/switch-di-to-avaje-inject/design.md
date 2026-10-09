@@ -20,7 +20,7 @@ the rebuild and none is added.
 **Goals:**
 - Wiring errors become build errors for every bean the composition root declares (spec: missing or ambiguous wiring).
 - Startup behaviour, lifetimes and the refusal messages stay as they are (spec: startup, lifetimes).
-- The system pipeline order is declared once, as an explicit list (spec: pipeline order).
+- (Moved) The system pipeline order is not declared in this change; see Decision 5.
 - The architecture suite enforces where DI annotations may appear, with no rule passing vacuously.
 
 **Non-Goals:**
@@ -28,7 +28,8 @@ the rebuild and none is added.
 - No `avaje-inject-javax` artifacts, no AOP or interceptors, no avaje HTTP or config modules.
 - No JPMS descriptors (decision recorded in ADR-0015 on the unmerged branch; not contradicted here).
 - No change to `voyager-setup` (not yet in the build) and no change to the tree being replaced.
-- No constructor-injection rewrite of `voyager-api`, `voyager-physics` or `voyager-race`. Those stay DI-free.
+- No annotation on any class in `voyager-api`, `voyager-physics`, `voyager-race` or `voyager-platform`. All four stay
+  DI-free; the platform and race classes are wired from `voyager-server` by `@Bean` methods.
 
 ## Decisions
 
@@ -37,8 +38,8 @@ the rebuild and none is added.
 Dependencies point inward, toward `voyager-api`:
 
 ```
-voyager-server (composition root: avaje @Factory/@Bean, BeanScope, jakarta @Inject allowed)
-   -> voyager-platform (adapters: jakarta @Inject on constructors allowed, no avaje types)
+voyager-server (composition root: avaje @Factory/@Bean, BeanScope, jakarta @Inject, all DI annotations live here)
+   -> voyager-platform (adapters: no DI annotation, constructors called from voyager-server @Bean methods)
       -> voyager-race -> voyager-physics -> voyager-api   (no DI annotation of any kind)
 ```
 
@@ -47,8 +48,8 @@ voyager-server (composition root: avaje @Factory/@Bean, BeanScope, jakarta @Inje
 | `voyager-api` | none (no `jakarta.inject`, no `io.avaje.inject`) | none |
 | `voyager-physics` | none | none |
 | `voyager-race` | none | none |
-| `voyager-platform` | `jakarta.inject` on constructors only | `@Inject` added to existing constructors of wired classes |
-| `voyager-server` | `jakarta.inject`, `io.avaje.inject` (`@Factory`, `@Bean`, `BeanScope`) | `inject/ServerBeans` (`@Factory`), `inject/RaceBeans` (`@Factory`, ordered pipeline) |
+| `voyager-platform` | none (no `jakarta.inject`, no `io.avaje.inject`) | none; no class is touched |
+| `voyager-server` | `jakarta.inject`, `io.avaje.inject` (`@Factory`, `@Bean`, `BeanScope`) | `inject/ServerBeans` (`@Factory`), `inject/RaceBeans` (`@Factory`, `CupSession`) |
 
 `VoyagerModule` is deleted. Its bindings move one-for-one into the two factory classes; the spike task maps
 each old `@Provides` to its new `@Bean` so none is dropped silently.
@@ -68,40 +69,54 @@ Alternatives considered:
 
 ### 3. Explicit wiring for cross-module classes
 
-The annotation processor runs in `voyager-server` and sees only the classes compiled there. Classes in
-`voyager-platform` and `voyager-race` are therefore wired by `@Bean` methods in `voyager-server`, which spell out
-their constructor parameters. `jakarta.inject.@Inject` on a platform constructor declares the dependencies in
-the JSR-330 form and is read by the processor only where that class is compiled in `voyager-server`. The
-spike (task 1) confirms this. If the processor does not honour `@Inject` on a constructor at all, the
-annotation is kept as documentation and the `@Bean` method is the wiring. Either way the fitness suite and
-a graph test catch a `@Bean` method that falls out of step with the constructor.
+The annotation processor runs in `voyager-server` and sees only the classes compiled there. Spike 1.3 (passed)
+showed that `jakarta.inject.@Inject` alone is not enough: a class is wired only when it carries `@Singleton` (or
+`@Component`) and is compiled in `voyager-server`. A plain `@Inject` class without a scope annotation fails with
+"No dependency provided", and a `@Singleton @Inject` class from `voyager-platform` is not wired from
+`voyager-server` at all. Therefore every class in `voyager-platform` and `voyager-race` is wired by a `@Bean`
+method in `voyager-server` that spells out its constructor parameters, and no annotation is placed on those
+classes (decision 1). Classes that `voyager-server` owns may use `@Singleton` with `@Inject`, but the `@Bean`
+form is the default for consistency. A `@Bean` method that falls out of step with its constructor fails
+compilation, and the graph test resolves every type.
 
 ### 4. Lifecycle: eager construction, BeanScope at the root
 
 `VoyagerServer.main` builds one `BeanScope` after `MinecraftServer.init()` and before any `getInstance`-style
-lookup. Every `@Singleton`/`@Bean` the server owns must be constructed when the scope is built, because the spec
-requires refusal before listening. The spike confirms that avaje constructs singletons eagerly at build; if it
-does not, `VoyagerServer` resolves each bean it needs at startup, and the graph test asserts every one. The
-settings instance is supplied to the builder as a bean (exact builder method confirmed in the spike). The scope
-is closed in the existing shutdown task.
+lookup. Every `@Singleton`/`@Bean` the server owns is constructed when the scope is built, because the spec
+requires refusal before listening. Spike 1.4 (passed) confirmed eager construction: a singleton is constructed at
+`build()` even if the test never requests it. The settings instance is supplied to the builder as a bean; the
+exact builder method is checked when task 3.4 compiles. The scope is closed in the existing shutdown task.
 
-### 5. Pipeline order as one explicit list
+### 5. (Moved) Pipeline order is not part of this change
 
-The per-tick system sequence becomes a single `@Bean` method in `RaceBeans` returning
-`List.of(...)` wrapped in `Collections.unmodifiableList`, with the order written out in code. No `List<T>`
-injection of systems, because avaje does not guarantee the order of collection injection. A test asserts the
-exact sequence; that is the only place the order is defined.
+An earlier draft made the per-tick system sequence an explicit unmodifiable `List` built in one `@Bean` method. That
+is removed from this change by user decision (2026-10-09). `CupSession.tick()` (`voyager-server`
+`game/CupSession.java`, about lines 291-310) is not a list of uniform systems: the flight result is folded into
+`lastSimulated`, boosts advance after that, a null driver returns early, and `onUpdate()` is followed by a conditional
+post-step that mutates `currentMap`. Turning that into a list is a redesign. It belongs to the cup-slice refactor
+(moving `CupSession` to `race.cup`) in change `define-clean-architecture-with-vertical-slices`, which declares the
+per-tick step order once and tests it. This change keeps `CupSession.tick()` as it is, and no `List<T>` injection of
+steps is introduced.
 
 ### 6. Fitness rules
 
 `ApiPurityTest` changes as follows:
 - `apiDoesNotDependOnADiContainer` and `physicsDoesNotDependOnADiContainer`: `com.google.inject..` becomes
   `io.avaje.inject..`; `jakarta.inject..` stays.
-- `onlyServerDependsOnDiContainer`: forbids `io.avaje.inject..` outside `net.elytrarace.voyager.server..`. It
-  no longer forbids `jakarta.inject..`, because platform constructors legitimately carry it (decision 1).
-- A rule forbidding `jakarta.inject..` in `voyager-race` is added if the spike finds none (race is the only
-  other domain module; its exclusion is the Clean Architecture boundary in decision 1).
+- `onlyServerDependsOnDiContainer`: forbids both `io.avaje.inject..` and `jakarta.inject..` outside
+  `net.elytrarace.voyager.server..`, across every rebuild module.
+- A rule forbids `jakarta.inject..` and `io.avaje.inject..` in `voyager-race` and `voyager-platform` (decision 1),
+  so the four non-composition modules each carry an explicit rule.
 - All rules keep `allowEmptyShould(false)`. `FitnessCoverageTest` keeps seeing each module covered.
+
+### 8. Bean mapping: the two catalogue ports have no separate `@Bean`
+
+`VoyagerModule` provided `MapCatalog` and `CupCatalog` as well as the JSON catalogues. In `ServerBeans` the
+`JsonMapCatalog` and `JsonCupCatalog` beans are the only ones. avaje registers each catalogue bean under every interface
+it implements, so `MapCatalog` and `CupCatalog` resolve to those singletons. A second `@Bean` returning the same instance
+for each port made resolution ambiguous (the compile-time error of spike 1.2). `VoyagerGraphTest` asserts that each port
+and its implementation resolve to the same instance. This is a deliberate deviation from the one-to-one mapping in
+decision 1; lifetimes and identity stay exactly as before.
 
 ### 7. Documentation
 
@@ -114,16 +129,19 @@ exact sequence; that is the only place the order is defined.
 
 ## Risks / Trade-offs
 
-- **[The processor does not fail on a missing bean]** → Spike task 1 is first and must prove a deliberately
-  missing bean breaks `compileJava`. If it does not, the fallback is a graph test that fails on any unresolved
-  bean, and the spec scenario is re-worded before tasks continue.
-- **[Cross-module wiring duplicated between `@Inject` constructors and `@Bean` methods]** → A `@Bean` method
-  that drifts from its constructor fails compilation (argument mismatch) rather than at runtime. The graph test
-  resolves every type.
-- **[Shadow jar drops or duplicates avaje's generated or service entries]** → `runServer` boot is part of
-  the build task list; the spike runs the shadow jar and checks it reaches "Listening on".
+- **[The processor does not fail on a missing or ambiguous bean]** → Verified by spike 1.1 and 1.2 (passed). A
+  missing type is named in the error; an ambiguous type is reported through the conflicting `@Bean` method names,
+  not the type. The spec scenario is worded to match.
+- **[Cross-module wiring written by hand in `@Bean` methods]** → A `@Bean` method that drifts from its
+  constructor fails compilation (argument mismatch) rather than at runtime. The graph test resolves every type.
+- **[Shadow jar drops or duplicates avaje's generated or service entries]** → Spike 1.5 (passed) showed the
+  generator writes `META-INF/services/io.avaje.inject.spi.InjectExtension` and the shadow jar keeps it. Defensive
+  `mergeServiceFiles()` is configured (task 2.3) and checked with `unzip -l | grep services`; `runServer` boot
+  is still checked at task 8.2.
 - **[Build time grows from the processor]** → Measured before and after in the PR description; accepted if it
   is within a few seconds.
+- **[Pipeline order is not checked by this change]** → Accepted. The order stays in `CupSession.tick()`; the cup-slice
+  refactor declares and tests it.
 - **[Lost `Stage.PRODUCTION` semantics]** → Replaced by eager construction (decision 4) and asserted by a test.
 - **[Two DI styles in the codebase while the old tree remains]** → The old tree does not use this container; no
   shared module is touched.
@@ -131,9 +149,9 @@ exact sequence; that is the only place the order is defined.
 
 ## Migration Plan
 
-One PR, squash-merged. Commits on the branch, one type each: `build(server)` for the catalog and Gradle change;
+One PR, squash-merged. Commits on the branch, one type each: `build(server)` for the catalog, Gradle and shadow-jar change;
 `refactor(server)` for factories, `BeanScope` bootstrap and removal of `VoyagerModule`; `test(server)` for the
-graph and order tests (written first); `test(fitness)` for `ApiPurityTest`; `docs` commits for the spec, `CLAUDE.md` and ADR-0016. The squash commit on `main` is
+graph and startup tests (written first); `test(fitness)` for `ApiPurityTest`; `docs` commits for the spec, `CLAUDE.md` and ADR-0016. The squash commit on `main` is
 `refactor(server): replace guice with avaje-inject`.
 
 Rollback: the squash commit is a single revert, which restores Guice, `VoyagerModule` and the rules together.

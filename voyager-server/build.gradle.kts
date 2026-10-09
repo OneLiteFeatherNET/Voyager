@@ -3,21 +3,20 @@ plugins {
     alias(libs.plugins.shadow)
 }
 
-// io.airlift:guice, not upstream com.google.inject:guice: the maintained fork carries no ASM and no
-// Unsafe. Package names are unchanged (com.google.inject.*), so ApiPurityTest's DI rule matches on
-// that package regardless of which artifact supplied it. Pinned inline for the same reason Minestom
-// 26.2 is pinned inline in voyager-platform/build.gradle.kts — there is no existing catalog alias to
-// collide with here, but a bare version string keeps the pin visible at the point of use rather than
-// buried in a catalog only this one module reads.
-val guiceVersion = "10"
-
 dependencies {
     implementation(project(":voyager-api"))
     implementation(project(":voyager-physics"))
     implementation(project(":voyager-race"))
     implementation(project(":voyager-platform"))
 
-    implementation("io.airlift:guice:$guiceVersion")
+    // avaje-inject generates the composition root's wiring at compile time (no reflection). The
+    // processor runs in this module only; the runtime finds the generated modules through
+    // ServiceLoader. jakarta.inject is the JSR-330 annotation set the wiring reads. Nothing outside
+    // voyager-server may depend on any of these, see ApiPurityTest.
+    implementation(libs.avaje.inject.runtime)
+    annotationProcessor(libs.avaje.inject.processor)
+    implementation(libs.jakarta.inject)
+    testImplementation(libs.avaje.inject.test)
 
     // Same reasoning as voyager-platform's line: Minestom and falco-anvil both put slf4j-api on the
     // runtime classpath and neither exposes it for compilation, so a module that logs needs it
@@ -72,6 +71,9 @@ val prepareRunData by tasks.registering(Copy::class) {
 
 tasks.shadowJar {
     archiveClassifier.set("")
+    // Defensive: keeps every META-INF/services file, including avaje's InjectExtension, merged rather
+    // than overwritten by whichever dependency is copied last.
+    mergeServiceFiles()
     manifest {
         attributes["Main-Class"] = "net.elytrarace.voyager.server.VoyagerServer"
     }

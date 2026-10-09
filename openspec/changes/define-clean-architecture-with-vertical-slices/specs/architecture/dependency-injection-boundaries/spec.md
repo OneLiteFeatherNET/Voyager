@@ -23,30 +23,47 @@ and `voyager-race`. Their classes SHALL take their dependencies as ordinary cons
 - **WHEN** a test needs a race run
 - **THEN** it constructs the run with `new` and passes its ports as arguments
 
-### Requirement: Adapters carry jakarta.inject on constructors only
+### Requirement: Adapters carry no DI annotation
 **Priority:** MoSCoW Must
 
-WHERE a class in `voyager-platform` is wired by a composition root, THE SYSTEM MAY mark its constructor with `jakarta.inject.Inject`.
-THE SYSTEM SHALL NOT place `@Singleton`, `@Named` or any avaje annotation on a platform class, because the composition root alone decides the scope and the name of a bean.
+THE SYSTEM SHALL NOT place any `jakarta.inject` or avaje annotation on a class, constructor, method or field of
+`voyager-platform`, and the same holds for `voyager-persistence` when it exists. A composition root wires an adapter by a
+`@Bean` method that calls its constructor, because the composition root alone decides the scope and the name of a bean.
 
-#### Scenario: Platform constructor marked for injection
-- **WHEN** `JsonMapCatalog`'s constructor is marked with `@Inject`
-- **THEN** the change is allowed, and no other annotation appears on the class
+#### Scenario: Platform class marked for injection
+- **WHEN** a platform class or its constructor carries `@Inject`, `@Singleton`, `@Named` or any avaje annotation
+- **THEN** the architecture rules fail the build and name the offending class
 
-#### Scenario: Platform class scoped by annotation
-- **WHEN** a platform class is annotated `@Singleton`
-- **THEN** the architecture rules fail the build, and the scope is declared in the composition root instead
+#### Scenario: Platform class constructed by the root
+- **WHEN** the graph needs `JsonMapCatalog`
+- **THEN** a `@Bean` method in `voyager-server` calls its constructor, and `JsonMapCatalog` carries no annotation
 
-### Requirement: Only composition roots use the avaje container
+### Requirement: Only composition roots use DI annotations and the avaje container
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL use avaje-inject `@Factory`, `@Bean` and `BeanScope` only in the composition roots `voyager-server` and
-`voyager-setup`, and only in their `inject` packages and in the one process entry-point class of each deployable
-(`VoyagerServer` for the server). No avaje type SHALL appear in a public signature outside those places.
+THE SYSTEM SHALL use `jakarta.inject` annotations and avaje-inject `@Factory`, `@Bean` and `BeanScope` only in the composition roots
+`voyager-server` and `voyager-setup`, and avaje-inject only in their `inject` packages and in the one process entry-point class
+of each deployable (`VoyagerServer` for the server). No avaje type SHALL appear in a public signature outside those places.
 
 #### Scenario: Container type in a slice
 - **WHEN** a class in `net.elytrarace.voyager.race.cup..` or `net.elytrarace.voyager.platform..` imports `io.avaje.inject..`
 - **THEN** the architecture rules fail the build
+
+#### Scenario: Inject annotation in a slice
+- **WHEN** a class in `net.elytrarace.voyager.race..` or `net.elytrarace.voyager.platform..` imports `jakarta.inject..`
+- **THEN** the architecture rules fail the build
+
+### Requirement: Injection annotations need a scope and in-module compilation
+**Priority:** MoSCoW Must
+
+WHERE a composition root uses `jakarta.inject.Inject` on a constructor, THE SYSTEM SHALL also declare `@Singleton` or `@Component`
+on that class, and the class SHALL be compiled in the composition root's module. Spike 1.3 of `switch-di-to-avaje-inject`
+showed that avaje ignores `@Inject` alone and does not wire classes from other modules. A class outside the composition root
+is wired by a `@Bean` method.
+
+#### Scenario: Inject without scope in the root
+- **WHEN** a class in `voyager-server` carries `@Inject` on its constructor and no `@Singleton` or `@Component`
+- **THEN** the class is not wired from the container, and the composition root declares a `@Bean` method for it instead
 
 #### Scenario: Container type in a public signature
 - **WHEN** a public method of a server class other than `VoyagerServer` and the `inject` packages returns a `BeanScope`

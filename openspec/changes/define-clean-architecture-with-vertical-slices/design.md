@@ -195,8 +195,15 @@ is a use-case exception in ring 4 and moves into `race.cup.exception` (follow-up
 |---|---|---|
 | 1 entities | None | `voyager-api`, `voyager-physics` |
 | 2 use cases | None | `voyager-race`. Classes take constructor parameters and nothing else |
-| 3 adapters | `jakarta.inject.Inject` on constructors only | `voyager-platform`. No `@Singleton`, no `@Named`, no avaje type |
+| 3 adapters | None. Classes are constructed by `@Bean` methods of the composition root | `voyager-platform`; later `voyager-persistence`. No `@Inject`, `@Singleton`, `@Named` or avaje type |
 | 4 composition | `jakarta.inject`, avaje `@Factory`, `@Bean`, `BeanScope` | `voyager-server` `inject` package and `VoyagerServer`; later `voyager-setup` |
+
+Spike facts from `switch-di-to-avaje-inject` (task 1, passed 2026-10-09) that bind this table:
+- Avaje wires a class only when it carries `@Singleton` (or `@Component`) and is compiled in the composition root.
+  `@Inject` alone is not picked up. A class from another module is wired only by a `@Bean` method, which is why ring 3
+  needs no annotation at all.
+- A missing bean fails `compileJava` and names the type. An ambiguous bean fails too, but the message names the
+  conflicting `@Bean` methods, not the type.
 
 Rules that follow from the table:
 - **One composition root per deployable.** `voyager-server` now, `voyager-setup` when it exists. They do not share a root.
@@ -240,7 +247,7 @@ Proposed rules for `add-architecture-slice-rules` (each with `allowEmptyShould(f
 | Ring order | `layeredArchitecture()` with layers Entities (`..api..`, `..physics..`), UseCases (`..race..`), Adapters (`..platform..`, `..persistence..`), Composition (`..server..`, `..setup..`) |
 | Slice cycles | `slices().matching("net.elytrarace.voyager.race.(*)..").should().beFreeOfCycles()`, the same for platform's feature slices and for `api.(*)` |
 | Slice internals | Generated per slice: `noClasses().that().resideOutsideOfPackage(<slice>..).should().dependOnClassesThat().resideInAPackage(<slice>.internal..)` |
-| DI placement | `io.avaje.inject..` forbidden outside `..server..` and `..setup..`; `jakarta.inject..` forbidden in race; `@Singleton`, `@Named`, avaje annotations forbidden on platform classes; `@Inject` only on constructors in platform; `BeanScope` only in `..server.inject..` and `VoyagerServer` |
+| DI placement | `io.avaje.inject..` and `jakarta.inject..` forbidden outside `..server..` and `..setup..`; no DI annotation on any platform class; `BeanScope` only in `..server.inject..` and `VoyagerServer` |
 | No mutable statics, no clock reads | Non-final static field rule for all modules; `callMethod` rules for `System.currentTimeMillis`, `System.nanoTime`, `Instant.now` in api, physics, race |
 | Server holds no scoring after the move | After follow-up 2: `noClasses().that().resideInAPackage("..server..").should().dependOnClassesThat().resideInAPackage("..race.scoring..")` |
 
@@ -272,7 +279,7 @@ These are real findings in `main`. Each line is a candidate for one of the follo
 9. `voyager-server/src/main/java/net/elytrarace/voyager/server/game/CurrentMapBlocks.java:3-5` uses Minestom instances and
    blocks. Target `platform.world`. Follow-up 2.
 10. `voyager-server/src/main/java/net/elytrarace/voyager/server/game/CupSession.java:291-302` defines the tick order in the body
-    of `tick()`. Target: the explicit ordered list in the composition root (switch-di task 4.1). Follow-up 2 or the avaje change.
+    of `tick()`. Target: declare the per-tick step order once and test it, in follow-up 2. The switch-di change no longer covers this (moved 2026-10-09).
 
 **Technical packages with slice content (ring 3):**
 11. `voyager-platform/src/main/java/net/elytrarace/voyager/platform/world/RaceRuns.java:6-7` imports `race.flow.RaceClock`
@@ -332,7 +339,7 @@ This change ships documentation only. The order of the work that follows:
 
 1. This change: specs, design, ADR-0017, explanation page, pointers. Merged as `docs(architecture)`. No behaviour changes.
 2. Follow-up 1, `add-architecture-slice-rules` (`test(fitness)`): adds the proposed rules whose violations are already fixed, and records the rest as held back.
-3. Follow-up 2, `move-cup-flow-out-of-server` (`refactor(server)`): items 1 to 10.
+3. Follow-up 2, `move-cup-flow-out-of-server` (`refactor(server)`): items 1 to 10. The cup-slice refactor owns "declare the per-tick step order once and test it" (item 10). That work moved out of `switch-di-to-avaje-inject` on 2026-10-09, because `CupSession.tick()` is not a list of uniform systems and turning it into one is a redesign.
 4. Follow-up 3, `regroup-platform-by-slice` (`refactor(platform)`): items 11 to 17.
 5. Follow-up 4, `flatten-api-by-slice` (`refactor(api)`): item 18.
 6. The avaje change (`refactor(server)`) lands whenever it is approved. Its `ServerBeans` and `RaceBeans` are split into per-slice factories in follow-up 2 (items 9 and 10 touch the same classes).

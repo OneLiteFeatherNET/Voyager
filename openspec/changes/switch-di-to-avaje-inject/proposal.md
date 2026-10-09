@@ -20,20 +20,28 @@ machinery. The switch is cheap now: only one module and one `@Provides` module u
 - Replace `VoyagerModule` (AbstractModule with 13 `@Provides` methods) with avaje `@Factory` and `@Bean`
   classes in `voyager-server`. Bindings and their semantics (singletons, the `Supplier<Collection<Player>>`
   that re-reads the roster, the cup consistency check) are preserved.
-- Annotate constructors of classes wired by the composition root with JSR-330 `jakarta.inject` (`@Inject`,
-  `@Singleton`, `@Named`) in `voyager-platform` and `voyager-server`. Avaje-specific annotations
-  (`@Factory`, `@Bean`) appear only in `voyager-server`.
+- `jakarta.inject` (JSR-330) and avaje annotations (`@Factory`, `@Bean`, `@Singleton`) appear only in `voyager-server`,
+  the composition root. `voyager-platform` stays annotation-free, like `voyager-api`, `voyager-physics` and
+  `voyager-race`: no annotation is added to any of its classes or constructors. Every platform and race class the
+  graph needs is constructed by a `@Bean` method in `voyager-server` that calls its constructor (spike 1.3: avaje
+  does not wire a class from another module through an annotation).
+- `voyager-server` gets `jakarta.inject-api:2.0.1` as its only `jakarta.inject` dependency, and its shadow jar is
+  configured with `mergeServiceFiles()` so avaje's `META-INF/services` entries survive packaging.
 - `VoyagerServer.main` builds the graph with `BeanScope` instead of `Guice.createInjector(Stage.PRODUCTION, ...)`
   and keeps its existing order: settings, `MinecraftServer.init()`, graph, world opening, events, listen.
-- The system pipeline order, which is a correctness property, becomes an explicit unmodifiable `List` built in
-  one `@Factory` `@Bean` method, not an injected collection. Avaje does not guarantee order for `List<T>`
-  injection.
+- (Moved) The system pipeline order is no longer part of this change. `CupSession.tick()` is not a list of uniform
+  systems (the flight result is folded into `lastSimulated`, boosts advance after it, a null-driver early return,
+  and a conditional post-step mutates `currentMap`), so making it a list is a redesign. It belongs to the cup-slice
+  refactor in `define-clean-architecture-with-vertical-slices` (decided by the user, 2026-10-09).
 - `ApiPurityTest` rules that forbid `com.google.inject..` and `io.airlift..` outside the composition root now
-  forbid `io.avaje.inject..` instead. `jakarta.inject..` stays forbidden in `voyager-api`, `voyager-physics`
-  and `voyager-race`.
+  forbid `io.avaje.inject..` instead. `jakarta.inject..` and `io.avaje.inject..` are forbidden in `voyager-api`,
+  `voyager-physics`, `voyager-race` and `voyager-platform`, and outside `voyager-server` in every module.
 - Documentation describing the swap is updated in the same change: greenfield design spec (D10 row, the
   "Dependency injection" section, the risk table row), `CLAUDE.md` "Key Decisions", and a new ADR
   `docs/decisions/0016-*.md` (MADR 4.0) that references ADR-0013 from `refactor/architecture-ratchet` as prior art.
+- Accepted deviation: no separate `@Bean` for the ports `MapCatalog` and `CupCatalog`. avaje registers
+  `JsonMapCatalog` and `JsonCupCatalog` under the interfaces they implement; a second `@Bean` returning the same
+  instance made resolution ambiguous. The ports resolve to the same singletons (see design.md, decision 8).
 - **BREAKING** for internal code only: `VoyagerModule` is removed; no external API changes.
 
 Why the docs ride along: the D10 text and `CLAUDE.md` would be false the moment the code merges without them,
@@ -58,13 +66,14 @@ any slice (race, ring, cup, map setup) other than the wiring that connects them.
 
 ## Impact
 
-- **Build:** `voyager-server/build.gradle.kts` (dependency swap, processor added, `guiceVersion` removed);
+- **Build:** `voyager-server/build.gradle.kts` (dependency swap, processor added, `jakarta.inject-api` added,
+  shadow jar `mergeServiceFiles()`, `guiceVersion` removed);
   `settings.gradle.kts` (catalog entries). Build-time cost of the annotation processor is expected to be small.
-- **Code:** `voyager-server` (`VoyagerServer`, `inject/VoyagerModule` replaced, new factory classes),
-  `voyager-platform` (`jakarta.inject` on constructors only), a comment in `game/CupSession.java` that names
-  the Guice module.
+- **Code:** `voyager-server` (`VoyagerServer`, `inject/VoyagerModule` replaced, new factory classes), a comment in
+  `game/CupSession.java` that names the Guice module. `voyager-platform` and `voyager-race` source is unchanged.
 - **Tests:** new composition-root test asserting the graph builds and every bean `VoyagerModule` provides
-  today resolves; pipeline-order test; spike test proving a missing bean fails compilation; `ApiPurityTest` updated.
+  today resolves; `ApiPurityTest` updated. The compile-time behaviour for missing and
+  ambiguous beans is verified by spike 1.1 and 1.2 (recorded in tasks.md), not by a permanent test.
 - **Fitness:** `voyager-fitness` `ApiPurityTest`. `FitnessCoverageTest` must still see every module covered.
 - **Docs:** spec D10, `CLAUDE.md`, ADR-0016.
 - **Runtime:** none expected for players; boot still fails fast if the graph is incomplete.
