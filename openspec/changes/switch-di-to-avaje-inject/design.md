@@ -20,7 +20,7 @@ the rebuild and none is added.
 **Goals:**
 - Wiring errors become build errors for every bean the composition root declares (spec: missing or ambiguous wiring).
 - Startup behaviour, lifetimes and the refusal messages stay as they are (spec: startup, lifetimes).
-- The system pipeline order is declared once, as an explicit list (spec: pipeline order).
+- (Moved) The system pipeline order is not declared in this change; see Decision 5.
 - The architecture suite enforces where DI annotations may appear, with no rule passing vacuously.
 
 **Non-Goals:**
@@ -49,7 +49,7 @@ voyager-server (composition root: avaje @Factory/@Bean, BeanScope, jakarta @Inje
 | `voyager-physics` | none | none |
 | `voyager-race` | none | none |
 | `voyager-platform` | none (no `jakarta.inject`, no `io.avaje.inject`) | none; no class is touched |
-| `voyager-server` | `jakarta.inject`, `io.avaje.inject` (`@Factory`, `@Bean`, `BeanScope`) | `inject/ServerBeans` (`@Factory`), `inject/RaceBeans` (`@Factory`, ordered pipeline) |
+| `voyager-server` | `jakarta.inject`, `io.avaje.inject` (`@Factory`, `@Bean`, `BeanScope`) | `inject/ServerBeans` (`@Factory`), `inject/RaceBeans` (`@Factory`, `CupSession`) |
 
 `VoyagerModule` is deleted. Its bindings move one-for-one into the two factory classes; the spike task maps
 each old `@Provides` to its new `@Bean` so none is dropped silently.
@@ -87,12 +87,16 @@ requires refusal before listening. Spike 1.4 (passed) confirmed eager constructi
 `build()` even if the test never requests it. The settings instance is supplied to the builder as a bean; the
 exact builder method is checked when task 3.4 compiles. The scope is closed in the existing shutdown task.
 
-### 5. Pipeline order as one explicit list
+### 5. (Moved) Pipeline order is not part of this change
 
-The per-tick system sequence becomes a single `@Bean` method in `RaceBeans` returning
-`List.of(...)` wrapped in `Collections.unmodifiableList`, with the order written out in code. No `List<T>`
-injection of systems, because avaje does not guarantee the order of collection injection. A test asserts the
-exact sequence; that is the only place the order is defined.
+An earlier draft made the per-tick system sequence an explicit unmodifiable `List` built in one `@Bean` method. That
+is removed from this change by user decision (2026-10-09). `CupSession.tick()` (`voyager-server`
+`game/CupSession.java`, about lines 291-310) is not a list of uniform systems: the flight result is folded into
+`lastSimulated`, boosts advance after that, a null driver returns early, and `onUpdate()` is followed by a conditional
+post-step that mutates `currentMap`. Turning that into a list is a redesign. It belongs to the cup-slice refactor
+(moving `CupSession` to `race.cup`) in change `define-clean-architecture-with-vertical-slices`, which declares the
+per-tick step order once and tests it. This change keeps `CupSession.tick()` as it is, and no `List<T>` injection of
+steps is introduced.
 
 ### 6. Fitness rules
 
@@ -104,6 +108,15 @@ exact sequence; that is the only place the order is defined.
 - A rule forbids `jakarta.inject..` and `io.avaje.inject..` in `voyager-race` and `voyager-platform` (decision 1),
   so the four non-composition modules each carry an explicit rule.
 - All rules keep `allowEmptyShould(false)`. `FitnessCoverageTest` keeps seeing each module covered.
+
+### 8. Bean mapping: the two catalogue ports have no separate `@Bean`
+
+`VoyagerModule` provided `MapCatalog` and `CupCatalog` as well as the JSON catalogues. In `ServerBeans` the
+`JsonMapCatalog` and `JsonCupCatalog` beans are the only ones. avaje registers each catalogue bean under every interface
+it implements, so `MapCatalog` and `CupCatalog` resolve to those singletons. A second `@Bean` returning the same instance
+for each port made resolution ambiguous (the compile-time error of spike 1.2). `VoyagerGraphTest` asserts that each port
+and its implementation resolve to the same instance. This is a deliberate deviation from the one-to-one mapping in
+decision 1; lifetimes and identity stay exactly as before.
 
 ### 7. Documentation
 
@@ -127,6 +140,8 @@ exact sequence; that is the only place the order is defined.
   is still checked at task 8.2.
 - **[Build time grows from the processor]** → Measured before and after in the PR description; accepted if it
   is within a few seconds.
+- **[Pipeline order is not checked by this change]** → Accepted. The order stays in `CupSession.tick()`; the cup-slice
+  refactor declares and tests it.
 - **[Lost `Stage.PRODUCTION` semantics]** → Replaced by eager construction (decision 4) and asserted by a test.
 - **[Two DI styles in the codebase while the old tree remains]** → The old tree does not use this container; no
   shared module is touched.
@@ -136,7 +151,7 @@ exact sequence; that is the only place the order is defined.
 
 One PR, squash-merged. Commits on the branch, one type each: `build(server)` for the catalog, Gradle and shadow-jar change;
 `refactor(server)` for factories, `BeanScope` bootstrap and removal of `VoyagerModule`; `test(server)` for the
-graph and order tests (written first); `test(fitness)` for `ApiPurityTest`; `docs` commits for the spec, `CLAUDE.md` and ADR-0016. The squash commit on `main` is
+graph and startup tests (written first); `test(fitness)` for `ApiPurityTest`; `docs` commits for the spec, `CLAUDE.md` and ADR-0016. The squash commit on `main` is
 `refactor(server): replace guice with avaje-inject`.
 
 Rollback: the squash commit is a single revert, which restores Guice, `VoyagerModule` and the rules together.

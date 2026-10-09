@@ -29,15 +29,19 @@ machinery. The switch is cheap now: only one module and one `@Provides` module u
   configured with `mergeServiceFiles()` so avaje's `META-INF/services` entries survive packaging.
 - `VoyagerServer.main` builds the graph with `BeanScope` instead of `Guice.createInjector(Stage.PRODUCTION, ...)`
   and keeps its existing order: settings, `MinecraftServer.init()`, graph, world opening, events, listen.
-- The system pipeline order, which is a correctness property, becomes an explicit unmodifiable `List` built in
-  one `@Factory` `@Bean` method, not an injected collection. Avaje does not guarantee order for `List<T>`
-  injection.
+- (Moved) The system pipeline order is no longer part of this change. `CupSession.tick()` is not a list of uniform
+  systems (the flight result is folded into `lastSimulated`, boosts advance after it, a null-driver early return,
+  and a conditional post-step mutates `currentMap`), so making it a list is a redesign. It belongs to the cup-slice
+  refactor in `define-clean-architecture-with-vertical-slices` (decided by the user, 2026-10-09).
 - `ApiPurityTest` rules that forbid `com.google.inject..` and `io.airlift..` outside the composition root now
   forbid `io.avaje.inject..` instead. `jakarta.inject..` and `io.avaje.inject..` are forbidden in `voyager-api`,
   `voyager-physics`, `voyager-race` and `voyager-platform`, and outside `voyager-server` in every module.
 - Documentation describing the swap is updated in the same change: greenfield design spec (D10 row, the
   "Dependency injection" section, the risk table row), `CLAUDE.md` "Key Decisions", and a new ADR
   `docs/decisions/0016-*.md` (MADR 4.0) that references ADR-0013 from `refactor/architecture-ratchet` as prior art.
+- Accepted deviation: no separate `@Bean` for the ports `MapCatalog` and `CupCatalog`. avaje registers
+  `JsonMapCatalog` and `JsonCupCatalog` under the interfaces they implement; a second `@Bean` returning the same
+  instance made resolution ambiguous. The ports resolve to the same singletons (see design.md, decision 8).
 - **BREAKING** for internal code only: `VoyagerModule` is removed; no external API changes.
 
 Why the docs ride along: the D10 text and `CLAUDE.md` would be false the moment the code merges without them,
@@ -68,7 +72,7 @@ any slice (race, ring, cup, map setup) other than the wiring that connects them.
 - **Code:** `voyager-server` (`VoyagerServer`, `inject/VoyagerModule` replaced, new factory classes), a comment in
   `game/CupSession.java` that names the Guice module. `voyager-platform` and `voyager-race` source is unchanged.
 - **Tests:** new composition-root test asserting the graph builds and every bean `VoyagerModule` provides
-  today resolves; pipeline-order test; `ApiPurityTest` updated. The compile-time behaviour for missing and
+  today resolves; `ApiPurityTest` updated. The compile-time behaviour for missing and
   ambiguous beans is verified by spike 1.1 and 1.2 (recorded in tasks.md), not by a permanent test.
 - **Fitness:** `voyager-fitness` `ApiPurityTest`. `FitnessCoverageTest` must still see every module covered.
 - **Docs:** spec D10, `CLAUDE.md`, ADR-0016.

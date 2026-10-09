@@ -3,9 +3,14 @@
 ## Purpose
 
 Defines how the rebuilt Voyager server assembles its object graph at startup: when wiring errors are
-detected, which startup failures refuse to run the server, how the system pipeline order is fixed, and where
+detected, which startup failures refuse to run the server, and where
 dependency-injection concerns are allowed to live. Players do not see this capability directly; it is the
 contract the server and the architecture suite rely on.
+
+The per-tick system pipeline order is not part of this capability. `CupSession.tick()` is not a list of uniform
+systems, so declaring its order is deferred to the cup-slice refactor in change
+`define-clean-architecture-with-vertical-slices` (decided by the user, 2026-10-09), which declares the order once and
+tests it.
 
 ## ADDED Requirements
 
@@ -59,20 +64,6 @@ was introduced.
 #### Scenario: Online-player supplier reads the live roster
 - **WHEN** a player joins after startup and the cup session asks for the online players
 - **THEN** the player appears in the result without restarting the server
-
-### Requirement: System pipeline order is fixed and declared once
-**Priority:** MoSCoW Must
-
-THE SYSTEM SHALL run the per-tick systems of the race in one declared sequence. THE SYSTEM SHALL NOT derive
-that sequence from the order in which the container happens to enumerate candidates.
-
-#### Scenario: Systems run in declared order
-- **WHEN** one server tick runs
-- **THEN** the systems execute in the sequence declared in the composition root
-
-#### Scenario: Reordering the declaration changes execution order
-- **WHEN** the declared sequence is changed in the composition root
-- **THEN** the next tick executes the systems in the new sequence without any other change
 
 ### Requirement: No container lookups after startup
 **Priority:** MoSCoW Must

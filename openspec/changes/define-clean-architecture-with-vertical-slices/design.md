@@ -279,7 +279,7 @@ These are real findings in `main`. Each line is a candidate for one of the follo
 9. `voyager-server/src/main/java/net/elytrarace/voyager/server/game/CurrentMapBlocks.java:3-5` uses Minestom instances and
    blocks. Target `platform.world`. Follow-up 2.
 10. `voyager-server/src/main/java/net/elytrarace/voyager/server/game/CupSession.java:291-302` defines the tick order in the body
-    of `tick()`. Target: the explicit ordered list in the composition root (switch-di task 4.1). Follow-up 2 or the avaje change.
+    of `tick()`. Target: declare the per-tick step order once and test it, in follow-up 2. The switch-di change no longer covers this (moved 2026-10-09).
 
 **Technical packages with slice content (ring 3):**
 11. `voyager-platform/src/main/java/net/elytrarace/voyager/platform/world/RaceRuns.java:6-7` imports `race.flow.RaceClock`
@@ -339,7 +339,7 @@ This change ships documentation only. The order of the work that follows:
 
 1. This change: specs, design, ADR-0017, explanation page, pointers. Merged as `docs(architecture)`. No behaviour changes.
 2. Follow-up 1, `add-architecture-slice-rules` (`test(fitness)`): adds the proposed rules whose violations are already fixed, and records the rest as held back.
-3. Follow-up 2, `move-cup-flow-out-of-server` (`refactor(server)`): items 1 to 10.
+3. Follow-up 2, `move-cup-flow-out-of-server` (`refactor(server)`): items 1 to 10. The cup-slice refactor owns "declare the per-tick step order once and test it" (item 10). That work moved out of `switch-di-to-avaje-inject` on 2026-10-09, because `CupSession.tick()` is not a list of uniform systems and turning it into one is a redesign.
 4. Follow-up 3, `regroup-platform-by-slice` (`refactor(platform)`): items 11 to 17.
 5. Follow-up 4, `flatten-api-by-slice` (`refactor(api)`): item 18.
 6. The avaje change (`refactor(server)`) lands whenever it is approved. Its `ServerBeans` and `RaceBeans` are split into per-slice factories in follow-up 2 (items 9 and 10 touch the same classes).
