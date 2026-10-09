@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.server.game;
 
-import net.elytrarace.voyager.platform.catalog.JsonCupCatalog;
+import net.elytrarace.voyager.platform.catalog.CatalogLoader;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.server.game.exception.UnresolvedCupException;
 
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class CupResolutionTest {
 
     @Test
     void resolvesTheCupNamedByTheProperty() {
-        JsonCupCatalog cups = catalogOf(
+        CatalogSnapshot cups = catalogOf(
                 cup("autumn.json", "winter_series", "map-a"),
                 cup("bravo.json", "alpha_series", "map-b"));
 
@@ -44,14 +45,14 @@ class CupResolutionTest {
      */
     @Test
     void resolvesTheOnlyCupWhenNothingChoseOne() {
-        JsonCupCatalog cups = catalogOf(cup("zulu.json", "test_cup", "map-a"));
+        CatalogSnapshot cups = catalogOf(cup("zulu.json", "test_cup", "map-a"));
 
         assertThat(CupResolution.resolve(cups, Optional.empty()).name()).isEqualTo("test_cup");
     }
 
     @Test
     void refusesANameNoCupCarriesAndListsTheOnesThatAreThere() {
-        JsonCupCatalog cups = catalogOf(
+        CatalogSnapshot cups = catalogOf(
                 cup("autumn.json", "winter_series", "map-a"),
                 cup("bravo.json", "alpha_series", "map-b"));
 
@@ -69,7 +70,7 @@ class CupResolutionTest {
      */
     @Test
     void refusesToGuessWhenTheCatalogueHoldsMoreThanOneCupAndNothingChose() {
-        JsonCupCatalog cups = catalogOf(
+        CatalogSnapshot cups = catalogOf(
                 cup("autumn.json", "winter_series", "map-a"),
                 cup("bravo.json", "alpha_series", "map-b"));
 
@@ -88,7 +89,7 @@ class CupResolutionTest {
      */
     @Test
     void resolvesACupOfAnyLengthWithItsRotationIntact() {
-        JsonCupCatalog cups = catalogOf(cup("zulu.json", "grand_tour", "ridge-run", "dune-run", "spire-run"));
+        CatalogSnapshot cups = catalogOf(cup("zulu.json", "grand_tour", "ridge-run", "dune-run", "spire-run"));
 
         assertThat(CupResolution.resolve(cups, Optional.empty()).mapNames())
                 .containsExactly("ridge-run", "dune-run", "spire-run");
@@ -98,7 +99,12 @@ class CupResolutionTest {
     // Fixture
     // ------------------------------------------------------------------------------------------
 
-    private JsonCupCatalog catalogOf(String... files) {
+    /**
+     * The snapshot of the cups written. Read through the loader's {@code read}, so the map directory
+     * is absent and the cross-catalogue check reports a problem; the cups are kept regardless, and the
+     * resolution under test does not look at maps.
+     */
+    private CatalogSnapshot catalogOf(String... files) {
         Path cups = root.resolve("cups");
         try {
             Files.createDirectories(cups);
@@ -109,7 +115,7 @@ class CupResolutionTest {
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
-        return new JsonCupCatalog(cups);
+        return CatalogLoader.read(root).snapshot();
     }
 
     /** Returns {@code filename\njson}, which {@link #catalogOf} splits back apart. */

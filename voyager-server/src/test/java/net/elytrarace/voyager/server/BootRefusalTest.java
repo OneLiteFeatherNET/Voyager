@@ -87,8 +87,9 @@ class BootRefusalTest {
     /**
      * Characterizes the order boot reads the two directories in today, when both hold a malformed
      * file. It is the cup file that is named. The order is not written in any source line of the
-     * catalogue: avaje-inject's generated {@code DInjectModule} builds {@code JsonCupCatalog} before
-     * {@code JsonMapCatalog}, and the first failure ends the build.
+     * catalogue. The loader reads cups before maps for this reason: avaje-inject's generated
+     * {@code DInjectModule} built the cup catalogue before the map catalogue, and the first failure
+     * ended the build.
      */
     @Test
     void refusesBootWithTheCupFileWhenAMalformedMapAndAMalformedCupAreBothPresent(Env env) throws IOException {

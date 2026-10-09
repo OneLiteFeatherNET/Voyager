@@ -4,10 +4,11 @@ import io.avaje.inject.Bean;
 import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 
+import net.elytrarace.voyager.api.race.CupCatalog;
 import net.elytrarace.voyager.api.race.CupDefinition;
-import net.elytrarace.voyager.platform.catalog.CatalogConsistency;
-import net.elytrarace.voyager.platform.catalog.JsonCupCatalog;
-import net.elytrarace.voyager.platform.catalog.JsonMapCatalog;
+import net.elytrarace.voyager.api.race.MapCatalog;
+import net.elytrarace.voyager.platform.catalog.CatalogLoader;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
@@ -23,13 +24,11 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 /**
- * The services of the server that are not the race's own: Minestom's instance manager, the two
- * catalogues and the ports they answer, the cup with its consistency check, the world handles, and
- * the live roster.
+ * The services of the server that are not the race's own: Minestom's instance manager, the catalogue
+ * and the ports it answers, the cup chosen from it, the world handles, and the live roster.
  *
  * <p>This is the half of the graph that serves the server rather than the race. Every bean is a
- * singleton, which is avaje's default for a {@code @Bean}. The {@code MapCatalog} and {@code CupCatalog}
- * ports have no bean of their own; the catalogue beans already serve them (see below).
+ * singleton, which is avaje's default for a {@code @Bean}.
  *
  * <h2>Constructors are called here, not annotated</h2>
  *
@@ -44,9 +43,9 @@ import java.util.function.Supplier;
  * {@code init}. {@code VoyagerServer.main} calls {@code init} before it opens the graph, and that is the
  * only correct order.
  *
- * <p>{@link #cup} runs the cross-catalogue consistency check before it hands a cup back, so a cup
- * naming a map nothing provides fails while the graph is being built rather than the first time that
- * map comes up in the rotation, minutes after anybody was watching.
+ * <p>{@link #catalog} runs the cross-catalogue consistency check inside {@link CatalogLoader#load}, so a
+ * cup naming a map nothing provides fails while the graph is being built rather than the first time
+ * that map comes up in the rotation, minutes after anybody was watching.
  */
 @Factory
 public final class ServerBeans {
@@ -56,27 +55,34 @@ public final class ServerBeans {
         return MinecraftServer.getInstanceManager();
     }
 
+    /**
+     * The catalogue: every map and cup in the data directory, read once. {@link CatalogLoader#load}
+     * also runs the cross-catalogue check, so a cup naming a map nothing provides refuses boot here.
+     */
     @Bean
-    JsonMapCatalog jsonMapCatalog(@External ServerSettings settings) {
-        return new JsonMapCatalog(settings.dataPath().resolve("maps"));
+    CatalogSnapshot catalog(@External ServerSettings settings) {
+        return CatalogLoader.load(settings.dataPath());
     }
 
+    /**
+     * The map port, answered by the snapshot. A method reference rather than a second catalogue: the
+     * snapshot stays the one owner of the data.
+     */
     @Bean
-    JsonCupCatalog jsonCupCatalog(@External ServerSettings settings) {
-        return new JsonCupCatalog(settings.dataPath().resolve("cups"));
+    MapCatalog mapCatalog(CatalogSnapshot catalog) {
+        return catalog::mapByName;
     }
 
-    // No bean for the MapCatalog and CupCatalog ports. avaje registers a bean under every interface
-    // its class implements, so the two JSON catalogue beans already answer a MapCatalog or CupCatalog
-    // request with the same singleton. A @Bean that returned the same instance again would register it
-    // a second time, and every JsonMapCatalog or JsonCupCatalog request would then be ambiguous.
-    // Everything that plays a race is handed a port; only the cup resolution and the consistency
-    // check take the concrete type, because only they have to enumerate.
-
+    /** The cup port, answered by the snapshot. */
     @Bean
-    CupDefinition cup(JsonCupCatalog cups, JsonMapCatalog maps, @External ServerSettings settings) {
-        CatalogConsistency.requireEveryCupMapResolves(cups, maps);
-        return CupResolution.resolve(cups, settings.cupName());
+    CupCatalog cupCatalog(CatalogSnapshot catalog) {
+        return catalog::cupByName;
+    }
+
+    /** The cup this server plays, chosen from the snapshot by {@link CupResolution}. */
+    @Bean
+    CupDefinition cup(CatalogSnapshot catalog, @External ServerSettings settings) {
+        return CupResolution.resolve(catalog, settings.cupName());
     }
 
     @Bean

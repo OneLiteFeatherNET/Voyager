@@ -8,9 +8,8 @@ import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
-import net.elytrarace.voyager.platform.catalog.CatalogConsistency;
-import net.elytrarace.voyager.platform.catalog.JsonCupCatalog;
-import net.elytrarace.voyager.platform.catalog.JsonMapCatalog;
+import net.elytrarace.voyager.platform.catalog.CatalogLoader;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.race.line.RacingLine;
 
 import org.assertj.core.data.Offset;
@@ -20,7 +19,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * The data, not the code. Every other test of the catalogue writes its own fixtures on purpose — a
@@ -44,8 +42,8 @@ class CommittedMapDataTest {
 
     @Test
     void theCommittedRacecourseLoadsThroughTheRealCatalogue() {
-        MapDefinition map = new JsonMapCatalog(RESOURCES.resolve("maps"))
-                .byName("elytraraceblueandred").orElseThrow();
+        MapDefinition map = CatalogLoader.load(RESOURCES)
+                .mapByName("elytraraceblueandred").orElseThrow();
 
         assertThat(map.world()).isEqualTo("ElytraraceBlueAndRed");
         assertThat(map.spawn()).isEqualTo(new Vec3(109, -62, 54));
@@ -56,8 +54,8 @@ class CommittedMapDataTest {
 
     @Test
     void everyRingOfTheCommittedRacecourseCarriesAUnitNormalAndTheOctagonRadius() {
-        MapDefinition map = new JsonMapCatalog(RESOURCES.resolve("maps"))
-                .byName("elytraraceblueandred").orElseThrow();
+        MapDefinition map = CatalogLoader.load(RESOURCES)
+                .mapByName("elytraraceblueandred").orElseThrow();
 
         for (Ring ring : map.rings()) {
             assertThat(ring.normal().length())
@@ -76,8 +74,8 @@ class CommittedMapDataTest {
         // travelling west. The stored normal is what decides which way through the ring counts, and
         // this is the one ring whose answer can be checked against something outside the ring data
         // itself — the authored spawn in the world's level.dat.
-        MapDefinition map = new JsonMapCatalog(RESOURCES.resolve("maps"))
-                .byName("elytraraceblueandred").orElseThrow();
+        MapDefinition map = CatalogLoader.load(RESOURCES)
+                .mapByName("elytraraceblueandred").orElseThrow();
         Ring first = map.rings().getFirst();
 
         assertThat(first.center()).isEqualTo(new Vec3(85, -54, 54));
@@ -90,8 +88,8 @@ class CommittedMapDataTest {
         // Provisional, and asserted anyway: these are the three values the old data never carried,
         // and the notes in the file say as much. Pinning them means a balancing pass is a visible
         // change to this test rather than a number that moved without anyone noticing.
-        MapDefinition map = new JsonMapCatalog(RESOURCES.resolve("maps"))
-                .byName("elytraraceblueandred").orElseThrow();
+        MapDefinition map = CatalogLoader.load(RESOURCES)
+                .mapByName("elytraraceblueandred").orElseThrow();
 
         assertThat(map.referenceTime()).isEqualTo(Duration.ofSeconds(60));
         assertThat(map.rings()).extracting(Ring::points).containsOnly(10);
@@ -108,8 +106,8 @@ class CommittedMapDataTest {
      */
     @Test
     void theCommittedBoostTuningIsTheOldFilesCooldownAndTheVanillaDerivedBurn() {
-        MapDefinition map = new JsonMapCatalog(RESOURCES.resolve("maps"))
-                .byName("elytraraceblueandred").orElseThrow();
+        MapDefinition map = CatalogLoader.load(RESOURCES)
+                .mapByName("elytraraceblueandred").orElseThrow();
 
         assertThat(map.boostConfig()).isEqualTo(new BoostConfig(30, 40));
         assertThat(map.boostConfig().burnDurationTicks()).isEqualTo(BoostConfig.VANILLA_BURN_TICKS);
@@ -120,15 +118,15 @@ class CommittedMapDataTest {
 
     @Test
     void theCommittedCupPlaysTheCommittedMap() {
-        JsonMapCatalog maps = new JsonMapCatalog(RESOURCES.resolve("maps"));
-        JsonCupCatalog cups = new JsonCupCatalog(RESOURCES.resolve("cups"));
+        CatalogSnapshot catalog = CatalogLoader.load(RESOURCES);
 
-        CupDefinition cup = cups.byName("test_cup").orElseThrow();
+        CupDefinition cup = catalog.cupByName("test_cup").orElseThrow();
 
         assertThat(cup.mode()).isEqualTo(GameMode.RACE);
         assertThat(cup.mapNames()).containsExactly("elytraraceblueandred");
-        assertThatCode(() -> CatalogConsistency.requireEveryCupMapResolves(cups, maps))
-                .doesNotThrowAnyException();
+        // load() runs the cross-catalogue check, so this returning at all is the assertion that the
+        // committed cup resolves against the committed map.
+        assertThat(catalog.mapByName("elytraraceblueandred")).isPresent();
     }
     /**
      * The sixteen guide points of the committed course, and the pair that share a gap.
@@ -224,7 +222,7 @@ class CommittedMapDataTest {
     }
 
     private static MapDefinition committedCourse() {
-        return new JsonMapCatalog(RESOURCES.resolve("maps")).byName("elytraraceblueandred").orElseThrow();
+        return CatalogLoader.load(RESOURCES).mapByName("elytraraceblueandred").orElseThrow();
     }
 
 }

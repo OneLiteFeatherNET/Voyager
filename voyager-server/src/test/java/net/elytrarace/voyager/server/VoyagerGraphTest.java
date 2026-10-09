@@ -5,8 +5,7 @@ import io.avaje.inject.BeanScope;
 import net.elytrarace.voyager.api.race.CupCatalog;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
-import net.elytrarace.voyager.platform.catalog.JsonCupCatalog;
-import net.elytrarace.voyager.platform.catalog.JsonMapCatalog;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
@@ -55,8 +54,7 @@ class VoyagerGraphTest {
         try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
             List<Type> provided = List.of(
                     InstanceManager.class,
-                    JsonMapCatalog.class,
-                    JsonCupCatalog.class,
+                    CatalogSnapshot.class,
                     MapCatalog.class,
                     CupCatalog.class,
                     CupDefinition.class,
@@ -97,13 +95,24 @@ class VoyagerGraphTest {
     }
 
     @Test
-    void servesEachCatalogueInterfaceWithTheSameInstanceAsItsConcreteBean(Env env) throws IOException {
+    void holdsExactlyOneCatalogSnapshot(Env env) throws IOException {
         try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
-            Object maps = scope.get(JsonMapCatalog.class);
-            Object cups = scope.get(JsonCupCatalog.class);
+            assertThat(scope.list(CatalogSnapshot.class)).hasSize(1);
+        }
+    }
 
-            assertThat(scope.get(MapCatalog.class)).isSameAs(maps);
-            assertThat(scope.get(CupCatalog.class)).isSameAs(cups);
+    @Test
+    void answersTheMapAndCupPortsFromTheSnapshot(Env env) throws IOException {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
+            CatalogSnapshot snapshot = scope.get(CatalogSnapshot.class);
+            MapCatalog maps = scope.get(MapCatalog.class);
+            CupCatalog cups = scope.get(CupCatalog.class);
+
+            assertThat(maps.byName("elytraraceblueandred")).isPresent()
+                    .isEqualTo(snapshot.mapByName("elytraraceblueandred"));
+            assertThat(maps.byName("no-such-map")).isEmpty();
+            assertThat(cups.byName("test_cup")).isPresent().isEqualTo(snapshot.cupByName("test_cup"));
+            assertThat(cups.byName("no-such-cup")).isEmpty();
         }
     }
 
