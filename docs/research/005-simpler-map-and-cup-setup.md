@@ -376,6 +376,12 @@ arc42 Architecture Documentation is a candidate for the system overview (semanti
 - Lap generation accuracy against hand-placed gates on the sample map.
 - Validation of the design lint thresholds through playtests.
 
+### 7.4 Owner decisions (2026-10-09)
+
+- Phase 0 starts now; E6 is unblocked: this report serves as the E6.0 research input, and `voyager-setup` (Phase 1) is planned next.
+- The ring stays a disc (center, normal, radius) as in `Ring.java:14`. FAWE polyhedral selections remain an import source through `tools/map-converter` only.
+- Issue #120 (alpha data package) uses the converter path: alpha maps are still built with the old Paper setup plugin and converted into the rebuild format.
+
 ## 8. References
 
 ### 8.1 Internal Investigation Inputs
