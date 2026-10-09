@@ -11,6 +11,7 @@ import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
 import net.elytrarace.voyager.server.command.RaceCommand;
+import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.game.CatalogReloadService;
@@ -191,6 +192,8 @@ public final class VoyagerServer {
         registerEvents(session, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(
                 new RaceCommand(session, settings.devMode(), graph.get(CatalogReloadService.class)));
+        LOGGER.info("/race reload is registered: the console and operators at level {} may run it",
+                ReloadPermission.REQUIRED_LEVEL);
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
