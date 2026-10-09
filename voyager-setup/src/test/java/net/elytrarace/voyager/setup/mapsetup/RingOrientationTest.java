@@ -48,4 +48,19 @@ class RingOrientationTest {
 
         assertThat(opposite.dot(normal)).isCloseTo(-1.0, within(TOLERANCE));
     }
+
+    @ParameterizedTest
+    @MethodSource("normals")
+    void theDiscOffsetPutsTheMiddleOfTheDiscAtTheOrigin(Vec3 normal) {
+        RingOrientation.Quaternion rotation = RingOrientation.fromNormal(normal);
+        double radius = 3.0;
+        double thickness = 0.05;
+
+        Vec3 offset = RingOrientation.discOffset(rotation, radius, thickness);
+        Vec3 middle = RingOrientation.rotate(rotation, new Vec3(radius, radius, thickness / 2));
+
+        assertThat(offset.x() + middle.x()).isCloseTo(0.0, within(TOLERANCE));
+        assertThat(offset.y() + middle.y()).isCloseTo(0.0, within(TOLERANCE));
+        assertThat(offset.z() + middle.z()).isCloseTo(0.0, within(TOLERANCE));
+    }
 }
