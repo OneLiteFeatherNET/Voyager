@@ -32,6 +32,14 @@ import java.util.List;
  */
 public final class CatalogWriter {
 
+    /**
+     * The schema version this writer produces. A literal, not an import: this tool depends on
+     * {@code voyager-api} and Gson only, and the reader's constant lives in {@code voyager-platform}.
+     * {@code CatalogWriterTest} asserts it, and the platform's {@code SchemaVersion.CURRENT} is the
+     * other side of the same agreement.
+     */
+    static final int SCHEMA_VERSION = 1;
+
     private CatalogWriter() {
     }
 
@@ -42,6 +50,7 @@ public final class CatalogWriter {
      */
     public static JsonObject toJson(MapDefinition map, List<String> notes) {
         JsonObject json = new JsonObject();
+        json.addProperty("schemaVersion", SCHEMA_VERSION);
         json.addProperty("name", map.name());
         json.addProperty("world", map.world());
         json.add("spawn", vector(map.spawn()));
@@ -67,6 +76,7 @@ public final class CatalogWriter {
      */
     public static JsonObject toJson(CupDefinition cup, List<String> notes) {
         JsonObject json = new JsonObject();
+        json.addProperty("schemaVersion", SCHEMA_VERSION);
         json.addProperty("name", cup.name());
         json.addProperty("mode", cup.mode().name());
 
