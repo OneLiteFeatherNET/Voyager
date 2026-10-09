@@ -6,6 +6,7 @@ import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.platform.text.SetupMessages;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.setup.adapter.SetupCommands;
+import net.elytrarace.voyager.setup.adapter.WandListener;
 import net.elytrarace.voyager.setup.config.SetupSettings;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.ServerFlag;
@@ -77,6 +78,7 @@ public final class SetupServer {
             return;
         }
         MinecraftServer.getCommandManager().register(graph.get(SetupCommands.class));
+        graph.get(WandListener.class).register(MinecraftServer.getGlobalEventHandler());
         registerShutdownTask(graph);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());

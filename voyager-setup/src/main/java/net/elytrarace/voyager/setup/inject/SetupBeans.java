@@ -9,6 +9,7 @@ import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.adapter.BuilderSessions;
 import net.elytrarace.voyager.setup.adapter.SetupCommands;
+import net.elytrarace.voyager.setup.adapter.WandListener;
 import net.elytrarace.voyager.setup.config.SetupSettings;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.InstanceManager;
@@ -45,5 +46,10 @@ public final class SetupBeans {
     SetupCommands setupCommands(DraftStore store, BuilderSessions sessions, MapInstances instances,
             @External SetupSettings settings) {
         return new SetupCommands(store, sessions, settings.worldsPath(), instances);
+    }
+
+    @Bean
+    WandListener wandListener(BuilderSessions sessions) {
+        return new WandListener(sessions);
     }
 }

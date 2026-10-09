@@ -29,6 +29,10 @@ public abstract class SetupMessages {
     private static final String STATUS_RINGS = "voyager.setup.status.rings";
     private static final String STATUS_PROBLEM_SPAWN = "voyager.setup.status.problem.spawn";
     private static final String STATUS_PROBLEM_RINGS = "voyager.setup.status.problem.rings";
+    private static final String RING_PLACED = "voyager.setup.ring.placed";
+    private static final String RING_POSE_REFUSED = "voyager.setup.ring.pose.refused";
+    private static final String RING_REMOVED = "voyager.setup.ring.removed";
+    private static final String RING_NONE = "voyager.setup.ring.none";
 
     private SetupMessages() {
     }
@@ -107,5 +111,25 @@ public abstract class SetupMessages {
     @Contract(pure = true)
     public static Component statusProblemRings() {
         return Component.translatable(STATUS_PROBLEM_RINGS);
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component ringPlaced(int index) {
+        return Component.translatable(RING_PLACED, Component.text(index));
+    }
+
+    @Contract(pure = true)
+    public static Component ringPoseRefused() {
+        return Component.translatable(RING_POSE_REFUSED);
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component ringRemoved(int index) {
+        return Component.translatable(RING_REMOVED, Component.text(index));
+    }
+
+    @Contract(pure = true)
+    public static Component ringNone() {
+        return Component.translatable(RING_NONE);
     }
 }
