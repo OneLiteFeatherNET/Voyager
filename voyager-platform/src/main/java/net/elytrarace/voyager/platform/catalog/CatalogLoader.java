@@ -1,0 +1,67 @@
+package net.elytrarace.voyager.platform.catalog;
+
+import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.MapDefinition;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * The one entry point that reads a data directory's {@code cups/} and {@code maps/}.
+ *
+ * <p>{@link #read} collects every problem and never throws for a bad file. {@link #load} is boot's
+ * policy: it refuses with the cause of the first problem, which is the same exception, with the same
+ * message, that boot has always raised. The order is {@code cups/}, then {@code maps/}, then the
+ * cross-catalogue check. Cups come first because avaje builds the cup catalogue before the map
+ * catalogue, which is the order boot has always failed in.
+ *
+ * <p>The cross-catalogue check runs only when neither directory has a problem. A dangling reference
+ * cannot be decided without both lists, and a broken directory would otherwise add a spurious
+ * "plays unknown map" line.
+ */
+public final class CatalogLoader {
+
+    private static final String CUPS = "cups";
+    private static final String MAPS = "maps";
+
+    private CatalogLoader() {
+    }
+
+    /**
+     * Reads the data directory and returns its snapshot, or refuses with the first problem.
+     *
+     * @param dataDirectory the directory holding {@code cups/} and {@code maps/}
+     * @return the snapshot of a catalogue with no problem
+     * @throws RuntimeException the cause of the first problem: an {@code UnreadableCatalogException},
+     *     a {@code MalformedCatalogFileException}, a {@code DuplicateCatalogEntryException} or an
+     *     {@code UnresolvedCupMapException}
+     */
+    public static CatalogSnapshot load(Path dataDirectory) {
+        CatalogReading reading = read(dataDirectory);
+        if (!reading.problems().isEmpty()) {
+            throw reading.problems().getFirst().cause();
+        }
+        return reading.snapshot();
+    }
+
+    /**
+     * Reads the data directory and returns what parsed together with every problem found.
+     *
+     * @param dataDirectory the directory holding {@code cups/} and {@code maps/}
+     * @return the reading; never throws for a bad file or a missing directory
+     */
+    public static CatalogReading read(Path dataDirectory) {
+        List<CatalogProblem> problems = new ArrayList<>();
+        Map<String, CupDefinition> cups = CatalogDirectory.readAll(
+                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems);
+        Map<String, MapDefinition> maps = CatalogDirectory.readAll(
+                dataDirectory.resolve(MAPS), "map", MapDefinition.class, MapDefinition::name, problems);
+        if (problems.isEmpty()) {
+            CatalogConsistency.unresolvedCupMaps(maps, cups).ifPresent(
+                    unresolved -> problems.add(new CatalogProblem(dataDirectory, unresolved)));
+        }
+        return new CatalogReading(new CatalogSnapshot(maps, cups), problems);
+    }
+}

@@ -56,7 +56,7 @@ source path and the exception it would have raised, and SHALL NOT throw for a pr
 **Priority:** MoSCoW Must
 
 IF the catalogue holds a problem at boot, THEN THE SYSTEM SHALL NOT produce a snapshot through `load`, SHALL throw the
-exception of the first problem in the order maps, then cups, then cross-catalogue references, with its message unchanged
+exception of the first problem in the order cups, then maps, then cross-catalogue references (the order boot fails in today), with its message unchanged
 from before this change, and the server SHALL refuse to start with that exception as its cause.
 
 #### Scenario: Two malformed map files at boot
@@ -66,6 +66,10 @@ from before this change, and the server SHALL refuse to start with that exceptio
 #### Scenario: Cup naming an unknown map at boot
 - **WHEN** a cup names a map that no map file provides and the server boots
 - **THEN** the server does not start, and the refusal is today's unresolved-cup-map exception, listing the dangling entries as it does today
+
+#### Scenario: Malformed map and malformed cup together at boot
+- **WHEN** a map file and a cup file both fail to parse and the server boots
+- **THEN** the refusal is the malformed-file exception of the cup file, as it is today
 
 #### Scenario: Malformed map and dangling cup reference together at boot
 - **WHEN** a map file fails to parse and a cup names a map
@@ -92,7 +96,7 @@ reference, THE SYSTEM SHALL name the referring cup and the missing map.
 ### Requirement: Problem order is deterministic
 **Priority:** MoSCoW Should
 
-THE SYSTEM SHALL read files in sorted filename order and SHALL list problems in that order, so that the same directory
+THE SYSTEM SHALL read files in sorted filename order and SHALL list problems in the order cups, maps, cross-catalogue, so that the same directory
 produces the same reading on every machine.
 
 #### Scenario: Same directory on two machines

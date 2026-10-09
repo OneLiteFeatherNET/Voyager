@@ -1,10 +1,21 @@
 package net.elytrarace.voyager.platform.catalog;
 
+import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingType;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
 
 /**
  * Map and cup JSON written by hand for the tests, never the committed files.
@@ -80,6 +91,19 @@ final class CatalogFixtures {
             names.append(i == 0 ? "" : ", ").append('"').append(mapNames[i]).append('"');
         }
         return write(directory, fileName, CUP.formatted(name, mode, names));
+    }
+
+    /** A map definition built in memory, for tests that never touch a file. */
+    static MapDefinition mapNamed(String name) {
+        return new MapDefinition(
+                name, name + "-world", Vec3.ZERO,
+                List.of(new Ring(0, Vec3.ZERO, new Vec3(0, 1, 0), 3, 10, RingType.STANDARD)),
+                Duration.ofSeconds(60), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
+    }
+
+    /** A race cup built in memory, for tests that never touch a file. */
+    static CupDefinition cupNamed(String name, String... mapNames) {
+        return new CupDefinition(name, List.of(mapNames), GameMode.RACE);
     }
 
     static Path write(Path directory, String fileName, String content) {

@@ -25,7 +25,7 @@ import java.util.Optional;
  * be worse than an inherited wart.
  *
  * <p>The catalogue is a directory of {@code .json} files, not jar entries:
- * {@code JsonMapCatalog} and {@code JsonCupCatalog} take a {@link Path} and read a directory, which
+ * {@code CatalogLoader} takes a {@link Path} and reads a directory, which
  * works from an unpacked distribution and not from inside a shaded jar. The build installs the
  * shipped catalogue into the data directory (see {@code prepareRunData} in this module's
  * {@code build.gradle.kts}); the server never writes there. A race server reads its map data and

@@ -72,7 +72,10 @@ This decision was settled by the project owner on 2026-10-09.
 - `CatalogLoader.read` returns the definitions that parsed and the problems, sorted by source file name as today. Nothing
   is thrown.
 - `CatalogLoader.load` is `read` followed by a boot policy that is today's policy: if there is a problem, throw the cause
-  of the first one in today's order (the `maps/` problems, then the `cups/` problems, then the cross-catalogue check).
+  of the first one in today's order (the `cups/` problems, then the `maps/` problems, then the cross-catalogue check).
+  Today's order is the avaje build order, not a choice made in the source: the generated `DInjectModule` builds
+  `JsonCupCatalog` before `JsonMapCatalog`, so a broken cup file is the one named when both directories are broken.
+  `BootRefusalTest` pins it.
   The thrown object is the original exception, so the type and the message are unchanged.
 - The cross-catalogue check keeps today's shape: one `UnresolvedCupMapException` that lists the dangling entries it found.
   That is one problem with several entries, because that is what the check throws today; the behaviour is preserved, not
@@ -83,7 +86,8 @@ This decision was settled by the project owner on 2026-10-09.
 ### 4. Reading order and missing directories
 
 `maps/` and `cups/` are read independently; a missing or empty directory is one problem and does not stop the other
-directory from being read. Files within a directory are read in sorted filename order, as today. The cross-catalogue
+directory from being read. The problem list holds the `cups/` problems first, then the `maps/` problems, then the
+cross-catalogue problem. Files within a directory are read in sorted filename order, as today. The cross-catalogue
 check runs only when both directories produced no problem, because a dangling reference cannot be decided without
 both lists and a broken directory would produce spurious "plays unknown map" lines. Under `load`, this gives today's
 result: a broken directory is the first problem, and the check is never reached.
