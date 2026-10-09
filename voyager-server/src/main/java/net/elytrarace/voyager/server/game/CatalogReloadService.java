@@ -57,7 +57,7 @@ public final class CatalogReloadService {
                     holder.offer(applied.loaded());
                     for (String warning : applied.warnings()) {
                         LOGGER.warn(warning);
-                        reply.accept(Component.text(warning));
+                        reply.accept(Messages.reloadWarning(warning));
                     }
                     LOGGER.info("Catalogue reload accepted for cup '{}'; it plays from the next round",
                             applied.loaded().cup().name());
@@ -68,7 +68,7 @@ public final class CatalogReloadService {
                             rejected.problems().size());
                     reply.accept(Messages.reloadRejected(rejected.problems().size()));
                     for (String problem : rejected.problems()) {
-                        reply.accept(Component.text(problem));
+                        reply.accept(Messages.reloadProblem(problem));
                     }
                 }
             }

@@ -59,6 +59,9 @@ public abstract class Messages {
     private static final String COMMAND_RELOAD_PENDING = "voyager.command.reload.pending";
     private static final String COMMAND_RELOAD_REJECTED = "voyager.command.reload.rejected";
     private static final String COMMAND_RELOAD_FAILED = "voyager.command.reload.failed";
+    private static final String COMMAND_RELOAD_DENIED = "voyager.command.reload.denied";
+    private static final String COMMAND_RELOAD_PROBLEM = "voyager.command.reload.problem";
+    private static final String COMMAND_RELOAD_WARNING = "voyager.command.reload.warning";
 
     private Messages() {
     }
@@ -313,5 +316,23 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component reloadFailed() {
         return Component.translatable(COMMAND_RELOAD_FAILED);
+    }
+
+    /** One problem of a refused reload, as the line the configuration check prints. */
+    @Contract(pure = true)
+    public static Component reloadProblem(String line) {
+        return Component.translatable(COMMAND_RELOAD_PROBLEM, Component.text(line));
+    }
+
+    /** One warning of an applied reload, such as a world that needs a restart. */
+    @Contract(pure = true)
+    public static Component reloadWarning(String line) {
+        return Component.translatable(COMMAND_RELOAD_WARNING, Component.text(line));
+    }
+
+    /** {@code /race reload}'s answer to a sender below the operator level. */
+    @Contract(pure = true)
+    public static Component reloadDenied() {
+        return Component.translatable(COMMAND_RELOAD_DENIED);
     }
 }

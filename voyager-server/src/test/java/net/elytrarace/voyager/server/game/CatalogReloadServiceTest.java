@@ -14,6 +14,7 @@ import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.catalog.ReloadOutcome;
 import net.elytrarace.voyager.server.LogCapture;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TranslatableComponent;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,7 @@ class CatalogReloadServiceTest {
     private static final String PENDING = "voyager.command.reload.pending";
     private static final String FAILED = "voyager.command.reload.failed";
     private static final String REJECTED = "voyager.command.reload.rejected";
+    private static final String WARNING = "voyager.command.reload.warning";
 
     @Test
     void anAppliedReloadIsOfferedToTheHolderAndTheSenderIsToldItWaitsForTheNextRound() {
@@ -63,6 +65,7 @@ class CatalogReloadServiceTest {
 
         assertThat(holder.pending()).isEmpty();
         assertThat(key(replies.getFirst())).isEqualTo(REJECTED);
+        assertThat(key(replies.get(1))).isEqualTo("voyager.command.reload.problem");
         assertThat(text(replies.get(1))).contains("ridge.json");
         assertThat(text(replies.get(2))).contains("x.json");
     }
@@ -76,6 +79,7 @@ class CatalogReloadServiceTest {
 
         service.request(replies::add);
 
+        assertThat(key(replies.getFirst())).isEqualTo(WARNING);
         assertThat(text(replies.getFirst())).contains("restart needed for world 'x'");
         assertThat(key(replies.getLast())).isEqualTo(PENDING);
     }
@@ -125,8 +129,9 @@ class CatalogReloadServiceTest {
         return ((TranslatableComponent) component).key();
     }
 
+    /** The line a reload message carries: its one argument, which is the text the operator reads. */
     private static String text(Component component) {
-        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
+        return ((TextComponent) ((TranslatableComponent) component).arguments().getFirst().asComponent()).content();
     }
 
     private static LoadedCatalog catalog(String cupName) {

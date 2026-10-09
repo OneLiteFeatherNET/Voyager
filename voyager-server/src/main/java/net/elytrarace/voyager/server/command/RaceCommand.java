@@ -39,9 +39,15 @@ public final class RaceCommand extends Command {
     public RaceCommand(CupSession session, boolean devMode, CatalogReloadService reloads) {
         super("race");
         setDefaultExecutor((sender, context) -> status(sender, session));
-        addConditionalSyntax((sender, commandString) -> ReloadPermission.mayReload(sender),
-                (sender, context) -> reloads.request(sender::sendMessage),
-                ArgumentType.Literal("reload"));
+        // Checked here rather than as a syntax condition: a failed condition makes Minestom report the command as
+        // unknown, which tells a player nothing. A refused sender is told why.
+        addSyntax((sender, context) -> {
+            if (ReloadPermission.mayReload(sender)) {
+                reloads.request(sender::sendMessage);
+            } else {
+                sender.sendMessage(Messages.reloadDenied());
+            }
+        }, ArgumentType.Literal("reload"));
         if (!devMode) {
             return;
         }
