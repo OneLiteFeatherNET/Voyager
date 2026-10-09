@@ -74,16 +74,18 @@ marks the wand. A plain item of the same material has no such component, so the 
 **Right-click on a block raises two events (client behaviour, to confirm in 10.2).** The server handles
 `UseItemOn` and `UseItem` as separate packets. A vanilla client sends `UseItem` after `UseItemOn` when the block
 interaction passes, which is the case for a wand. The same click can therefore raise `PlayerBlockInteractEvent` and
-`PlayerUseItemEvent`. The wand handler listens to both and places at most one ring per player per server tick. The
-dedupe is by tick, so a test that ticks between clicks sees one ring per click.
+`PlayerUseItemEvent`. The wand handler listens to both. The block interaction is cancelled, so no block is placed, and a
+right-click whose pose repeats the last ring's centre and normal is the same click arriving twice: it places nothing. The
+dedupe is by pose, not by time, so it needs no clock and a test that moves the builder between clicks sees one ring per
+click.
 
 **Left-click.** `PlayerHandAnimationEvent` is raised for every left-click, on air and on a block. Removal is bound to it,
 so one left-click removes at most one ring. The digging events are cancelled in a setup world, which keeps terrain
 unchanged (task 7.7, spec `setup/ring-placement`).
 
 **Decisions unblocked.** Task 7.6 binds right-click to `PlayerUseItemEvent` and `PlayerBlockInteractEvent` (one ring per
-tick), left-click to `PlayerHandAnimationEvent`, and block edits to the cancel events above. Item identity uses the
-`CUSTOM_DATA` tag.
+click, by pose), left-click to `PlayerHandAnimationEvent`, and block edits to the cancel events above. Item identity uses
+the `CUSTOM_DATA` tag.
 
 ## 4. Spike 1.3: Void World
 
@@ -108,7 +110,7 @@ to `<worldsPath>/<id>`.
 - Tasks 6.3, 7.6 and 8.1 are unblocked, with the choices above recorded as their basis.
 - Task 8.1 names `setScale`, `setLeftRotation` and `setTranslation` as the transform API.
 - The client-side points (the double event on a block right-click; the transform order) are the first items of the
-  manual boot check (task 10.2). If the double event is not confirmed, the dedupe stays as a guard and costs nothing.
+  manual boot check (task 10.2). If the double event is not confirmed, the pose dedupe stays as a guard and costs nothing.
 
 ## 6. Reproduction
 
