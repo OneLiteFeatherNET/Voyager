@@ -257,6 +257,51 @@ squash commit on `main` is `feat(server): pick up changed maps and cups between 
 
 Rollback: revert the squash commit. Catalogues then load at boot only, as before. No data migration and no change to files on disk.
 
+## Deviations from the Design as Built
+
+- **`CupResolution` and `UnresolvedCupException` live in `voyager-platform`** (`platform.catalog` and
+  `platform.catalog.exception`), not in the form the dependency change described. `LoadedCatalog` resolves the selected cup at
+  load time, and that resolution is platform code. Decision 2 and decision 9 hold otherwise.
+- **A reload rejects a broken cup that the server does not play; boot only warns about it.** Decision 5 said that one broken
+  unrelated cup rejects every reload until `scope-cup-validation` lands. That is what is built, and it is stricter than boot.
+  See Open Question 2.
+
+## Spike Results
+
+Spikes 1.1 to 1.3 were throwaway and nothing from them is committed. The results below come from the production code and
+from the Minestom source of the version the tree uses for the rebuild.
+
+- **1.1 (open question 4): who starts a cup.** Two production callers of `CupSession.start`. The first player to spawn
+  after the session is idle starts the cup (`VoyagerServer`, `PlayerSpawnEvent` with `isFirstSpawn`, `start(false)`). `/race start`
+  restarts it, and it exists only in dev mode (`RaceCommand`, `start(true)`). A finished cup does not start again by itself.
+  So a pending reload waits for the next first spawn while the server is idle, or for `/race start` in dev mode. The wording
+  "applies at the next round" and the how-to's "waits until a player joins" follow from this.
+- **1.2 (open question 5): opening a world off the tick thread.** Safe, by source reading. `InstanceManager` keeps its instances
+  in a `CopyOnWriteArraySet`. `createPartition` only enqueues a `PartitionLoad` update (an MPSC queue, `signalUpdate`), which the
+  tick threads apply, so the caller does not touch the dispatcher's partitions. `unregisterInstance` synchronises on the instance
+  and unloads its chunks. Chunks are read by the Falco loader on the reload thread. A live check of a reload on a running server
+  is task 8.3, which is still open. No fallback (tick stall or restart for new worlds) is needed unless 8.3 disproves this.
+- **1.3 (open question 3, API): the permission source.** Minestom 26.2 has no named permission API. `CommandSender` carries no
+  permission set. `Player` carries a numeric operator level from 0 to 4 (`getPermissionLevel`). `ConsoleSender` is a type, not a
+  level. The predicate is `ReloadPermission.mayReload(CommandSender)`: the console is allowed, a player needs level 4.
+  The test for it is `ReloadPermissionTest`, as task 5.2 asks.
+
+## Answers to the Open Questions
+
+The answers below describe what is implemented. Each one that is an owner decision is recorded as implemented, and the owner
+confirms it when ADR-0019 is accepted.
+
+1. **Pinned rounds only.** Implemented as recommended. A valid edit waits for the next cup. Geometry-only swaps at a map
+   boundary are not implemented, and nothing in this change needs them.
+2. **Broken unrelated cups block reloads.** Accepted for this change. `scope-cup-validation` is not merged, so a reload checks
+   every cup in `cups/`, and a broken cup that the server does not play rejects it. Boot only warns about such a cup. This is
+   deliberately stricter than boot, and the how-to says so.
+3. **Permission source.** None is granted yet. The console may reload. A player needs operator level 4, and this server grants
+   no level. Until the owner names a source, only the console can run `/race reload`.
+4. **Who starts a cup.** Answered by spike 1.1 above.
+5. **Instance registration off the tick thread.** Answered by spike 1.2 above (safe by source reading; live check in 8.3).
+6. **Is the pinned-round answer the one the owner expects?** Owner confirmation is pending, with ADR-0019 approval.
+
 ## Open Questions
 
 1. **Owner:** may a valid edit wait for the next cup (decision 1), or must geometry-only changes apply at the next map boundary too?
@@ -265,7 +310,7 @@ Rollback: revert the squash commit. Catalogues then load at boot only, as before
    (The behaviour of `scope-cup-validation` is approved, 2026-10-09; the merge order is still open.)
 3. **Owner:** which permission source grants `voyager.race.reload` on the live server?
 4. **Spike 1.1:** does a finished cup start again by itself in production, or only by `/race start` or a restart? The answer sets the
-   "pending" wording.
+   "pending" wording. **Answered (1.1):** it starts only on the next first player spawn while idle, or by `/race start` in dev mode.
 5. **Spike 1.2:** instance registration from a non-tick thread. If unsafe, choose between a one-time tick stall for new worlds and "new
-   worlds need a restart".
+   worlds need a restart". **Answered (1.2):** safe by source reading; no fallback needed unless task 8.3 disproves it.
 6. **Owner:** is the pinned-round answer to research 005 open question 5 the one the owner expects?
