@@ -28,7 +28,7 @@ Map and cup authoring is the bottleneck between a finished world and a flyable c
 | P7 | Old setup plugin is partly dead and risks data loss | 17 conversation prompt classes unreachable; updateMap deletes files before the async re-save (MapServiceImpl.java:82-96) | R01 | Code, file:line, not reproduced |
 | P8 | E6 is blocked and the alpha timing conflicts | E6.0 gates E6.1 and later; open P0 issue #120 needs a cup and map data package | R08; greenfield-epics.md:1498-1562 (verified) | Docs; issue state is a snapshot, not re-checked |
 | P9 | No builder-experience requirement exists | "Map-Builder" role at line 67; NFR-007 at line 99; no test-fly, progress, or playtest requirement | R20; anforderungen-voyager-rebuild.md:67,99 (verified) | Docs, verified |
-| P10 | Validate-and-exit mode is specified but absent | NFR-007 requires `-Dvoyager.config.check=true` and `ConfigProblem`; neither occurs in source | Repository search, verified | Docs versus code |
+| P10 | Validate-and-exit mode is specified; implemented by `add-catalog-validate-task` | NFR-007 requires `-Dvoyager.config.check=true` and `ConfigProblem`; neither occurs in source | Repository search, verified | Docs versus code |
 | P11 | Unresolved-cup hint names the wrong switch | Hint says `-DVOYAGER_CUP`; the Gradle path uses `-Pcup` | R03; UnresolvedCupException.java:85-88 | Code, file:line, not re-checked |
 
 ### 1.2 Research Questions
@@ -185,7 +185,7 @@ Recommendation for the authoring model: pose placement is the default. Fly-throu
 |---|---|---|---|---|
 | E1 | There is no reload. A restart is needed for any change. Watch `maps/` and `cups/`, and apply changes only at round boundaries. | R04 (JsonMapCatalog.java:50; JsonCupCatalog.java:17,40); R20 #11 | Reported; proposal is Inference | High (code); Medium (proposal) |
 | E2 | Copying does not prune. Deleted maps still load. | R04 | Reported | High (code) |
-| E3 | The validate task is specified but not built. NFR-007 requires all configuration errors in one report and a validate-and-exit mode. Neither exists in source. | anforderungen-voyager-rebuild.md:99 (verified); P10 | Verified | High |
+| E3 | Implemented by `add-catalog-validate-task`. The validate task was specified but not built. NFR-007 requires all configuration errors in one report and a validate-and-exit mode. Neither exists in source. | anforderungen-voyager-rebuild.md:99 (verified); P10 | Verified | High |
 | E4 | There are duplicate data sources: the legacy converter, the resources catalog, and the copy into `run/run/data` by `prepareRunData` (build.gradle.kts:62-71). A single source of truth is the target. | R04 | Reported | High (code) |
 | E5 | The rebuild already reports all cup-to-map problems in one exception (CatalogConsistency.java:41-52). Per-file errors are wrapped as "`<file>` is not a valid definition" (CatalogDirectory.java:103,109-114), which names the file but not the ring. | R02; R03 (verified for CatalogConsistency) | Verified in part | High |
 
@@ -253,7 +253,7 @@ Each candidate names one Conventional Commits type and scope, as the OpenSpec ru
 | Q3 | Schema version and JSON Schema | feat(platform) | Map, cup | Add `schemaVersion`; publish `$schema` and validate on load | none | Should | Independent |
 | Q4 | Scope cup consistency to the selected cup | feat(platform) | Cup | Fully validate the selected cup; warn for the others | none | Must | Independent |
 | Q5 | Name both selection switches in errors | fix(platform) | Cup | Hint names `-Pcup` and `-DVOYAGER_CUP` | none | Should | Independent |
-| Q6 | Validate task for maps, cups and worlds | feat(build) | All | Implements NFR-007's validate-and-exit mode; reports every problem | Q4 | Must | Independent; closes the NFR-007 gap |
+| Q6 | Validate task for maps, cups and worlds (implemented by `add-catalog-validate-task`) | feat(build) | All | Implements NFR-007's validate-and-exit mode; reports every problem | Q4 | Must | Independent; closes the NFR-007 gap |
 | Q7 | Hot reload at round boundaries | feat(platform) | Map, cup | Watch `maps/` and `cups/`; apply valid changes between rounds | Q1, Q4 | Should | Independent |
 
 **Phase 1: voyager-setup MVP on Minestom (gated by E6 approval).**
