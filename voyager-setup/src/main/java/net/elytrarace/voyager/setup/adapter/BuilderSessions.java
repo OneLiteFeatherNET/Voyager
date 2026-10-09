@@ -1,5 +1,9 @@
 package net.elytrarace.voyager.setup.adapter;
 
+import net.minestom.server.event.Event;
+import net.minestom.server.event.EventNode;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -12,6 +16,15 @@ import java.util.UUID;
 public final class BuilderSessions {
 
     private final Map<UUID, MapSession> sessions = new HashMap<>();
+
+    /**
+     * Forgets a builder's session when the builder disconnects, so that the previews of the map do not stay in its world.
+     *
+     * @param events the node that receives the server's events; the global handler in production
+     */
+    public void register(EventNode<Event> events) {
+        events.addListener(PlayerDisconnectEvent.class, event -> forget(event.getPlayer().getUuid()));
+    }
 
     public Optional<MapSession> find(UUID builder) {
         return Optional.ofNullable(sessions.get(builder));

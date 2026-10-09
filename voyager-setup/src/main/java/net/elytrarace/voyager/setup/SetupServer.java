@@ -5,6 +5,7 @@ import io.avaje.inject.BeanScope;
 import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.platform.text.SetupMessages;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
+import net.elytrarace.voyager.setup.adapter.BuilderSessions;
 import net.elytrarace.voyager.setup.adapter.SetupCommands;
 import net.elytrarace.voyager.setup.adapter.TerrainGuard;
 import net.elytrarace.voyager.setup.adapter.WandListener;
@@ -81,6 +82,7 @@ public final class SetupServer {
         MinecraftServer.getCommandManager().register(graph.get(SetupCommands.class));
         graph.get(WandListener.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(TerrainGuard.class).register(MinecraftServer.getGlobalEventHandler());
+        graph.get(BuilderSessions.class).register(MinecraftServer.getGlobalEventHandler());
         registerShutdownTask(graph);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
