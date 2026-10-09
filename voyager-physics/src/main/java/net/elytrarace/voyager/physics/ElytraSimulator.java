@@ -149,6 +149,13 @@ public abstract class ElytraSimulator {
      */
     private static final double MOVEMENT_DEADZONE = 0.003;
 
+    /** Resolves one tick's attempted movement of the entity's box. See {@link #tickTracedWith}. */
+    @FunctionalInterface
+    interface MovementSolver {
+
+        MovementResult resolve(Aabb box, Vec3 movement);
+    }
+
     private ElytraSimulator() {
     }
 
@@ -167,6 +174,16 @@ public abstract class ElytraSimulator {
      * only the tick.
      */
     public static TickTrace tickTraced(FlightState previous, FlightInput input, CollisionSpace space) {
+        return tickTracedWith(previous, input, (box, movement) -> MovementResolver.resolve(box, movement, space));
+    }
+
+    /**
+     * The traced tick with its collision resolution supplied by the caller. This is the single body
+     * of the tick: {@link #tickTraced} is this method with {@link MovementResolver} over a
+     * {@link CollisionSpace}. It is package-private so a measurement can run the production tick
+     * against a different resolver and vary nothing else; it is not a configuration point.
+     */
+    static TickTrace tickTracedWith(FlightState previous, FlightInput input, MovementSolver solver) {
         Vec3 enteringVelocity = applyMovementDeadzone(previous.velocity());
 
         StepContext context = StepContext.of(enteringVelocity, input.pitch(), input.yaw(), input.gravity());
@@ -179,7 +196,7 @@ public abstract class ElytraSimulator {
         }
 
         Aabb box = boundingBoxAt(previous.position());
-        MovementResult movementResult = MovementResolver.resolve(box, velocity, space);
+        MovementResult movementResult = solver.resolve(box, velocity);
         Vec3 outgoingVelocity = restitute(velocity, movementResult);
 
         if (input.fireworkBoostActive()) {
