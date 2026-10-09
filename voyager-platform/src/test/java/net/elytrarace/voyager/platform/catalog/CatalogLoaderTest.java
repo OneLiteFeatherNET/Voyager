@@ -378,6 +378,84 @@ class CatalogLoaderTest {
     }
 
     // ---------------------------------------------------------------------------------------------
+    // Cup files as data (scope-cup-validation)
+    // ---------------------------------------------------------------------------------------------
+
+    @Test
+    void unparseableCupFileIsReportedAndDoesNotAbortTheRead(@TempDir Path data) {
+        CatalogFixtures.cup(data.resolve("cups"), "good.json", "good_cup", "RACE", "blue");
+        CatalogFixtures.write(data.resolve("cups"), "bad.json", "");
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+
+        CatalogReading reading = CatalogLoader.read(data);
+
+        assertThat(reading.snapshot().cupNames()).containsExactly("good_cup");
+        assertThat(reading.problems()).extracting(CatalogProblem::source)
+                .containsExactly(data.resolve("cups/bad.json"));
+    }
+
+    @Test
+    void readDoesNotCheckMapsAgainstCupsItself(@TempDir Path data) {
+        // The cross-catalogue check moved to load(): read() must not turn a dangling entry in an
+        // unplayed cup into a problem whose source is the directory, because boot cannot tell which
+        // cup it belongs to from there.
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+        CatalogFixtures.cup(data.resolve("cups"), "cup.json", "test_cup", "RACE", "cathedral");
+
+        assertThat(CatalogLoader.read(data).problems()).isEmpty();
+    }
+
+    @Test
+    void cupFileCountCountsParsedAndUnparseableCupFiles(@TempDir Path data) {
+        CatalogFixtures.cup(data.resolve("cups"), "good.json", "good_cup", "RACE", "blue");
+        CatalogFixtures.write(data.resolve("cups"), "bad.json", "");
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+
+        CatalogReading reading = CatalogLoader.read(data);
+
+        assertThat(reading.cupFileCount()).isEqualTo(2);
+        assertThat(reading.cupFiles()).containsExactly(data.resolve("cups/bad.json"), data.resolve("cups/good.json"));
+    }
+
+    @Test
+    void cupFileProblemsAreSeparatedFromCatalogueProblems(@TempDir Path data) {
+        CatalogFixtures.write(data.resolve("maps"), "a-broken.json", "");
+        CatalogFixtures.write(data.resolve("cups"), "bad.json", "");
+        CatalogFixtures.cup(data.resolve("cups"), "good.json", "good_cup", "RACE", "blue");
+
+        CatalogReading reading = CatalogLoader.read(data);
+
+        assertThat(reading.cupFileProblems()).extracting(CatalogProblem::source)
+                .containsExactly(data.resolve("cups/bad.json"));
+        assertThat(reading.catalogueProblems()).extracting(CatalogProblem::source)
+                .containsExactly(data.resolve("maps/a-broken.json"));
+    }
+
+    @Test
+    void missingCupsDirectoryIsACatalogueProblemAndNotACupFile(@TempDir Path data) {
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+
+        CatalogReading reading = CatalogLoader.read(data);
+
+        assertThat(reading.cupFileProblems()).isEmpty();
+        assertThat(reading.cupFileCount()).isZero();
+        assertThat(reading.catalogueProblems()).hasSize(1);
+    }
+
+    @Test
+    void aDuplicateCupNameIsACupFileProblemAndCountsAsAFile(@TempDir Path data) {
+        CatalogFixtures.cup(data.resolve("cups"), "alpha.json", "test_cup", "RACE", "blue");
+        CatalogFixtures.cup(data.resolve("cups"), "zulu.json", "test_cup", "RACE", "blue");
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+
+        CatalogReading reading = CatalogLoader.read(data);
+
+        assertThat(reading.cupFileCount()).isEqualTo(2);
+        assertThat(reading.cupFileProblems()).singleElement()
+                .satisfies(problem -> assertThat(problem.cause()).isInstanceOf(DuplicateCatalogEntryException.class));
+    }
+
+    // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
 

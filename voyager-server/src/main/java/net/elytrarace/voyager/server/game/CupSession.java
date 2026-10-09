@@ -439,7 +439,7 @@ public final class CupSession implements RacePhaseListener {
         }
         MapDefinition map = maps.byName(mapName).orElseThrow(() -> new IllegalStateException(
                 ("cup '%s' plays a map named '%s' that the map catalogue does not hold; "
-                        + "CatalogLoader.load runs the cross-catalogue check at boot and should have "
+                        + "ServerBeans.cup checks the played cup's maps at boot and should have "
                         + "refused this cup").formatted(cup.name(), mapName)));
         currentMap = map;
         preparedMapIndex = mapIndex;

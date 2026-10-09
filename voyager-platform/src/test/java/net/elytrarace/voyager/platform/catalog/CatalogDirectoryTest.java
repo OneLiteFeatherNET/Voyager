@@ -101,6 +101,6 @@ class CatalogDirectoryTest {
 
     private static <T> Map<String, T> read(Path directory, String kind, Class<T> type,
             Function<T, String> nameOf, List<CatalogProblem> problems) {
-        return CatalogDirectory.readAll(directory, kind, type, nameOf, problems);
+        return CatalogDirectory.readAll(directory, kind, type, nameOf, problems, new ArrayList<>());
     }
 }

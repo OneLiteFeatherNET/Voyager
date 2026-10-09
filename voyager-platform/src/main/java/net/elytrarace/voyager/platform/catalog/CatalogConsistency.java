@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupMapException;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,8 +17,9 @@ import java.util.Optional;
  * provides is not malformed — it is a well-formed cup pointing at nothing. Left unchecked it is
  * invisible until that map comes up mid-rotation.
  *
- * <p>Called by {@link CatalogLoader} once both directories have been read, so neither directory has
- * to learn about the other to get the check.
+ * <p>Called by {@link CatalogLoader#load} once both directories have been read, and by the server's boot
+ * for the one cup it plays and for the cups it skips, so neither directory has to learn about the other
+ * to get the check.
  */
 public final class CatalogConsistency {
 
@@ -33,6 +35,29 @@ public final class CatalogConsistency {
      */
     public static Optional<UnresolvedCupMapException> unresolvedCupMaps(
             Map<String, MapDefinition> maps, Map<String, CupDefinition> cups) {
+        List<String> problems = danglingEntries(maps, cups);
+        return problems.isEmpty() ? Optional.empty() : Optional.of(new UnresolvedCupMapException(problems));
+    }
+
+    /**
+     * Describes every dangling entry of every cup except {@code selected}, as values.
+     *
+     * <p>Used at boot for the cups that are not played: their dangling entries become one warning, not a
+     * refusal. Nothing is thrown and nothing is logged here.
+     *
+     * @param selected the cup the server plays; its own entries are not in the result
+     * @param maps     the map definitions by name
+     * @param cups     every cup definition by name, including {@code selected}
+     * @return one {@code "cup 'x' plays 'y'"} line per dangling entry of the other cups, in cup order
+     */
+    public static List<String> unresolvedInOtherCups(
+            CupDefinition selected, Map<String, MapDefinition> maps, Map<String, CupDefinition> cups) {
+        Map<String, CupDefinition> others = new LinkedHashMap<>(cups);
+        others.remove(selected.name());
+        return danglingEntries(maps, others);
+    }
+
+    private static List<String> danglingEntries(Map<String, MapDefinition> maps, Map<String, CupDefinition> cups) {
         List<String> problems = new ArrayList<>();
         for (CupDefinition cup : cups.values()) {
             for (String mapName : cup.mapNames()) {
@@ -41,6 +66,6 @@ public final class CatalogConsistency {
                 }
             }
         }
-        return problems.isEmpty() ? Optional.empty() : Optional.of(new UnresolvedCupMapException(problems));
+        return problems;
     }
 }

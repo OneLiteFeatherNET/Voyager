@@ -33,6 +33,11 @@ dependencies {
     // Pinned to the exact rebuild version for the same reason voyager-platform pins it: the test
     // environment and the Minestom this module compiles against must never be two different versions.
     testImplementation("net.minestom:testing:2026.08.28-26.2")
+
+    // The boot tests read the warning the composition root logs, through a log4j2 appender attached to
+    // that logger for one test (LogCapture). runtimeOnly above is not on the test compile classpath, so
+    // the appender API has to be declared here. Test scope only: no production code names a Log4j type.
+    testImplementation(libs.log4j2.core)
 }
 
 tasks.test {

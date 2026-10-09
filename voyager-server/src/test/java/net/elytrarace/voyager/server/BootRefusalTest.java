@@ -85,14 +85,12 @@ class BootRefusalTest {
     }
 
     /**
-     * Characterizes the order boot reads the two directories in today, when both hold a malformed
-     * file. It is the cup file that is named. The order is not written in any source line of the
-     * catalogue. The loader reads cups before maps for this reason: avaje-inject's generated
-     * {@code DInjectModule} built the cup catalogue before the map catalogue, and the first failure
-     * ended the build.
+     * Intentional change, scope-cup-validation: a malformed cup file that is not the played cup no longer
+     * stops boot, so the malformed map file is the refusal here. The cup is not the one named by
+     * {@code test_cup}, so it is only reported as skipped (see CupBootValidationTest).
      */
     @Test
-    void refusesBootWithTheCupFileWhenAMalformedMapAndAMalformedCupAreBothPresent(Env env) throws IOException {
+    void refusesBootWithTheMalformedMapBeforeAnUnplayedBrokenCup(Env env) throws IOException {
         Path data = dataDirectory();
         write(data.resolve("maps/a-broken.json"), "");
         write(data.resolve("cups/a-broken.json"), "");
@@ -100,7 +98,7 @@ class BootRefusalTest {
         assertThatThrownBy(() -> VoyagerServer.openGraph(settings(data)))
                 .satisfies(refusal -> assertThat(causeOf(refusal, MalformedCatalogFileException.class))
                         .hasMessage("%s is not a valid definition: the file is empty"
-                                .formatted(data.resolve("cups/a-broken.json"))));
+                                .formatted(data.resolve("maps/a-broken.json"))));
     }
 
     /**
