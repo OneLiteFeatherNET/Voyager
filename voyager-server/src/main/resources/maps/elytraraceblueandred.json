@@ -1,4 +1,6 @@
 {
+  "$schema": "../../../../../voyager-platform/src/main/resources/schema/map.schema.json",
+  "schemaVersion": 1,
   "name": "elytraraceblueandred",
   "world": "ElytraraceBlueAndRed",
   "spawn": {

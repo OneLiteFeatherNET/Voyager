@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/OneLiteFeatherNET/Voyager/main/voyager-platform/src/main/resources/schema/map.schema.json",
+  "title": "Voyager map file",
+  "description": "A racecourse: spawn, rings in race order, the racing line and the boost tuning. Describes the format the catalogue adapters in voyager-platform read. The loader does not validate against this document at runtime; the adapters are the runtime check. Derived fields: a ring's index defaults to its position in rings, and world defaults to name.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "spawn", "referenceTimeSeconds", "boostConfig", "guideLine", "rings"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Relative path to this schema, so editors can find it."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the file format this file is written in. Absent means 1. This schema describes version 1 only."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "\\S",
+      "description": "The map's name. Must not be blank."
+    },
+    "world": {
+      "type": "string",
+      "pattern": "\\S",
+      "description": "The world directory under the worlds path. Optional; when absent it is the name, exactly as written."
+    },
+    "spawn": { "$ref": "#/$defs/vec3" },
+    "referenceTimeSeconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "The lap time, in seconds, a new record must beat."
+    },
+    "boostConfig": { "$ref": "#/$defs/boostConfig" },
+    "guideLine": { "$ref": "#/$defs/guideLine" },
+    "rings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ring" },
+      "description": "The rings in race order. Ring i is the ring at position i."
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Free text for the person editing the file. Ignored by the loader."
+    }
+  },
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "ring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["center", "normal", "radius", "points", "type"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional. When present it must equal the ring's position in rings; a mismatch refuses the file. Left out, the position is used."
+        },
+        "center": { "$ref": "#/$defs/vec3" },
+        "normal": {
+          "$ref": "#/$defs/vec3",
+          "description": "The unit normal of the disc. Its sign decides which way through the ring counts."
+        },
+        "radius": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "points": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The score for passing this ring."
+        },
+        "type": {
+          "enum": ["STANDARD", "BOOST", "SLOW", "CHECKPOINT"]
+        }
+      }
+    },
+    "boostConfig": {
+      "type": "object",
+      "required": ["burnDurationTicks", "cooldownTicks"],
+      "properties": {
+        "burnDurationTicks": { "type": "integer", "minimum": 1 },
+        "cooldownTicks": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Must be longer than burnDurationTicks; the loader refuses it otherwise."
+        }
+      }
+    },
+    "guideLine": {
+      "type": "object",
+      "required": ["lookAheadRings", "particleSpacing", "points"],
+      "properties": {
+        "lookAheadRings": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How many rings ahead the racing line is shown."
+        },
+        "particleSpacing": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Blocks between drawn particles on the racing line."
+        },
+        "points": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/guidePoint" }
+        }
+      }
+    },
+    "guidePoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["orderIndex", "position"],
+      "properties": {
+        "orderIndex": {
+          "type": "integer",
+          "description": "Where the point sits on the line. Must not be a ring's own slot; the loader refuses that."
+        },
+        "position": { "$ref": "#/$defs/vec3" }
+      }
+    }
+  }
+}

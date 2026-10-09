@@ -1,4 +1,6 @@
 {
+  "$schema": "../../../../../voyager-platform/src/main/resources/schema/cup.schema.json",
+  "schemaVersion": 1,
   "name": "test_cup",
   "mode": "RACE",
   "mapNames": [
