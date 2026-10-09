@@ -47,7 +47,7 @@ class ApiPurityTest {
     @ArchTest
     static final ArchRule apiDoesNotDependOnADiContainer =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
-                    .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "jakarta.inject..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
                     .because("DI annotations are confined to the composition roots")
                     .allowEmptyShould(false);
 
@@ -84,7 +84,7 @@ class ApiPurityTest {
     @ArchTest
     static final ArchRule physicsDoesNotDependOnADiContainer =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
-                    .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "jakarta.inject..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
                     .because("DI annotations are confined to the composition roots")
                     .allowEmptyShould(false);
 
@@ -234,11 +234,6 @@ class ApiPurityTest {
                             + "coordinate path must not carry — has exactly one place to have come from")
                     .allowEmptyShould(false);
 
-    // io.airlift:guice keeps upstream Guice's com.google.inject package name (see the greenfield
-    // design, D10), so one rule scoped to that package plus io.airlift.. catches either artifact.
-    // Written as "everything outside voyager-server" rather than naming each domain module
-    // individually, so a future rebuild module is covered by construction instead of needing its own
-    // DI-purity rule remembered on top.
     // E4 puts the first JSON parser in the rebuild on a classpath, in voyager-platform's catalogue.
     // The design's claim is that every module modelling a race is handed a catalog rather than a
     // file — which is what lets a whole race play out in JUnit against definitions built in code —
@@ -305,11 +300,38 @@ class ApiPurityTest {
                             + "with no audience but somebody debugging")
                     .allowEmptyShould(false);
 
+    // Written as "everything outside voyager-server" rather than one rule per module, so a future
+    // rebuild module is covered by construction instead of needing its own DI-purity rule remembered
+    // on top. The race and platform rules below are still written out per module, because those two
+    // are the modules that must never grow a composition root of their own (design decision 1).
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnADiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition root in voyager-server")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule platformDoesNotDependOnADiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition root in voyager-server")
+                    .allowEmptyShould(false);
+
     @ArchTest
     static final ArchRule onlyServerDependsOnDiContainer =
             noClasses().that().resideInAPackage("net.elytrarace.voyager..")
                     .and().resideOutsideOfPackage("net.elytrarace.voyager.server..")
-                    .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "io.airlift..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
                     .because("DI annotations are confined to the composition roots")
+                    .allowEmptyShould(false);
+
+    // Guice is no longer on the build (design decision 6 of switch-di-to-avaje-inject); this keeps it
+    // from coming back under either of its artifact package names.
+    @ArchTest
+    static final ArchRule noClassDependsOnGuice =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "io.airlift..")
+                    .because("the rebuild wires its composition root with avaje-inject, and Guice is gone")
                     .allowEmptyShould(false);
 }
