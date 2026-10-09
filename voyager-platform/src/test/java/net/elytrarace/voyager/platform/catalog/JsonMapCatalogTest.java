@@ -110,6 +110,19 @@ class JsonMapCatalogTest {
     }
 
     @Test
+    void refusesWithTheFirstMalformedFileInSortedOrderAndItsExactMessage(@TempDir Path maps) {
+        // Characterization of today's boot refusal: the file is named by its sorted position, not
+        // by the order it was written, and the message is the one an operator reads at boot. An empty
+        // file is the malformed input whose message does not depend on Gson's own wording.
+        CatalogFixtures.write(maps, "b-broken.json", "");
+        CatalogFixtures.write(maps, "a-broken.json", "");
+
+        assertThatThrownBy(() -> new JsonMapCatalog(maps))
+                .isInstanceOf(MalformedCatalogFileException.class)
+                .hasMessage("%s is not a valid definition: the file is empty".formatted(maps.resolve("a-broken.json")));
+    }
+
+    @Test
     void refusesADirectoryThatIsNotThere(@TempDir Path root) {
         assertThatThrownBy(() -> new JsonMapCatalog(root.resolve("maps")))
                 .isInstanceOf(UnreadableCatalogException.class)

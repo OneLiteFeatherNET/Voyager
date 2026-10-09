@@ -72,6 +72,17 @@ class CatalogConsistencyTest {
     }
 
     @Test
+    void aSingleDanglingEntryKeepsTodaysExactMessage(@TempDir Path cups) {
+        // Characterization of today's boot refusal, pinned to the whole message: the number, the
+        // verb, the cup and the map are what an operator reads at boot.
+        CatalogFixtures.cup(cups, "a.json", "weekly", "RACE", "blue", "cathedral");
+
+        assertThatThrownBy(() -> CatalogConsistency.requireEveryCupMapResolves(
+                new JsonCupCatalog(cups), knowing("blue")))
+                .hasMessage("1 cup entry does name a map no map definition provides: cup 'weekly' plays 'cathedral'");
+    }
+
+    @Test
     void checksEveryMapOfARotationAndNotOnlyTheFirst(@TempDir Path cups) {
         // The missing map is last in the rotation. A check that looked at mapNames().getFirst()
         // would pass here and fail four maps into the night.
