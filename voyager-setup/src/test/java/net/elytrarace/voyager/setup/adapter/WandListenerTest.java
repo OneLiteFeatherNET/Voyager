@@ -31,6 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,8 +72,9 @@ class WandListenerTest {
 
     @Test
     void threeRightClicksPlaceThreeRingsWithTheDefaultRadiusAndIndicesZeroOneTwo(Env env) throws IOException {
+        folders();
         Fixture fixture = fixture(env, store());
-        fixture.run("map new skyfortress");
+        fixture.enter("map new skyfortress");
 
         for (int stand = 0; stand < 3; stand++) {
             fixture.moveTo(new Pos(stand * 4.0, 64, 0));
@@ -88,8 +90,9 @@ class WandListenerTest {
 
     @Test
     void aRingPlacedAfterTheSpawnIsSetMakesTheMapGameLoadable(Env env) throws IOException {
+        folders();
         Fixture fixture = fixture(env, store());
-        fixture.run("map new skyfortress");
+        fixture.enter("map new skyfortress");
         fixture.run("map spawn");
 
         fixture.rightClick();
@@ -100,8 +103,9 @@ class WandListenerTest {
 
     @Test
     void aRightClickThatRepeatsTheLastRingsPoseIsTheSameClickAndPlacesNothing(Env env) throws IOException {
+        folders();
         Fixture fixture = fixture(env, store());
-        fixture.run("map new skyfortress");
+        fixture.enter("map new skyfortress");
 
         fixture.rightClick();
         fixture.rightClick();
@@ -111,10 +115,11 @@ class WandListenerTest {
 
     @Test
     void aLeftClickThroughTheMiddleOfThreeRingsRemovesItAndRenumbersTheLaterOne(Env env) throws IOException {
+        folders();
         Fixture fixture = fixture(env, store());
-        fixture.run("map new skyfortress");
+        fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10, 20);
-        fixture.run("map open skyfortress");
+        fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
 
         fixture.leftClick();
@@ -126,10 +131,11 @@ class WandListenerTest {
 
     @Test
     void aLeftClickWithNoRingInReachChangesNothingAndSaysSo(Env env) throws IOException {
+        folders();
         Fixture fixture = fixture(env, store());
-        fixture.run("map new skyfortress");
+        fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10, 20);
-        fixture.run("map open skyfortress");
+        fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
         fixture.lookDown();
 
@@ -141,9 +147,10 @@ class WandListenerTest {
 
     @Test
     void aSaveThatFailsKeepsThePreviousDraftInMemoryAndInTheFile(Env env) throws IOException {
+        folders();
         FlakyStore flaky = new FlakyStore(store());
         Fixture fixture = fixture(env, flaky);
-        fixture.run("map new skyfortress");
+        fixture.enter("map new skyfortress");
         byte[] before = Files.readAllBytes(data.resolve("drafts").resolve("skyfortress.json"));
         flaky.failSaves = true;
 
@@ -191,6 +198,14 @@ class WandListenerTest {
             env.process().command().execute(builder, command);
             env.tick();
             env.tick();
+        }
+
+        /** Runs a command that opens a map, then ticks until the builder has arrived in that map's world. */
+        void enter(String command) {
+            run(command);
+            env.tickWhile(() -> sessions.find(builder.getUuid())
+                    .map(session -> session.instance() != builder.getInstance())
+                    .orElse(false), Duration.ofSeconds(10));
         }
 
         void moveTo(Pos position) {
