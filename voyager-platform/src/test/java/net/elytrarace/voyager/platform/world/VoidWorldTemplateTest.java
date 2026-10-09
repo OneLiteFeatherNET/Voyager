@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@EnvTest
 class VoidWorldTemplateTest {
 
     @TempDir
@@ -37,7 +38,7 @@ class VoidWorldTemplateTest {
         assertThatThrownBy(() -> VoidWorldTemplate.copyTo(world)).isInstanceOf(WorldAlreadyExistsException.class);
     }
 
-    @EnvTest
+    @Test
     void theCopiedWorldIsAcceptedByMapInstances(Env env) {
         Path world = worlds.resolve("skyfortress");
         VoidWorldTemplate.copyTo(world);
