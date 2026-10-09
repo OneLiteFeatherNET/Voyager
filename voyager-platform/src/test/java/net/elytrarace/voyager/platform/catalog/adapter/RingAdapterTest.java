@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.catalog.adapter;
 
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.Ring;
@@ -27,9 +28,14 @@ class RingAdapterTest {
             }
             """;
 
+    /** Reads the fixture as the ring at position 4, which is the index it declares. */
+    private static Ring read(String json) {
+        return RingAdapter.read(JsonParser.parseString(json), 4);
+    }
+
     @Test
     void readsEveryFieldOfARing() {
-        Ring ring = Adapters.GSON.fromJson(RING, Ring.class);
+        Ring ring = read(RING);
 
         assertThat(ring.index()).isEqualTo(4);
         assertThat(ring.center()).isEqualTo(new Vec3(2, -31, 69));
@@ -42,14 +48,28 @@ class RingAdapterTest {
     }
 
     @Test
+    void takesTheIndexFromThePositionWhenTheFileLeavesItOut() {
+        Ring ring = RingAdapter.read(JsonParser.parseString(RING.replace("\"index\": 4,", "")), 7);
+
+        assertThat(ring.index()).isEqualTo(7);
+    }
+
+    @Test
+    void refusesADeclaredIndexThatIsNotThePosition() {
+        assertThatThrownBy(() -> RingAdapter.read(JsonParser.parseString(RING), 3))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("ring at position 3 declares index 4")
+                .hasMessageContaining("or be left out");
+    }
+
+    @Test
     void readsTheStoredNormalRatherThanDerivingOne() {
         // D-E3-5: the normal is stored, and its sign is what decides which way through the ring
         // counts. Reading a ring whose normal points the opposite way from the obvious guess and
         // getting that value back is what says the file is believed.
-        Ring ring = Adapters.GSON.fromJson(
+        Ring ring = read(
                 RING.replace("-0.6666666666666666", "0.6666666666666666")
-                        .replaceFirst("\"y\": 0.6666666666666666", "\"y\": -0.6666666666666666"),
-                Ring.class);
+                        .replaceFirst("\"y\": 0.6666666666666666", "\"y\": -0.6666666666666666"));
 
         assertThat(ring.normal().x()).isEqualTo(2.0 / 3);
         assertThat(ring.normal().y()).isEqualTo(-2.0 / 3);
@@ -59,23 +79,21 @@ class RingAdapterTest {
     void refusesARingTypeItDoesNotRecognise() {
         // Refused, not defaulted to STANDARD the way the old loader did. A misspelt BOOST that
         // becomes a STANDARD is a course that scores correctly and plays wrong.
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(RING.replace("BOOST", "TURBO"), Ring.class))
+        assertThatThrownBy(() -> read(RING.replace("BOOST", "TURBO")))
                 .isInstanceOf(JsonParseException.class)
                 .hasMessageContaining("ring 4 has the unrecognised type 'TURBO'");
     }
 
     @Test
     void refusesARingMissingItsRadius() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(
-                RING.replaceAll("\\s*\"radius\".*\n", "\n"), Ring.class))
+        assertThatThrownBy(() -> read(RING.replaceAll("\\s*\"radius\".*\n", "\n")))
                 .isInstanceOf(JsonParseException.class)
                 .hasMessageContaining("ring 4 is missing the field 'radius'");
     }
 
     @Test
     void refusesARingMissingItsNormal() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(
-                RING.replaceAll("\\s*\"normal\".*\n", "\n"), Ring.class))
+        assertThatThrownBy(() -> read(RING.replaceAll("\\s*\"normal\".*\n", "\n")))
                 .isInstanceOf(JsonParseException.class)
                 .hasMessageContaining("ring 4 is missing the field 'normal'");
     }
@@ -84,14 +102,13 @@ class RingAdapterTest {
     void letsTheRingItselfRefuseANormalThatIsNotUnitLength() {
         // The adapter does not re-check the geometry; Ring's own constructor does, and this is what
         // says the adapter hands it the value unaltered instead of normalising it on the way past.
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(
-                RING.replace("-0.3333333333333333", "-0.9"), Ring.class))
+        assertThatThrownBy(() -> read(RING.replace("-0.3333333333333333", "-0.9")))
                 .isInstanceOf(InvalidRingException.class);
     }
 
     @Test
     void refusesAFractionalIndex() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(RING.replace("\"index\": 4", "\"index\": 4.5"), Ring.class))
+        assertThatThrownBy(() -> read(RING.replace("\"index\": 4", "\"index\": 4.5")))
                 .isInstanceOf(JsonParseException.class)
                 .hasMessageContaining("must be a whole number");
     }

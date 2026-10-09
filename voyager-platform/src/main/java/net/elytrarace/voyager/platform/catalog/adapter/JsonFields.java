@@ -34,6 +34,15 @@ final class JsonFields {
         return value;
     }
 
+    /**
+     * Whether the field is stated at all. A field stated as {@code null} counts as absent, the same way
+     * {@link #required} treats it, so a file cannot opt out of a default by writing {@code null}.
+     */
+    static boolean present(JsonObject json, String field) {
+        JsonElement value = json.get(field);
+        return value != null && !value.isJsonNull();
+    }
+
     static String string(JsonObject json, String field, String what) {
         JsonElement value = required(json, field, what);
         if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isString()) {

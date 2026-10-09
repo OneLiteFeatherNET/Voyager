@@ -56,6 +56,30 @@ class CupDefinitionAdapterTest {
     }
 
     @Test
+    void readsACupWithoutSchemaVersionAsVersionOne() {
+        assertThat(Adapters.GSON.fromJson(CUP, CupDefinition.class).name()).isEqualTo("test_cup");
+    }
+
+    @Test
+    void refusesCupSchemaVersionZero() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("0"), CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'schemaVersion' must be a whole number of 1 or more");
+    }
+
+    @Test
+    void refusesCupSchemaVersionAboveTheSupportedMaximumNamingBothNumbers() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("2"), CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("cup 'test_cup' declares schemaVersion 2")
+                .hasMessageContaining("up to schemaVersion 1");
+    }
+
+    private static String withCupSchemaVersion(String value) {
+        return CUP.replaceFirst("\\{", "{\n  \"schemaVersion\": " + value + ",");
+    }
+
+    @Test
     void refusesARotationEntryThatIsNotAName() {
         assertThatThrownBy(() -> Adapters.GSON.fromJson(CUP.replace("\"blue\"", "{ \"name\": \"blue\" }"),
                 CupDefinition.class))

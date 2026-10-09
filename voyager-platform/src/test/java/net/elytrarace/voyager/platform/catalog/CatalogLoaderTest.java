@@ -147,9 +147,9 @@ class CatalogLoaderTest {
     }
 
     @Test
-    void refusesAMapWhoseRingsAreNotIndexedZeroToNMinusOne(@TempDir Path data) {
-        // Well-formed JSON that a MapDefinition rejects. The exception has to name the file all the
-        // same: InvalidMapException on its own says a rotation is wrong without saying which file.
+    void refusesAMapWhoseDeclaredRingIndexIsNotItsPosition(@TempDir Path data) {
+        // Well-formed JSON with a ring whose declared index contradicts its position. The exception has
+        // to name the file all the same, and the position and the declared index.
         CatalogFixtures.write(data.resolve("maps"), "out-of-order.json", CatalogFixtures.MAP
                 .formatted("blue", "ElytraraceBlueAndRed").replace("\"index\": 1", "\"index\": 7"));
         writeValidCup(data);
@@ -157,7 +157,7 @@ class CatalogLoaderTest {
         assertThatThrownBy(() -> CatalogLoader.load(data))
                 .isInstanceOf(MalformedCatalogFileException.class)
                 .hasMessageContaining("out-of-order.json")
-                .hasMessageContaining("0..n-1");
+                .hasMessageContaining("ring at position 1 declares index 7");
     }
 
     @Test

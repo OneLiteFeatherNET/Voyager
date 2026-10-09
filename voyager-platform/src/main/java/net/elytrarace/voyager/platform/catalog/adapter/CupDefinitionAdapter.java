@@ -30,6 +30,7 @@ public final class CupDefinitionAdapter implements JsonDeserializer<CupDefinitio
         JsonObject json = JsonFields.object(element, "a cup");
         String name = JsonFields.string(json, "name", "a cup");
         String what = "cup '%s'".formatted(name);
+        SchemaVersion.read(json, what);
 
         List<String> mapNames = new ArrayList<>();
         for (JsonElement mapName : JsonFields.array(json, "mapNames", what)) {

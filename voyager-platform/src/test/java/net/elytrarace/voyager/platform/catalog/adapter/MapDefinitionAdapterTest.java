@@ -211,14 +211,6 @@ class MapDefinitionAdapterTest {
     }
 
     @Test
-    void refusesAMapMissingItsWorld() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(MAP.replaceAll("\\s*\"world\".*\n", "\n"),
-                MapDefinition.class))
-                .isInstanceOf(JsonParseException.class)
-                .hasMessageContaining("map 'elytraraceblueandred' is missing the field 'world'");
-    }
-
-    @Test
     void refusesAMapMissingItsSpawn() {
         assertThatThrownBy(() -> Adapters.GSON.fromJson(MAP.replaceAll("\\s*\"spawn\".*\n", "\n"),
                 MapDefinition.class))
@@ -237,11 +229,97 @@ class MapDefinitionAdapterTest {
     }
 
     @Test
-    void letsTheMapItselfRefuseRingsThatAreNotInOrder() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(MAP.replace("\"index\": 1", "\"index\": 9"),
+    void readsARingWithoutIndexAsItsPositionInTheRingsArray() {
+        MapDefinition map = Adapters.GSON.fromJson(MAP.replace("\"index\": 1,", ""), MapDefinition.class);
+
+        assertThat(map.rings()).extracting(Ring::index).containsExactly(0, 1);
+    }
+
+    @Test
+    void refusesARingWhoseDeclaredIndexIsNotItsPosition() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(MAP.replace("\"index\": 1,", "\"index\": 9,"),
                 MapDefinition.class))
-                .isInstanceOf(InvalidMapException.class)
-                .hasMessageContaining("0..n-1");
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("ring at position 1 declares index 9");
+    }
+
+    @Test
+    void readsTheSameMapWithOrWithoutItsRingIndexes() {
+        MapDefinition declared = Adapters.GSON.fromJson(MAP, MapDefinition.class);
+        MapDefinition derived = Adapters.GSON.fromJson(
+                MAP.replaceAll("\\s*\"index\": \\d+,", ""), MapDefinition.class);
+
+        assertThat(derived).isEqualTo(declared);
+    }
+
+    @Test
+    void readsAMapWithoutWorldAsItsNameExactlyAsWritten() {
+        // The name is lower case and the shipped world is not; a derivation that case-folded the
+        // name would pass the shipped file's own test and fail this one.
+        MapDefinition map = Adapters.GSON.fromJson(MAP.replaceAll("\\s*\"world\".*\n", "\n"), MapDefinition.class);
+
+        assertThat(map.world()).isEqualTo("elytraraceblueandred");
+    }
+
+    @Test
+    void keepsAnExplicitWorldUnchangedWhenItDiffersFromTheName() {
+        MapDefinition map = Adapters.GSON.fromJson(
+                MAP.replace("\"world\": \"ElytraraceBlueAndRed\"", "\"world\": \"Sky Drift Dir\""),
+                MapDefinition.class);
+
+        assertThat(map.world()).isEqualTo("Sky Drift Dir");
+    }
+
+    @Test
+    void refusesAPresentButBlankWorldNamingTheField() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(
+                MAP.replace("\"world\": \"ElytraraceBlueAndRed\"", "\"world\": \"  \""), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'world' must not be blank");
+    }
+
+    @Test
+    void readsAMapWithoutSchemaVersionAsVersionOne() {
+        assertThat(Adapters.GSON.fromJson(MAP, MapDefinition.class).name()).isEqualTo("elytraraceblueandred");
+    }
+
+    @Test
+    void readsSchemaVersionOne() {
+        assertThat(Adapters.GSON.fromJson(withSchemaVersion("1"), MapDefinition.class).name())
+                .isEqualTo("elytraraceblueandred");
+    }
+
+    @Test
+    void refusesSchemaVersionZero() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("0"), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'schemaVersion' must be a whole number of 1 or more");
+    }
+
+    @Test
+    void refusesFractionalSchemaVersion() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("1.5"), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'schemaVersion' must be a whole number of 1 or more");
+    }
+
+    @Test
+    void refusesTextSchemaVersion() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("\"1\""), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'schemaVersion' must be a whole number of 1 or more");
+    }
+
+    @Test
+    void refusesSchemaVersionAboveTheSupportedMaximumNamingBothNumbers() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("2"), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("map 'elytraraceblueandred' declares schemaVersion 2")
+                .hasMessageContaining("up to schemaVersion 1");
+    }
+
+    private static String withSchemaVersion(String value) {
+        return MAP.replaceFirst("\\{", "{\n  \"schemaVersion\": " + value + ",");
     }
 
     @Test
