@@ -19,8 +19,21 @@ import java.util.List;
  * from anything else — a loader that sorted by file order rather than by index, say — would let the
  * game demand rings in the wrong sequence, so that guarantee is enforced here rather than trusted to
  * every caller.
+ *
+ * <p>{@link #boostConfig()} is per map rather than per server because a course decides how much a
+ * rocket is worth on it: a 380-block climb and a flat sprint want different answers, and the old tree
+ * already stored the tuning in the map file for that reason. Its own invariants — including the one
+ * that keeps two rockets from ever burning on one racer at once — live in {@link BoostConfig}.
+ *
+ * <p>{@link #guideLine()} carries the control points that bend the racing line away from the terrain
+ * between two rings, and how much of that line a racer is shown. A map with no guide points at all is
+ * legal — the line is then the rings alone — but the bracketing rule is not optional and is checked
+ * here rather than in {@link GuideLine}, for the reason {@link BoostConfig}'s cooldown rule is
+ * checked in {@code BoostConfig}: this is the only type that can see both the guides and the rings
+ * they claim to sit between.
  */
-public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime) {
+public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
+        BoostConfig boostConfig, GuideLine guideLine) {
 
     public MapDefinition {
         if (name == null || name.isBlank()) {
@@ -40,6 +53,12 @@ public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> ri
         }
         if (referenceTime.isZero() || referenceTime.isNegative()) {
             throw InvalidMapException.nonPositiveReferenceTime(referenceTime);
+        }
+        int lastGap = rings.size() - 2;
+        for (GuidePoint guide : guideLine.points()) {
+            if (guide.afterRing() < 0 || guide.afterRing() > lastGap) {
+                throw InvalidMapException.guideOutsideTheCourse(guide.orderIndex(), rings.size());
+            }
         }
     }
 }

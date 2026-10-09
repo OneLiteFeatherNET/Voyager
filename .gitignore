@@ -8,8 +8,11 @@
 node_modules/
 
 # Local server run directory — worlds and data are not committed
-run/data/
-run/worlds/
+# Anchored to the repository root: unanchored, these also ignore any package directory
+# named `run` in a source tree, which is how net.elytrarace.voyager.race.run came to be
+# invisible to git.
+/run/data/
+/run/worlds/
 *.war
 *.nar
 *.ear
@@ -51,4 +54,4 @@ fabric.properties
 gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
-run/
+/run/
