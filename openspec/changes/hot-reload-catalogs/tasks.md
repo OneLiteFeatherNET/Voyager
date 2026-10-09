@@ -94,7 +94,7 @@ that matters is asserted through a captured appender.
 
 ## 7. Documentation
 
-- [ ] 7.1 ADR `docs/decisions/0017-pin-catalogue-snapshot-per-round.md` (MADR 4.0) for decisions 1, 3 and 8. Number to be confirmed
+- [ ] 7.1 ADR `docs/decisions/0019-pin-catalogue-snapshot-per-round.md` (MADR 4.0) for decisions 1, 3 and 8. Number 0019: 0017 and 0018 are reserved by other changes
   against 0016 (reserved by `switch-di-to-avaje-inject`). Ask the owner to approve the ADR before the PR (CLAUDE.md: ADRs need
   approval). Verify: the ADR status is accepted before merge.
 - [ ] 7.2 How-to `docs/guides/reload-catalogs.md` (Diataxis how-to): the command, the permission, "applies at the next round", the
