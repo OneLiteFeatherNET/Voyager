@@ -1,14 +1,12 @@
-package net.elytrarace.voyager.physics.collision;
+package net.elytrarace.voyager.physics;
 
 import net.elytrarace.voyager.api.math.Aabb;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.physics.CollisionSpace;
 import net.elytrarace.voyager.api.physics.FlightInput;
 import net.elytrarace.voyager.api.physics.FlightState;
-import net.elytrarace.voyager.physics.ElytraSimulator;
-import net.elytrarace.voyager.physics.math.ViewVector;
-import net.elytrarace.voyager.physics.step.ElytraStep;
-import net.elytrarace.voyager.physics.step.StepContext;
+import net.elytrarace.voyager.physics.collision.MovementResolver;
+import net.elytrarace.voyager.physics.collision.MovementResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -26,7 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * over {@code VoxelShape}s, so a two-box block is one guard check; {@link MovementResolver} loops
  * over boxes, so the same block is two. See {@link ShapeGroupedResolver}.
  *
- * <p>What the tests below establish, in order: the two algorithms are the same algorithm when every
+ * <p>Both sides of every comparison run through the production tick, {@link ElytraSimulator}, and
+ * differ only in the collision resolver handed to it. There is no second copy of the tick here to
+ * drift from production.
+ *
+ * <p>What the tests below establish, in order: the two resolvers are the same algorithm when every
  * shape is a single box (so a divergence over stairs is attributable to grouping and not to a
  * transcription slip); a divergence is constructible, so the mechanism is real; and no flight in a
  * dense sweep over a staircase produces one.
@@ -58,29 +60,59 @@ class ShapeFlatteningMeasurementTest {
 
     @Test
     void theTwoResolversAreTheSameAlgorithmWhenEveryShapeIsOneBox() {
-        // The self-check the measurement rests on. With singleton shapes the guard fires in the same
-        // places in both, so any disagreement here would be a transcription error in
-        // ShapeGroupedResolver rather than a property of grouping.
-        Sweep sweep = flySweep(CUBE_WORLD);
+        // The self-check the measurement rests on, asked at the level the claim is about: the same
+        // box and the same movement, resolved by each algorithm against the same world. With singleton
+        // shapes the snap guard fires at the same candidates in both, so any disagreement would be a
+        // transcription error in ShapeGroupedResolver rather than a property of grouping.
+        assertThat(CUBE_WORLD)
+                .as("a world of full blocks has no multi-box shape — otherwise it is not the controlled "
+                        + "comparison this test is meant to be")
+                .allSatisfy(shape -> assertThat(shape).hasSize(1));
 
-        assertThat(sweep.divergentFlights()).isEmpty();
-        assertThat(sweep.ticks()).isGreaterThan(10_000);
-        assertThat(sweep.ticksWithCandidates()).isGreaterThan(20_000);
-        assertThat(sweep.ticksWithAMultiBoxShape())
-                .as("a world of full blocks has no multi-box shape at all — if this were non-zero, "
-                        + "the two worlds would not be the controlled comparison they are meant to be")
-                .isZero();
-        assertThat(sweep.ticksWithAVerticalCollision()).isGreaterThan(20_000);
-        assertThat(sweep.ticksWithAHorizontalCollision()).isGreaterThan(5_000);
+        CollisionSpace flattened = flattenedSpace(CUBE_WORLD);
+        ShapeGroupedResolver.ShapeSpace grouped = groupedSpace(CUBE_WORLD);
+
+        List<String> divergent = new ArrayList<>();
+        int compared = 0;
+        int withVerticalCollision = 0;
+        int withHorizontalCollision = 0;
+        for (Aabb box : probeBoxes()) {
+            for (Vec3 movement : probeMovements()) {
+                MovementResult fromFlattened = MovementResolver.resolve(box, movement, flattened);
+                MovementResult fromGrouped = ShapeGroupedResolver.resolve(box, movement, grouped);
+                compared++;
+                if (!fromFlattened.equals(fromGrouped)) {
+                    divergent.add("box %s, movement %s: %s vs %s"
+                            .formatted(box, movement, fromFlattened, fromGrouped));
+                }
+                if (fromFlattened.verticalCollision()) {
+                    withVerticalCollision++;
+                }
+                if (fromFlattened.horizontalCollision()) {
+                    withHorizontalCollision++;
+                }
+            }
+        }
+
+        assertThat(divergent).as("resolutions that differ between the two algorithms").isEmpty();
+        // Non-vacuity: the agreement means something only if the probes actually hit the world.
+        assertThat(compared).isGreaterThan(20_000);
+        assertThat(withVerticalCollision).isGreaterThan(1_000);
+        assertThat(withHorizontalCollision).isGreaterThan(1_000);
     }
 
     @Test
     void noTrajectoryOverAStaircaseDiffersBetweenFlattenedAndGroupedShapes() {
         Sweep sweep = flySweep(STAIR_WORLD);
 
-        // The counters are the test. Without them a green assertion on "no divergence" is equally
-        // consistent with "the racer never reached the stairs", which is the failure mode this
-        // repository has shipped before.
+        // The divergence list comes first: a failure should name the flights that split, and the
+        // counters below are the coverage that makes the empty list mean something.
+        assertThat(sweep.divergentFlights())
+                .as("flights whose flattened and grouped states differ, with the first tick they differ on")
+                .isEmpty();
+
+        // Without these the empty list is equally consistent with "the racer never reached the
+        // stairs", which is the failure mode this repository has shipped before.
         assertThat(sweep.ticks()).isEqualTo(36_000);
         assertThat(sweep.ticksWithCandidates()).isGreaterThan(20_000);
         assertThat(sweep.ticksWithAMultiBoxShape())
@@ -91,8 +123,6 @@ class ShapeFlatteningMeasurementTest {
         assertThat(sweep.ticksWithAHorizontalCollision())
                 .as("ticks where the racer was clamped against the wall, not merely resting on the floor")
                 .isGreaterThan(5_000);
-
-        assertThat(sweep.divergentFlights()).isEmpty();
     }
 
     @Test
@@ -178,6 +208,43 @@ class ShapeFlatteningMeasurementTest {
         assertThat(grouped.allowedMovement().x()).isEqualTo(RESIDUAL);
     }
 
+    // ---------------------------------------------------------------- the resolver-level probes
+
+    /**
+     * Boxes around the corner of {@link #CUBE_WORLD}: floor contact, the two walls' faces, the pillar
+     * and the inside corner all lie within reach of some probe.
+     */
+    private static List<Aabb> probeBoxes() {
+        List<Aabb> boxes = new ArrayList<>();
+        for (int xi = 0; xi < 8; xi++) {
+            for (int yi = 0; yi < 3; yi++) {
+                for (int zi = 0; zi < 8; zi++) {
+                    double x = -2.0 + xi * 0.5173;
+                    double y = 0.02 + yi * 0.4129;
+                    double z = -2.0 + zi * 0.5173;
+                    boxes.add(new Aabb(
+                            new Vec3(x - HALF_WIDTH, y, z - HALF_WIDTH),
+                            new Vec3(x + HALF_WIDTH, y + HEIGHT, z + HALF_WIDTH)));
+                }
+            }
+        }
+        return boxes;
+    }
+
+    /** Components on both sides of zero, a residual-sized one, and the zero vector. */
+    private static List<Vec3> probeMovements() {
+        double[] components = {-0.6, -0.04, -RESIDUAL, 0.0, RESIDUAL, 0.04, 0.6};
+        List<Vec3> movements = new ArrayList<>();
+        for (double x : components) {
+            for (double y : components) {
+                for (double z : components) {
+                    movements.add(new Vec3(x, y, z));
+                }
+            }
+        }
+        return movements;
+    }
+
     // ---------------------------------------------------------------- the sweep
 
     /**
@@ -214,6 +281,9 @@ class ShapeFlatteningMeasurementTest {
         int withHorizontal = 0;
         List<String> divergent = new ArrayList<>();
 
+        CollisionSpace flattened = flattenedSpace(world);
+        GroupedSolver grouped = new GroupedSolver(world);
+
         for (int xi = 0; xi < 15; xi++) {
             for (int yi = 0; yi < 8; yi++) {
                 for (int hi = 0; hi < HEADINGS.size(); hi++) {
@@ -223,29 +293,27 @@ class ShapeFlatteningMeasurementTest {
                         double startY = 0.05 + yi * 0.0131;
                         double startZ = -3.0 + zi * 0.2531 + hi * 0.0417;
                         float pitch = heading.pitch();
-                        FlightState flat = new FlightState(
+                        FlightState flatState = new FlightState(
                                 new Vec3(startX, startY, startZ), heading.velocity(),
                                 heading.yaw(), pitch, false);
-                        FlightState grouped = flat;
+                        FlightState groupedState = flatState;
                         FlightInput input = new FlightInput(heading.yaw(), pitch, false, 0, GRAVITY);
 
-                        RecordingShapeSpace space = new RecordingShapeSpace(world);
                         for (int tick = 0; tick < 25; tick++) {
                             ticks++;
-                            flat = ElytraSimulator.tick(flat, input, flattenedSpace(world));
-                            Step step = tickGrouped(grouped, input, space);
-                            grouped = step.state();
+                            flatState = ElytraSimulator.tick(flatState, input, flattened);
+                            groupedState = ElytraSimulator.tickTracedWith(groupedState, input, grouped).result();
 
                             // Counted from the query the resolver itself made, not from a separate
                             // probe: the candidate set the measurement depends on is the one the
                             // swept region produced.
-                            if (!space.last().isEmpty()) {
+                            if (!grouped.lastShapes().isEmpty()) {
                                 withCandidates++;
                             }
-                            if (space.last().stream().anyMatch(shape -> shape.size() > 1)) {
+                            if (grouped.lastShapes().stream().anyMatch(shape -> shape.size() > 1)) {
                                 withMultiBox++;
                             }
-                            MovementResult result = step.result();
+                            MovementResult result = grouped.lastResult();
                             if (result.verticalCollision()) {
                                 withVertical++;
                             }
@@ -253,9 +321,9 @@ class ShapeFlatteningMeasurementTest {
                                 withHorizontal++;
                             }
 
-                            if (!flat.equals(grouped)) {
+                            if (!flatState.equals(groupedState)) {
                                 divergent.add("start (%s, %s, %s) pitch %s tick %s: %s vs %s"
-                                        .formatted(startX, startY, startZ, pitch, tick, flat, grouped));
+                                        .formatted(startX, startY, startZ, pitch, tick, flatState, groupedState));
                                 break;
                             }
                         }
@@ -266,55 +334,39 @@ class ShapeFlatteningMeasurementTest {
         return new Sweep(ticks, withCandidates, withMultiBox, withVertical, withHorizontal, divergent);
     }
 
-    private record Step(FlightState state, MovementResult result) {
-    }
-
-    /** A {@link ShapeGroupedResolver.ShapeSpace} that remembers what it last handed back. */
-    private static final class RecordingShapeSpace implements ShapeGroupedResolver.ShapeSpace {
+    /**
+     * The grouped resolver as the production tick's {@link ElytraSimulator.MovementSolver}. It keeps
+     * what its last resolution saw, so the sweep counts candidates and collisions from the query the
+     * resolver itself made.
+     */
+    private static final class GroupedSolver implements ElytraSimulator.MovementSolver {
 
         private final List<List<Aabb>> world;
-        private List<List<Aabb>> last = List.of();
+        private List<List<Aabb>> lastShapes = List.of();
+        private MovementResult lastResult;
 
-        private RecordingShapeSpace(List<List<Aabb>> world) {
+        private GroupedSolver(List<List<Aabb>> world) {
             this.world = world;
         }
 
         @Override
-        public List<List<Aabb>> shapesIntersecting(Aabb region) {
-            last = ShapeFlatteningMeasurementTest.shapesIntersecting(world, region);
-            return last;
+        public MovementResult resolve(Aabb box, Vec3 movement) {
+            // A zero movement never queries the space, so clear what the previous tick saw first.
+            lastShapes = List.of();
+            lastResult = ShapeGroupedResolver.resolve(box, movement, region -> {
+                lastShapes = shapesIntersecting(world, region);
+                return lastShapes;
+            });
+            return lastResult;
         }
 
-        private List<List<Aabb>> last() {
-            return last;
+        private List<List<Aabb>> lastShapes() {
+            return lastShapes;
         }
-    }
 
-    /** {@link ElytraSimulator#tick} with the one substitution this measurement is about. */
-    private static Step tickGrouped(FlightState previous, FlightInput input,
-                                    ShapeGroupedResolver.ShapeSpace space) {
-        Vec3 enteringVelocity = previous.velocity();
-        if (input.fireworkBoostActive()) {
-            Vec3 look = ViewVector.of(input.pitch(), input.yaw());
-            enteringVelocity = new Vec3(
-                    enteringVelocity.x() + look.x() * 0.1 + (look.x() * 1.5 - enteringVelocity.x()) * 0.5,
-                    enteringVelocity.y() + look.y() * 0.1 + (look.y() * 1.5 - enteringVelocity.y()) * 0.5,
-                    enteringVelocity.z() + look.z() * 0.1 + (look.z() * 1.5 - enteringVelocity.z()) * 0.5);
+        private MovementResult lastResult() {
+            return lastResult;
         }
-        StepContext context = StepContext.of(enteringVelocity, input.pitch(), input.yaw(), input.gravity());
-        Vec3 velocity = enteringVelocity;
-        for (ElytraStep step : ElytraStep.stepsInOrder()) {
-            velocity = step.step().apply(velocity, context);
-        }
-        MovementResult result =
-                ShapeGroupedResolver.resolve(boundingBoxAt(previous.position()), velocity, space);
-        Vec3 restituted = new Vec3(
-                result.xCollision() ? 0.0 : velocity.x(),
-                result.verticalCollision() ? 0.0 : velocity.y(),
-                result.zCollision() ? 0.0 : velocity.z());
-        return new Step(new FlightState(
-                previous.position().plus(result.allowedMovement()),
-                restituted, input.yaw(), input.pitch(), result.onGround()), result);
     }
 
     // ---------------------------------------------------------------- the world
@@ -387,11 +439,5 @@ class ShapeFlatteningMeasurementTest {
                         new Vec3(box[0] + x, box[1] + y, box[2] + z),
                         new Vec3(box[3] + x, box[4] + y, box[5] + z)))
                 .toList();
-    }
-
-    private static Aabb boundingBoxAt(Vec3 position) {
-        return new Aabb(
-                new Vec3(position.x() - HALF_WIDTH, position.y(), position.z() - HALF_WIDTH),
-                new Vec3(position.x() + HALF_WIDTH, position.y() + HEIGHT, position.z() + HALF_WIDTH));
     }
 }
