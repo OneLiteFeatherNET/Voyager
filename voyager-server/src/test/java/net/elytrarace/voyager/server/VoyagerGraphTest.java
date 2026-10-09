@@ -15,6 +15,7 @@ import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.server.game.CatalogReloadService;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -59,6 +60,7 @@ class VoyagerGraphTest {
                     InstanceManager.class,
                     CatalogHolder.class,
                     CatalogReloader.class,
+                    CatalogReloadService.class,
                     MapInstances.class,
                     RaceRuns.class,
                     MapTransition.class,

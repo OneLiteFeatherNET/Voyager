@@ -12,6 +12,7 @@ import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.server.game.CatalogReloadService;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceManager;
@@ -76,6 +77,17 @@ public final class ServerBeans {
     @Bean
     CatalogHolder catalogHolder(CatalogReloader reloader, @External ServerSettings settings) {
         return new CatalogHolder(reloader.loadInitial(settings.dataPath(), settings.cupName()));
+    }
+
+    /**
+     * The operator's reload: re-reads the data directory on a virtual thread, so the tick never waits for it, and
+     * offers an applied catalogue to the holder.
+     */
+    @Bean
+    CatalogReloadService catalogReloadService(CatalogReloader reloader, CatalogHolder holder,
+            @External ServerSettings settings) {
+        return new CatalogReloadService(() -> reloader.reload(settings.dataPath(), settings.cupName()), holder,
+                Thread::startVirtualThread);
     }
 
     @Bean

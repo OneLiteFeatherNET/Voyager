@@ -56,6 +56,9 @@ public abstract class Messages {
     private static final String COMMAND_RESTARTED = "voyager.command.restarted";
     private static final String COMMAND_SKIP_TAKEN = "voyager.command.skip.taken";
     private static final String COMMAND_SKIP_REFUSED = "voyager.command.skip.refused";
+    private static final String COMMAND_RELOAD_PENDING = "voyager.command.reload.pending";
+    private static final String COMMAND_RELOAD_REJECTED = "voyager.command.reload.rejected";
+    private static final String COMMAND_RELOAD_FAILED = "voyager.command.reload.failed";
 
     private Messages() {
     }
@@ -292,5 +295,23 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component skipRefused() {
         return Component.translatable(COMMAND_SKIP_REFUSED);
+    }
+
+    /** {@code /race reload}'s answer when the new catalogue is valid and waits for the next round. */
+    @Contract(pure = true)
+    public static Component reloadPending() {
+        return Component.translatable(COMMAND_RELOAD_PENDING);
+    }
+
+    /** {@code /race reload}'s answer when the edit is refused; the problems follow, one message each. */
+    @Contract(pure = true)
+    public static Component reloadRejected(int problems) {
+        return Component.translatable(COMMAND_RELOAD_REJECTED, Component.text(problems));
+    }
+
+    /** {@code /race reload}'s answer when the reload itself failed; the cause is in the server log. */
+    @Contract(pure = true)
+    public static Component reloadFailed() {
+        return Component.translatable(COMMAND_RELOAD_FAILED);
     }
 }

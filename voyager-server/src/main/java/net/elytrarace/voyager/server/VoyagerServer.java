@@ -13,6 +13,7 @@ import net.elytrarace.voyager.race.RaceCore;
 import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.server.game.CatalogReloadService;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.elytrarace.voyager.server.game.Racers;
 import net.minestom.server.MinecraftServer;
@@ -188,7 +189,8 @@ public final class VoyagerServer {
         }
 
         registerEvents(session, settings, catalog, instances);
-        MinecraftServer.getCommandManager().register(new RaceCommand(session, settings.devMode()));
+        MinecraftServer.getCommandManager().register(
+                new RaceCommand(session, settings.devMode(), graph.get(CatalogReloadService.class)));
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }

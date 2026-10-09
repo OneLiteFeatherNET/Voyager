@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.server.command;
 
 import net.elytrarace.voyager.platform.text.Messages;
+import net.elytrarace.voyager.server.game.CatalogReloadService;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.command.CommandSender;
@@ -11,16 +12,18 @@ import net.minestom.server.command.builder.arguments.ArgumentType;
  * {@code /race} — enough to run a cup by hand and no more.
  *
  * <table>
- *   <caption>The three things an acceptance run needs to do</caption>
+ *   <caption>The subcommands</caption>
  *   <tr><th>{@code /race}</th><td>where the cup stands: phase, map, race clock, every racer's ring
  *       count, where the client says they are and where the server's simulation has them</td></tr>
+ *   <tr><th>{@code /race reload}</th><td>re-read the maps and cups and apply them from the next round;
+ *       gated by {@link ReloadPermission}, registered in every mode</td></tr>
  *   <tr><th>{@code /race start}</th><td>restart the cup from map one with no lobby wait</td></tr>
  *   <tr><th>{@code /race skip}</th><td>end the current map now, as if everybody had finished</td></tr>
  * </table>
  *
- * <p>The status subcommand is always registered; the two that change the race are registered only
- * under {@code -Dvoyager.dev=true}, which is the gate the tree being replaced put {@code /dev-start}
- * behind and for the same reason — these are an operator's tools, not a player's.
+ * <p>The status subcommand and {@code reload} are always registered; the two that change the race are
+ * registered only under {@code -Dvoyager.dev=true}, which is the gate the tree being replaced put
+ * {@code /dev-start} behind and for the same reason — these are an operator's tools, not a player's.
  *
  * <p>{@code /race skip} exists because the alternative for exercising a map-to-map advance is flying
  * a 1588-block course to its last ring, or waiting out a five-minute race phase, every single time.
@@ -29,12 +32,16 @@ import net.minestom.server.command.builder.arguments.ArgumentType;
 public final class RaceCommand extends Command {
 
     /**
-     * @param devMode whether to register {@code start} and {@code skip}; the status syntax is
-     *     registered either way
+     * @param devMode whether to register {@code start} and {@code skip}; the status and {@code reload}
+     *     syntax are registered either way
+     * @param reloads runs {@code reload}; the sender's permission is checked before it is reached
      */
-    public RaceCommand(CupSession session, boolean devMode) {
+    public RaceCommand(CupSession session, boolean devMode, CatalogReloadService reloads) {
         super("race");
         setDefaultExecutor((sender, context) -> status(sender, session));
+        addConditionalSyntax((sender, commandString) -> ReloadPermission.mayReload(sender),
+                (sender, context) -> reloads.request(sender::sendMessage),
+                ArgumentType.Literal("reload"));
         if (!devMode) {
             return;
         }
