@@ -74,10 +74,12 @@ final class CatalogDirectory {
      * @param type      the definition type to parse each file into
      * @param nameOf    how to read a definition's name, which becomes its key
      * @param problems  the list every problem is appended to, in the order it was found
+     * @param filesFound the list every {@code .json} file found is appended to, in sorted order, whether
+     *                  it parsed or not
      * @return the definitions that parsed, by name, in filename order
      */
     static <T> Map<String, T> readAll(Path directory, String kind, Class<T> type, Function<T, String> nameOf,
-            List<CatalogProblem> problems) {
+            List<CatalogProblem> problems, List<Path> filesFound) {
         Map<String, T> definitions = new LinkedHashMap<>();
         Map<String, Path> sources = new LinkedHashMap<>();
 
@@ -88,6 +90,7 @@ final class CatalogDirectory {
             problems.add(new CatalogProblem(directory, exception));
             return Collections.unmodifiableMap(definitions);
         }
+        filesFound.addAll(files);
         for (Path file : files) {
             T definition;
             try {

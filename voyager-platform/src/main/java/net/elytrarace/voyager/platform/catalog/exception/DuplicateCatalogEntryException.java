@@ -12,7 +12,15 @@ import java.nio.file.Path;
  */
 public final class DuplicateCatalogEntryException extends RuntimeException {
 
+    private final String name;
+
     public DuplicateCatalogEntryException(String kind, String name, Path first, Path second) {
         super("two %s definitions are both named '%s': %s and %s".formatted(kind, name, first, second));
+        this.name = name;
+    }
+
+    /** The name both files declare. */
+    public String name() {
+        return name;
     }
 }

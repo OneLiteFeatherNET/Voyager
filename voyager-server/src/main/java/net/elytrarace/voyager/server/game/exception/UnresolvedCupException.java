@@ -23,14 +23,19 @@ public final class UnresolvedCupException extends RuntimeException {
     }
 
     /**
-     * Nothing named a cup and the catalogue does not hold exactly one, so there is no cup that can be
-     * called "the" cup. An empty catalogue cannot reach this: the catalogue itself refuses a
-     * directory with no definitions in it.
+     * Nothing named a cup and the cup directory does not hold exactly one cup file, so there is no cup
+     * that can be called "the" cup. A file that does not parse counts: it is a cup the operator would be
+     * choosing against without knowing it. Both lists are sorted, so the message is the same on every
+     * machine.
+     *
+     * @param cupNames  the cups that parsed, by the name each declares
+     * @param cupFiles  every cup file in the directory, parsed or not, by file name
      */
-    public static UnresolvedCupException ambiguous(Collection<String> available) {
+    public static UnresolvedCupException ambiguous(Collection<String> cupNames, Collection<String> cupFiles) {
         return new UnresolvedCupException(
-                "the catalogue holds %s cups %s and none was chosen; set -Pcup=<name> (Gradle) or -DVOYAGER_CUP=<name> (java -jar)"
-                        .formatted(available.size(), sorted(available)));
+                ("the cup directory holds %s cup file(s) %s and none was chosen; "
+                        + "set -Pcup=<name> (Gradle) or -DVOYAGER_CUP=<name> (java -jar); "
+                        + "the cups that parsed are %s").formatted(cupFiles.size(), sorted(cupFiles), sorted(cupNames)));
     }
 
     private static String sorted(Collection<String> names) {

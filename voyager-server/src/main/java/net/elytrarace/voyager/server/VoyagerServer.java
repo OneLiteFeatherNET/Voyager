@@ -213,7 +213,7 @@ public final class VoyagerServer {
     }
 
     /**
-     * The cup's maps, in rotation order. {@code CatalogLoader.load} has already run inside the
+     * The cup's maps, in rotation order. {@code ServerBeans.cup} has already checked them inside the
      * injector, so every name resolves; the {@code orElseThrow} is the assertion that it did, not a
      * branch anybody takes.
      */

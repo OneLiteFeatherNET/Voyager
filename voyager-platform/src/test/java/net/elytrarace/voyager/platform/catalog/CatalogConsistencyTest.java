@@ -59,6 +59,42 @@ class CatalogConsistencyTest {
                 .isEqualTo("1 cup entry does name a map no map definition provides: cup 'weekly' plays 'cathedral'");
     }
 
+    @Test
+    void unselectedCupWithUnresolvedMapIsReturnedNotThrown() {
+        CupDefinition selected = CatalogFixtures.cupNamed("played", "blue");
+        Map<String, CupDefinition> cups = cups(selected, CatalogFixtures.cupNamed("broken", "cathedral"));
+
+        assertThat(CatalogConsistency.unresolvedInOtherCups(selected, maps("blue"), cups))
+                .containsExactly("cup 'broken' plays 'cathedral'");
+    }
+
+    @Test
+    void consistentCupsReturnNoProblems() {
+        CupDefinition selected = CatalogFixtures.cupNamed("played", "blue");
+
+        assertThat(CatalogConsistency.unresolvedInOtherCups(
+                selected, maps("blue"), cups(selected, CatalogFixtures.cupNamed("other", "blue")))).isEmpty();
+    }
+
+    @Test
+    void theSelectedCupIsNeverReportedAmongTheOthers() {
+        // The selected cup's own dangling entry belongs to the refusal, not to the warning.
+        CupDefinition selected = CatalogFixtures.cupNamed("played", "cathedral");
+        Map<String, CupDefinition> cups = cups(selected, CatalogFixtures.cupNamed("other", "blue"));
+
+        assertThat(CatalogConsistency.unresolvedInOtherCups(selected, maps("blue"), cups)).isEmpty();
+    }
+
+    @Test
+    void selectedCupWithUnresolvedMapIsRefusedListingOnlyItsEntries() {
+        CupDefinition selected = CatalogFixtures.cupNamed("played", "blue", "cathedral", "sprint");
+
+        assertThat(CatalogConsistency.unresolvedCupMaps(maps("blue"), Map.of(selected.name(), selected)))
+                .hasValueSatisfying(refusal -> assertThat(refusal.getMessage())
+                        .isEqualTo("2 cup entries do name a map no map definition provides: "
+                                + "cup 'played' plays 'cathedral'; cup 'played' plays 'sprint'"));
+    }
+
     /** The message of the exception the check raises; fails if the check finds nothing dangling. */
     private static String messageOf(Map<String, MapDefinition> maps, Map<String, CupDefinition> cups) {
         return CatalogConsistency.unresolvedCupMaps(maps, cups).orElseThrow().getMessage();

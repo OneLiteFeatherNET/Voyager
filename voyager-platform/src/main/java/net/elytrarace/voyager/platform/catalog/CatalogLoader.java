@@ -2,11 +2,13 @@ package net.elytrarace.voyager.platform.catalog;
 
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupMapException;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The one entry point that reads a data directory's {@code cups/} and {@code maps/}.
@@ -43,25 +45,31 @@ public final class CatalogLoader {
         if (!reading.problems().isEmpty()) {
             throw reading.problems().getFirst().cause();
         }
+        Optional<UnresolvedCupMapException> unresolved = CatalogConsistency.unresolvedCupMaps(
+                reading.snapshot().maps(), reading.snapshot().cups());
+        if (unresolved.isPresent()) {
+            throw unresolved.get();
+        }
         return reading.snapshot();
     }
 
     /**
      * Reads the data directory and returns what parsed together with every problem found.
      *
+     * <p>The cross-catalogue check is not part of the read. A dangling entry belongs to one cup, and
+     * boot decides per cup whether it matters, so the check runs there, on the cups that are played.
+     *
      * @param dataDirectory the directory holding {@code cups/} and {@code maps/}
      * @return the reading; never throws for a bad file or a missing directory
      */
     public static CatalogReading read(Path dataDirectory) {
         List<CatalogProblem> problems = new ArrayList<>();
+        List<Path> cupFiles = new ArrayList<>();
         Map<String, CupDefinition> cups = CatalogDirectory.readAll(
-                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems);
+                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems, cupFiles);
         Map<String, MapDefinition> maps = CatalogDirectory.readAll(
-                dataDirectory.resolve(MAPS), "map", MapDefinition.class, MapDefinition::name, problems);
-        if (problems.isEmpty()) {
-            CatalogConsistency.unresolvedCupMaps(maps, cups).ifPresent(
-                    unresolved -> problems.add(new CatalogProblem(dataDirectory, unresolved)));
-        }
-        return new CatalogReading(new CatalogSnapshot(maps, cups), problems);
+                dataDirectory.resolve(MAPS), "map", MapDefinition.class, MapDefinition::name, problems,
+                new ArrayList<>());
+        return new CatalogReading(new CatalogSnapshot(maps, cups), problems, cupFiles);
     }
 }
