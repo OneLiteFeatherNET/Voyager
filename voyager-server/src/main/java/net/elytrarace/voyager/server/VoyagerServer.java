@@ -3,17 +3,18 @@ package net.elytrarace.voyager.server;
 import io.avaje.inject.BeanScope;
 
 import net.elytrarace.voyager.api.config.ConfigProblem;
-import net.elytrarace.voyager.api.race.CupDefinition;
-import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
 import net.elytrarace.voyager.server.command.RaceCommand;
+import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.server.game.CatalogReloadService;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.elytrarace.voyager.server.game.Racers;
 import net.minestom.server.MinecraftServer;
@@ -24,7 +25,6 @@ import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
-import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.item.Material;
 import net.minestom.server.timer.ExecutionType;
@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -177,16 +176,12 @@ public final class VoyagerServer {
             return;
         }
 
-        CupDefinition cup = graph.get(CupDefinition.class);
-        MapCatalog maps = graph.get(MapCatalog.class);
+        CatalogHolder catalog = graph.get(CatalogHolder.class);
         MapInstances instances = graph.get(MapInstances.class);
         CupSession session = graph.get(CupSession.class);
 
-        List<MapDefinition> rotation;
-        Instance firstWorld;
         try {
-            rotation = resolveRotation(cup, maps);
-            firstWorld = openEveryWorld(rotation, instances);
+            openEveryWorld(catalog.current().rotation(), instances);
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start: a world the cup plays could not be opened", exception);
             instances.close();
@@ -194,14 +189,16 @@ public final class VoyagerServer {
             return;
         }
 
-        Pos firstSpawn = Vectors.toMinestom(rotation.getFirst().spawn()).asPos();
-        registerEvents(session, settings, firstWorld, firstSpawn);
-        MinecraftServer.getCommandManager().register(new RaceCommand(session, settings.devMode()));
+        registerEvents(session, settings, catalog, instances);
+        MinecraftServer.getCommandManager().register(
+                new RaceCommand(session, settings.devMode(), graph.get(CatalogReloadService.class)));
+        LOGGER.info("/race reload is registered: the console and operators at level {} may run it",
+                ReloadPermission.REQUIRED_LEVEL);
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
         scheduleTick(session);
-        registerShutdownTask(graph, instances, rotation);
+        registerShutdownTask(graph, instances, catalog);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
         server.start(settings.host(), settings.port());
@@ -269,20 +266,6 @@ public final class VoyagerServer {
     }
 
     /**
-     * The cup's maps, in rotation order. {@code ServerBeans.cup} has already checked them inside the
-     * injector, so every name resolves; the {@code orElseThrow} is the assertion that it did, not a
-     * branch anybody takes.
-     */
-    private static List<MapDefinition> resolveRotation(CupDefinition cup, MapCatalog maps) {
-        List<MapDefinition> rotation = new ArrayList<>(cup.mapNames().size());
-        for (String name : cup.mapNames()) {
-            rotation.add(maps.byName(name).orElseThrow(() -> new IllegalStateException(
-                    "cup '%s' plays a map named '%s' the catalogue does not hold".formatted(cup.name(), name))));
-        }
-        return List.copyOf(rotation);
-    }
-
-    /**
      * Opens every world the cup will need and returns the first map's instance, which is also where
      * players spawn.
      *
@@ -291,32 +274,29 @@ public final class VoyagerServer {
      * finding it out in front of an audience. The cost is one Falco loader per world, held open for
      * the life of the server, which is what a race server does anyway.
      */
-    private static Instance openEveryWorld(List<MapDefinition> rotation, MapInstances instances) {
-        Instance first = null;
+    private static void openEveryWorld(List<MapDefinition> rotation, MapInstances instances) {
+        if (rotation.isEmpty()) {
+            throw new IllegalStateException("the cup has no maps; CupDefinition refuses an empty rotation");
+        }
         for (MapDefinition map : rotation) {
-            Instance instance = instances.forWorld(map.world());
-            if (first == null) {
-                first = instance;
-            }
+            instances.forWorld(map.world());
             LOGGER.info("Opened world '{}' for map '{}' ({} rings, spawn {})",
                     map.world(), map.name(), map.rings().size(), map.spawn());
         }
-        if (first == null) {
-            throw new IllegalStateException("the cup has no maps; CupDefinition refuses an empty rotation");
-        }
-        return first;
     }
 
     private static void registerEvents(CupSession session, ServerSettings settings,
-            Instance firstWorld, Pos firstSpawn) {
+            CatalogHolder catalog, MapInstances instances) {
         GlobalEventHandler events = MinecraftServer.getGlobalEventHandler();
 
         events.addListener(AsyncPlayerConfigurationEvent.class, event -> {
-            // Players spawn straight into the first map's world. There is no lobby world in the
-            // rebuild: there is no lobby map data, and generating a flat one would be a second world
-            // nobody asked for standing between a tester and the thing being tested.
-            event.setSpawningInstance(firstWorld);
-            event.getPlayer().setRespawnPoint(firstSpawn);
+            // Players spawn straight into the first map's world of the current catalogue. There is no lobby
+            // world in the rebuild: there is no lobby map data, and generating a flat one would be a second world
+            // nobody asked for standing between a tester and the thing being tested. The current catalogue, not
+            // the boot one, so a reload that was promoted at a round start is the one a new joiner sees.
+            MapDefinition first = catalog.current().rotation().getFirst();
+            event.setSpawningInstance(instances.forWorld(first.world()));
+            event.getPlayer().setRespawnPoint(Vectors.toMinestom(first.spawn()).asPos());
         });
 
         events.addListener(PlayerSpawnEvent.class, event -> {
@@ -405,11 +385,10 @@ public final class VoyagerServer {
      * save path is precisely how a bug anywhere else turns into a corrupted racetrack nobody notices
      * until a player flies into the hole.
      */
-    private static void registerShutdownTask(BeanScope graph, MapInstances instances,
-            List<MapDefinition> rotation) {
+    private static void registerShutdownTask(BeanScope graph, MapInstances instances, CatalogHolder catalog) {
         MinecraftServer.getSchedulerManager().buildShutdownTask(() -> {
             LOGGER.info("Shutting down");
-            for (MapDefinition map : rotation) {
+            for (MapDefinition map : catalog.current().rotation()) {
                 LOGGER.info("Final world health — {}", instances.healthOf(map.world()).describe());
             }
             try {

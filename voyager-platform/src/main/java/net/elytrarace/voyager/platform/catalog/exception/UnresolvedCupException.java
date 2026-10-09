@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game.exception;
+package net.elytrarace.voyager.platform.catalog.exception;
 
 import java.util.Collection;
 

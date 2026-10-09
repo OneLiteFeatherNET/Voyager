@@ -254,7 +254,7 @@ Each candidate names one Conventional Commits type and scope, as the OpenSpec ru
 | Q4 | Scope cup consistency to the selected cup | feat(platform) | Cup | Fully validate the selected cup; warn for the others | none | Must | Independent |
 | Q5 | Name both selection switches in errors | fix(platform) | Cup | Hint names `-Pcup` and `-DVOYAGER_CUP` | none | Should | Independent |
 | Q6 | Validate task for maps, cups and worlds (implemented by `add-catalog-validate-task`) | feat(build) | All | Implements NFR-007's validate-and-exit mode; reports every problem | Q4 | Must | Independent; closes the NFR-007 gap |
-| Q7 | Hot reload at round boundaries | feat(platform) | Map, cup | Watch `maps/` and `cups/`; apply valid changes between rounds | Q1, Q4 | Should | Independent |
+| Q7 | Hot reload at round boundaries | feat(platform) | Map, cup | Watch `maps/` and `cups/`; apply valid changes between rounds. **Implemented by `hot-reload-catalogs`, without a watcher:** the operator command `/race reload` validates the data directory, and a valid change plays from the next round. A round pins its catalogue at start (ADR-0019). A fingerprint poll, default off, is the deferred follow-up | Q1, Q4 | Should | Independent |
 
 **Phase 1: voyager-setup MVP on Minestom (gated by E6 approval).**
 

@@ -37,7 +37,7 @@ the start of the next round.
   newly opened world behind.
 - **BREAKING** (internal only): the `cup`, `MapCatalog` and `CupCatalog` beans are removed from `ServerBeans`, and the
   `CatalogHolder` bean replaces the boot snapshot as what the graph holds. No external API changes.
-- Record the decision in an ADR (MADR 4.0), `docs/decisions/0017-pin-catalogue-snapshot-per-round.md` (0016 is reserved by
+- Record the decision in an ADR (MADR 4.0), `docs/decisions/0019-pin-catalogue-snapshot-per-round.md` (0016, 0017 and 0018 are reserved by
   `switch-di-to-avaje-inject`; confirm the number before merge).
 - Add a how-to guide for operators (Diataxis how-to), and update research 005 for Q7.
 

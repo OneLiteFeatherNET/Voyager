@@ -3,9 +3,10 @@ package net.elytrarace.voyager.server;
 import io.avaje.inject.BeanScope;
 
 import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.CatalogReloader;
 import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupMapException;
 import net.elytrarace.voyager.server.config.ServerSettings;
-import net.elytrarace.voyager.server.inject.ServerBeans;
 import net.minestom.testing.Env;
 import net.minestom.testing.EnvTest;
 
@@ -41,7 +42,7 @@ class CupBootValidationTest {
         write(data.resolve("cups/other.json"), cupNaming("other_cup", "no-such-map"));
         write(data.resolve("cups/test_cup.json"), PLAYED_CUP);
 
-        try (LogCapture log = LogCapture.of(ServerBeans.class)) {
+        try (LogCapture log = LogCapture.of(CatalogReloader.class)) {
             assertThatCode(() -> VoyagerServer.openGraph(settings(data))).doesNotThrowAnyException();
 
             assertThat(log.warnings()).hasSize(1);
@@ -56,7 +57,7 @@ class CupBootValidationTest {
         Path data = dataDirectory();
         write(data.resolve("cups/test_cup.json"), PLAYED_CUP);
 
-        try (LogCapture log = LogCapture.of(ServerBeans.class)) {
+        try (LogCapture log = LogCapture.of(CatalogReloader.class)) {
             VoyagerServer.openGraph(settings(data));
 
             assertThat(log.warnings()).isEmpty();
@@ -71,7 +72,7 @@ class CupBootValidationTest {
 
         BeanScope graph = VoyagerServer.openGraph(settings(data));
 
-        assertThat(graph.get(CupDefinition.class).name()).isEqualTo("test_cup");
+        assertThat(graph.get(CatalogHolder.class).current().cup().name()).isEqualTo("test_cup");
     }
 
     @Test
@@ -97,7 +98,7 @@ class CupBootValidationTest {
 
         BeanScope graph = VoyagerServer.openGraph(settings(data));
 
-        CupDefinition played = graph.get(CupDefinition.class);
+        CupDefinition played = graph.get(CatalogHolder.class).current().cup();
         assertThat(played.name()).isEqualTo("test_cup");
         assertThat(played.mapNames()).containsExactly("elytraraceblueandred");
     }

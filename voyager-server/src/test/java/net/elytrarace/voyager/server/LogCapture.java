@@ -12,6 +12,7 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.LogEvent;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -21,7 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * removed again on {@link #close()}. Nothing is left behind for the next test, and nothing is read from
  * the console: the assertions see the events themselves, with their levels and formatted messages.
  */
-final class LogCapture implements AutoCloseable {
+public final class LogCapture implements AutoCloseable {
 
     private final String loggerName;
     private final LoggerContext context;
@@ -46,12 +47,29 @@ final class LogCapture implements AutoCloseable {
     }
 
     /** Starts capturing everything {@code type} logs. Close it, normally in a try-with-resources. */
-    static LogCapture of(Class<?> type) {
+    public static LogCapture of(Class<?> type) {
         return new LogCapture(type);
     }
 
+    /** The formatted message of every ERROR event captured so far, in the order logged. */
+    public List<String> errors() {
+        return events.stream()
+                .filter(event -> event.getLevel() == Level.ERROR)
+                .map(event -> event.getMessage().getFormattedMessage())
+                .toList();
+    }
+
+    /** The exception attached to every ERROR event captured so far, in the order logged. */
+    public List<Throwable> errorCauses() {
+        return events.stream()
+                .filter(event -> event.getLevel() == Level.ERROR)
+                .map(LogEvent::getThrown)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
     /** The formatted message of every WARN event captured so far, in the order logged. */
-    List<String> warnings() {
+    public List<String> warnings() {
         return events.stream()
                 .filter(event -> event.getLevel() == Level.WARN)
                 .map(event -> event.getMessage().getFormattedMessage())

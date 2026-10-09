@@ -5,7 +5,9 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.GuideLine;
-import net.elytrarace.voyager.api.race.MapCatalog;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
+import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
@@ -55,6 +57,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -144,8 +147,12 @@ class CupSessionTest {
     private static final CupDefinition CUP =
             new CupDefinition("grand_tour", List.of("ridge-run", "dune-run"), GameMode.RACE);
 
-    private static final MapCatalog MAPS =
-            name -> Optional.ofNullable(Map.of("ridge-run", RIDGE_RUN, "dune-run", DUNE_RUN).get(name));
+    /** The catalogue the fixture plays: both maps, and the one cup that plays them in order. */
+    private static CatalogHolder holder() {
+        return new CatalogHolder(new LoadedCatalog(
+                new CatalogSnapshot(Map.of("ridge-run", RIDGE_RUN, "dune-run", DUNE_RUN), Map.of(CUP.name(), CUP)),
+                CUP, Instant.EPOCH));
+    }
 
     private static final Duration STEP = Duration.ofMillis(50);
 
@@ -1071,7 +1078,7 @@ class CupSessionTest {
         // Mutable, because a player joining while a cup is already running is a case worth testing
         // and a fixed field could not produce one.
         List<Player> field = new ArrayList<>(List.of(racer));
-        CupSession session = CupSession.create(CUP, MAPS, instances, transition, runs, new FlightTracker(),
+        CupSession session = CupSession.create(holder(), instances, transition, runs, new FlightTracker(),
                 TIMINGS, STEP, () -> field);
         session.start(false);
         return new Fixture(instances, runs, session, racer, connection, field, env);
