@@ -101,7 +101,7 @@ tasks.shadowJar {
 // the heap. Those tasks cap at 512M, which predates any measurement; ElytraraceBlueAndRed is a
 // finite 9429-chunk world and a whole cup flies across all of it, so the cap is raised and the
 // reason is written down rather than left as a number nobody chose.
-fun JavaExec.voyagerRunDefaults() {
+fun JavaExec.voyagerJvmDefaults() {
     group = "voyager"
     jvmArgs(
         "-XX:+UseZGC",
@@ -113,21 +113,11 @@ fun JavaExec.voyagerRunDefaults() {
     dependsOn(prepareRunData)
     doFirst {
         runWorkingDir.mkdirs()
-        // The worlds are Anvil directories and are not in the repository, so this is the one input
-        // a fresh checkout will not have. Said here, before the JVM starts, because the same failure
-        // arriving as a stack trace forty lines into a server log is the one the brief for this task
-        // calls "no such world on a machine where the world plainly exists".
-        if (!runWorldsDir.isDirectory) {
-            logger.warn(
-                "Voyager: no worlds directory at {} — the server will refuse to start. "
-                    + "Put each map's Anvil world directory there, or pass -PworldsPath=<dir>.",
-                runWorldsDir.absolutePath
-            )
-        }
     }
     // -PdataPath / -PworldsPath override the defaults without editing this file; the property names
     // are the ones VoyagerServer reads, so what Gradle sets and what the server looks for are the
-    // same two strings.
+    // same two strings. A missing worlds directory is no longer a warning printed here: the
+    // configuration check reports it, with the absolute path, before the server starts.
     // Minestom gates its whole translation path on this and defaults it to OFF, so without it every
     // message reaches the client as a raw key like `voyager.map.banner`. ServerFlag reads it once as
     // a `static final`, so it has to be a JVM argument and not a System.setProperty in main.
@@ -136,10 +126,36 @@ fun JavaExec.voyagerRunDefaults() {
     providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
     providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
     providers.gradleProperty("cup").orNull?.let { systemProperty("VOYAGER_CUP", it) }
-    val host = providers.gradleProperty("host").orElse("0.0.0.0")
-    val port = providers.gradleProperty("port").orElse("25565")
-    args(host.get(), port.get())
     standardInput = System.`in`
+}
+
+// The check that every run task waits for: the catalogue, the settings and every world the maps name,
+// reported in one pass. It exits 0 with no error and 1 with at least one, starts no game server and
+// binds no socket. Run it on its own when a configuration needs checking without starting anything:
+//   ./gradlew :voyager-server:validateCatalog
+//   ./gradlew :voyager-server:validateCatalog -PworldsPath=/absolute/path/to/worlds
+// The deep world check reads every chunk of every referenced world, so it takes as long as the
+// worlds are large. Its measured cost is recorded in openspec/changes/add-catalog-validate-task/design.md.
+val validateCatalog = tasks.register<JavaExec>("validateCatalog") {
+    description = "Checks the settings, the maps and cups and every world they name; exits 0 or 1. " +
+            "Starts no server and binds no socket."
+    voyagerJvmDefaults()
+    dependsOn(tasks.classes)
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("net.elytrarace.voyager.server.VoyagerServer")
+    systemProperty("voyager.config.check", "true")
+}
+
+// The skip switch, for the run tasks only. validateCatalog itself is never skipped: asked for by name,
+// it always runs. A skipped run says so once, before the server starts, so the skip is never silent.
+fun JavaExec.gateOnCatalogCheck() {
+    if (project.hasProperty("skipCatalogCheck")) {
+        doFirst {
+            logger.warn("catalogue check skipped by -PskipCatalogCheck")
+        }
+    } else {
+        dependsOn(validateCatalog)
+    }
 }
 
 // Fast local dev: classpath, no jar rebuild.
@@ -150,7 +166,11 @@ tasks.register<JavaExec>("runServerDev") {
     dependsOn(tasks.classes)
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("net.elytrarace.voyager.server.VoyagerServer")
-    voyagerRunDefaults()
+    voyagerJvmDefaults()
+    gateOnCatalogCheck()
+    val host = providers.gradleProperty("host").orElse("0.0.0.0")
+    val port = providers.gradleProperty("port").orElse("25565")
+    args(host.get(), port.get())
     // Short lobby, short results screen, and the /race start and /race skip subcommands. A 120 s
     // lobby between two attempts is how a debugging session turns into an afternoon.
     systemProperty("voyager.dev", "true")
@@ -163,5 +183,9 @@ tasks.register<JavaExec>("runServer") {
     dependsOn(tasks.shadowJar)
     classpath = files(tasks.shadowJar.get().archiveFile)
     mainClass.set("net.elytrarace.voyager.server.VoyagerServer")
-    voyagerRunDefaults()
+    voyagerJvmDefaults()
+    gateOnCatalogCheck()
+    val host = providers.gradleProperty("host").orElse("0.0.0.0")
+    val port = providers.gradleProperty("port").orElse("25565")
+    args(host.get(), port.get())
 }

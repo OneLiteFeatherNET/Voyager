@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,14 +55,16 @@ public final class CatalogLoader {
      */
     public static CatalogReading read(Path dataDirectory) {
         List<CatalogProblem> problems = new ArrayList<>();
+        Map<String, Path> cupFiles = new LinkedHashMap<>();
+        Map<String, Path> mapFiles = new LinkedHashMap<>();
         Map<String, CupDefinition> cups = CatalogDirectory.readAll(
-                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems);
+                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems, cupFiles);
         Map<String, MapDefinition> maps = CatalogDirectory.readAll(
-                dataDirectory.resolve(MAPS), "map", MapDefinition.class, MapDefinition::name, problems);
+                dataDirectory.resolve(MAPS), "map", MapDefinition.class, MapDefinition::name, problems, mapFiles);
         if (problems.isEmpty()) {
             CatalogConsistency.unresolvedCupMaps(maps, cups).ifPresent(
                     unresolved -> problems.add(new CatalogProblem(dataDirectory, unresolved)));
         }
-        return new CatalogReading(new CatalogSnapshot(maps, cups), problems);
+        return new CatalogReading(new CatalogSnapshot(maps, cups), problems, mapFiles, cupFiles);
     }
 }

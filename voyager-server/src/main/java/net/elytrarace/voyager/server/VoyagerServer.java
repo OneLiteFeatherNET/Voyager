@@ -2,6 +2,7 @@ package net.elytrarace.voyager.server;
 
 import io.avaje.inject.BeanScope;
 
+import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
@@ -11,6 +12,7 @@ import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
 import net.elytrarace.voyager.server.command.RaceCommand;
+import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.elytrarace.voyager.server.game.Racers;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -99,12 +102,21 @@ public final class VoyagerServer {
     }
 
     public static void main(String[] args) {
-        ServerSettings settings;
-        try {
-            settings = ServerSettings.fromEnvironment(args);
-        } catch (RuntimeException exception) {
-            LOGGER.error("Voyager refused to start: {}", exception.getMessage());
-            System.exit(1);
+        // Settings first, and all of them: a bad directory and a bad port are both reported, not the first.
+        // Read before anything else so that the check mode and a normal boot refuse with the same words.
+        boolean checkOnly = Boolean.getBoolean(ConfigCheck.CHECK_PROPERTY);
+        Map<String, String> properties = ConfigCheck.systemProperties();
+        List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties);
+        if (!settingsProblems.isEmpty()) {
+            refuse(settingsProblems, checkOnly);
+            return;
+        }
+        ServerSettings settings = ConfigCheck.settingsOf(args, properties);
+        if (checkOnly) {
+            // The validate-and-exit run. It initialises Minestom's registries, which the Falco world loader
+            // needs, and never reaches start(), so no socket is bound and no tick runs.
+            MinecraftServer.init();
+            System.exit(ConfigCheck.run(settings, MinecraftServer.getInstanceManager(), System.out));
             return;
         }
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
@@ -144,6 +156,14 @@ public final class VoyagerServer {
         LOGGER.info("Loaded {} message(s) from {}", translations.size(), VoyagerTranslator.BUNDLE_RESOURCE);
 
         MinecraftServer server = MinecraftServer.init();
+
+        // Every catalogue and world problem at once, before the graph is built: boot refuses with the
+        // whole report rather than with the first problem the graph happens to trip over.
+        List<ConfigProblem> catalogueProblems = ConfigCheck.catalogueProblems(settings, MinecraftServer.getInstanceManager());
+        if (ConfigCheck.hasErrors(catalogueProblems)) {
+            refuse(catalogueProblems, false);
+            return;
+        }
 
         BeanScope graph;
         try {
@@ -186,6 +206,23 @@ public final class VoyagerServer {
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
         server.start(settings.host(), settings.port());
         LOGGER.info("Voyager started. {}", session.describe().trim());
+    }
+
+    /**
+     * Ends a refused start with the problems printed, one per line, and exit status 1.
+     *
+     * <p>A check-only run prints to standard output, which is what a CI step reads. A normal boot logs
+     * each problem as an error, so the operator sees the same lines in the server log.
+     */
+    private static void refuse(List<ConfigProblem> problems, boolean checkOnly) {
+        if (checkOnly) {
+            System.exit(ConfigCheck.report(problems, System.out));
+            return;
+        }
+        for (ConfigProblem problem : problems) {
+            LOGGER.error("Voyager refused to start: {}", problem.format());
+        }
+        System.exit(1);
     }
 
     /**

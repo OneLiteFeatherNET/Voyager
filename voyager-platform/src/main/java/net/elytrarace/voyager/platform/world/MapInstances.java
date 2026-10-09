@@ -19,6 +19,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -61,7 +63,9 @@ public final class MapInstances implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MapInstances.class);
 
-    private static final String REGION_FILE_SUFFIX = ".mca";
+    /** {@code r.<regionX>.<regionZ>.mca}, the name Anvil gives each region file. */
+    private static final Pattern REGION_FILE = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
+    private static final int CHUNKS_PER_REGION = 32;
 
     private final InstanceManager instanceManager;
     private final Path worldsRoot;
@@ -115,6 +119,43 @@ public final class MapInstances implements AutoCloseable {
     public WorldHealth healthOf(String world) {
         LoadedWorld entry = load(world);
         return report(world, entry.diagnostics(), entry.unknownBlocksReported());
+    }
+
+    /**
+     * Reads every chunk the world's region files cover, so {@link #healthOf(String)} reports what the
+     * world really holds rather than what happened to be asked for.
+     *
+     * <p>A chunk with no data behind it is counted as skipped, not as an error, so the walk over a
+     * sparse region file costs little more than the chunks that exist. Used by the configuration check
+     * only; the race server loads chunks as players reach them.
+     *
+     * @param world the world directory's name
+     * @throws UnknownWorldException if no region data sits behind the name
+     * @throws java.util.concurrent.CompletionException if a chunk read fails outright
+     */
+    public void readEveryChunk(String world) {
+        LoadedWorld entry = load(world);
+        Path regionDirectory = entry.loader().regionDirectory();
+        if (!Files.isDirectory(regionDirectory)) {
+            return;
+        }
+        try (Stream<Path> files = Files.list(regionDirectory)) {
+            for (Path file : files.sorted().toList()) {
+                Matcher region = REGION_FILE.matcher(file.getFileName().toString());
+                if (!region.matches()) {
+                    continue;
+                }
+                int firstChunkX = Integer.parseInt(region.group(1)) * CHUNKS_PER_REGION;
+                int firstChunkZ = Integer.parseInt(region.group(2)) * CHUNKS_PER_REGION;
+                for (int chunkX = firstChunkX; chunkX < firstChunkX + CHUNKS_PER_REGION; chunkX++) {
+                    for (int chunkZ = firstChunkZ; chunkZ < firstChunkZ + CHUNKS_PER_REGION; chunkZ++) {
+                        entry.instance().loadChunk(chunkX, chunkZ).join();
+                    }
+                }
+            }
+        } catch (IOException exception) {
+            throw new UncheckedIOException("cannot list the region directory %s".formatted(regionDirectory), exception);
+        }
     }
 
     /**
@@ -263,7 +304,7 @@ public final class MapInstances implements AutoCloseable {
             // Falco's own resolution rather than a second derivation of the directory layout here:
             // the loader picks the dimension layout or the legacy one depending on what exists, and
             // a check that re-derived that choice could disagree with the loader it is guarding.
-            if (!holdsRegionData(loader.regionDirectory())) {
+            if (!WorldFolders.holdsRegionData(loader.regionDirectory())) {
                 throw new UnknownWorldException(world, loader.regionDirectory(), loader.legacyLayout());
             }
         } catch (RuntimeException failure) {
@@ -275,17 +316,6 @@ public final class MapInstances implements AutoCloseable {
         instance.setChunkLoader(loader);
         instance.enableAutoChunkLoad(true);
         return new LoadedWorld(instance, loader, diagnostics, new AtomicBoolean());
-    }
-
-    private static boolean holdsRegionData(Path regionDirectory) {
-        if (!Files.isDirectory(regionDirectory)) {
-            return false;
-        }
-        try (Stream<Path> entries = Files.list(regionDirectory)) {
-            return entries.anyMatch(entry -> entry.getFileName().toString().endsWith(REGION_FILE_SUFFIX));
-        } catch (IOException exception) {
-            throw new UncheckedIOException("cannot list the region directory %s".formatted(regionDirectory), exception);
-        }
     }
 
     private static void closeQuietly(FalcoAnvilLoader loader, String world) {
