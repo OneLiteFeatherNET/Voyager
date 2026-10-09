@@ -12,6 +12,7 @@ import com.tngtech.archunit.lang.ArchRule;
 
 import net.minestom.server.coordinate.Vec;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
@@ -318,12 +319,53 @@ class ApiPurityTest {
                     .because("DI annotations are confined to the composition root in voyager-server")
                     .allowEmptyShould(false);
 
+    // voyager-setup is the second composition root (ADR-0018, design decision 1). Its rules are written
+    // against net.elytrarace.voyager.setup, so that FitnessCoverageTest can see the module is constrained.
+    // The DI container is allowed in setup only in its inject package and in SetupServer, the one main.
     @ArchTest
-    static final ArchRule onlyServerDependsOnDiContainer =
+    static final ArchRule onlyServerAndSetupDependOnDiContainer =
             noClasses().that().resideInAPackage("net.elytrarace.voyager..")
                     .and().resideOutsideOfPackage("net.elytrarace.voyager.server..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.setup.inject..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.setup.SetupServer")
                     .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
-                    .because("DI annotations are confined to the composition roots")
+                    .because("DI annotations are confined to the composition roots: voyager-server, and "
+                            + "net.elytrarace.voyager.setup in its inject package and SetupServer")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule setupDomainOnlyDependsOnApiAndJdk =
+            classes().that().resideInAPackage("net.elytrarace.voyager.setup.mapsetup..")
+                    .should().onlyDependOnClassesThat().resideInAnyPackage(
+                            "net.elytrarace.voyager.api..", "net.elytrarace.voyager.setup.mapsetup..",
+                            "java..", "org.jetbrains..")
+                    .because("the pure map-authoring logic of net.elytrarace.voyager.setup depends on the API "
+                            + "and the JDK only: no Minestom, no Gson, no DI container, no platform")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule setupDoesNotDependOnServer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.setup..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.server..")
+                    .because("the setup server of net.elytrarace.voyager.setup does not share code with the game "
+                            + "server; both are composition roots over api and platform")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule serverAndPlatformAndApiDoNotDependOnSetup =
+            noClasses().that().resideInAnyPackage("net.elytrarace.voyager.api..", "net.elytrarace.voyager.physics..",
+                            "net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAPackage("net.elytrarace.voyager.setup..")
+                    .because("voyager-setup is a composition root at the top of the graph; nothing below it may "
+                            + "depend on net.elytrarace.voyager.setup")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule setupDoesNotDependOnBukkit =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.setup..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
+                    .because("Paper is dropped entirely by the rebuild; the setup server is a Minestom application "
+                            + "in net.elytrarace.voyager.setup")
                     .allowEmptyShould(false);
 
     // Guice is no longer on the build (design decision 6 of switch-di-to-avaje-inject); this keeps it
