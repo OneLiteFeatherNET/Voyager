@@ -3,6 +3,7 @@ package net.elytrarace.voyager.server;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
@@ -21,7 +22,9 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -104,6 +107,95 @@ class ConfigCheckRunTest {
         try (ServerSocket socket = new ServerSocket(settings.port())) {
             assertThat(socket.getLocalPort()).isEqualTo(settings.port());
         }
+    }
+
+    /**
+     * The entry point the Gradle task runs. {@link VoyagerServer#configCheck} is the method {@code main}
+     * delegates to, and its return value is the process's exit status, so these tests pin the two codes a
+     * CI step reads without calling {@code System.exit}.
+     */
+    @Test
+    void theEntryPointExitsZeroAndPrintsNoErrorForASoundConfiguration(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+
+        int exit = VoyagerServer.configCheck(new String[0], properties(data, worlds),
+                () -> env.process().instance(), stream(captured));
+
+        assertThat(exit).isZero();
+        assertThat(text(captured)).doesNotContain("ERROR").contains("config check passed");
+    }
+
+    @Test
+    void theEntryPointExitsOneAndPrintsTheFileAndKeyOfAMalformedMapFile(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyCupsInto(data);
+        Path broken = Files.createDirectories(data.resolve("maps")).resolve("a-broken.json");
+        Files.writeString(broken, "");
+        Files.createDirectories(worlds);
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+
+        int exit = VoyagerServer.configCheck(new String[0], properties(data, worlds),
+                () -> env.process().instance(), stream(captured));
+
+        assertThat(exit).isOne();
+        assertThat(text(captured)).contains("ERROR " + broken.toAbsolutePath() + " file:");
+        assertThat(text(captured)).contains("config check failed");
+    }
+
+    /**
+     * A refused setting ends the run before Minestom is asked for anything: the instance supplier is the
+     * only way the check reaches the game's registries, so a count of zero proves none was started.
+     */
+    @Test
+    void theEntryPointExitsOneWithoutInitialisingMinestomWhenASettingIsRefused() throws IOException {
+        Path data = Files.createDirectories(root.resolve("data"));
+        Path worlds = Files.createDirectories(root.resolve("worlds"));
+        AtomicInteger suppliedInstances = new AtomicInteger();
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+
+        int exit = VoyagerServer.configCheck(new String[] {"127.0.0.1", "abc"}, properties(data, worlds),
+                () -> {
+                    suppliedInstances.incrementAndGet();
+                    return null;
+                }, stream(captured));
+
+        assertThat(exit).isOne();
+        assertThat(text(captured)).contains("ERROR command line port:");
+        assertThat(suppliedInstances).hasValue(0);
+    }
+
+    /**
+     * The check-only path never reaches the game server's start: the world check initialises the registries
+     * and stops there, so the server reports itself as not started afterwards.
+     */
+    @Test
+    void theEntryPointLeavesTheGameServerNotStarted(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        AtomicInteger suppliedInstances = new AtomicInteger();
+
+        VoyagerServer.configCheck(new String[0], properties(data, worlds), () -> {
+            suppliedInstances.incrementAndGet();
+            return env.process().instance();
+        }, stream(new ByteArrayOutputStream()));
+
+        assertThat(suppliedInstances).hasValue(1);
+        assertThat(MinecraftServer.isStarted()).isFalse();
+    }
+
+    private static Map<String, String> properties(Path data, Path worlds) {
+        return Map.of(ServerSettings.DATA_PATH_PROPERTY, data.toString(),
+                ServerSettings.WORLDS_PATH_PROPERTY, worlds.toString(),
+                ServerSettings.CUP_PROPERTY, "test_cup");
     }
 
     private static ServerSettings settings(Path data, Path worlds, String cup) {
