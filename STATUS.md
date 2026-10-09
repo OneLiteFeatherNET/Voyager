@@ -106,8 +106,8 @@ Done when: records and profiles survive a restart.
 Done when: a map is configurable without Paper.
 
 - [ ] E6.0 **Research: FastAsyncWorldEdit replacement** — research 005 approved 2026-10-09 (section 7.4) and spikes recorded in 006; spike X1 (FAWE operation inventory) is still open, see US-6.01
-- [ ] E6.1 Setup server bootstrap — slice 1 in `introduce-voyager-setup`: boot, `/map new`, `/map open`, `/map spawn`, `/map status`, wand placement and removal, previews, autosave; decision in ADR-0018
-- [ ] E6.2 Map editing tool
+- [x] E6.1 Setup server bootstrap — done in `introduce-voyager-setup`: boot from `voyager-setup`, `/map new`, `/map open`, `/map spawn`, `/map status`, wand, previews, autosave; decision in ADR-0018
+- [ ] E6.2 Map editing tool — ring placement and removal with the wand are done; the FAWE-equivalent operations (spike X1) are open
 - [ ] E6.3 Conversation API verification
 - [ ] E6.4 Cross-server Anvil compatibility
 
