@@ -9,6 +9,7 @@ import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.adapter.BuilderSessions;
 import net.elytrarace.voyager.setup.adapter.SetupCommands;
+import net.elytrarace.voyager.setup.adapter.TerrainGuard;
 import net.elytrarace.voyager.setup.adapter.WandListener;
 import net.elytrarace.voyager.setup.config.SetupSettings;
 import net.minestom.server.MinecraftServer;
@@ -51,5 +52,10 @@ public final class SetupBeans {
     @Bean
     WandListener wandListener(BuilderSessions sessions) {
         return new WandListener(sessions);
+    }
+
+    @Bean
+    TerrainGuard terrainGuard(BuilderSessions sessions) {
+        return new TerrainGuard(sessions);
     }
 }
