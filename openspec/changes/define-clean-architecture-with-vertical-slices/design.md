@@ -352,6 +352,14 @@ Human checkpoints (decisions that change the follow-ups, so they are tasks in `t
 slice names `ring`, `cup`, `catalog`; moving `server/game` into `race.cup`; renaming `api.physics`. Each needs the user's
 approval before a follow-up starts.
 
+Decided by the user on 2026-10-09:
+- The cup flow (`CupSession`, `CupStandings`, `CupResolution`) moves from `server/game` into a new `race.cup` slice;
+  `voyager-server` keeps only wiring.
+- `progress` folds into the `ring` slice together with `collision` and `effect`.
+- Order: `switch-di-to-avaje-inject` is applied first; this change follows.
+
+Still open for checkpoint 1.1: the slice names `catalog` and `hud`, and renaming `api.physics` to `api.flight`.
+
 ## Documentation
 
 - `docs/decisions/0017-clean-architecture-with-vertical-slices.md` (MADR 4.0). Number 0017: `main` ends at 0011, 0012 to
