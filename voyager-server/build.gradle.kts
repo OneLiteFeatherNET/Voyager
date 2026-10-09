@@ -59,14 +59,32 @@ val runWorldsDir: File = runWorkingDir.resolve("run/worlds")
 // cannot read a directory that only exists as jar entries (Task 7c, concern 2), so a run has to see
 // it unpacked. This is that unpacking, done by the build rather than by the boot path: the server
 // never writes to its own data directory.
-val prepareRunData by tasks.registering(Copy::class) {
+// Each catalogue directory is its own Sync, so a map or cup deleted from the repository is removed from
+// the run directory on the next run. Sync removes everything in its destination that its source does not
+// produce, so the destinations are scoped to run/data/maps and run/data/cups: nothing else in run/run
+// (worlds, other data) is touched.
+val syncRunMaps by tasks.registering(Sync::class) {
     group = "voyager"
-    description = "Installs the shipped map and cup catalogue into the run directory the server reads."
-    from(layout.projectDirectory.dir("src/main/resources")) {
-        include("maps/**")
-        include("cups/**")
-    }
-    into(runDataDir)
+    description = "Mirrors the shipped maps into run/run/data/maps; map files not in the repository are removed."
+    from(layout.projectDirectory.dir("src/main/resources/maps"))
+    into(runDataDir.resolve("maps"))
+    // Gradle does not treat a stray file added to a Sync destination as an output change, so an
+    // up-to-date result would keep a deleted map alive. The copy is small; always reconcile.
+    outputs.upToDateWhen { false }
+}
+
+val syncRunCups by tasks.registering(Sync::class) {
+    group = "voyager"
+    description = "Mirrors the shipped cups into run/run/data/cups; cup files not in the repository are removed."
+    from(layout.projectDirectory.dir("src/main/resources/cups"))
+    into(runDataDir.resolve("cups"))
+    outputs.upToDateWhen { false }
+}
+
+val prepareRunData by tasks.registering {
+    group = "voyager"
+    description = "Installs the shipped map and cup catalogue into the run directory the server reads (maps/ and cups/ only)."
+    dependsOn(syncRunMaps, syncRunCups)
 }
 
 tasks.shadowJar {
