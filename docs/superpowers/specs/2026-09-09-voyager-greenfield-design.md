@@ -39,7 +39,7 @@ These were decided with the project owner before this document was written.
 | D7 | Target Minecraft 26.2 now, follow to 26.3 later | Minestom `2026.08.28-26.2` is released; 26.3 has no Minestom build yet |
 | D8 | Domain-oriented module cut (eight modules) | Makes the physics core independently testable and confines Minestom to one module |
 | D9 | Existing ADRs are not binding for the new stack | They describe the old design; several are accepted but never implemented |
-| D10 | `io.airlift:guice:10` for dependency injection, annotations confined to the composition roots | Upstream Guice runs on Java 25 but is unmaintained; the fork drops ASM and `Unsafe` entirely |
+| D10 | `io.avaje:avaje-inject` 12.7 for dependency injection (compile-time, no reflection), JSR-330 annotations confined to the composition roots | Wiring errors fail the build instead of boot; no reflection on the tick path; the container is actively released. Supersedes the earlier container choice; see ADR-0016 |
 | D11 | No legacy data import; the rebuild starts with an empty database | Greenfield means greenfield — player history from the 2023 build is not carried over |
 | D12 | `CLAUDE.md` is superseded by this specification | It describes a tree that no longer matches reality; the design rules live here now |
 
@@ -191,39 +191,35 @@ The version catalog stays programmatic in `settings.gradle.kts`, per project con
 
 ### Dependency injection
 
-`io.airlift:guice:10`, pinned exactly. Package names are unchanged (`com.google.inject.*`); the fork
-is a coordinate move, not an API change.
+`io.avaje:avaje-inject:12.7` with `io.avaje:avaje-inject-generator:12.7` as annotation processor, pinned exactly.
+The container generates its wiring at compile time and uses no reflection. Dependency annotations are the
+standard `jakarta.inject` (JSR-330) set, plus the avaje annotations `@Factory`, `@Bean` and `BeanScope`. Decision
+record: [ADR-0016](../../decisions/0016-replace-guice-with-avaje-inject.md).
 
-Upstream `com.google.inject:guice:7.0.0` was evaluated and rejected — but not for the reason usually
-given. It **does** run on Java 25: the `Unsupported class file major version 69` that ASM raises is
-caught inside `LineNumbers` and logged once as a warning, so only source locations in error messages
-degrade. The same holds for JDK 26 and `Unsafe`: `UnsafeClassDefiner` catches the failure and falls
-back to `ChildClassDefiner`, costing the fast hidden-class definer rather than the process. The
-rejection is a maintenance judgement: no release since 2023-05-12, two open Java-25 issues whose
-every comment is from a non-maintainer, and a master branch still pinning ASM 9.5.
+**DI annotations do not appear outside the composition roots.** Domain classes in `voyager-api`,
+`voyager-physics`, `voyager-race`, `voyager-platform` and `voyager-persistence` have ordinary constructors and no
+`@Inject`, no `@Singleton`, no `jakarta.inject` or `io.avaje.inject` import at all. Wiring happens in
+`@Factory` classes with `@Bean` methods that live in `voyager-server` and, once it exists, `voyager-setup`. A
+`@Bean` method calls a class's constructor directly, so cross-module classes need no annotation. This keeps
+every domain class constructible with `new` in a test, and a decision to drop the container later touches two
+modules rather than eight.
 
-The fork removes both failure modes at the root — line numbers come from the JDK's own
-`java.lang.classfile` API, and there is no `HiddenClassDefiner` because there is no bytecode
-generation. It is exercised in production by Trino on JDK 25. The cost is that **AOP is removed**;
-`bindInterceptor` throws. Voyager does not intercept — ECS systems are registered explicitly — so
-this is a non-cost here, and a fitness rule keeps it that way.
+Eager construction replaces the former `Stage.PRODUCTION` requirement: every singleton the root declares is
+constructed when `BeanScope` is built, so a wiring mistake fails at boot rather than lazily initialising
+something inside the tick loop. A missing or ambiguous bean fails `compileJava`.
 
-**DI annotations do not appear outside the composition roots.** Domain classes in `voyager-physics`,
-`voyager-race` and `voyager-persistence` have ordinary constructors and no `@Inject`, no
-`@Singleton`, no `jakarta.inject` import at all. Wiring happens in explicit `@Provides` methods in
-Guice modules that live in `voyager-server` and `voyager-setup`. This keeps every domain class
-constructible with `new` in a test, keeps the container swappable, and means a decision to drop DI
-later touches two modules rather than eight.
+The ECS system pipeline is not a container collection. It is one `@Bean` method in the composition root that returns
+an explicit, unmodifiable ordered `List`. Injected `List<T>` does not guarantee order, and system order in a
+fixed-step simulation is a correctness property, not a detail.
 
-`Stage.PRODUCTION` is mandatory: eager singletons and upfront error checking mean a wiring mistake
-fails at boot rather than lazily initialising something inside the tick loop.
+Fitness rules: `voyager-api`, `voyager-physics`, `voyager-race` and `voyager-platform` reference neither
+`jakarta.inject..` nor `io.avaje.inject..`; outside the composition roots (`voyager-server`, and `voyager-setup`
+once it exists) no module does.
 
-`Multibinder` is **not** used for the ECS system pipeline. Its iteration order is documented as
-consistent only within a single module, and system order in a fixed-step simulation is a correctness
-property, not a detail. The pipeline is bound as an explicit ordered `List`.
-
-Fitness rules: no class outside the composition roots may reference `com.google.inject..` or
-`jakarta.inject..`; no code may call `bindInterceptor`; `voyager-api` references neither.
+*Historical note.* The first version of this section chose `io.airlift:guice:10`, a Trino-maintained fork of Guice
+that runs on Java 25 and drops ASM and `Unsafe`, because upstream `com.google.inject:guice` had no release since 2023-05-12.
+Guice resolves the graph at runtime through reflection, so a wiring mistake surfaced at boot. The rebuild
+replaced it with avaje-inject, which fails the build instead; see ADR-0016.
 
 ### Java 25 usage
 
@@ -1285,7 +1281,7 @@ CI, Release Please and Renovate are untouched.
 | Minecraft 26.3 ships during the rebuild | Possible double migration | Minestom is confined to `voyager-platform`; re-check `releases.atom` at E4 |
 | Vanilla 26.2 recording setup is more work than estimated | E2 slips, and E2 gates everything | Prototype the recorder before committing to E2 scope |
 | Server-side recording lacks the client's internal velocity | Some divergence classes invisible | Accepted: position sequence is what production measures too |
-| `io.airlift:guice` is a single-vendor fork aligned to Trino's needs | Abandonment would force a DI migration | Annotations confined to two composition roots, so a swap touches two modules; pin the exact version and re-check before a JDK 26 migration |
+| avaje-inject generator or API changes across major versions break the composition root at upgrade | Build fails until the `@Factory`/`@Bean` code is adapted | Annotations confined to two composition roots, so a swap touches two modules; pin the exact version and re-check the generator before a JDK 26 migration |
 
 ## Evidence
 
