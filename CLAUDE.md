@@ -34,8 +34,7 @@ rebuild reaches a flyable build with a green Vanilla trace suite.
 - **Target**: Minecraft 26.2, Minestom `2026.08.28-26.2`. Mojang moved to calendar versioning in
   2026; there is no 1.22, it became 26.1. `settings.gradle.kts` still pins the old tree to Minestom
   `2026.04.13-1.21.11` — that version applies only to `server`/`plugins/*`, not to the rebuild.
-- **Dependency injection**: `io.airlift:guice:10`, with DI annotations confined to the composition
-  roots.
+- **Dependency injection**: avaje-inject 12.7 (compile-time, no reflection) with jakarta.inject; DI annotations only in the composition roots (voyager-server, later voyager-setup) — see ADR-0016.
 - **Commits**: Conventional Commits, no Co-Author line beyond the configured attribution.
 - **Version Catalog**: declared programmatically in `settings.gradle.kts`. Do not add
   `gradle/libs.versions.toml`.
