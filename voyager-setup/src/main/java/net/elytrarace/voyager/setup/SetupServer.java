@@ -3,9 +3,12 @@ package net.elytrarace.voyager.setup;
 import io.avaje.inject.BeanScope;
 
 import net.elytrarace.voyager.api.config.ConfigProblem;
+import net.elytrarace.voyager.platform.text.SetupMessages;
+import net.elytrarace.voyager.platform.text.VoyagerTranslator;
+import net.elytrarace.voyager.setup.adapter.SetupCommands;
 import net.elytrarace.voyager.setup.config.SetupSettings;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.timer.ExecutionType;
+import net.minestom.server.ServerFlag;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,20 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
+        // Without the JVM flag every message reaches the builder as a raw key; the run task sets it, and a missing flag is
+        // refused here rather than read as cosmetic (see VoyagerServer.main).
+        if (!ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION) {
+            LOGGER.error("Setup server refused to start: -Dminestom.automatic-component-translation=true is not set");
+            System.exit(1);
+            return;
+        }
+        try {
+            VoyagerTranslator.fromClasspath(SetupMessages.BUNDLE_RESOURCE).install();
+        } catch (RuntimeException exception) {
+            LOGGER.error("Setup server refused to start: {}", exception.getMessage());
+            System.exit(1);
+            return;
+        }
         LOGGER.info("Voyager setup server — data={} worlds={} at {}:{}", settings.dataPath().toAbsolutePath(),
                 settings.worldsPath().toAbsolutePath(), settings.host(), settings.port());
 
@@ -59,6 +76,7 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
+        MinecraftServer.getCommandManager().register(graph.get(SetupCommands.class));
         registerShutdownTask(graph);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
