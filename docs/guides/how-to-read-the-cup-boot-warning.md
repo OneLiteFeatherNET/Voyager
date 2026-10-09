@@ -9,7 +9,7 @@ is reported once, in a single `WARN` line, and the server starts without it.
 A broken unplayed cup produces one line in the log at boot:
 
 ```text
-WARN [net.elytrarace.voyager.server.inject.ServerBeans] 2 cup(s) are not playable and were skipped: /data/cups/bad.json is not a valid definition: ...; cup 'other_cup' plays 'no-such-map'
+WARN [net.elytrarace.voyager.platform.catalog.CatalogReloader] 2 cup(s) are not playable and were skipped: /data/cups/bad.json is not a valid definition: ...; cup 'other_cup' plays 'no-such-map'
 ```
 
 Each item names what is wrong:
