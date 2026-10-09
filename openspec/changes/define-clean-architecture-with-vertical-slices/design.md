@@ -195,8 +195,15 @@ is a use-case exception in ring 4 and moves into `race.cup.exception` (follow-up
 |---|---|---|
 | 1 entities | None | `voyager-api`, `voyager-physics` |
 | 2 use cases | None | `voyager-race`. Classes take constructor parameters and nothing else |
-| 3 adapters | `jakarta.inject.Inject` on constructors only | `voyager-platform`. No `@Singleton`, no `@Named`, no avaje type |
+| 3 adapters | None. Classes are constructed by `@Bean` methods of the composition root | `voyager-platform`; later `voyager-persistence`. No `@Inject`, `@Singleton`, `@Named` or avaje type |
 | 4 composition | `jakarta.inject`, avaje `@Factory`, `@Bean`, `BeanScope` | `voyager-server` `inject` package and `VoyagerServer`; later `voyager-setup` |
+
+Spike facts from `switch-di-to-avaje-inject` (task 1, passed 2026-10-09) that bind this table:
+- Avaje wires a class only when it carries `@Singleton` (or `@Component`) and is compiled in the composition root.
+  `@Inject` alone is not picked up. A class from another module is wired only by a `@Bean` method, which is why ring 3
+  needs no annotation at all.
+- A missing bean fails `compileJava` and names the type. An ambiguous bean fails too, but the message names the
+  conflicting `@Bean` methods, not the type.
 
 Rules that follow from the table:
 - **One composition root per deployable.** `voyager-server` now, `voyager-setup` when it exists. They do not share a root.
@@ -240,7 +247,7 @@ Proposed rules for `add-architecture-slice-rules` (each with `allowEmptyShould(f
 | Ring order | `layeredArchitecture()` with layers Entities (`..api..`, `..physics..`), UseCases (`..race..`), Adapters (`..platform..`, `..persistence..`), Composition (`..server..`, `..setup..`) |
 | Slice cycles | `slices().matching("net.elytrarace.voyager.race.(*)..").should().beFreeOfCycles()`, the same for platform's feature slices and for `api.(*)` |
 | Slice internals | Generated per slice: `noClasses().that().resideOutsideOfPackage(<slice>..).should().dependOnClassesThat().resideInAPackage(<slice>.internal..)` |
-| DI placement | `io.avaje.inject..` forbidden outside `..server..` and `..setup..`; `jakarta.inject..` forbidden in race; `@Singleton`, `@Named`, avaje annotations forbidden on platform classes; `@Inject` only on constructors in platform; `BeanScope` only in `..server.inject..` and `VoyagerServer` |
+| DI placement | `io.avaje.inject..` and `jakarta.inject..` forbidden outside `..server..` and `..setup..`; no DI annotation on any platform class; `BeanScope` only in `..server.inject..` and `VoyagerServer` |
 | No mutable statics, no clock reads | Non-final static field rule for all modules; `callMethod` rules for `System.currentTimeMillis`, `System.nanoTime`, `Instant.now` in api, physics, race |
 | Server holds no scoring after the move | After follow-up 2: `noClasses().that().resideInAPackage("..server..").should().dependOnClassesThat().resideInAPackage("..race.scoring..")` |
 

@@ -13,16 +13,18 @@ contract the server and the architecture suite rely on.
 **Priority:** MoSCoW Must
 
 WHEN the composition root declares a dependency that no bean provides, or two beans satisfy one dependency,
-THE SYSTEM SHALL fail the build with a message that names the unresolved or ambiguous type, before any
-server process is started.
+THE SYSTEM SHALL fail the build before any server process is started. A missing dependency is named by its type
+in the failure message. An ambiguous dependency is reported by the names of the conflicting `@Bean` methods,
+which the message identifies as returning the same type without a unique name qualifier.
 
 #### Scenario: Missing bean breaks compilation
 - **WHEN** a constructor of a wired class requires a type that no bean in the composition root provides
 - **THEN** the build fails and the failure message names the missing type
 
 #### Scenario: Two candidate beans break compilation
-- **WHEN** two beans in the composition root provide the same type and no qualifier separates them
-- **THEN** the build fails and the failure message names the ambiguous type
+- **WHEN** two `@Bean` methods in the composition root return the same type and no qualifier separates them
+- **THEN** the build fails and the failure message names both conflicting `@Bean` methods, identifying them as
+  returning the same type without a unique name qualifier
 
 ### Requirement: Startup refuses to listen on an incomplete graph
 **Priority:** MoSCoW Must
@@ -82,24 +84,43 @@ a player event, or a command.
 - **WHEN** a race runs for a full lap with several players
 - **THEN** no bean is resolved from the container after startup completes
 
-### Requirement: Dependency-injection annotations stay in composition roots
+### Requirement: Dependency-injection annotations stay in the composition root
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL keep dependency-injection annotations and container types out of the API, physics and race
-modules. THE SYSTEM SHALL confine container-specific annotations to the composition root. Standard
-injection annotations MAY appear on constructors in platform and composition-root code only.
+THE SYSTEM SHALL keep `jakarta.inject` and `io.avaje.inject` annotations and types out of the API, physics, race and
+platform modules. THE SYSTEM SHALL use them only in `voyager-server`, the composition root. A class outside
+`voyager-server` SHALL be wired by a `@Bean` method in `voyager-server` that calls its constructor.
 
 #### Scenario: API type carries an injection annotation
-- **WHEN** a type in the API module is annotated with an injection annotation
+- **WHEN** a type in the API module is annotated with `@Inject`, `@Singleton` or any avaje annotation
 - **THEN** the architecture suite fails and names the offending type
 
-#### Scenario: Platform constructor carries a standard annotation
-- **WHEN** a platform-module class declares its constructor with a standard injection annotation
-- **THEN** the architecture suite passes
-
-#### Scenario: Container-specific annotation outside the composition root
-- **WHEN** a class outside the composition root uses a container-specific annotation
+#### Scenario: Platform class carries an injection annotation
+- **WHEN** a class in the platform module is annotated with `@Inject`, `@Singleton`, `@Named` or any avaje annotation
 - **THEN** the architecture suite fails and names the offending class
+
+#### Scenario: Platform class is wired by a bean method
+- **WHEN** the graph needs a platform class
+- **THEN** a `@Bean` method in `voyager-server` calls its constructor, and the platform class carries no annotation
+
+#### Scenario: Injection annotation outside the composition root
+- **WHEN** a class outside `voyager-server` uses a `jakarta.inject` or avaje annotation
+- **THEN** the architecture suite fails and names the offending class
+
+### Requirement: Constructor injection in the composition root needs a scope and in-module compilation
+**Priority:** MoSCoW Must
+
+WHERE a class compiled in `voyager-server` carries `@Inject` on its constructor, THE SYSTEM SHALL rely on the generated
+wiring only if the class also carries `@Singleton` or `@Component`. THE SYSTEM SHALL NOT rely on `@Inject` alone, and
+THE SYSTEM SHALL NOT rely on the wiring of a class that is compiled outside `voyager-server`.
+
+#### Scenario: Inject without a scope annotation
+- **WHEN** a class in `voyager-server` carries `@Inject` on its constructor and no `@Singleton` or `@Component`
+- **THEN** the build fails with a missing-dependency error, or the class is not wired, and the class is wired by a `@Bean` method instead
+
+#### Scenario: Scoped inject class compiled in the server
+- **WHEN** a class in `voyager-server` carries both `@Singleton` and `@Inject` on its constructor
+- **THEN** the generated wiring constructs it from the beans of the composition root
 
 ### Requirement: Startup failure messages name the failing type
 **Priority:** MoSCoW Should
@@ -125,7 +146,8 @@ source set, so that a reader can see each service's dependencies without searchi
 **Priority:** MoSCoW Could
 
 THE SYSTEM SHALL allow each platform class to be constructed directly from its collaborators, without starting
-the container, so that single classes can be tested without the full graph.
+the container, so that single classes can be tested without the full graph. Because platform classes carry no
+annotation, this holds by construction.
 
 #### Scenario: Unit test builds a single class without the container
 - **WHEN** a unit test needs one platform class

@@ -17,7 +17,7 @@ The rebuild has five production modules and a clear dependency direction, but th
 - Specify the ArchUnit rules that enforce each requirement. Existing rules are named. New rules are proposed with `allowEmptyShould(false)` and handed to a follow-up change.
 - Record the current violations as a migration list with file and line evidence. This change does not fix them.
 - Plan the documentation: ADR-0017 (MADR 4.0), `docs/explanation/architecture.md`, a pointer in the `CLAUDE.md` "Architecture" section, a cross-reference in the greenfield design spec, and a reference update in `docs/reference/semantic-anchors.md`.
-- **Refines decisions D8 and D10 of the greenfield design spec.** D8 (eight modules) is unchanged; slices are packages inside modules. D10 is refined: `jakarta.inject` annotations are allowed on platform constructors, while avaje annotations stay in composition roots. This is the same refinement that `switch-di-to-avaje-inject` already makes.
+- **Refines decisions D8 and D10 of the greenfield design spec.** D8 (eight modules) is unchanged; slices are packages inside modules. D10 is refined: DI annotations (`jakarta.inject` and avaje) appear only in composition roots. The platform and the other inner rings carry none, and their classes are wired by `@Bean` methods in the root. `switch-di-to-avaje-inject` applies the same rule.
 - **Out of scope:** moving code or packages, changing any test, adding fitness rules, changing `voyager-setup` (not in the build yet), changing the tree being replaced (`server` as a legacy module, `plugins/*`, `shared/*`), and the Guice-to-avaje swap itself (owned by `switch-di-to-avaje-inject`).
 
 ## Capabilities
