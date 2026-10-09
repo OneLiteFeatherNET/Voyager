@@ -1,7 +1,9 @@
-package net.elytrarace.voyager.physics.collision;
+package net.elytrarace.voyager.physics;
 
 import net.elytrarace.voyager.api.math.Aabb;
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.physics.collision.MovementResolver;
+import net.elytrarace.voyager.physics.collision.MovementResult;
 
 import java.util.List;
 
