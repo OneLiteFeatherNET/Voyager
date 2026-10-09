@@ -148,11 +148,14 @@ No runtime validation against the JSON Schema. Reasons:
   loaded by the other.
 - The schema's purpose is feedback while editing, which costs nothing at runtime.
 
-A test-scope check is kept: committed files validate against their schema, and a few deliberately invalid fixtures are
-rejected. It needs one JSON Schema 2020-12 validator in `voyager-platform` `testImplementation`, pinned to an exact
-version at least two weeks old when the change is applied. This is a new dependency, so the owner approves the choice
-before it is added (task 4.2). If the owner declines it, task 4.1 is dropped; `$schema` resolution is still checked in
-`CommittedMapDataTest`, and the schema documents are then covered by review only.
+A test-scope check is kept: committed files and test fixtures validate against their schema, and a few deliberately
+invalid fixtures are rejected. It uses one JSON Schema 2020-12 validator in `voyager-platform` `testImplementation`.
+
+**Approved by the owner on 2026-10-09:** `com.networknt:json-schema-validator`, pinned to the exact version **3.0.7**
+(released 2026-08-20, Maven Central `Last-Modified` of its POM). Version 3.0.8 is the newest release, but it was published on
+2026-09-30, which is inside the two-week cooling window before 2026-10-09, so it is not used; the pin moves to 3.0.8 only after
+2026-10-14. The pin is recorded next to the other pins in `voyager-platform/build.gradle.kts`, with the release date and the
+reason. The validator is test-scope only and never on a main classpath.
 
 Schema strictness: the schema sets `additionalProperties: false` on the map, ring, guide-point and cup objects, and
 allows `$schema` and `notes` at the top level. An unknown key is almost always a misspelling, and the loader cannot tell
@@ -195,6 +198,5 @@ change (decision 2).
 
 ## Open questions for the owner
 
-1. Approve one test-scope JSON Schema 2020-12 validator in `voyager-platform` (task 4.2 names the candidate and the pin
-   rule). Without it, the schema test is dropped.
+1. **Resolved 2026-10-09:** the test-scope validator is approved (`com.networknt:json-schema-validator` 3.0.7, decision 5).
 2. Confirm the convention for new maps: the world directory is named exactly as the map `name`.

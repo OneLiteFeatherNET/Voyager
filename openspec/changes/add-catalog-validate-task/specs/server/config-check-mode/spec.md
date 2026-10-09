@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: The server validates and exits without binding a socket
-Priority: Must. When the system property `voyager.config.check` is `true`, the server SHALL run the validation, print its report, and exit. It SHALL NOT bind a network port and SHALL NOT start the Minestom server. Basis: NFR-007.
+Priority: Must. When the system property `voyager.config.check` is `true`, the server SHALL run the validation, print its report, and exit. It SHALL NOT bind a network port and SHALL NOT start the game server (no tick loop, no listener). The check MAY initialise Minestom's registries, which the deep world check needs. Basis: NFR-007.
 
 #### Scenario: a valid configuration exits zero
 - **WHEN** the check runs against a valid data directory and worlds directory
@@ -23,7 +23,7 @@ Priority: Must. The check SHALL evaluate the settings (host, port, data path, wo
 - **THEN** the report contains an error with key `VOYAGER_CUP` naming the cup
 
 ### Requirement: The Gradle task runs the check against the run directories
-Priority: Must. The task `:voyager-server:validateCatalog` SHALL run the check with the working directory and the data and worlds paths the run tasks use, and SHALL honour the `-PdataPath` and `-PworldsPath` overrides. It SHALL depend on `prepareRunData`, so the check reads the directory the server reads.
+Priority: Must. The task `:voyager-server:validateCatalog` SHALL run the check with the working directory and the data and worlds paths the run tasks use, and SHALL honour the `-PdataPath` and `-PworldsPath` overrides. It SHALL depend on `prepareRunData`, so the check reads the directory the server reads, and `prepareRunData` SHALL copy with sync semantics (change `fix-run-data-sync`).
 
 #### Scenario: the override reaches the check
 - **WHEN** the task runs with `-PworldsPath=/mnt/worlds`
@@ -32,6 +32,10 @@ Priority: Must. The task `:voyager-server:validateCatalog` SHALL run the check w
 #### Scenario: the default path is the doubled run path
 - **WHEN** the task runs without overrides
 - **THEN** the report names `<root>/run/run/worlds` and `<root>/run/run/data`
+
+#### Scenario: a map deleted from the repository is not validated
+- **WHEN** a map file is deleted from the repository's resources and the task runs
+- **THEN** the file is absent from the run data directory before the check reads it
 
 ### Requirement: Run tasks stop before the server starts when the check fails
 Priority: Must. `runServer` and `runServerDev` SHALL depend on `validateCatalog`. A failing check SHALL stop the Gradle build before the server's JVM starts, and the missing-worlds warning in the run task's `doFirst` SHALL be replaced by the check's report.
@@ -44,8 +48,19 @@ Priority: Must. `runServer` and `runServerDev` SHALL depend on `validateCatalog`
 - **WHEN** `runServerDev` runs and the check passes
 - **THEN** the server JVM starts with the same arguments as before this change
 
-### Requirement: Normal boot refuses the same problems
-Priority: Should. A server started without the check property SHALL refuse to start on an invalid configuration, and the refusal message SHALL list every error from the same report.
+### Requirement: The run tasks have a skip switch for the check
+Priority: Should. When the Gradle property `skipCatalogCheck` is set, `runServer` and `runServerDev` SHALL NOT depend on `validateCatalog`, and SHALL log one warning line saying that the check was skipped. `validateCatalog` itself SHALL still run when invoked directly.
+
+#### Scenario: a broken catalogue is run with the skip switch
+- **WHEN** `runServerDev` runs with `-PskipCatalogCheck` and the worlds directory is missing
+- **THEN** the server JVM starts, the warning line names the skipped check, and no check report is printed
+
+#### Scenario: the check still runs when asked for directly
+- **WHEN** `validateCatalog` runs with `-PskipCatalogCheck`
+- **THEN** the check runs and its report is printed
+
+### Requirement: Normal boot refuses with the same report
+Priority: Should. A server started without the check property SHALL refuse to start on an invalid configuration, and the refusal message SHALL list every error from the same report, not only the first.
 
 #### Scenario: boot refusal lists every error
 - **WHEN** the server starts normally and two errors exist

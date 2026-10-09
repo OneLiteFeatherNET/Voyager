@@ -7,10 +7,9 @@ that matters is asserted through a captured appender.
 
 ## 0. Preconditions
 
-- [ ] 0.1 Confirm that `unify-catalog-loading` is applied (merged, or archived) or that its proposal and design are final.
-  Verify: `CatalogLoader` and `CatalogSnapshot` exist as designed, and `InvalidCatalogException` exposes the problems as a list.
-  If it does not, record the adapted shape in design.md (decision 5) before group 2, or add the accessor to that exception with
-  the owner's agreement.
+- [ ] 0.1 Confirm that `unify-catalog-loading` is applied (merged, or archived) and that `add-catalog-validate-task` is merged.
+  Verify: `CatalogLoader.read` returns a `CatalogReading` whose `problems()` is a list of `CatalogProblem`, and `CatalogSnapshot`
+  exists as designed. If it does not, record the adapted shape in design.md (decision 5) before group 2.
 - [ ] 0.2 Owner decision on design open question 2 (`scope-cup-validation` before this change, or accept that one broken unrelated
   cup blocks reloads). Verify: the answer is recorded in design.md, "Open Questions".
 - [ ] 0.3 Ask the owner (AskUserQuestion) on design open question 1 (pinned rounds only, or geometry-only map-boundary swaps) and
@@ -40,15 +39,16 @@ that matters is asserted through a captured appender.
   `loadedAt` is the fixed clock instant and whose cup resolves every map. A selected cup missing from `cups/` is an error that
   names it. Verify: fails.
 - [ ] 2.4 Green: `CatalogReloader.loadInitial(dataPath, cupName)` building on `CatalogLoader` and `CupResolution` from
-  `unify-catalog-loading`, throwing `IllegalStateException` with every problem for boot. Verify: 2.3 passes.
+  `unify-catalog-loading`, throwing `IllegalStateException` with the boot refusal the server uses (the first problem, as `load`
+  throws it). Verify: 2.3 passes.
 
 ## 3. The reloader and the rollback (voyager-platform)
 
 - [ ] 3.1 Red: `CatalogReloaderTest`, failure cases, each its own test: one malformed file is listed; two malformed files are both
   listed in one `Rejected`; a duplicate map name lists both files; a cup naming an unknown map is listed; an empty `maps/` is listed.
   Verify: each test fails for the right reason.
-- [ ] 3.2 Green: `CatalogReloader.reload(dataPath, cupName)` returning `ReloadOutcome` (`Applied` or `Rejected`), converting
-  `InvalidCatalogException` to `Rejected(problems)`. Verify: 3.1 passes.
+- [ ] 3.2 Green: `CatalogReloader.reload(dataPath, cupName)` returning `ReloadOutcome` (`Applied` or `Rejected`), converting the
+  problems of `CatalogLoader.read` to `Rejected(problems)`. Verify: 3.1 passes.
 - [ ] 3.3 Red: `WorldOpener` port with a fake in the test. A reload with two new worlds where the second fails to open is
   `Rejected`; the first world is discarded again; the fake records the discard and the outcome names the failing world. Verify: fails.
 - [ ] 3.4 Green: `WorldOpener` (implemented by `MapInstances`), `MapInstances.discard(world)` closing only that world's loader, and the

@@ -14,25 +14,26 @@ smallest production change (Green), then cleanup (Refactor). Unit tests use `@Te
 ## 2. One load point, valid directory (platform)
 
 - [ ] 2.1 Red: `CatalogLoaderTest` with `@TempDir` writes one valid map and one valid cup and asserts `CatalogLoader.load(dir)` returns a snapshot holding both by name. Fails: no loader.
-- [ ] 2.2 Green: add `CatalogLoader` (final, private constructor, static `load(Path)`) delegating to `CatalogDirectory.readAll` for `maps/` and `cups/`.
+- [ ] 2.2 Green: add `CatalogLoader` (final, private constructor, static `load(Path)` and `read(Path)`) delegating to `CatalogDirectory.readAll` for `maps/` and `cups/`.
 - [ ] 2.3 Red: a test that a valid catalogue with two maps and no dangling reference produces the same definitions as `JsonMapCatalog` and `JsonCupCatalog` on the same directory. This is the behaviour-preservation check; it fails until the loader reads both directories.
 - [ ] 2.4 Green: pass 2.3.
 
-## 3. Collect every problem (platform)
+## 3. Problems as data (platform)
 
-- [ ] 3.1 Red: test that two malformed map files produce one `InvalidCatalogException` whose message names both file paths, and whose suppressed causes are two `MalformedCatalogFileException`.
-- [ ] 3.2 Green: `CatalogDirectory.readAll` records per-file failures and continues; add `InvalidCatalogException` in `platform.catalog.exception` with its `package-info.java` check, and have `CatalogLoader` throw it when problems exist.
-- [ ] 3.3 Red: test that a missing `cups/` directory with a valid `maps/` reports exactly the missing directory as the problem, and that `maps/` is still read (its malformed file, if present, is also named).
-- [ ] 3.4 Green: read both directories independently in `CatalogLoader`.
-- [ ] 3.5 Red: test that a duplicate map name in two files names both files and the name, and that the same directory produces the same message on repeated loads.
-- [ ] 3.6 Green: pass 3.5 by keeping sorted order and collecting the duplicate as a problem, not an abort.
+- [ ] 3.1 Red: `CatalogLoaderTest.readReturnsEveryMalformedMapFileAsAProblem`: two malformed map files give a reading with two `CatalogProblem`s, sorted by file name, each whose `cause()` is a `MalformedCatalogFileException`. Nothing is thrown.
+- [ ] 3.2 Green: `CatalogDirectory.readAll` records per-file failures as `CatalogProblem` and continues; add `CatalogProblem` and `CatalogReading` (records) in `platform.catalog`.
+- [ ] 3.3 Red: `CatalogLoaderTest.missingCupsDirectoryIsOneProblemAndMapsAreStillRead`: `cups/` absent and `maps/` valid gives exactly one problem naming `cups/`, and the snapshot still holds the maps.
+- [ ] 3.4 Green: read both directories independently in `CatalogLoader.read`.
+- [ ] 3.5 Red: `CatalogLoaderTest.duplicateMapNameIsAProblemNamingBothFiles`: two files with the same name give one problem whose message names both paths and the name; two reads of the same directory give equal readings.
+- [ ] 3.6 Green: pass 3.5 by keeping sorted order and recording the duplicate as a problem.
 
-## 4. Consistency folded into the load (platform)
+## 4. Boot policy: the first problem refuses (platform)
 
-- [ ] 4.1 Red: test that a cup naming an unknown map fails `CatalogLoader.load` with "cup '<cup>' plays '<map>'" in the message, and that a valid one loads.
-- [ ] 4.2 Green: change `CatalogConsistency` to take the two name-to-definition maps and return the dangling references; `CatalogLoader` calls it after both directories read cleanly.
-- [ ] 4.3 Red: test that a malformed cup file and a dangling reference in another cup are reported together in one exception, and that when `maps/` is broken the consistency check is skipped (no "plays unknown map" line appears).
-- [ ] 4.4 Green: pass 4.3.
+- [ ] 4.1 Red: `CatalogLoaderTest.loadRefusesWithTheFirstMalformedFileExceptionAndItsMessage`: two malformed map files; `load` throws `MalformedCatalogFileException` whose message equals today's message for the first file in sorted order.
+- [ ] 4.2 Green: `CatalogLoader.load` calls `read`, then throws the `cause()` of the first problem in the order maps, cups, cross-catalogue check. Pass 4.1.
+- [ ] 4.3 Red: `CatalogLoaderTest.loadRefusesWithTodaysUnresolvedCupMapException`: a valid cup naming an unknown map; `load` throws `UnresolvedCupMapException` with today's message, listing the dangling entries.
+- [ ] 4.4 Red: `CatalogLoaderTest.crossCatalogueCheckIsSkippedWhenAMapFileIsMalformed`: a malformed map file and a cup naming a map; `load` throws the malformed-file exception, and no "plays unknown map" text appears anywhere in the thrown chain.
+- [ ] 4.5 Green: `CatalogConsistency` takes the two name-to-definition maps and returns its dangling references as today's single `UnresolvedCupMapException`; `CatalogLoader` runs it only when neither directory has a problem. Pass 4.3 and 4.4.
 
 ## 5. Retire the two catalogue classes (platform)
 
@@ -41,7 +42,7 @@ smallest production change (Green), then cleanup (Refactor). Unit tests use `@Te
 
 ## 6. Server wiring (server)
 
-- [ ] 6.1 Red: extend `VoyagerGraphTest` to assert that the graph holds exactly one `CatalogSnapshot`, that `MapCatalog` and `CupCatalog` resolve to answers that match the snapshot, and that a dangling cup fails graph construction with `InvalidCatalogException`. Fails until the beans are rewired.
+- [ ] 6.1 Red: extend `VoyagerGraphTest` to assert that the graph holds exactly one `CatalogSnapshot`, that `MapCatalog` and `CupCatalog` resolve to answers that match the snapshot, and that a dangling cup fails graph construction with today's `UnresolvedCupMapException`. Fails until the beans are rewired.
 - [ ] 6.2 Green: in `ServerBeans`, replace the two JSON beans with `CatalogSnapshot catalog(@External ServerSettings)` calling `CatalogLoader.load`, add `MapCatalog` and `CupCatalog` beans as method references, and have the `cup` bean call `CupResolution.resolve(snapshot, cupName)` without a separate consistency call.
 - [ ] 6.3 Red: `CupResolutionTest` takes a snapshot; it fails to compile until the signature changes.
 - [ ] 6.4 Green: `CupResolution.resolve` takes `CatalogSnapshot`; use `cupNames()` and `cupByName` in place of the `JsonCupCatalog` methods.
@@ -50,7 +51,7 @@ smallest production change (Green), then cleanup (Refactor). Unit tests use `@Te
 ## 7. Verify architecture rules (fitness)
 
 - [ ] 7.1 Run `./gradlew :voyager-fitness:test`; expect green with no rule change. If a rule fails, stop and report the rule and the class; do not add or weaken a rule without approval.
-- [ ] 7.2 Confirm `CatalogLoader`, `CatalogSnapshot` and `InvalidCatalogException` carry no DI annotation (ArchUnit or `grep` over `voyager-platform`).
+- [ ] 7.2 Confirm `CatalogLoader`, `CatalogReading`, `CatalogProblem` and `CatalogSnapshot` carry no DI annotation (ArchUnit or `grep` over `voyager-platform`).
 
 ## 8. Documentation
 

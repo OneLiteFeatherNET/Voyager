@@ -37,11 +37,11 @@ MoSCoW: Must. The server SHALL NOT play any cup other than the selected cup, and
 - **THEN** every map played belongs to "alpha", and "beta" is absent from play
 
 ### Requirement: An unnamed selection is ambiguous when more than one cup file exists
-MoSCoW: Must. If no cup is named and the cup directory holds more than one cup file, whether or not each file parses, then the server SHALL refuse boot with the existing ambiguous-cup error.
+MoSCoW: Must. If no cup is named and the cup directory holds more than one cup file, whether or not each file parses, then the server SHALL refuse boot with the ambiguous-cup error. That error SHALL name every cup file in the directory and both ways to choose a cup: `-Pcup=<name>` (Gradle) and `-DVOYAGER_CUP=<name>` (java -jar).
 
 #### Scenario: One valid cup and one malformed cup, none named
 - **WHEN** the directory holds one valid cup file and one malformed cup file, and no cup is named
-- **THEN** boot is refused with the ambiguous-cup error
+- **THEN** boot is refused with the ambiguous-cup error, and the message names both cup files, `-Pcup=` and `-DVOYAGER_CUP=`
 
 ### Requirement: A named selection that matches a malformed file names that file
 MoSCoW: Must. If the selected cup name matches the file name of a cup file that does not parse, then the server SHALL refuse boot naming that file as malformed, and SHALL NOT report the name as absent.

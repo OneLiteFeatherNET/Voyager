@@ -7,8 +7,10 @@ Roadmap reference: `docs/research/005-simpler-map-and-cup-setup.md`, candidate Q
 operator command live in the server composition. The reloader is one platform class. Both parts are the same `feat` type, so the
 change does not split.
 
-**Depends on:** `unify-catalog-loading` (roadmap Q1, "Single load point for catalogs"; proposal in flight). Hot reload reuses its
-`CatalogLoader`, its `CatalogSnapshot` and its aggregate problem report. A second loader would be the drift Q1 removes.
+**Depends on:** `unify-catalog-loading` (roadmap Q1, "Single load point for catalogs"; proposal final). Hot reload reuses its
+`CatalogLoader.read`, its `CatalogSnapshot` and the `CatalogProblem` list it returns as data. A second loader would be the drift Q1
+removes. It also uses the report line format of `add-catalog-validate-task` (`ConfigProblem`), so that the operator reads one
+report format at boot, in the check and on reload. Merge order: `unify-catalog-loading`, `add-catalog-validate-task`, then this change.
 Related and not a hard dependency: `scope-cup-validation` (roadmap Q4). Until it lands, one broken unrelated cup in `cups/` blocks
 every reload. That is safe, because the last good catalogue is kept (design, decision 5).
 
@@ -25,9 +27,9 @@ the start of the next round.
 
 - Add `/race reload` (operator subcommand, requires permission `voyager.race.reload`). It re-reads `maps/` and `cups/` from the
   configured data path, validates the whole set, and reports the outcome to the sender.
-- Add `CatalogReloader` (voyager-platform). It runs `CatalogLoader.load` from `unify-catalog-loading`, resolves the selected cup,
-  checks the worlds of new maps, and returns `ReloadOutcome`: `Applied` with the new `LoadedCatalog`, or `Rejected` with every problem.
-  It never throws for a bad edit.
+- Add `CatalogReloader` (voyager-platform). It runs `CatalogLoader.read` from `unify-catalog-loading`, resolves the selected cup,
+  checks the worlds of new maps, and returns `ReloadOutcome`: `Applied` with the new `LoadedCatalog`, or `Rejected` with every problem
+  the reading and the checks found. It never throws for a bad edit.
 - Add `CatalogHolder` (voyager-platform). It holds the current `LoadedCatalog` and at most one pending one. A pending catalogue becomes
   current only when a round starts. Readers never see a partial catalogue.
 - `CupSession` pins the catalogue a round starts with. A reload never changes the rotation, a map, or a ring of a round in progress.
@@ -66,7 +68,7 @@ the start of the next round.
 ## Impact
 
 - **voyager-platform**: `LoadedCatalog`, `CatalogHolder`, `ReloadOutcome`, `CatalogReloader`, `WorldOpener`; `MapInstances` implements
-  `WorldOpener` and gains `discard(world)`. Uses `CatalogLoader`, `CatalogSnapshot` and `InvalidCatalogException` from `unify-catalog-loading`.
+  `WorldOpener` and gains `discard(world)`. Uses `CatalogLoader`, `CatalogReading`, `CatalogProblem` and `CatalogSnapshot` from `unify-catalog-loading`.
 - **voyager-server**: `ServerBeans` (drops the port and `cup` beans, adds holder, reloader and service beans), `RaceBeans` and `CupSession`
   (the holder replaces `CupDefinition` and `MapCatalog`), `VoyagerServer` (rotation and worlds from the holder), `RaceCommand` (the
   `reload` literal), and a new `CatalogReloadService` that runs reloads off the tick thread.

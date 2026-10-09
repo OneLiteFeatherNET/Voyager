@@ -3,8 +3,9 @@
 ## Context
 
 `unify-catalog-loading` (the dependency) turns a data directory into one immutable `CatalogSnapshot` in
-`voyager-platform` (`platform.catalog`), through `CatalogLoader.load(Path)`. It collects every problem into one
-`InvalidCatalogException`. `ServerBeans` then holds one snapshot bean, and the `MapCatalog` and `CupCatalog` ports are
+`voyager-platform` (`platform.catalog`), through `CatalogLoader.read(Path)`, which returns a `CatalogReading`: the snapshot plus
+every `CatalogProblem` as data. Boot uses `CatalogLoader.load(Path)`, which throws the first problem (decision 3 of that change).
+`ServerBeans` then holds one snapshot bean, and the `MapCatalog` and `CupCatalog` ports are
 method references on it. That is still boot-only: the snapshot is built once and the graph keeps it.
 
 `CupSession` (`voyager-server` `game/`) keeps its `CupDefinition` in a final field, builds its `XerusPhaseDriver` from
@@ -115,8 +116,9 @@ world, so it cannot serve a rollback. Region fingerprints are taken at open, and
 
 ### 5. Validation: reuse unify's loader, report everything
 
-The reloader calls `CatalogLoader.load(dataDirectory)`. A problem comes back as the `InvalidCatalogException` from
-`unify-catalog-loading`, and its message lists each problem. The reloader converts that to `Rejected(problems)`.
+The reloader calls `CatalogLoader.read(dataDirectory)`. Every problem comes back as data (`CatalogProblem`, from
+`unify-catalog-loading`), so nothing is parsed out of a message. The reloader converts the list to `Rejected(problems)`, each
+problem rendered as one `ConfigProblem` line of `add-catalog-validate-task`.
 
 ```
 sealed interface ReloadOutcome permits Applied, Rejected {
@@ -125,9 +127,7 @@ sealed interface ReloadOutcome permits Applied, Rejected {
 }
 ```
 
-Assumption on unify, to confirm at task 0.1: the problems must be available as a list (`InvalidCatalogException.problems()`),
-not only as a message. The operator report should not parse a message. If unify does not expose the list, this change adds
-the accessor to that exception in its own commit, under `refactor(platform)`, and the mismatch is recorded here.
+The list is available by design (unify decision 3), so no accessor is added here. Task 0.1 confirms it.
 
 The reloader adds the checks that unify does not own: the selected cup exists (`CupResolution`), and each new world holds
 region data. Problems from all checks are gathered before the outcome is returned, so the operator gets one list.
@@ -183,8 +183,9 @@ What changes in the graph, relative to `unify-catalog-loading`:
   Each would hold the boot catalogue and go stale on reload. `CupSession` reads the pinned `LoadedCatalog` instead.
 - New `@Bean CatalogHolder catalogHolder(@External ServerSettings settings)` in `ServerBeans`, body
   `new CatalogHolder(reloader.loadInitial(settings.dataPath(), settings.cupName()))` (`reloader` is the injected
-  `CatalogReloader` bean; `loadInitial` throws `IllegalStateException` naming every problem). It throws at boot when the
-  catalogue is refused, so the boot refusal and `VoyagerStartupTest` stay as they are.
+  `CatalogReloader` bean; `loadInitial` throws `IllegalStateException` with the boot refusal the server uses, which is the first
+  problem as `load` throws it, or the full report if `add-catalog-validate-task` has set the boot path to that). It throws at boot
+  when the catalogue is refused, so the boot refusal and `VoyagerStartupTest` stay as they are.
 - `CatalogReloader` (platform, with `WorldOpener`) and `CatalogReloadService` are beans in `ServerBeans`. The service takes the
   executor as a constructor parameter, so tests pass a direct executor.
 - `CupSession` takes `CatalogHolder` in place of `CupDefinition` and `MapCatalog`. `RaceBeans` changes accordingly.
@@ -261,6 +262,7 @@ Rollback: revert the squash commit. Catalogues then load at boot only, as before
 1. **Owner:** may a valid edit wait for the next cup (decision 1), or must geometry-only changes apply at the next map boundary too?
    Pinned rounds only is recommended (no mixed-catalogue comparison within a cup). The alternative is geometry-only map-boundary swaps.
 2. **Owner:** `scope-cup-validation` before this change, or accept that a broken unrelated cup blocks reloads until it lands?
+   (The behaviour of `scope-cup-validation` is approved, 2026-10-09; the merge order is still open.)
 3. **Owner:** which permission source grants `voyager.race.reload` on the live server?
 4. **Spike 1.1:** does a finished cup start again by itself in production, or only by `/race start` or a restart? The answer sets the
    "pending" wording.

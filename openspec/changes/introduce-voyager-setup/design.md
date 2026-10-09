@@ -18,7 +18,10 @@ Facts verified in `main` for this design:
 - `MapDefinitionAdapter` (game side) requires `name`, `world`, `spawn`, `referenceTimeSeconds`, `boostConfig`, `guideLine`
   and `rings`, and ignores unknown fields.
 - `CatalogDirectory.jsonFilesIn` lists only regular files ending in `.json` directly under `maps/`. A folder `maps/<id>/` is
-  skipped by the game server. The game also resolves worlds as `worldsPath/<world>`, which the draft layout does not match.
+  skipped by the game server, so the game's layout is the flat file `maps/<id>.json` with its world at `worldsPath/<world>`.
+  The owner chose this layout on 2026-10-09 (open question O1).
+- `MapDefinitionAdapter` requires `spawn` and `MapDefinition` requires at least one ring. A game-loadable file therefore needs
+  both, and that rule decides where a draft lives (section 4).
 - `MapInstances` refuses a world directory with no region data (`holdsRegionData`).
 - The 35-ring sample (`voyager-server/src/main/resources/maps/elytraraceblueandred.json`) uses radius
   3.605551275463989 (sqrt 13) on every ring, points 10 and type `STANDARD`. Its reference time (60.0), boost (30/40) and
@@ -35,7 +38,7 @@ Facts verified in `main` for this design:
 **Goals**
 - A Minestom setup server that a builder can use to create a map, place and remove disc rings from their pose, and see
   the rings.
-- The draft file is the game server's map format, so the later publish step is a copy or a rename, not a conversion.
+- A complete draft is written where the game server reads it, in the game server's format, so no publish step or conversion exists.
 - All decision logic is pure and tested with `new`. Minestom is only in the adapter and the root.
 - Each architecture boundary of this change is a fitness rule.
 
@@ -44,7 +47,7 @@ Facts verified in `main` for this design:
   legacy import, persistent action-bar checklist.
 - Saving terrain. Terrain stays in the builder's external editor (research 005, section 1.3). Block placement and breaking
   are cancelled in the setup world (spec `setup/ring-placement`).
-- Any change to the game server, the tree being replaced, or the publish path.
+- Any change to the game server, the tree being replaced, or a publish path (none exists in this change).
 - Polar (research spike X4) and the FAWE operation inventory (spike X1). This change decides neither.
 
 ## Decisions
@@ -100,10 +103,11 @@ The contract holds only records, an interface and exceptions (`ApiPurityTest` ru
   `void save(MapDraft draft)` (`DraftWriteFailedException`),
   `Path worldDirectory(MapId id)`.
   Setup builds the skeleton itself and passes it in, because platform must not depend on setup.
+  `worldDirectory` returns `<worldsPath>/<id>`, the game's own world location.
 - Exceptions in `api.mapsetup.exception`, each with `package-info.java`, extending `RuntimeException`.
 
-`MapDraft` is deliberately not `MapDefinition`. Publishing (follow-up `add-setup-draft-publish-gate`) converts one to the
-other and refuses on the problems that `MapStatus` lists.
+`MapDraft` is deliberately not `MapDefinition`. A draft becomes game-loadable when it has a spawn and a ring (section 4); the
+problems that keep it from being loadable are the ones `MapStatus` lists.
 
 ### 3. Pure logic in `voyager-setup`, package `setup.mapsetup` (ring 2)
 
@@ -130,25 +134,52 @@ No `java.time.Clock` is needed: nothing here reads the time.
   It is pure math, so the spike's transform code in the adapter only copies the numbers. Degenerate case: normal equal to
   the negative base axis picks an explicit perpendicular axis, and the test covers it.
 
-### 4. Storage in `voyager-platform`
+### 4. Storage in `voyager-platform`, and where a draft lives
 
-- `catalog.JsonDraftStore implements DraftStore`, constructed by a `@Bean` method in setup with the `maps/` directory.
-  It takes a `FileMover` functional interface (default `Files::move`) so a test can make the move fail without a real
-  file-system fault. This is the Injectable Creator rule (ManisGame rule 7) applied to a file operation.
-- `catalog.writer.MapDraftJsonWriter` (final, package-private helpers) writes the keys in the order of the shipped map:
-  `name` (the id), `world`, `spawn` (omitted while null), `referenceTimeSeconds`, `boostConfig`, `guideLine`, `rings`.
-  Each ring is `index, center, normal, radius, points, type`. It writes explicitly, not by reflective record serialisation,
-  so the omission of `spawn` and the key order are visible in code.
-- `catalog.adapter.MapDraftAdapter` (Gson `JsonDeserializer`, `final`, `@ApiStatus.Internal`) reads a draft. It reuses
-  `JsonFields` and the existing `Vec3Adapter`/`RingAdapter` for rings, but accepts a missing `spawn`, and it reports a
-  missing key with the file name, as the catalog does.
-- `world.VoidWorldTemplate` copies the classpath directory `templates/void-world/` into `maps/<id>/world/`. Its content is
+Owner decision (2026-10-09): write maps in the game's current layout, with no folder bundle and no publish step.
+
+**Location rule.** A draft is *game-loadable* when it has at least one ring and a spawn. Only a game-loadable draft may sit where
+the game reads, because `MapDefinitionAdapter` refuses a file without `spawn` and `MapDefinition` refuses an empty ring list.
+- game-loadable: `<dataPath>/maps/<id>.json`, the flat file the game reads;
+- otherwise: `<dataPath>/drafts/<id>.json`, a folder the game never reads.
+- The world is `<worldsPath>/<id>` in both cases, created by `/map new`. The file names it `world: "<id>"` explicitly.
+
+This extends the owner's rule ("zero rings stay in `drafts/`") with the spawn. Without it, a builder who places rings before a
+spawn would write a file the game refuses at boot. Alternative considered and rejected: a marker field (`"draft": true`) that
+the game skips. It needs a change to the game's loader, and it leaves a file the game parses in `maps/` before it is ready.
+
+- `catalog.JsonDraftStore implements DraftStore`, constructed by a `@Bean` method in setup with the `dataPath`, the `worldsPath`
+  and a `FileMover` functional interface (default `Files::move`), so a test can make the move fail without a real file-system
+  fault. This is the Injectable Creator rule (ManisGame rule 7) applied to a file operation.
+- `catalog.writer.MapDraftJsonWriter` (final, package-private helpers) writes the keys in the order of the shipped map, with the
+  schema version first: `schemaVersion` (1), `name` (the id), `world`, `spawn` (omitted while null), `referenceTimeSeconds`,
+  `boostConfig`, `guideLine`, `rings`. Each ring is `index, center, normal, radius, points, type`, with `index` always written.
+  It writes explicitly, not by reflective record serialisation, so the omission of `spawn` and the key order are visible in code.
+- `catalog.adapter.MapDraftAdapter` (Gson `JsonDeserializer`, `final`, `@ApiStatus.Internal`) reads a draft from either location.
+  It reuses `JsonFields` and the existing `Vec3Adapter`/`RingAdapter` for rings, but accepts a missing `spawn` and zero rings
+  (those are draft problems, not file errors), and it reports a missing key with the file name, as the catalog does.
+- `world.VoidWorldTemplate` copies the classpath directory `templates/void-world/` into `<worldsPath>/<id>`. Its content is
   fixed by spike 1.3.
 
-**Atomic save, in this order:** create a temp file in `maps/<id>/` (`Files.createTempFile`); write UTF-8; `FileChannel.force(true)`;
-`FileMover.move(tmp, map.json, ATOMIC_MOVE, REPLACE_EXISTING)`. On any failure, delete the temp file only and throw
-`DraftWriteFailedException`. If the file system does not support `ATOMIC_MOVE`, a plain `REPLACE_EXISTING` move is allowed;
-a delete followed by a write is not, under any condition.
+**Create** (`JsonDraftStore.create`): refuses with `DraftAlreadyExistsException` when `<id>.json` exists in either location or
+`<worldsPath>/<id>` exists. Otherwise writes the skeleton to `drafts/<id>.json` (a skeleton has no rings, so it is never
+game-loadable).
+
+**Save** (`JsonDraftStore.save`), in this order:
+1. Choose the target location from the draft by the rule above, and the other location.
+2. Create a temp file in the target folder (`Files.createTempFile`); write UTF-8; `FileChannel.force(true)`;
+   `FileMover.move(tmp, target, ATOMIC_MOVE, REPLACE_EXISTING)`. On any failure, delete the temp file only and throw
+   `DraftWriteFailedException`. If the file system does not support `ATOMIC_MOVE`, a plain `REPLACE_EXISTING` move is allowed.
+3. If the other location holds a file for this id, delete it. It is stale now: the target holds the newer content. Deleting the
+   old copy after the new one exists is not the forbidden delete-then-write; the forbidden order never happens for the file being
+   saved.
+
+**Crash window.** A crash between steps 2 and 3 leaves a copy in each location. `load` and `/map open` then refuse with
+`DraftLocationConflictException`, which names both files. The server never picks one of them silently, because either choice can
+lose the last action. The operator removes the stale copy (the how-to says which one to keep).
+
+**Move back.** Removing the last ring, or the spawn, makes the draft incomplete again. The same save moves the file from `maps/`
+to `drafts/`, so `maps/` never holds an incomplete draft.
 
 ### 5. Minestom adapter and composition root in `voyager-setup`
 
@@ -170,7 +201,8 @@ a delete followed by a write is not, under any condition.
 - `net.elytrarace.voyager.setup.SetupServer` (`main`): settings, data-directory check, `MinecraftServer.init()`, eager
   `BeanScope` (`shutdownHook(false)`, closed in a shutdown task), events, commands, then `start`. Same order as `VoyagerServer`.
 - `SetupSettings` (record in `setup.config`): `host`, `port` (default 25566, so a developer can run both servers), `dataPath`
-  (`VOYAGER_DATA_PATH`, default `run-setup/data`). It reads two system properties and nothing else. The platform resolver the
+  (`VOYAGER_DATA_PATH`, default `run-setup/data`), `worldsPath` (`VOYAGER_WORLDS_PATH`, default `run-setup/worlds`). It reads
+  three system properties and nothing else. Both directories must exist at start, as the game server requires. The platform resolver the
   greenfield design describes does not exist yet; see Risks.
 
 Threading: player events run on Minestom's main thread, so `MapSession` needs no lock. The design depends on that and says so
@@ -184,7 +216,8 @@ in the class comment.
    -> RingFromPose.create(eye, look, index = session.draft.rings().size())      [pure]
    -> DraftEditor.withRingAppended(draft, ring)                                [pure]
    -> DraftStore.save(draft)                                                   [platform]
-        -> MapDraftJsonWriter -> temp file -> force -> atomic move -> maps/<id>/map.json
+        -> MapDraftJsonWriter -> temp file -> force -> atomic move -> maps/<id>.json (game-loadable)
+           or drafts/<id>.json (not yet); then the stale copy in the other folder is deleted
    -> session.draft = newDraft; RingPreview.spawn(ring)                        [adapter]
    -> Messages: "Ring 12 placed"  (on DraftWriteFailedException: old draft kept, "not saved")
 
@@ -227,7 +260,8 @@ All tests follow F.I.R.S.T. (`openspec/config.yaml`): no sleeps, no `System.curr
   `MapStatusTest`.
 - API (`voyager-api`): `MapIdTest`, `MapDraftTest`.
 - Platform: `MapDraftAdapterTest`, `MapDraftJsonWriterTest` (including the round trip through the existing
-  `MapDefinitionAdapter`), `JsonDraftStoreTest` (fake `FileMover` for the failure path, `@TempDir` otherwise).
+  `MapDefinitionAdapter`), `JsonDraftStoreTest` (fake `FileMover` for the failure path, `@TempDir` otherwise; covers the location
+  rule in both directions, the stale-copy deletion, and `DraftLocationConflictException` for two copies).
 - Setup integration (Minestom `Env`, fresh per test, `minestom.inside-test=true` as in `voyager-platform`): `SetupCommandsTest`,
   `WandListenerTest`, `RingPreviewTest` (after spike 1.1), `SetupGraphTest` (builds the `BeanScope` with a `@TempDir` data path
   and asserts that every bean resolves).
@@ -242,12 +276,15 @@ it, and it names Polar and the FAWE inventory as open, not decided.
 
 ### 11. Risks
 
-- **The layouts differ.** The draft folder is invisible to the game server, so it is safe, but a published map needs the
-  flat file and a world at `worldsPath/<world>`. Mitigation: follow-up `align-map-folder-with-game-catalog` (Must, before S5).
+- **A complete draft in `maps/` must boot the game.** Mitigation: the completeness rule (section 4) is the only writer's rule, the
+  round-trip test reads each written file with the game's adapter, and the void template holds region data (spike 1.3). The
+  validate task (`add-catalog-validate-task`) checks the same files on every run.
+- **Two copies after a crash.** Mitigation: `DraftLocationConflictException` refuses to open the map and names both files
+  (section 4). No silent choice.
 - **A region-less void world fails `MapInstances`.** Mitigation: spike 1.3 decides the template; the template ships with one
   empty region file if needed.
 - **No undo.** A left-click removes a ring for good, short of re-placing it. Mitigation proposed as an owner question (O2).
-- **Settings duplication.** `SetupSettings` duplicates two of `ServerSettings`' properties until a shared resolver exists.
+- **Settings duplication.** `SetupSettings` duplicates three of `ServerSettings`' properties until a shared resolver exists.
   Recorded as debt. The greenfield design says duplicated resolution is how the two roots drift; the debt is small and visible.
 - **`apiDoesNotPerformFileIo` and `Path` in the port.** If ArchUnit flags the `Path` return of `worldDirectory`, the accessor
   moves out of the port into `JsonDraftStore`, and setup uses the platform class directly.
@@ -258,7 +295,7 @@ it, and it names Polar and the FAWE inventory as open, not decided.
 
 | # | Question | Options and trade-offs | Recommendation |
 |---|---|---|---|
-| O1 | Draft layout | `maps/<id>/` as asked (drafts invisible to the game; publish copies) vs flat `maps/<id>.json` plus `worlds/<id>` (matches the game today; drafts visible to the game boot) | Folder layout; publish via `align-map-folder-with-game-catalog` |
+| O1 | Draft layout | **Resolved 2026-10-09:** flat `maps/<id>.json` with world `<worldsPath>/<id>`, as the game reads today. Drafts without a ring or spawn wait in `drafts/` (section 4). No publish step, no `align-map-folder-with-game-catalog`. | Owner decision |
 | O2 | Removal gesture before undo | Plain left-click as specified (fast, unrecoverable) vs sneak plus left-click (one extra key; fewer accidents until S8) | Sneak plus left-click, if the owner agrees to change the spec |
 | O3 | Settings | Duplicate two properties now (debt recorded) vs extract a resolver to `voyager-platform` first (refactor(platform), delays this change) | Duplicate now; extract before the second setup feature |
 | O4 | Terrain in the setup world | Cancel block edits (no silent loss; builders use the external editor) vs allow edits (lost on restart without a save path) | Cancel block edits |
@@ -276,9 +313,8 @@ and no data migrates.
 | Change | Type(scope) | Research ID | MoSCoW | Depends on |
 |---|---|---|---|---|
 | `add-setup-test-fly` | feat(setup) | S4 | Must | this change; race run API |
-| `align-map-folder-with-game-catalog` | feat(platform) | (new, prerequisite of S5) | Must | this change; O1 |
-| `add-setup-draft-publish-gate` | feat(setup) | S5 | Must | the align change; Q4; Q6 |
-| `add-map-validate-task` (validate-and-exit, NFR-007) | feat(build) | Q6 | Must | Q4 |
+| `add-setup-draft-publish-gate` | feat(setup) | S5 | Must | this change; Q4; `add-catalog-validate-task`. Scope reduced: the publish copy is gone (owner, 2026-10-09). The gate is test-fly evidence and the checks of `add-catalog-validate-task` |
+| `add-catalog-validate-task` (validate-and-exit, NFR-007) | feat(build) | Q6 | Must | `fix-run-data-sync`; `unify-catalog-loading` |
 | `add-setup-cup-commands` | feat(setup) | S6 | Should | Q3; the publish gate |
 | `add-setup-persistent-checklist` (action bar) | feat(setup) | S3 remainder | Should | this change |
 | `add-setup-ring-handles` (Interaction, select/move/delete) | feat(setup) | S7 | Should | spike 1.1; X2 |
@@ -287,13 +323,16 @@ and no data migrates.
 | `add-setup-dialog-forms` | feat(setup) | S9 | Could | X3 |
 | `add-setup-ring-presets` | feat(setup) | S10 | Could | this change |
 | `add-setup-design-lint` | feat(setup) | S11 | Could | persistent checklist; playtest data |
+| `add-map-folder-bundle` (`maps/<id>/` bundles with their own world) | feat(platform) | (new) | Could | a game loader change; owner approval; not started |
 | `add-setup-legacy-world-import` | feat(setup) | S12 | Won't (this cycle) | E6.4 |
+| `fix-run-data-sync` (Copy to Sync for `prepareRunData`) | fix(build) | (new, prerequisite of the validate task) | Must | none |
 | Phase 0 items Q1 to Q7 of research 005 | refactor/feat/fix(platform) | Q1 to Q7 | Must/Should | none (independent of E6) |
 | Spike X1 FAWE inventory; X4 Polar round trip | docs(research) | X1, X4 | Must, Should | none |
 
 ## Documentation
 
-- `docs/decisions/0018-pose-placement-authoring-model-for-setup.md` (MADR 4.0, status `proposed`); see task 2.1.
+- `docs/decisions/0018-pose-placement-authoring-model-for-setup.md` (MADR 4.0, status `proposed`); see task 2.1. It records the
+  location rule of section 4 and the two-copy refusal.
 - `docs/guides/how-to-build-a-map-with-setup.md` (Diataxis how-to; written after the implementation, task 8.x).
 - `docs/research/006-minestom-26-2-setup-spikes.md` (spike record, task 1.4).
 - `STATUS.md` (E6 section), `docs/requirements/user-stories-stufe-6.md` (US-6.01 to US-6.05 status column), the greenfield

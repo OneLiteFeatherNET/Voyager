@@ -7,15 +7,16 @@ Boot wires the cup in `ServerBeans.cup` (`voyager-server/.../inject/ServerBeans.
    `UnresolvedCupMapException` for all of them.
 2. `CupResolution.resolve(cups, settings.cupName())` picks the played cup.
 
-The catalogue reads cups with `CatalogDirectory.readAll`, which throws on the first unparseable file. So step 0
-(reading the directory) is also all-or-nothing. A fix has to change both the read and the check.
+Since `unify-catalog-loading`, the catalogue is read with `CatalogLoader.read`, which returns the parsed cups and every
+per-file problem as data and throws nothing for a bad file. `CatalogLoader.load` (the boot policy for everything but cups)
+still throws the first problem. This change applies its own boot policy to cups on top of `read`.
 
 Dependency direction (Clean Architecture; arrows point at what is depended on):
 
     voyager-server  ServerBeans.cup, game/CupResolution   (composition root, selection, warning log)
           |
           v
-    voyager-platform  JsonCupCatalog, CatalogConsistency, CatalogDirectory   (I/O, cross-catalogue check)
+    voyager-platform  CatalogLoader.read, CatalogConsistency, CatalogDirectory   (I/O, cross-catalogue check)
           |
           v
     voyager-api  CupDefinition, InvalidCupException   (pure records)
@@ -35,11 +36,13 @@ Logging is done by the composition root, which owns the boot policy.
 A typo in the name then reports "no such cup" with the list, and never reports an unrelated cup's problem. The
 existing order (check everything, then resolve) is the reason one broken cup blocks boot.
 
-**D2. "Only cup" counts files.** `CupResolution` today requires `cupNames().size() == 1`. Parsed names do not
-count broken files, so a valid cup plus a broken one would resolve silently to the valid one. That is not
-wanted: the operator should be told that a second cup file exists and choose. The snapshot therefore exposes
-`fileCount()` (parsed plus problem files), and the ambiguity test uses it. The ambiguous message still lists the
-parsed names, and also lists the problem file names.
+**D2. "Only cup" counts files; a broken second file refuses boot.** `CupResolution` today requires `cupNames().size() == 1`.
+Parsed names do not count broken files, so a valid cup plus a broken one would resolve silently to the valid one. Owner
+decision (2026-10-09): boot refuses. The operator is told that a second cup file exists and chooses. The reading exposes
+`fileCount()` (parsed plus problem files), and the ambiguity test uses it. The ambiguous message is the existing text
+of `UnresolvedCupException.ambiguous`, extended with the file names of every cup file in the directory (parsed and
+broken, sorted), so it names both cup files in the reported case. The switch wording (`-Pcup=<name>` and
+`-DVOYAGER_CUP=<name>`) comes from `name-both-cup-switches`. Built with `String.formatted`.
 
 **D3. Named broken file.** When the chosen name is absent from the parsed cups, check the problems for a file whose
 stem equals the chosen name. If one exists, throw the malformed-file problem for that file. Otherwise throw
@@ -51,16 +54,14 @@ root logs one WARN from that list. The message is built with `String.formatted`:
 `"%d cup(s) are not playable and were skipped: %s"`, where each problem reads `cup 'x' plays 'y'` or
 `'<file>' is not a valid cup definition: <reason>`. This keeps the warning testable as a value and as a log event.
 
-**D5. Dependency on `unify-catalog-loading`.** Collecting parse problems for unselected files needs a snapshot
-returned from `CatalogDirectory`: `parsed` definitions by name, plus `problems` (file, reason). Today's
-`readAll` throws. `unify-catalog-loading` has no proposal yet, so its shape is unknown. This change depends on it
-explicitly and requires only:
-- a per-file problem value carrying the file path and the reason, and
-- a read that returns parsed definitions and problems together, and throws only for an unreadable or empty directory.
+**D5. Dependency on `unify-catalog-loading`.** The shape is now final. `CatalogLoader.read(dir)` returns a `CatalogReading`:
+the parsed `CatalogSnapshot` and `problems` (`CatalogProblem`: source path and the exception it would raise). It throws
+only for an unreadable or empty directory, as today. This change uses `read` directly for cups:
+- the selected cup is resolved and checked (D1, D3) against the snapshot;
+- every problem whose source is not the selected cup's file is returned to the composition root as the warning list (D4).
+- A problem in `maps/` is not a cup problem: it still refuses boot through `load`'s first-problem policy (unify decision 3).
 
-If `unify-catalog-loading` lands with another shape, adapt the snapshot to it. Do not duplicate the directory
-reader in this change. Without that dependency, the change would need its own tolerant reader, a second copy of the
-four error cases that `CatalogDirectory` exists to share.
+No second copy of the directory reader is written in this change.
 
 **D6. Mode stays required.** A default of `RACE` changes data semantics: a missing key, and also a typo such as
 `"moode"`, would silently become a race. Research 005 (D3) suggested the default. This change does not make it.
@@ -88,7 +89,9 @@ logger and removed in `@AfterEach`. Pass or fail comes from the list of events, 
 No new module, package or dependency direction. Existing `voyager-fitness` rules still cover the packages. If
 the `log4j-core` test dependency is missing from `voyager-server`, it is added at test scope only.
 
-## Open Questions for the Owner
+## Owner decisions (2026-10-09)
 
-1. Mode: keep required (recommended, D6) or default to RACE in a separate change?
-2. Ambiguity with a broken second file (D2): refuse (recommended) or resolve to the one valid cup with a warning?
+- D2: with no cup selected and a broken second cup file, boot **refuses**, and the message names both files and both
+  switches (`-Pcup` and `VOYAGER_CUP`).
+- Still open, owner's call: D6, the cup `mode` default. The spec keeps `mode` required until the owner answers. It is
+  not part of this change's scope.

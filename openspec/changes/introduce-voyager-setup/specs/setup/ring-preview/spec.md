@@ -24,8 +24,8 @@ oriented along the ring normal, and scaled to the ring radius.
 ### Requirement: Previews are not saved
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL NOT write preview entities into `map.json` or into the world folder.
+THE SYSTEM SHALL NOT write preview entities into the draft file or into the world folder.
 
 #### Scenario: Save after placing a ring
 - **WHEN** a ring is placed and the draft is saved
-- **THEN** `map.json` holds the ring data and nothing else about the preview
+- **THEN** the draft file holds the ring data and nothing else about the preview

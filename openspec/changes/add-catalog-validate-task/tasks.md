@@ -1,6 +1,14 @@
 # Tasks
 
-Prerequisite: `unify-catalog-loading` is merged. Every behaviour below is written as a failing test first (Red), then made to pass (Green), then cleaned up (Refactor). Every test uses `@TempDir` fixtures, injects no system time, and reads no shared state. Unit tests run without Minestom.
+Prerequisites, in this order: `fix-run-data-sync` merged (task 0.1), `unify-catalog-loading` merged (task 0.2). Every behaviour
+below is written as a failing test first (Red), then made to pass (Green), then cleaned up (Refactor). Every test uses
+`@TempDir` fixtures, injects no system time, and reads no shared state. Unit tests run without Minestom; the deep-check
+integration test (4.7) is the one exception and is marked as such.
+
+## 0. Prerequisites
+
+- [ ] 0.1 `fix-run-data-sync` is merged. Verify: `git log --oneline main | grep "remove maps from the run directory"` shows the commit; `./gradlew :voyager-server:prepareRunData` removes a stale map from `run/run/data`.
+- [ ] 0.2 `unify-catalog-loading` is merged or archived. Verify: `CatalogLoader.read` returns `CatalogReading` with `CatalogProblem`s, as designed; `CatalogLoader.load` throws the first problem's cause.
 
 ## 1. Problem model (voyager-api)
 
@@ -25,24 +33,29 @@ Prerequisite: `unify-catalog-loading` is merged. Every behaviour below is writte
 ## 4. Catalogue and world check (voyager-platform)
 
 - [ ] 4.1 Red: `CatalogValidationTest` with `@TempDir` maps and worlds directories: one malformed map file and one map whose world folder is missing produce two `ERROR` problems in one result, each with the absolute file path and the field key. Verify: test fails.
-- [ ] 4.2 Green: add `CatalogValidation.validate(Path dataDir, Path worldsRoot)` built on the aggregate loader from `unify-catalog-loading`, then a `WorldFolders` check per map. Verify: 4.1 passes.
-- [ ] 4.3 Red: a valid fixture (two maps, one cup, both worlds with region data) yields an empty problem list; running the validation twice yields equal lists. Verify: test fails until 4.2 is in place, then passes. Covers the Repeatable requirement.
-- [ ] 4.4 Red: a cup naming an unknown map yields one error whose key is the map entry and whose source is the cup file. Verify: test fails, then passes once 4.2 reports the aggregate loader's cup problems.
+- [ ] 4.2 Green: add `CatalogValidation.validate(Path dataDir, Path worldsRoot, HealthSource health)` built on `CatalogLoader.read`, then a `WorldFolders` check per map. `HealthSource` is a `@FunctionalInterface String -> WorldHealth`, so unit tests pass a fake. Verify: 4.1 passes.
+- [ ] 4.3 Red: a valid fixture (two maps, one cup, both worlds with region data, and a fake health source that reports sound) yields an empty problem list; running the validation twice yields equal lists. Verify: test fails until 4.2 is in place, then passes. Covers the Repeatable requirement.
+- [ ] 4.4 Red: a cup naming an unknown map yields one error whose key is the map entry and whose source is the cup file. Verify: test fails, then passes once 4.2 reports the reading's cup problems.
+- [ ] 4.5 Red: deep check, three tests with a fake health source: (a) a world whose health has refused chunks yields one error naming the refused versions; (b) a world with `chunksLoaded == 0` yields one error saying no chunk was read; (c) the health source throws for the first of two worlds, and the second world is still checked and the first yields an error with the exception message. Verify: each fails for the stated reason.
+- [ ] 4.6 Green: the deep step in `CatalogValidation`, run only for worlds that pass `WorldFolders`, with the per-world try/catch of requirement "one failing world does not hide another". Verify: 4.5 passes; 4.1 to 4.4 still pass.
+- [ ] 4.7 Integration (relaxed F.I.R.S.T.: real Falco read, not Fast): `CatalogValidationDeepIT` copies the shipped world `ElytraraceBlueAndRed` into a `@TempDir` (the path is supplied by the test through a system property, not read from the repository) and asserts `MapInstances.healthOf` is sound, through the real `HealthSource`. Verify: the test passes; a copy with one region file truncated fails it.
+- [ ] 4.8 Measure and record: time `./gradlew :voyager-server:validateCatalog -PworldsPath=<copy of the shipped world>` three times, and record the median and the Minestom registry start-up time in `design.md`, decision 3, replacing the words "not measured". Verify: the design names both numbers and the machine they were measured on.
 
 ## 5. Validate-and-exit mode (voyager-server)
 
 - [ ] 5.1 Red: `ConfigCheckMainTest` runs `ConfigCheck.run(settings, out)` with a valid fixture and asserts exit code 0 and that the output names no error. Verify: test fails.
 - [ ] 5.2 Red: the same test with one malformed map asserts exit code 1 and that the output line contains the absolute file path and the key. Verify: test fails.
-- [ ] 5.3 Red: `ConfigCheckMainTest` asserts that after the run, a `ServerSocket` can still bind the configured port, and that the check's start-up never calls the server bootstrap (a test double for the bootstrap counts calls and must read 0). Verify: test fails if the check starts a server; it is the guard for the no-socket requirement.
-- [ ] 5.4 Green: add `ConfigCheck.run` returning an int, and the `voyager.config.check` branch in `VoyagerServer.main` that returns before any Minestom class is loaded. Verify: 5.1 to 5.3 pass.
+- [ ] 5.3 Red: `ConfigCheckMainTest` asserts that after the run, a `ServerSocket` can still bind the configured port, and that the check's start-up never calls the game server's start method (a test double counts calls and must read 0). Verify: test fails if the check starts a server; it is the guard for the no-socket requirement.
+- [ ] 5.4 Green: add `ConfigCheck.run` returning an int, and the `voyager.config.check` branch in `VoyagerServer.main` that returns before the game server is started. Verify: 5.1 to 5.3 pass.
 - [ ] 5.5 Red: a test asserts that `VoyagerServer.main` with `voyager.config.check=true` does not reach the `openGraph` method. Verify: test fails, then passes after 5.4.
 
-## 6. Gradle task and run gating (voyager-server build)
+## 6. Gradle task, skip switch and run gating (voyager-server build)
 
 - [ ] 6.1 Red: a Gradle functional check (`./gradlew :voyager-server:validateCatalog -PworldsPath=<missing>`) is run by hand and must exit non-zero, printing the missing path. Recorded in the PR; no automated Gradle test is added in this change. Verify: command output recorded.
 - [ ] 6.2 Green: add `tasks.register<JavaExec>("validateCatalog")` with `dependsOn(prepareRunData)`, the same `workingDir`, the same overrides and `-Dvoyager.config.check=true`. Verify: 6.1 fails with the report; with valid paths it exits 0.
-- [ ] 6.3 Green: make `runServer` and `runServerDev` depend on `validateCatalog`; remove the `doFirst` missing-worlds warning. Verify: `./gradlew :voyager-server:runServerDev` with no worlds directory stops before the server JVM starts, printing the report.
-- [ ] 6.4 Verify: `./gradlew :voyager-server:runServerDev` with a valid fixture starts the server, unchanged.
+- [ ] 6.3 Green: `tasks.named("runServer")` and `runServerDev` depend on `validateCatalog` unless `project.hasProperty("skipCatalogCheck")`; remove the `doFirst` missing-worlds warning. Verify with `--dry-run` (no JVM starts): `./gradlew :voyager-server:runServerDev --dry-run` lists `validateCatalog` before `runServerDev`; `./gradlew :voyager-server:runServerDev -PskipCatalogCheck --dry-run` does not list it.
+- [ ] 6.4 Green: the skipped run prints the one warning line named in the spec. Verify: `./gradlew :voyager-server:runServerDev -PskipCatalogCheck` with no worlds directory starts the server JVM and prints the warning (stop the server after the log line).
+- [ ] 6.5 Verify: `./gradlew :voyager-server:runServerDev` with a valid fixture starts the server, unchanged.
 
 ## 7. Normal boot (voyager-server)
 
@@ -56,10 +69,10 @@ Prerequisite: `unify-catalog-loading` is merged. Every behaviour below is writte
 
 ## 9. Documentation
 
-- [ ] 9.1 Add the check's exit codes, output format and the two Gradle commands to `docs/reference/` (Diátaxis reference). Verify: file exists, English, linked from the run section of `CLAUDE.md`'s Build Commands.
+- [ ] 9.1 Add the check's exit codes, output format, the two Gradle commands, the `-PskipCatalogCheck` switch and the measured runtime (4.8) to `docs/reference/` (Diátaxis reference). Verify: file exists, English, linked from the run section of `CLAUDE.md`'s Build Commands.
 - [ ] 9.2 Update research 005: Q6 and P10 status, and E3, to "implemented". Verify: `grep -n "Q6\|P10\|E3" docs/research/005-simpler-map-and-cup-setup.md` shows the new status.
 
 ## 10. Pull request
 
 - [ ] 10.1 Run `./gradlew build` (both trees). Verify: green.
-- [ ] 10.2 Open the pull request with the title `feat(build): check maps, cups and worlds together before the server starts`. Its body lists the open questions from `design.md`, the manual Gradle check from 6.1, and the `fix-run-data-sync` follow-up. Add the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: the PR title is a valid Conventional Commit.
+- [ ] 10.2 Open the pull request with the title `feat(build): check maps, cups and worlds together before the server starts`. Its body lists the measured runtime from 4.8, the manual Gradle checks from 6.1 and 6.3, the skip switch, and the merge order (`fix-run-data-sync`, `unify-catalog-loading`). Add the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: the PR title is a valid Conventional Commit.

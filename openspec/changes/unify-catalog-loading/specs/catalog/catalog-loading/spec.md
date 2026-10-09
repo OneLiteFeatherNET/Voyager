@@ -3,17 +3,18 @@
 ## Purpose
 
 Defines how the rebuild reads its racecourse and cup definitions from disk. The `catalog` slice has one load point that
-turns one data directory into an immutable snapshot, reports every problem it finds at once, and refuses a
-catalogue that is not consistent as a whole. It is the foundation for scoped validation, the validate task and hot
-reload, which build on the snapshot rather than on the directory.
+turns one data directory into an immutable snapshot. The load exposes every problem it finds as data, and boot refuses
+an inconsistent catalogue on the first problem, with the exception that problem raised before this change. The
+all-at-once report is a separate capability, owned by `add-catalog-validate-task`.
 
 ## ADDED Requirements
 
 ### Requirement: One load point produces the catalogue snapshot
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL provide exactly one operation that reads the `maps/` and `cups/` subdirectories of a data directory and
-returns a `CatalogSnapshot`. Every consumer of map or cup definitions SHALL obtain them from that snapshot.
+THE SYSTEM SHALL provide exactly one entry point that reads the `maps/` and `cups/` subdirectories of a data directory.
+It SHALL return a `CatalogSnapshot` from `load`, and a `CatalogReading` (snapshot plus problems) from `read`. Every
+consumer of map or cup definitions SHALL obtain them from that entry point's result.
 
 #### Scenario: Valid data directory loads once
 - **WHEN** the server starts with a data directory holding valid maps and cups
@@ -37,37 +38,42 @@ expose no operation that adds, replaces or removes a definition.
 - **WHEN** a file in the data directory is deleted after the snapshot was built
 - **THEN** the snapshot still answers with the definition it loaded
 
-### Requirement: Every problem is collected before the load fails
+### Requirement: Problems are exposed as data
 **Priority:** MoSCoW Must
 
-WHEN the data directory contains more than one problem, THE SYSTEM SHALL check every map file, every cup file and the
-cross-catalogue references before it reports failure, and SHALL report all of them in one exception.
+WHEN the data directory contains one or more problems, THE SYSTEM SHALL return every problem in the reading, each with its
+source path and the exception it would have raised, and SHALL NOT throw for a problem in `read`.
 
 #### Scenario: Two malformed map files
-- **WHEN** two map files fail to parse
-- **THEN** the single reported failure names both files
-
-#### Scenario: Malformed file and dangling cup reference together
-- **WHEN** one cup file is malformed and another cup names a map that no map file provides
-- **THEN** the single reported failure names the malformed file and the dangling reference
+- **WHEN** two map files fail to parse and `read` runs
+- **THEN** the reading holds two problems, one per file, each naming its file
 
 #### Scenario: Missing directory and valid other directory
-- **WHEN** `cups/` is absent and `maps/` is valid
-- **THEN** the single reported failure names the missing `cups/` directory
+- **WHEN** `cups/` is absent, `maps/` is valid, and `read` runs
+- **THEN** the reading holds exactly one problem, naming the missing `cups/` directory, and the map definitions are present in the snapshot
 
-### Requirement: An inconsistent catalogue refuses to load
+### Requirement: Boot refuses an inconsistent catalogue on the first problem
 **Priority:** MoSCoW Must
 
-IF any problem is found, THEN THE SYSTEM SHALL NOT produce a snapshot, and the server SHALL refuse to start with the
-exception as its cause.
+IF the catalogue holds a problem at boot, THEN THE SYSTEM SHALL NOT produce a snapshot through `load`, SHALL throw the
+exception of the first problem in the order maps, then cups, then cross-catalogue references, with its message unchanged
+from before this change, and the server SHALL refuse to start with that exception as its cause.
 
-#### Scenario: Problem found at boot
-- **WHEN** the catalogue holds a problem at boot
-- **THEN** the server does not start and the log names the file or reference at fault
+#### Scenario: Two malformed map files at boot
+- **WHEN** two map files fail to parse and the server boots
+- **THEN** the server does not start, and the refusal is the malformed-file exception of the first file in sorted filename order, with today's message
+
+#### Scenario: Cup naming an unknown map at boot
+- **WHEN** a cup names a map that no map file provides and the server boots
+- **THEN** the server does not start, and the refusal is today's unresolved-cup-map exception, listing the dangling entries as it does today
+
+#### Scenario: Malformed map and dangling cup reference together at boot
+- **WHEN** a map file fails to parse and a cup names a map
+- **THEN** the refusal is the malformed-file exception of the map file, and the cross-catalogue check is not reached
 
 #### Scenario: Clean catalogue
 - **WHEN** the catalogue holds no problem
-- **THEN** the load returns a snapshot and boot continues
+- **THEN** `load` returns a snapshot and boot continues
 
 ### Requirement: Failure messages name the file and the problem
 **Priority:** MoSCoW Should
@@ -77,21 +83,21 @@ reference, THE SYSTEM SHALL name the referring cup and the missing map.
 
 #### Scenario: Duplicate name in two files
 - **WHEN** two map files declare the same name
-- **THEN** the message names both file paths and the duplicated name
+- **THEN** the problem's message names both file paths and the duplicated name
 
 #### Scenario: Cup naming an unknown map
 - **WHEN** a cup names a map nothing provides
 - **THEN** the message reads as "cup '<cup>' plays '<map>'" and names no other file
 
-### Requirement: Failure reports are deterministic
+### Requirement: Problem order is deterministic
 **Priority:** MoSCoW Should
 
 THE SYSTEM SHALL read files in sorted filename order and SHALL list problems in that order, so that the same directory
-produces the same report on every machine.
+produces the same reading on every machine.
 
 #### Scenario: Same directory on two machines
-- **WHEN** the same data directory is loaded on two machines with different directory iteration orders
-- **THEN** both failure reports list the problems in the same order
+- **WHEN** the same data directory is read on two machines with different directory iteration orders
+- **THEN** both readings list the problems in the same order
 
 ### Requirement: Platform code carries no dependency-injection annotations
 **Priority:** MoSCoW Must

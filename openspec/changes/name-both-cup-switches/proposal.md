@@ -27,6 +27,8 @@ the server.
   Minestom imports; the Gradle names are plain strings in the message.
 - Decisions: none altered. Design spec decision D2 (cup selection by `-DVOYAGER_CUP` or `-Pcup`) already names
   both forms; this change makes the error text match it.
+- Merge order: this change lands first. `scope-cup-validation` appends the cup file names to the `ambiguous` message
+  this change sets (owner decision, 2026-10-09). It needs no code from this change beyond the text.
 
 ## Out of Scope
 

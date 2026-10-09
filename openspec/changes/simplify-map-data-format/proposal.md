@@ -35,7 +35,9 @@ A hand-written map file repeats what the loader can compute. Every ring states i
 
 ## Impact
 
-- `voyager-platform`: `adapter/RingAdapter` (position-based index, read by `MapDefinitionAdapter` instead of through the Gson registry), `adapter/MapDefinitionAdapter` (world default, `schemaVersion`), `adapter/CupDefinitionAdapter` (`schemaVersion`), a new package-private `adapter/SchemaVersion`, `CatalogDirectory` (drops the `Ring.class` registration, which nothing else uses). `voyager-platform/src/main/resources/schema/` is new. Test-scope only: one JSON Schema validator in `voyager-platform` `testImplementation`, pinned exactly (design, decision 5).
+- `voyager-platform`: `adapter/RingAdapter` (position-based index, read by `MapDefinitionAdapter` instead of through the Gson registry), `adapter/MapDefinitionAdapter` (world default, `schemaVersion`), `adapter/CupDefinitionAdapter` (`schemaVersion`), a new package-private `adapter/SchemaVersion`, `CatalogDirectory` (drops the `Ring.class` registration, which nothing else uses). `voyager-platform/src/main/resources/schema/` is new. Test-scope only: one JSON Schema validator in `voyager-platform` `testImplementation`, `com.networknt:json-schema-validator`
+pinned to exactly 3.0.7 (approved by the owner on 2026-10-09; design, decision 5). It validates the shipped maps and cups and
+the test fixtures.
 - `voyager-api`: no change. `MapDefinition`, `Ring` and their invariants stay as they are; derivation is a file-format concern and lives in the adapter.
 - `tools/map-converter`: `CatalogWriter` adds `schemaVersion`; its tests assert it.
 - `voyager-server`: shipped `maps/` and `cups/` files gain `$schema` and `schemaVersion`; `CommittedMapDataTest` asserts the new keys and that each `$schema` resolves.

@@ -5,25 +5,26 @@ Conventional Commits; all production work is `feat(platform)`, so there is one t
 
 ## 0. Prerequisite
 
-- [ ] 0.1 Confirm `unify-catalog-loading` has a proposal and that its problem snapshot matches design D5. If not, record the adapted shape in `design.md` before continuing.
+- [ ] 0.1 Confirm `unify-catalog-loading` is merged (or archived) and that `CatalogLoader.read` returns `CatalogReading` with `CatalogProblem`s as designed in D5. Verify: `CatalogLoaderTest` of that change is green on `main`.
+- [ ] 0.2 Confirm `name-both-cup-switches` is merged, so the `ambiguous` text already names both switches. Verify: `grep -n "DVOYAGER_CUP" voyager-server/src/main/java/net/elytrarace/voyager/server/game/exception/UnresolvedCupException.java` shows the Gradle form too.
 
 ## 1. Platform: per-file problems and the cross-catalogue check
 
-- [ ] 1.1 Red: `JsonCupCatalogTest.unparseableCupFileIsReportedAndDoesNotAbortTheRead`. A directory with one valid and one malformed cup file yields the valid cup and one problem naming the file.
-- [ ] 1.2 Red: `JsonCupCatalogTest.emptyOrUnreadableCupDirectoryStillAbortsTheRead`. Keeps today's `UnreadableCatalogException`.
-- [ ] 1.3 Green: adopt the `unify-catalog-loading` snapshot (or the minimal seam from D5) in `CatalogDirectory` and `JsonCupCatalog`. Expose `fileCount()`.
+- [ ] 1.1 Red: `CatalogLoaderTest.unparseableCupFileIsReportedAndDoesNotAbortTheRead`. A directory with one valid and one malformed cup file gives a reading with the valid cup and one problem naming the file.
+- [ ] 1.2 Red: `CatalogLoaderTest.emptyOrUnreadableCupDirectoryStillAbortsTheRead`. Keeps today's `UnreadableCatalogException`.
+- [ ] 1.3 Green: expose `fileCount()` on `CatalogReading` (parsed plus problem files in `cups/`). Verify: 1.1 and 1.2 pass.
 - [ ] 1.4 Red: `CatalogConsistencyTest.selectedCupWithUnresolvedMapIsRefusedListingOnlyItsEntries`.
 - [ ] 1.5 Red: `CatalogConsistencyTest.unselectedCupWithUnresolvedMapIsReturnedNotThrown`.
 - [ ] 1.6 Red: `CatalogConsistencyTest.consistentCupsReturnNoProblems`.
 - [ ] 1.7 Green: implement the selected-cup check and the returned list of other-cup problems (D4). Message built with `formatted`.
-- [ ] 1.8 Refactor: remove the old all-cups `requireEveryCupMapResolves` once no caller remains.
+- [ ] 1.8 Refactor: remove the old all-cups `requireEveryCupMapResolves` once no caller remains. Verify: `unify-catalog-loading` `load` still throws the same first problem for maps.
 
 ## 2. Server: selection rules
 
-- [ ] 2.1 Red: `CupResolutionTest.unnamedSelectionIsAmbiguousWhenAMalformedSecondFileExists`. (D2)
+- [ ] 2.1 Red: `CupResolutionTest.unnamedSelectionIsAmbiguousWhenAMalformedSecondFileExists`, asserting that the message names both cup file names, `-Pcup=` and `-DVOYAGER_CUP=`. (D2, owner decision 2026-10-09)
 - [ ] 2.2 Red: `CupResolutionTest.namedSelectionOfAMalformedFileNamesThatFile`. (D3)
 - [ ] 2.3 Red: `CupResolutionTest.unknownNamedSelectionKeepsTheNoSuchCupMessage`.
-- [ ] 2.4 Green: implement D2 and D3 in `game/CupResolution` and `game/exception/UnresolvedCupException`. Do not change the `ambiguous` text (see `name-both-cup-switches`).
+- [ ] 2.4 Green: implement D2 and D3 in `game/CupResolution` and `game/exception/UnresolvedCupException`. Append the cup file names to the existing `ambiguous` text; keep the switch wording from `name-both-cup-switches`.
 
 ## 3. Server: boot wiring and the warning
 
@@ -40,7 +41,7 @@ Conventional Commits; all production work is `feat(platform)`, so there is one t
 
 - [ ] 4.1 Add a `docs/` operations note: what the boot warning means and how to fix an unplayable cup. Diátaxis how-to, English.
 - [ ] 4.2 Run `./gradlew :voyager-platform:test :voyager-server:test :voyager-fitness:test`, then `./gradlew build`, both trees. All must pass.
-- [ ] 4.3 Ask the owner the two open questions in `design.md`. Record the answers, or leave them open in the PR text.
+- [ ] 4.3 Record the owner's answers (2026-10-09: D2 refuse, see `design.md`). Ask the owner only D6 (cup `mode` default); leave it open in the PR text.
 
 ## 5. Ship
 
