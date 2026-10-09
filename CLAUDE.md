@@ -40,6 +40,14 @@ rebuild reaches a flyable build with a green Vanilla trace suite.
 - **Version Catalog**: declared programmatically in `settings.gradle.kts`. Do not add
   `gradle/libs.versions.toml`.
 
+## Semantic Anchors
+
+Prompts, specs, ADRs, agent definitions and OpenSpec artifacts name established concepts with their
+exact catalog names (for example "Red/Green TDD"), and never paraphrase them. The list of anchors and
+how Voyager applies each one lives in `docs/reference/semantic-anchors.md`; do not restate it here.
+
+The architecture direction is "Vertical Slice Architecture (VSA)" combined with "Clean Architecture".
+
 ## Build Commands
 
 ```bash

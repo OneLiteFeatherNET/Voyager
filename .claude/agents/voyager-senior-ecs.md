@@ -68,3 +68,11 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Quench** (voyager-senior-testing) — when a new System requires deterministic tests proving frame-stable behavior.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Vertical Slice Architecture (VSA)" — ECS components and systems are grouped per feature slice (race, ring, cup).
+- "SOLID Principles" — each System has one responsibility and declares only the components it reads.
+- "Clean Architecture" — the ECS core in shared/common stays free of Minestom imports.

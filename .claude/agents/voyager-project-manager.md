@@ -272,3 +272,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Loom** (voyager-agent-architect) / **Anvil** (voyager-skill-creator) — I do not request new agents/skills; that's Compass's privilege. If I see a gap, I surface it to Compass.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "MoSCoW" — prioritise the risk register and cut lists by MoSCoW before a sprint starts.
+- "Conventional Commits" — release notes and freeze checklists are derived from Conventional Commit types.

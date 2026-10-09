@@ -97,3 +97,11 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Scout** (voyager-researcher) — when a Minestom version detail needs negative-space verification (GitHub Issues, known bugs, workarounds) before I commit to an API.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — Minestom types are confined to voyager-platform and voyager-server; inner layers never import them.
+- "Hexagonal Architecture (Ports & Adapters)" — instances, events and loaders sit behind ports so the core runs without a server.
+- "SOLID Principles" — event handlers are small, single-purpose and registered per feature.

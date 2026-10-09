@@ -65,3 +65,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Glint** is me — peers listed above are my most common hand-offs when the task crosses into physics, psychology, or platform-API depth.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists — Pulse reviews every HUD touch.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Hexagonal Architecture (Ports & Adapters)" — Adventure text, scoreboards and BossBars are adapters; game code emits events, not chat strings.
+- "Vertical Slice Architecture (VSA)" — HUD and feedback features (ring hit, countdown, results) ship as vertical slices.
