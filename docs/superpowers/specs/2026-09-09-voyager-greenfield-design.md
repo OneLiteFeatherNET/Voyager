@@ -1219,6 +1219,11 @@ disappears — both sides read and write the same format with the same library.
 redesigned. This requires its own research epic before E6 is planned and is deliberately
 not resolved in this document.
 
+**Authoring model (2026-10-09).** The first slice of the setup server places disc rings from
+the builder's pose and stores drafts in the game's own map format. Its decision record is
+[ADR-0018](../../decisions/0018-pose-placement-authoring-model-for-setup.md); research 005 and
+the spike record 006 are its inputs. The stored geometry stays the disc of `Ring`.
+
 ## Testing strategy
 
 | Layer | Approach |

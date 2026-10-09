@@ -95,6 +95,7 @@ include("voyager-physics")
 include("voyager-race")
 include("voyager-platform")
 include("voyager-server")
+include("voyager-setup")
 include("voyager-fitness")
 
 // Tooling that is not part of the rebuild's module graph.
