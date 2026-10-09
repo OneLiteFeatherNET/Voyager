@@ -30,7 +30,7 @@ context: |
 
 rules:
   proposal:
-    - Name the Conventional Commits type and scope the change ships under (e.g. feat(race)).
+    - 'Name the Conventional Commits type and scope the change ships under, e.g. feat(race).'
     - A change that mixes types is two changes; split it.
     - Name the vertical slice(s) the change touches and state what is out of scope.
     - If the change alters a decision in the greenfield design spec, say which one (e.g. D10).
@@ -52,4 +52,4 @@ operations:
       - Run ./gradlew build (both trees) before marking the change done.
   archive:
     guidance:
-      - Archive commit message is "docs(openspec): archive <change-name>" unless shipped with the implementation.
+      - 'Archive commit message is "docs(openspec): archive <change-name>" unless shipped with the implementation.'
