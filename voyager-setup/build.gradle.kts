@@ -63,3 +63,24 @@ tasks.register<JavaExec>("runSetupDev") {
     args(host.get(), port.get())
     standardInput = System.`in`
 }
+
+// Spike sources (src/spike): Minestom 26.2 API checks behind docs/research/006. They are not part of the
+// test task, which runs on every build; the spike task runs them on demand.
+val spike: SourceSet by sourceSets.creating
+configurations.named(spike.implementationConfigurationName) {
+    extendsFrom(configurations.testImplementation.get())
+}
+configurations.named(spike.runtimeOnlyConfigurationName) {
+    extendsFrom(configurations.testRuntimeOnly.get())
+}
+spike.compileClasspath += sourceSets.main.get().output
+spike.runtimeClasspath += sourceSets.main.get().output
+
+tasks.register<Test>("spike") {
+    group = "verification"
+    description = "Runs the Minestom 26.2 spikes in src/spike (display transform, wand identity, void world)."
+    testClassesDirs = spike.output.classesDirs
+    classpath = spike.runtimeClasspath
+    useJUnitPlatform()
+    systemProperty("minestom.inside-test", "true")
+}
