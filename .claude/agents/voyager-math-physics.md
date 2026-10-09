@@ -85,4 +85,4 @@ Steer by these anchors and use the names exactly as written; the full project vo
 
 - "Clean Architecture" — geometry and spline code is pure and lives in the API-free core, with no Minestom types.
 - "Red/Green TDD" — each formula starts as a failing numeric test with an explicit tolerance.
-- "F.I.R.S.T. (project term)" — tests are fast, independent and repeatable with fixed inputs.
+- F.I.R.S.T. (project term) — tests are fast, independent and repeatable with fixed inputs.

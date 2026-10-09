@@ -80,4 +80,4 @@ Steer by these anchors and use the names exactly as written; the full project vo
 - "Red/Green TDD" — every change starts with a failing test that is then made green and refactored.
 - "Testing Pyramid" — many fast unit tests, fewer integration tests, few in-process server tests.
 - "TDD, Chicago School" — prefer state-based assertions on real collaborators in unit tests.
-- "F.I.R.S.T. (project term)" — tests are fast, independent, repeatable and self-validating, with injected Clock and @TempDir.
+- F.I.R.S.T. (project term) — tests are fast, independent, repeatable and self-validating, with injected Clock and @TempDir.

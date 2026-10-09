@@ -3,7 +3,7 @@
 Semantic anchors are established terms, such as methodologies and principles, that name a whole
 concept in one phrase. When a prompt names an anchor exactly, an LLM loads the full concept behind
 it, so one word replaces a paragraph of description. The catalog lives at
-[Semantic Anchors](https://llm-coding.github.io/Semantic-Anchors/) and holds about 234 terms.
+[Semantic Anchors](https://llm-coding.github.io/Semantic-Anchors/) and holds about 235 terms.
 
 Voyager uses anchors as a shared vocabulary for humans and agents.
 
@@ -45,11 +45,12 @@ Voyager uses anchors as a shared vocabulary for humans and agents.
 |---|---|---|
 | Testing Pyramid | Many unit tests in `voyager-api`, with architecture rules at the top in `voyager-fitness`. | `voyager-api/src/test`, `voyager-fitness/src/test` |
 | Red/Green TDD | New behaviour starts with a failing test, then production code. | Review (F.I.R.S.T. criteria, see below) |
+| TDD, Chicago School | Applied in unit tests: state-based assertions on real collaborators, no mocks of our own types. Matches F.I.R.S.T. | `.claude/agents/voyager-senior-testing.md` |
 | Arrange-Act-Assert (AAA) | Test bodies follow arrange, act, assert in that order. | `voyager-api/src/test` |
 | Property-Based Testing | Candidate for numeric code in `math` and `physics`. | Not yet applied |
 
-Candidates, not yet applied: "TDD, Chicago School" and "TDD, London School". Pick one per module
-before writing tests for it.
+Candidate, not yet applied: "TDD, London School" (mock-based interaction tests). Use it only after a
+module decides to test interactions instead of state, and record that choice in the module's docs.
 
 ## Requirements
 
@@ -82,7 +83,7 @@ Candidates for analysing a problem before a fix. None is applied yet.
 
 - Five Whys (Ohno)
 - Premortem
-- Chesterton’s Fence (before removing old code in the tree being replaced)
+- Chesterton's Fence (before removing old code in the tree being replaced)
 
 ## Project terms not in the catalog
 
