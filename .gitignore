@@ -13,6 +13,7 @@ node_modules/
 # invisible to git.
 /run/data/
 /run/worlds/
+/run-setup/
 *.war
 *.nar
 *.ear
