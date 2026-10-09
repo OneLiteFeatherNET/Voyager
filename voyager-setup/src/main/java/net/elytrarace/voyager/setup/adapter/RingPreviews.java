@@ -4,7 +4,6 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.setup.mapsetup.RingOrientation;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
@@ -62,10 +61,10 @@ public final class RingPreviews {
         Entity display = new Entity(EntityType.BLOCK_DISPLAY);
         BlockDisplayMeta meta = (BlockDisplayMeta) display.getEntityMeta();
         meta.setBlockState(Block.LIGHT_BLUE_STAINED_GLASS);
-        meta.setScale(new Vec(2 * radius, 2 * radius, DISC_THICKNESS));
+        meta.setScale(Vectors.toMinestom(new Vec3(2 * radius, 2 * radius, DISC_THICKNESS)));
         meta.setLeftRotation(new float[] {(float) rotation.x(), (float) rotation.y(), (float) rotation.z(),
                 (float) rotation.w()});
-        meta.setTranslation(new Vec(offset.x(), offset.y(), offset.z()));
+        meta.setTranslation(Vectors.toMinestom(offset));
         display.setInstance(instance, Vectors.toMinestom(ring.center()).asPos());
         return display;
     }
