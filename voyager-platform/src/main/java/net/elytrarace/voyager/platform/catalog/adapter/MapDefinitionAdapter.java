@@ -75,7 +75,7 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
                 rings,
                 Duration.ofMillis(Math.round(seconds * 1000.0)),
                 boostConfig(json, what),
-                guideLine(json, what, context));
+                guideLine(json, what));
     }
 
     /**
@@ -108,7 +108,7 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
      * 1588-block course at once. A file that omitted the block and silently got somebody's idea of a
      * sensible look-ahead would be a course tuned by a constant nobody can find from the data.
      */
-    private static GuideLine guideLine(JsonObject json, String what, JsonDeserializationContext context) {
+    static GuideLine guideLine(JsonObject json, String what) {
         JsonObject line = JsonFields.object(
                 JsonFields.required(json, "guideLine", what), "%s field 'guideLine'".formatted(what));
         String where = "%s guide line".formatted(what);
@@ -118,8 +118,8 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
             JsonObject guide = JsonFields.object(point, "%s guide point".formatted(what));
             int orderIndex = JsonFields.integer(guide, "orderIndex", where);
             points.add(new GuidePoint(orderIndex,
-                    context.deserialize(JsonFields.required(guide, "position",
-                            "%s guide point %s".formatted(what, orderIndex)), Vec3.class)));
+                    Vec3Adapter.read(JsonFields.required(guide, "position",
+                            "%s guide point %s".formatted(what, orderIndex)))));
         }
         return new GuideLine(points,
                 JsonFields.integer(line, "lookAheadRings", where),
@@ -135,7 +135,7 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
      * find in the data — and the design's whole claim about configuration is that there is one type
      * and the value lives in the file.
      */
-    private static BoostConfig boostConfig(JsonObject json, String what) {
+    static BoostConfig boostConfig(JsonObject json, String what) {
         JsonObject boost = JsonFields.object(
                 JsonFields.required(json, "boostConfig", what), "%s field 'boostConfig'".formatted(what));
         String where = "%s boost config".formatted(what);
