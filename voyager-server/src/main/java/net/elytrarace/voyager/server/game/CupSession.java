@@ -179,7 +179,7 @@ public final class CupSession implements RacePhaseListener {
      *
      * <p>A factory rather than a public constructor because two of those three are package-private. They are
      * implementation detail of how a cup is played, not of how one is wired, and keeping them out of
-     * the signature keeps the Guice module from having to know they exist.
+     * the signature keeps the composition root from having to know they exist.
      *
      * @param step the wall-clock duration one {@link #tick()} stands for; 50 ms on a 20 TPS server.
      *     It has to match the interval this is actually ticked at or every phase length and every
