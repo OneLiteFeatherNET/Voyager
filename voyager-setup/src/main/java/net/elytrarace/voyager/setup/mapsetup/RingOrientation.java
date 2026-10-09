@@ -61,6 +61,21 @@ public abstract class RingOrientation {
         return vector.plus(uv.scale(2.0 * rotation.w())).plus(uuv.scale(2.0));
     }
 
+    /**
+     * The translation that centres a disc's model on its entity origin. A display draws its block from the corner of
+     * the unit cube, scales it, and rotates it about the origin, so the disc's middle sits at
+     * {@code rotate(rotation, (radius, radius, thickness / 2))} and the offset is the negation of that.
+     *
+     * @param rotation  the rotation of the disc
+     * @param radius    the radius of the disc
+     * @param thickness the thickness of the disc along its normal
+     * @return the translation to apply to the display
+     */
+    @Contract(pure = true, value = "_, _, _ -> new")
+    public static Vec3 discOffset(Quaternion rotation, double radius, double thickness) {
+        return rotate(rotation, new Vec3(radius, radius, thickness / 2)).scale(-1.0);
+    }
+
     private static Vec3 cross(Vec3 a, Vec3 b) {
         return new Vec3(
                 a.y() * b.z() - a.z() * b.y(),

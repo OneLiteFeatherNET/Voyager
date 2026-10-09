@@ -15,17 +15,20 @@ public final class MapSession {
 
     private final DraftStore store;
     private final Instance instance;
+    private final RingPreviews previews;
     private MapDraft draft;
 
     /**
      * @param store    the store the draft is saved through
      * @param draft    the draft as last saved
-     * @param instance the world the builder stands in
+     * @param instance the world the builder stands in; the previews of the draft are shown in it at once
      */
     public MapSession(DraftStore store, MapDraft draft, Instance instance) {
         this.store = store;
         this.draft = draft;
         this.instance = instance;
+        this.previews = new RingPreviews(instance);
+        previews.show(draft.rings());
     }
 
     public MapId id() {
@@ -49,5 +52,11 @@ public final class MapSession {
     public void commit(MapDraft next) {
         store.save(next);
         draft = next;
+        previews.show(next.rings());
+    }
+
+    /** Removes the previews of this map from its world; the draft is already saved. */
+    public void close() {
+        previews.clear();
     }
 }

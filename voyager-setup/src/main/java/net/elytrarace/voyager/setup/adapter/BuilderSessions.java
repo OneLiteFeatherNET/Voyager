@@ -17,11 +17,19 @@ public final class BuilderSessions {
         return Optional.ofNullable(sessions.get(builder));
     }
 
+    /** Opens a session for the builder, closing the one it replaces. */
     public void open(UUID builder, MapSession session) {
-        sessions.put(builder, session);
+        MapSession previous = sessions.put(builder, session);
+        if (previous != null) {
+            previous.close();
+        }
     }
 
+    /** Closes the builder's session and removes its previews. */
     public void forget(UUID builder) {
-        sessions.remove(builder);
+        MapSession previous = sessions.remove(builder);
+        if (previous != null) {
+            previous.close();
+        }
     }
 }
