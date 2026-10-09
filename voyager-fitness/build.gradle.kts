@@ -11,6 +11,7 @@ dependencies {
     testImplementation(project(":voyager-race"))
     testImplementation(project(":voyager-platform"))
     testImplementation(project(":voyager-server"))
+    testImplementation(project(":voyager-setup"))
     testImplementation(libs.archunit.junit5)
 }
 
