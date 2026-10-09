@@ -62,7 +62,7 @@ public final class CatalogValidation {
         CatalogReading reading = CatalogLoader.read(dataDirectory);
         List<ConfigProblem> problems = new ArrayList<>();
         for (CatalogProblem problem : reading.problems()) {
-            problems.add(error(keyOf(problem), problem.source().toAbsolutePath().toString(), problem.message()));
+            problems.add(problemOf(problem));
         }
         problems.addAll(unresolvedCupEntries(reading));
         problems.addAll(worldProblems(reading, worldsRoot, health));
@@ -121,6 +121,14 @@ public final class CatalogValidation {
             String reason = Optional.ofNullable(exception.getMessage()).orElse(exception.getClass().getName());
             return Optional.of("world '%s' could not be read: %s".formatted(world, reason));
         }
+    }
+
+    /**
+     * One catalogue problem as the line the configuration check and a reload both print. Package-private: the
+     * reloader reports the same problems in the same form.
+     */
+    static ConfigProblem problemOf(CatalogProblem problem) {
+        return error(keyOf(problem), problem.source().toAbsolutePath().toString(), problem.message());
     }
 
     private static ConfigProblem error(String key, String source, String message) {
