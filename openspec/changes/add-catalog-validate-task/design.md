@@ -51,12 +51,16 @@ Arrows point inward. `voyager-platform` never imports `voyager-server`. `ConfigP
    - **Needs no client.** No player connects and no tick loop runs. It does need Minestom's registries, because Falco attaches
      to a Minestom `Instance`. The check therefore calls the registry initialisation of Minestom and nothing else. No socket
      is bound. This relaxes the earlier wording "never starts Minestom" to "never starts the server".
-   - **Runtime cost.** Not measured when this design was written. Each deep check reads every chunk the check selects from the
-     world's region files, so its time grows with the number of region files. Reference size: the shipped world
-     `ElytraraceBlueAndRed` holds 9,429 chunks (`MapInstances` javadoc). Task 4.6 measures the wall time of `validateCatalog`
-     on that world and records it here before the PR opens. If the measured cost is more than the owner accepts for a run
-     task, the owner chooses between the skip switch (already approved) and narrowing the chunk set to the chunks that cover
-     each map's rings and spawn. Narrowing is not decided here.
+   - **Runtime cost (measured 2026-10-10, task 4.8).** Machine: AMD Ryzen 9 5900XT, 16 cores, 62 GB RAM, Linux, OpenJDK
+     25.0.3, the run tasks' JVM flags, `java -jar` on the shadow jar. Median of three runs on the shipped world
+     `ElytraraceBlueAndRed` (9,429 chunks read, 21 region files, 0 errors, 0 unknown blocks):
+     - full check: 3,134 ms;
+     - start-up to the catalogue check (JVM start, Minestom registry initialisation, catalogue read; the run
+       fails at the missing directories so the deep step does not run): 1,382 ms. The two are not separated; the
+       registry share is inside this figure;
+     - deep step alone, from Falco's open to close in the log: 1.72 to 1.80 s, median 1.78 s.
+     Gradle adds about 1 s on top of each figure. Reference size and the chunk-set rule are unchanged; narrowing
+     the chunk set is still an owner choice, not decided here.
    - Failure policy: a deep-check exception (for example Falco failing to open a region file) becomes an `ERROR` for that world
      with the exception's message, and the other worlds are still checked.
 4. **Exit codes.** 0 for no errors, including warnings. 1 for at least one error. No other codes, so CI can rely on the two values.
