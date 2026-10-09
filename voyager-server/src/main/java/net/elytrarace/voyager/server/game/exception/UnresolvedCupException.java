@@ -29,7 +29,7 @@ public final class UnresolvedCupException extends RuntimeException {
      */
     public static UnresolvedCupException ambiguous(Collection<String> available) {
         return new UnresolvedCupException(
-                "the catalogue holds %s cups %s and none was chosen; set -DVOYAGER_CUP=<name>"
+                "the catalogue holds %s cups %s and none was chosen; set -Pcup=<name> (Gradle) or -DVOYAGER_CUP=<name> (java -jar)"
                         .formatted(available.size(), sorted(available)));
     }
 
