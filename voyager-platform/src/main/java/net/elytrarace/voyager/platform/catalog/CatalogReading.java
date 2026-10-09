@@ -2,10 +2,11 @@ package net.elytrarace.voyager.platform.catalog;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /**
- * What one read of a data directory found: the definitions that parsed, the cup files it saw, and every
- * problem found.
+ * What one read of a data directory found: the definitions that parsed, the cup files it saw, the file
+ * each accepted definition came from, and every problem found.
  *
  * <p>Nothing here is thrown. {@link CatalogLoader#load} is the caller that refuses on the first
  * problem; boot reads {@link #cupFileProblems()} and {@link #catalogueProblems()} separately, because a
@@ -16,12 +17,17 @@ import java.util.List;
  * @param problems every problem found, in the order cups, maps; each directory's in sorted filename
  *     order
  * @param cupFiles every {@code .json} file in {@code cups/}, parsed or not, in sorted filename order
+ * @param mapFilesByName the file each accepted map was read from, by the name it declares
+ * @param cupFilesByName the file each accepted cup was read from, by the name it declares
  */
-public record CatalogReading(CatalogSnapshot snapshot, List<CatalogProblem> problems, List<Path> cupFiles) {
+public record CatalogReading(CatalogSnapshot snapshot, List<CatalogProblem> problems, List<Path> cupFiles,
+        Map<String, Path> mapFilesByName, Map<String, Path> cupFilesByName) {
 
     public CatalogReading {
         problems = List.copyOf(problems);
         cupFiles = List.copyOf(cupFiles);
+        mapFilesByName = Map.copyOf(mapFilesByName);
+        cupFilesByName = Map.copyOf(cupFilesByName);
     }
 
     /**

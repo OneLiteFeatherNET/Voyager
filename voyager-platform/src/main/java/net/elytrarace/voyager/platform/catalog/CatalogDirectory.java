@@ -61,6 +61,15 @@ final class CatalogDirectory {
     }
 
     /**
+     * {@link #readAll(Path, String, Class, Function, List, List, Map)} for a caller that does not need the
+     * source file of each definition.
+     */
+    static <T> Map<String, T> readAll(Path directory, String kind, Class<T> type, Function<T, String> nameOf,
+            List<CatalogProblem> problems, List<Path> filesFound) {
+        return readAll(directory, kind, type, nameOf, problems, filesFound, new LinkedHashMap<>());
+    }
+
+    /**
      * Reads a whole directory, recording every problem instead of stopping at the first.
      *
      * <p>A missing directory, an unreadable one and an empty one are each one problem, and the
@@ -76,12 +85,12 @@ final class CatalogDirectory {
      * @param problems  the list every problem is appended to, in the order it was found
      * @param filesFound the list every {@code .json} file found is appended to, in sorted order, whether
      *                  it parsed or not
+     * @param sourceFiles the map each accepted definition's name is put into, with the file it came from
      * @return the definitions that parsed, by name, in filename order
      */
     static <T> Map<String, T> readAll(Path directory, String kind, Class<T> type, Function<T, String> nameOf,
-            List<CatalogProblem> problems, List<Path> filesFound) {
+            List<CatalogProblem> problems, List<Path> filesFound, Map<String, Path> sourceFiles) {
         Map<String, T> definitions = new LinkedHashMap<>();
-        Map<String, Path> sources = new LinkedHashMap<>();
 
         List<Path> files;
         try {
@@ -100,12 +109,12 @@ final class CatalogDirectory {
                 continue;
             }
             String name = nameOf.apply(definition);
-            Path existing = sources.get(name);
+            Path existing = sourceFiles.get(name);
             if (existing != null) {
                 problems.add(new CatalogProblem(file, new DuplicateCatalogEntryException(kind, name, existing, file)));
                 continue;
             }
-            sources.put(name, file);
+            sourceFiles.put(name, file);
             definitions.put(name, definition);
         }
         return Collections.unmodifiableMap(definitions);

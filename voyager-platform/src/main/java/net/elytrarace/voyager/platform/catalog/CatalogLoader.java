@@ -6,6 +6,7 @@ import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupMapExcepti
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,11 +66,15 @@ public final class CatalogLoader {
     public static CatalogReading read(Path dataDirectory) {
         List<CatalogProblem> problems = new ArrayList<>();
         List<Path> cupFiles = new ArrayList<>();
+        Map<String, Path> cupFilesByName = new LinkedHashMap<>();
+        Map<String, Path> mapFilesByName = new LinkedHashMap<>();
         Map<String, CupDefinition> cups = CatalogDirectory.readAll(
-                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems, cupFiles);
+                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems, cupFiles,
+                cupFilesByName);
         Map<String, MapDefinition> maps = CatalogDirectory.readAll(
                 dataDirectory.resolve(MAPS), "map", MapDefinition.class, MapDefinition::name, problems,
-                new ArrayList<>());
-        return new CatalogReading(new CatalogSnapshot(maps, cups), problems, cupFiles);
+                new ArrayList<>(), mapFilesByName);
+        return new CatalogReading(new CatalogSnapshot(maps, cups), problems, cupFiles, mapFilesByName,
+                cupFilesByName);
     }
 }

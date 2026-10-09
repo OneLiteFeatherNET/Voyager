@@ -2,6 +2,7 @@ package net.elytrarace.voyager.server;
 
 import io.avaje.inject.BeanScope;
 
+import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
@@ -11,6 +12,7 @@ import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
 import net.elytrarace.voyager.server.command.RaceCommand;
+import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.game.CupSession;
 import net.elytrarace.voyager.server.game.Racers;
@@ -23,6 +25,7 @@ import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.item.Material;
 import net.minestom.server.timer.ExecutionType;
 import net.minestom.server.timer.TaskSchedule;
@@ -30,9 +33,12 @@ import net.minestom.server.timer.TaskSchedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * The composition root: the one {@code main} in the rebuild, and the only place that knows all of it
@@ -99,14 +105,19 @@ public final class VoyagerServer {
     }
 
     public static void main(String[] args) {
-        ServerSettings settings;
-        try {
-            settings = ServerSettings.fromEnvironment(args);
-        } catch (RuntimeException exception) {
-            LOGGER.error("Voyager refused to start: {}", exception.getMessage());
-            System.exit(1);
+        // The validate-and-exit run returns before any game-server state is touched. See configCheck.
+        if (Boolean.getBoolean(ConfigCheck.CHECK_PROPERTY)) {
+            System.exit(configCheck(args, ConfigCheck.systemProperties(), VoyagerServer::initialisedInstances, System.out));
             return;
         }
+        // Settings first, and all of them: a bad directory and a bad port are both reported, not the first.
+        Map<String, String> properties = ConfigCheck.systemProperties();
+        List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties);
+        if (!settingsProblems.isEmpty()) {
+            refuse(settingsProblems);
+            return;
+        }
+        ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
 
         // Before anything can say anything — and the flag is checked before the bundle is even read,
@@ -144,6 +155,15 @@ public final class VoyagerServer {
         LOGGER.info("Loaded {} message(s) from {}", translations.size(), VoyagerTranslator.BUNDLE_RESOURCE);
 
         MinecraftServer server = MinecraftServer.init();
+
+        // Every problem that concerns the played cup, the maps or the worlds, at once, before the graph is
+        // built: boot refuses with the whole report rather than the first problem the graph trips over. A
+        // broken cup that is not played is not in it; the cup bean logs that one as a warning.
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings, MinecraftServer.getInstanceManager());
+        if (!refusals.isEmpty()) {
+            refuse(refusals);
+            return;
+        }
 
         BeanScope graph;
         try {
@@ -186,6 +206,42 @@ public final class VoyagerServer {
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
         server.start(settings.host(), settings.port());
         LOGGER.info("Voyager started. {}", session.describe().trim());
+    }
+
+    /**
+     * The validate-and-exit run, returning its exit code: 0 for a configuration with no error, 1 for one with
+     * any. The report goes to {@code out}, one line per problem.
+     *
+     * <p>The settings are checked before Minestom is initialised, so a refused configuration never touches
+     * it. {@code instances} is asked for only after that, and the world check is the one caller that uses
+     * it. Nothing here starts the game server or binds a socket.
+     *
+     * @param instances supplies the instance manager of an initialised Minestom server; {@link #main} passes
+     *     the one that initialises it
+     */
+    static int configCheck(String[] args, Map<String, String> properties,
+            Supplier<InstanceManager> instances, PrintStream out) {
+        List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties);
+        if (!settingsProblems.isEmpty()) {
+            return ConfigCheck.report(settingsProblems, out);
+        }
+        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out);
+    }
+
+    /** Initialises Minestom's registries, which the world loader needs, and returns the instance manager. */
+    private static InstanceManager initialisedInstances() {
+        MinecraftServer.init();
+        return MinecraftServer.getInstanceManager();
+    }
+
+    /**
+     * Ends a refused start with the problems logged, one per line, and exit status 1.
+     */
+    private static void refuse(List<ConfigProblem> problems) {
+        for (ConfigProblem problem : problems) {
+            LOGGER.error("Voyager refused to start: {}", problem.format());
+        }
+        System.exit(1);
     }
 
     /**

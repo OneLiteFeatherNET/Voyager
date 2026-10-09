@@ -242,6 +242,27 @@ class MapInstancesTest {
         }
     }
 
+    /**
+     * The deep check reads every chunk the region files cover, so a world nothing has asked for yet
+     * reports as read after it, without the test naming a chunk. The fixture writes three chunks in
+     * two region files; the count is the three chunks with data, not the 2048 the two files span.
+     */
+    @Test
+    void readEveryChunkReadsEveryChunkTheRegionFilesCover(Env env) throws IOException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+
+        try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
+            instances.forWorld(TRACK);
+            assertThat(instances.healthOf(TRACK).isSound()).isFalse();
+
+            instances.readEveryChunk(TRACK);
+            WorldHealth health = instances.healthOf(TRACK);
+
+            assertThat(health.chunksLoaded()).isEqualTo(3L);
+            assertThat(health.isSound()).isTrue();
+        }
+    }
+
     @Test
     void diagnosticsForHandsOutTheLoadersOwnCounters(Env env) throws IOException {
         writeWorld(env, TRACK, TRACK_BLOCKS);
