@@ -6,7 +6,6 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -60,7 +59,7 @@ class MapDraftTest {
         assertThat(draft.rings()).hasSize(1);
     }
 
-    private static MapDraft draft(String id, String world, @Nullable Vec3 spawn, List<Ring> rings, double seconds) {
+    private static MapDraft draft(String id, String world, Vec3 spawn, List<Ring> rings, double seconds) {
         return new MapDraft(new MapId(id), world, spawn, rings, seconds,
                 new BoostConfig(30, 40), new GuideLine(List.of(), 2, 1.0));
     }
