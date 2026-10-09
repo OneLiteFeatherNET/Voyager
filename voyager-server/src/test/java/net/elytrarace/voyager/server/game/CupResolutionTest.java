@@ -76,6 +76,7 @@ class CupResolutionTest {
         assertThatThrownBy(() -> CupResolution.resolve(cups, Optional.empty()))
                 .isInstanceOf(UnresolvedCupException.class)
                 .hasMessageContaining("VOYAGER_CUP")
+                .hasMessageContaining("-Pcup=")
                 .hasMessageContaining("winter_series")
                 .hasMessageContaining("alpha_series");
     }

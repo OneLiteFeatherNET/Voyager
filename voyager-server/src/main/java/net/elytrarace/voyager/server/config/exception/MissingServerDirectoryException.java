@@ -42,11 +42,17 @@ public final class MissingServerDirectoryException extends RuntimeException {
      * {@code +}.
      */
     private static String message(String purpose, Path path) {
-        String property = "VOYAGER_%s_PATH".formatted(purpose.toUpperCase(Locale.ROOT));
+        String systemProperty = "VOYAGER_%s_PATH".formatted(purpose.toUpperCase(Locale.ROOT));
+        String gradleProperty = switch (purpose) {
+            case DATA -> "dataPath";
+            case WORLDS -> "worldsPath";
+            default -> throw new IllegalArgumentException("unknown purpose '%s'".formatted(purpose));
+        };
         return """
                 the %s directory does not exist: %s \
-                (set -D%s=<dir>, or run from the directory the relative default resolves against)"""
-                .formatted(purpose, path.toAbsolutePath(), property);
+                (set -D%s=<dir> (java -jar) or -P%s=<dir> (Gradle), \
+                or run from the directory the relative default resolves against)"""
+                .formatted(purpose, path.toAbsolutePath(), systemProperty, gradleProperty);
     }
 
     /** {@link #DATA} or {@link #WORLDS}. */
