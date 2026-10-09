@@ -991,3 +991,11 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Beacon** (voyager-social-media) — when a release pipeline delivers a version that needs community-facing announcement content.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Conventional Commits" — CI and build changes ship under feat/fix/ci/build scopes that release tooling can read.
+- "Testing Pyramid" — CI runs the fast unit layer on every push, integration and server tests on top.
+- "MADR" — infrastructure decisions such as the Kubernetes move are recorded as MADR records in docs/decisions/

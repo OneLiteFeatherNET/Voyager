@@ -63,3 +63,12 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Piston** (voyager-java-performance) — when a service is on a hot path and JVM-level profiling or allocation reduction is required.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — services depend on domain interfaces; adapters to shared/ and platform code live at the edge.
+- "Hexagonal Architecture (Ports & Adapters)" — repositories and external systems are ports with replaceable adapters.
+- "SOLID Principles" — interface plus implementation pairs keep each service focused.
+- "Red/Green TDD" — write the failing service test before the implementation.

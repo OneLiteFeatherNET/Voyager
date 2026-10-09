@@ -72,3 +72,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Scribe** (voyager-tech-writer) — when a Paper<->Minestom data-format change requires a migration guide for admins.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Hexagonal Architecture (Ports & Adapters)" — Bukkit and Paper imports are adapters around the setup logic, easy to map to ports.
+- "Testing Pyramid" — MockBukkit tests form the base of the setup plugin's test pyramid.

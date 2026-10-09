@@ -69,3 +69,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Piston** (voyager-java-performance) — when a paper includes JMH benchmarks or async-profiler findings that must be reproducible.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically — I am Lumen.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "arc42 Architecture Documentation" — research papers map their context, decisions and runtime views to arc42 sections.
+- "Diátaxis Framework" — method notes are written as explanation, results as reference.
