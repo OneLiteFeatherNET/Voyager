@@ -18,6 +18,7 @@ import static net.elytrarace.voyager.platform.catalog.CatalogFixtures.cup;
 import static net.elytrarace.voyager.platform.catalog.CatalogFixtures.map;
 import static net.elytrarace.voyager.platform.catalog.CatalogFixtures.write;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * The whole-catalogue check: every problem in one result, each with the absolute file and the field.
@@ -104,6 +105,25 @@ class CatalogValidationTest {
         assertThat(problems).singleElement().satisfies(problem -> assertThat(problem.message())
                 .contains("holds no region data"));
         assertThat(health.asked).doesNotContain("EmptyWorld");
+    }
+
+    /**
+     * A dangling cup entry is reported in the same result as a malformed file elsewhere. The check mode owes
+     * the operator every problem at once, so one broken file must not hide the cross-catalogue check.
+     */
+    @Test
+    void aDanglingCupEntryIsReportedAlongsideAMalformedOtherFile() throws IOException {
+        write(data().resolve("maps"), "a-broken.json", "");
+        map(data().resolve("maps"), "blue.json", "blue", "ElytraraceBlue");
+        cup(data().resolve("cups"), "c.json", "c", "RACE", "blue", "no-such-map");
+        worldWithRegionData("ElytraraceBlue");
+
+        List<ConfigProblem> problems = CatalogValidation.validate(data(), worlds(), new CountingHealth());
+
+        // Sorted by source, so cups/ comes before maps/.
+        assertThat(problems).extracting(ConfigProblem::source, ConfigProblem::key).containsExactly(
+                tuple(data().resolve("cups/c.json").toAbsolutePath().toString(), "no-such-map"),
+                tuple(data().resolve("maps/a-broken.json").toAbsolutePath().toString(), "file"));
     }
 
     @Test
