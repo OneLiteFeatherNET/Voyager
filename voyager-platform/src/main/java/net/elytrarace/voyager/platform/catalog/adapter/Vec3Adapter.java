@@ -23,6 +23,16 @@ public final class Vec3Adapter implements JsonDeserializer<Vec3> {
 
     @Override
     public Vec3 deserialize(JsonElement element, Type type, JsonDeserializationContext context) {
+        return read(element);
+    }
+
+    /**
+     * Reads one vector without a Gson context, for adapters that are not themselves registered with Gson.
+     *
+     * @param element the vector object
+     * @return the vector, every component required
+     */
+    static Vec3 read(JsonElement element) {
         JsonObject json = JsonFields.object(element, "a vector");
         return new Vec3(
                 JsonFields.number(json, "x", "a vector"),

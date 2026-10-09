@@ -3,8 +3,7 @@ package net.elytrarace.voyager.server.inject;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 
-import net.elytrarace.voyager.api.race.CupDefinition;
-import net.elytrarace.voyager.api.race.MapCatalog;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
@@ -33,10 +32,10 @@ public final class RaceBeans {
      * how much time a tick stands for and the server's cannot drift apart.
      */
     @Bean
-    CupSession cupSession(CupDefinition cup, MapCatalog maps, MapInstances instances,
+    CupSession cupSession(CatalogHolder catalog, MapInstances instances,
             MapTransition transition, RaceRuns runs, FlightTracker tracker, RaceTimings timings,
             Supplier<Collection<Player>> players) {
-        return CupSession.create(cup, maps, instances, transition, runs, tracker, timings,
+        return CupSession.create(catalog, instances, transition, runs, tracker, timings,
                 Duration.ofMillis(MinecraftServer.TICK_MS), players);
     }
 }

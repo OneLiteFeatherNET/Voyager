@@ -119,9 +119,21 @@ public final class VoyagerTranslator implements Translator {
      * @throws MalformedMessageBundleException if it cannot be read, or a value uses {@code {0}}
      */
     public static VoyagerTranslator fromClasspath() {
-        try (InputStream bundle = VoyagerTranslator.class.getResourceAsStream(BUNDLE_RESOURCE)) {
+        return fromClasspath(BUNDLE_RESOURCE);
+    }
+
+    /**
+     * Reads one bundle from the classpath by its resource path, so that a server with its own messages, such as the
+     * setup server, loads its own file. Named once, as {@link #fromClasspath()} is.
+     *
+     * @param resource the resource path, starting with {@code /}
+     * @throws MissingMessageBundleException if the bundle is not on the classpath
+     * @throws MalformedMessageBundleException if it cannot be read, or a value uses {@code {0}}
+     */
+    public static VoyagerTranslator fromClasspath(String resource) {
+        try (InputStream bundle = VoyagerTranslator.class.getResourceAsStream(resource)) {
             if (bundle == null) {
-                throw new MissingMessageBundleException(BUNDLE_RESOURCE);
+                throw new MissingMessageBundleException(resource);
             }
             Properties properties = new Properties();
             properties.load(new java.io.InputStreamReader(bundle, StandardCharsets.UTF_8));
@@ -129,7 +141,7 @@ public final class VoyagerTranslator implements Translator {
             properties.forEach((key, value) -> sources.put(String.valueOf(key), String.valueOf(value)));
             return of(sources);
         } catch (IOException exception) {
-            throw MalformedMessageBundleException.unreadable(BUNDLE_RESOURCE, exception);
+            throw MalformedMessageBundleException.unreadable(resource, exception);
         }
     }
 

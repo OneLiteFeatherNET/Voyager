@@ -7,10 +7,8 @@ import com.google.gson.JsonParseException;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.catalog.adapter.CupDefinitionAdapter;
 import net.elytrarace.voyager.platform.catalog.adapter.MapDefinitionAdapter;
-import net.elytrarace.voyager.platform.catalog.adapter.RingAdapter;
 import net.elytrarace.voyager.platform.catalog.adapter.Vec3Adapter;
 import net.elytrarace.voyager.platform.catalog.exception.DuplicateCatalogEntryException;
 import net.elytrarace.voyager.platform.catalog.exception.MalformedCatalogFileException;
@@ -30,11 +28,11 @@ import java.util.stream.Stream;
 
 /**
  * Reads every {@code .json} file in a directory into definitions, keyed by the name each one
- * declares.
+ * declares, and records each way a directory can be wrong as a {@link CatalogProblem}.
  *
- * <p>Shared by both catalogues so that the four ways a directory can be wrong — it is not there, it
- * holds nothing, a file will not parse, two files claim one name — are answered in one place and
- * with one shape of message. Two copies of this would be two chances for one of them to answer a
+ * <p>Shared by the map and cup halves of {@link CatalogLoader} so that the four ways a directory can
+ * be wrong — it is not there, it holds nothing, a file will not parse, two files claim one name — are
+ * answered in one place and with one shape of message. Two copies of this would be two chances for one of them to answer a
  * question with an empty {@code Optional} instead.
  *
  * <p>Files are read in sorted order so that a duplicate name names the same two files on every
@@ -46,13 +44,13 @@ final class CatalogDirectory {
     private static final String JSON_SUFFIX = ".json";
 
     /**
-     * One Gson for both catalogues, built once. Registering the adapters here rather than inside
-     * each catalogue is what makes {@code RingAdapter} able to ask for a {@code Vec3} through the
-     * deserialisation context instead of constructing its own reader.
+     * One Gson for both halves of the loader, built once. Registering the adapters here rather than inside
+     * each catalogue lets {@code MapDefinitionAdapter} ask for a {@code Vec3} through the deserialisation
+     * context instead of constructing its own reader. A ring is not registered: it is never a top-level
+     * value, and {@code MapDefinitionAdapter} reads each one with its position in the array.
      */
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(Vec3.class, new Vec3Adapter())
-            .registerTypeAdapter(Ring.class, new RingAdapter())
             .registerTypeAdapter(MapDefinition.class, new MapDefinitionAdapter())
             .registerTypeAdapter(CupDefinition.class, new CupDefinitionAdapter())
             .create();
@@ -61,30 +59,60 @@ final class CatalogDirectory {
     }
 
     /**
-     * Reads a whole directory eagerly.
+     * {@link #readAll(Path, String, Class, Function, List, List, Map)} for a caller that does not need the
+     * source file of each definition.
+     */
+    static <T> Map<String, T> readAll(Path directory, String kind, Class<T> type, Function<T, String> nameOf,
+            List<CatalogProblem> problems, List<Path> filesFound) {
+        return readAll(directory, kind, type, nameOf, problems, filesFound, new LinkedHashMap<>());
+    }
+
+    /**
+     * Reads a whole directory, recording every problem instead of stopping at the first.
+     *
+     * <p>A missing directory, an unreadable one and an empty one are each one problem, and the
+     * definitions it does hold are still read where there are any. A file that will not parse is one
+     * problem for that file, and the reading goes on. A name two files both declare keeps the first
+     * file's definition and records the second file as the problem.
      *
      * @param directory the directory holding one definition per {@code .json} file
      * @param kind      what these definitions are, for the error messages — {@code "map"} or
      *                  {@code "cup"}
      * @param type      the definition type to parse each file into
      * @param nameOf    how to read a definition's name, which becomes its key
-     * @return the definitions by name, in filename order
-     * @throws UnreadableCatalogException      if the directory is absent, unreadable, or holds no
-     *                                         {@code .json} file
-     * @throws MalformedCatalogFileException   if any file is not a valid definition
-     * @throws DuplicateCatalogEntryException  if two files declare the same name
+     * @param problems  the list every problem is appended to, in the order it was found
+     * @param filesFound the list every {@code .json} file found is appended to, in sorted order, whether
+     *                  it parsed or not
+     * @param sourceFiles the map each accepted definition's name is put into, with the file it came from
+     * @return the definitions that parsed, by name, in filename order
      */
-    static <T> Map<String, T> readAll(Path directory, String kind, Class<T> type, Function<T, String> nameOf) {
+    static <T> Map<String, T> readAll(Path directory, String kind, Class<T> type, Function<T, String> nameOf,
+            List<CatalogProblem> problems, List<Path> filesFound, Map<String, Path> sourceFiles) {
         Map<String, T> definitions = new LinkedHashMap<>();
-        Map<String, Path> sources = new LinkedHashMap<>();
 
-        for (Path file : jsonFilesIn(directory, kind)) {
-            T definition = parse(file, type);
-            String name = nameOf.apply(definition);
-            Path existing = sources.put(name, file);
-            if (existing != null) {
-                throw new DuplicateCatalogEntryException(kind, name, existing, file);
+        List<Path> files;
+        try {
+            files = jsonFilesIn(directory, kind);
+        } catch (UnreadableCatalogException exception) {
+            problems.add(new CatalogProblem(directory, exception));
+            return Collections.unmodifiableMap(definitions);
+        }
+        filesFound.addAll(files);
+        for (Path file : files) {
+            T definition;
+            try {
+                definition = parse(file, type);
+            } catch (UnreadableCatalogException | MalformedCatalogFileException exception) {
+                problems.add(new CatalogProblem(file, exception));
+                continue;
             }
+            String name = nameOf.apply(definition);
+            Path existing = sourceFiles.get(name);
+            if (existing != null) {
+                problems.add(new CatalogProblem(file, new DuplicateCatalogEntryException(kind, name, existing, file)));
+                continue;
+            }
+            sourceFiles.put(name, file);
             definitions.put(name, definition);
         }
         return Collections.unmodifiableMap(definitions);

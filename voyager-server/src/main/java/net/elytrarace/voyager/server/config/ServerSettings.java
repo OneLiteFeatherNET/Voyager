@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Everything the server needs before it can resolve a single object: where to listen, where the map
@@ -25,7 +26,7 @@ import java.util.Optional;
  * be worse than an inherited wart.
  *
  * <p>The catalogue is a directory of {@code .json} files, not jar entries:
- * {@code JsonMapCatalog} and {@code JsonCupCatalog} take a {@link Path} and read a directory, which
+ * {@code CatalogLoader} takes a {@link Path} and reads a directory, which
  * works from an unpacked distribution and not from inside a shaded jar. The build installs the
  * shipped catalogue into the data directory (see {@code prepareRunData} in this module's
  * {@code build.gradle.kts}); the server never writes there. A race server reads its map data and
@@ -62,10 +63,14 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The property that turns on dev mode. */
     public static final String DEV_MODE_PROPERTY = "voyager.dev";
 
-    private static final String DEFAULT_HOST = "0.0.0.0";
-    private static final int DEFAULT_PORT = 25565;
-    private static final String DEFAULT_DATA_PATH = "run/data";
-    private static final String DEFAULT_WORLDS_PATH = "run/worlds";
+    /** The host bound when none is given. */
+    static final String DEFAULT_HOST = "0.0.0.0";
+    /** The port bound when none is given. */
+    static final int DEFAULT_PORT = 25565;
+    /** The data directory when {@link #DATA_PATH_PROPERTY} is not set. */
+    static final String DEFAULT_DATA_PATH = "run/data";
+    /** The worlds directory when {@link #WORLDS_PATH_PROPERTY} is not set. */
+    static final String DEFAULT_WORLDS_PATH = "run/worlds";
 
     /**
      * The lobby, race and results lengths a production run uses: {@link RaceTimings#DEFAULT} — a
@@ -87,9 +92,7 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
         if (host.isBlank()) {
             throw new IllegalArgumentException("host must not be blank");
         }
-        if (port < 1 || port > 65535) {
-            throw new IllegalArgumentException("port must be in 1..65535, was %s".formatted(port));
-        }
+        requirePort(port);
         requireDirectory(dataPath, MissingServerDirectoryException.DATA);
         requireDirectory(worldsPath, MissingServerDirectoryException.WORLDS);
     }
@@ -106,15 +109,23 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
      * @throws IllegalArgumentException if the port is not a number in range
      */
     public static ServerSettings fromEnvironment(String[] args) {
+        return fromProperties(args, System::getProperty);
+    }
+
+    /**
+     * {@link #fromEnvironment} with the properties supplied, so the configuration check can read the
+     * same settings from a map in a test. Same defaults, same parsing, same refusals.
+     */
+    static ServerSettings fromProperties(String[] args, Function<String, @Nullable String> property) {
         String host = args.length > 0 ? args[0] : DEFAULT_HOST;
         int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
         return new ServerSettings(
                 host,
                 port,
-                Path.of(System.getProperty(DATA_PATH_PROPERTY, DEFAULT_DATA_PATH)),
-                Path.of(System.getProperty(WORLDS_PATH_PROPERTY, DEFAULT_WORLDS_PATH)),
-                Optional.ofNullable(blankToNull(System.getProperty(CUP_PROPERTY))),
-                Boolean.getBoolean(DEV_MODE_PROPERTY));
+                Path.of(valueOr(property.apply(DATA_PATH_PROPERTY), DEFAULT_DATA_PATH)),
+                Path.of(valueOr(property.apply(WORLDS_PATH_PROPERTY), DEFAULT_WORLDS_PATH)),
+                Optional.ofNullable(blankToNull(property.apply(CUP_PROPERTY))),
+                Boolean.parseBoolean(property.apply(DEV_MODE_PROPERTY)));
     }
 
     /**
@@ -132,7 +143,12 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
                 cupName.orElse("<the only one>"), devMode);
     }
 
-    private static int parsePort(String raw) {
+    /**
+     * The port a command-line argument names.
+     *
+     * @throws IllegalArgumentException if the text is not a number
+     */
+    static int parsePort(String raw) {
         try {
             return Integer.parseInt(raw);
         } catch (NumberFormatException exception) {
@@ -140,10 +156,33 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
         }
     }
 
+    /**
+     * The one range rule for a port, shared by the constructor and the configuration check.
+     *
+     * @throws IllegalArgumentException if the port is outside 1..65535
+     */
+    static void requirePort(int port) {
+        if (port < 1 || port > 65535) {
+            throw new IllegalArgumentException("port must be in 1..65535, was %s".formatted(port));
+        }
+    }
+
+    /**
+     * Whether a directory the server needs is there: the one predicate both the constructor and the
+     * configuration check ask, so they cannot disagree on what "there" means.
+     */
+    static boolean isDirectory(Path path) {
+        return Files.isDirectory(path);
+    }
+
     private static void requireDirectory(Path path, String purpose) {
-        if (!Files.isDirectory(path)) {
+        if (!isDirectory(path)) {
             throw new MissingServerDirectoryException(purpose, path);
         }
+    }
+
+    private static String valueOr(@Nullable String value, String fallback) {
+        return value == null ? fallback : value;
     }
 
     private static @Nullable String blankToNull(@Nullable String value) {

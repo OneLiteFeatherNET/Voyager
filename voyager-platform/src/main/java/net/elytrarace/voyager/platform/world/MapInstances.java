@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.world;
 
+import net.elytrarace.voyager.platform.catalog.WorldOpener;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
@@ -19,6 +20,9 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -57,11 +61,13 @@ import java.util.stream.Stream;
  * whole server down. {@link #healthOf(String)} logs the first time it sees a non-zero count so the
  * hole is reported instead of merely being there.
  */
-public final class MapInstances implements AutoCloseable {
+public final class MapInstances implements AutoCloseable, WorldOpener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MapInstances.class);
 
-    private static final String REGION_FILE_SUFFIX = ".mca";
+    /** {@code r.<regionX>.<regionZ>.mca}, the name Anvil gives each region file. */
+    private static final Pattern REGION_FILE = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
+    private static final int CHUNKS_PER_REGION = 32;
 
     private final InstanceManager instanceManager;
     private final Path worldsRoot;
@@ -115,6 +121,104 @@ public final class MapInstances implements AutoCloseable {
     public WorldHealth healthOf(String world) {
         LoadedWorld entry = load(world);
         return report(world, entry.diagnostics(), entry.unknownBlocksReported());
+    }
+
+    /**
+     * Reads every chunk the world's region files cover, so {@link #healthOf(String)} reports what the
+     * world really holds rather than what happened to be asked for.
+     *
+     * <p>A chunk with no data behind it is counted as skipped, not as an error, so the walk over a
+     * sparse region file costs little more than the chunks that exist. Used by the configuration check
+     * only; the race server loads chunks as players reach them.
+     *
+     * @param world the world directory's name
+     * @throws UnknownWorldException if no region data sits behind the name
+     * @throws java.util.concurrent.CompletionException if a chunk read fails outright
+     */
+    public void readEveryChunk(String world) {
+        LoadedWorld entry = load(world);
+        Path regionDirectory = entry.loader().regionDirectory();
+        if (!Files.isDirectory(regionDirectory)) {
+            return;
+        }
+        try (Stream<Path> files = Files.list(regionDirectory)) {
+            for (Path file : files.sorted().toList()) {
+                Matcher region = REGION_FILE.matcher(file.getFileName().toString());
+                if (!region.matches()) {
+                    continue;
+                }
+                int firstChunkX = Integer.parseInt(region.group(1)) * CHUNKS_PER_REGION;
+                int firstChunkZ = Integer.parseInt(region.group(2)) * CHUNKS_PER_REGION;
+                for (int chunkX = firstChunkX; chunkX < firstChunkX + CHUNKS_PER_REGION; chunkX++) {
+                    for (int chunkZ = firstChunkZ; chunkZ < firstChunkZ + CHUNKS_PER_REGION; chunkZ++) {
+                        entry.instance().loadChunk(chunkX, chunkZ).join();
+                    }
+                }
+            }
+        } catch (IOException exception) {
+            throw new UncheckedIOException("cannot list the region directory %s".formatted(regionDirectory), exception);
+        }
+    }
+
+    @Override
+    public boolean holdsRegionData(String world) {
+        if (loaded.containsKey(world)) {
+            return true;
+        }
+        FalcoAnvilLoader probe = buildLoader(worldsRoot.resolve(world));
+        try {
+            return WorldFolders.holdsRegionData(probe.regionDirectory());
+        } finally {
+            closeQuietly(probe, world);
+        }
+    }
+
+    @Override
+    public boolean isOpen(String world) {
+        return loaded.containsKey(world);
+    }
+
+    @Override
+    public void open(String world) {
+        load(world);
+    }
+
+    /**
+     * Unregisters and closes one world. Both steps run even if the first fails, as {@link #close()} does, and
+     * a failure is rethrown after both.
+     */
+    @Override
+    public void discard(String world) {
+        LoadedWorld entry = loaded.remove(world);
+        if (entry == null) {
+            return;
+        }
+        RuntimeException failure = null;
+        try {
+            instanceManager.unregisterInstance(entry.instance());
+        } catch (RuntimeException exception) {
+            failure = exception;
+        }
+        try {
+            entry.loader().close();
+        } catch (IOException exception) {
+            failure = also(failure, new UncheckedIOException(
+                    "the loader for world '%s' could not be closed".formatted(world), exception));
+        } catch (RuntimeException exception) {
+            failure = also(failure, exception);
+        }
+        if (failure != null) {
+            throw failure;
+        }
+    }
+
+    @Override
+    public boolean regionDataChanged(String world) {
+        LoadedWorld entry = loaded.get(world);
+        if (entry == null) {
+            return false;
+        }
+        return !regionFingerprint(entry.loader().regionDirectory()).equals(entry.fingerprint());
     }
 
     /**
@@ -249,21 +353,18 @@ public final class MapInstances implements AutoCloseable {
     }
 
     private LoadedWorld load(String world) {
-        return loaded.computeIfAbsent(world, this::open);
+        return loaded.computeIfAbsent(world, this::openWorld);
     }
 
-    private LoadedWorld open(String world) {
-        Path worldRoot = worldsRoot.resolve(world);
+    private LoadedWorld openWorld(String world) {
         AnvilDiagnostics diagnostics = new AnvilDiagnostics();
-        FalcoAnvilLoader loader = FalcoAnvilLoader.builder()
-                .diagnostics(diagnostics)
-                .build(worldRoot, DimensionType.OVERWORLD.key());
+        FalcoAnvilLoader loader = buildLoader(worldsRoot.resolve(world), diagnostics);
 
         try {
             // Falco's own resolution rather than a second derivation of the directory layout here:
             // the loader picks the dimension layout or the legacy one depending on what exists, and
             // a check that re-derived that choice could disagree with the loader it is guarding.
-            if (!holdsRegionData(loader.regionDirectory())) {
+            if (!WorldFolders.holdsRegionData(loader.regionDirectory())) {
                 throw new UnknownWorldException(world, loader.regionDirectory(), loader.legacyLayout());
             }
         } catch (RuntimeException failure) {
@@ -274,15 +375,37 @@ public final class MapInstances implements AutoCloseable {
         InstanceContainer instance = instanceManager.createInstanceContainer(DimensionType.OVERWORLD);
         instance.setChunkLoader(loader);
         instance.enableAutoChunkLoad(true);
-        return new LoadedWorld(instance, loader, diagnostics, new AtomicBoolean());
+        return new LoadedWorld(instance, loader, diagnostics, new AtomicBoolean(),
+                regionFingerprint(loader.regionDirectory()));
     }
 
-    private static boolean holdsRegionData(Path regionDirectory) {
+    private static FalcoAnvilLoader buildLoader(Path worldRoot) {
+        return buildLoader(worldRoot, new AnvilDiagnostics());
+    }
+
+    private static FalcoAnvilLoader buildLoader(Path worldRoot, AnvilDiagnostics diagnostics) {
+        return FalcoAnvilLoader.builder()
+                .diagnostics(diagnostics)
+                .build(worldRoot, DimensionType.OVERWORLD.key());
+    }
+
+    /**
+     * The name, size and modification time of every region file, sorted by name. A change to any of them
+     * is a change to the world on disk. Missing directory gives an empty fingerprint.
+     */
+    private static String regionFingerprint(Path regionDirectory) {
         if (!Files.isDirectory(regionDirectory)) {
-            return false;
+            return "";
         }
-        try (Stream<Path> entries = Files.list(regionDirectory)) {
-            return entries.anyMatch(entry -> entry.getFileName().toString().endsWith(REGION_FILE_SUFFIX));
+        try (Stream<Path> files = Files.list(regionDirectory)) {
+            return files.sorted().map(file -> {
+                try {
+                    return "%s:%d:%d".formatted(file.getFileName(), Files.size(file),
+                            Files.getLastModifiedTime(file).toMillis());
+                } catch (IOException exception) {
+                    throw new UncheckedIOException("cannot stat region file %s".formatted(file), exception);
+                }
+            }).collect(Collectors.joining("|"));
         } catch (IOException exception) {
             throw new UncheckedIOException("cannot list the region directory %s".formatted(regionDirectory), exception);
         }
@@ -297,6 +420,6 @@ public final class MapInstances implements AutoCloseable {
     }
 
     private record LoadedWorld(Instance instance, FalcoAnvilLoader loader, AnvilDiagnostics diagnostics,
-                               AtomicBoolean unknownBlocksReported) {
+                               AtomicBoolean unknownBlocksReported, String fingerprint) {
     }
 }

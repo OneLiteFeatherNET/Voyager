@@ -4,32 +4,29 @@ import io.avaje.inject.Bean;
 import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 
-import net.elytrarace.voyager.api.race.CupDefinition;
-import net.elytrarace.voyager.platform.catalog.CatalogConsistency;
-import net.elytrarace.voyager.platform.catalog.JsonCupCatalog;
-import net.elytrarace.voyager.platform.catalog.JsonMapCatalog;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.CatalogReloader;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
-import net.elytrarace.voyager.server.game.CupResolution;
+import net.elytrarace.voyager.server.game.CatalogReloadService;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceManager;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.function.Supplier;
 
 /**
- * The services of the server that are not the race's own: Minestom's instance manager, the two
- * catalogues and the ports they answer, the cup with its consistency check, the world handles, and
- * the live roster.
+ * The services of the server that are not the race's own: Minestom's instance manager, the catalogue
+ * holder the race reads, the world handles, and the live roster.
  *
  * <p>This is the half of the graph that serves the server rather than the race. Every bean is a
- * singleton, which is avaje's default for a {@code @Bean}. The {@code MapCatalog} and {@code CupCatalog}
- * ports have no bean of their own; the catalogue beans already serve them (see below).
+ * singleton, which is avaje's default for a {@code @Bean}.
  *
  * <h2>Constructors are called here, not annotated</h2>
  *
@@ -44,9 +41,10 @@ import java.util.function.Supplier;
  * {@code init}. {@code VoyagerServer.main} calls {@code init} before it opens the graph, and that is the
  * only correct order.
  *
- * <p>{@link #cup} runs the cross-catalogue consistency check before it hands a cup back, so a cup
- * naming a map nothing provides fails while the graph is being built rather than the first time that
- * map comes up in the rotation, minutes after anybody was watching.
+ * <p>{@link #catalogHolder} refuses boot on the catalogue's first problem and on the played cup's own
+ * problems, so a cup naming a map nothing provides fails while the graph is being built rather than the
+ * first time that map comes up in the rotation. A broken cup that is not played does not refuse; the
+ * reader logs it once.
  */
 @Factory
 public final class ServerBeans {
@@ -56,27 +54,40 @@ public final class ServerBeans {
         return MinecraftServer.getInstanceManager();
     }
 
+    /** The clock a catalogue load is stamped with. The tests of the reloader use a fixed one instead. */
     @Bean
-    JsonMapCatalog jsonMapCatalog(@External ServerSettings settings) {
-        return new JsonMapCatalog(settings.dataPath().resolve("maps"));
+    Clock clock() {
+        return Clock.systemUTC();
     }
 
+    /**
+     * Reads the data directory into a catalogue, and refuses boot with the first problem, as boot always has. The
+     * world opener is {@link MapInstances}, which is built below and is the same instance the race uses.
+     */
     @Bean
-    JsonCupCatalog jsonCupCatalog(@External ServerSettings settings) {
-        return new JsonCupCatalog(settings.dataPath().resolve("cups"));
+    CatalogReloader catalogReloader(Clock clock, MapInstances instances) {
+        return new CatalogReloader(clock, instances);
     }
 
-    // No bean for the MapCatalog and CupCatalog ports. avaje registers a bean under every interface
-    // its class implements, so the two JSON catalogue beans already answer a MapCatalog or CupCatalog
-    // request with the same singleton. A @Bean that returned the same instance again would register it
-    // a second time, and every JsonMapCatalog or JsonCupCatalog request would then be ambiguous.
-    // Everything that plays a race is handed a port; only the cup resolution and the consistency
-    // check take the concrete type, because only they have to enumerate.
-
+    /**
+     * The one catalogue holder. It is built from the boot catalogue, which is the only value a bean of a
+     * catalogue type would ever freeze; every consumer reads the holder, and the holder changes content and never
+     * identity.
+     */
     @Bean
-    CupDefinition cup(JsonCupCatalog cups, JsonMapCatalog maps, @External ServerSettings settings) {
-        CatalogConsistency.requireEveryCupMapResolves(cups, maps);
-        return CupResolution.resolve(cups, settings.cupName());
+    CatalogHolder catalogHolder(CatalogReloader reloader, @External ServerSettings settings) {
+        return new CatalogHolder(reloader.loadInitial(settings.dataPath(), settings.cupName()));
+    }
+
+    /**
+     * The operator's reload: re-reads the data directory on a virtual thread, so the tick never waits for it, and
+     * offers an applied catalogue to the holder.
+     */
+    @Bean
+    CatalogReloadService catalogReloadService(CatalogReloader reloader, CatalogHolder holder,
+            @External ServerSettings settings) {
+        return new CatalogReloadService(() -> reloader.reload(settings.dataPath(), settings.cupName()), holder,
+                Thread::startVirtualThread);
     }
 
     @Bean

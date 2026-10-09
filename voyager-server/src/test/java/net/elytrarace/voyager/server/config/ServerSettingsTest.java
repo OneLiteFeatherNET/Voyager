@@ -90,6 +90,24 @@ class ServerSettingsTest {
                 .hasMessageContaining(MissingServerDirectoryException.WORLDS);
     }
 
+    @Test
+    void namesTheGradlePropertyForAMissingDataDirectory() {
+        Path missing = root.resolve("no-catalogue-here");
+
+        assertThatThrownBy(() -> new ServerSettings("0.0.0.0", 25565, missing, worlds(), Optional.empty(), false))
+                .isInstanceOf(MissingServerDirectoryException.class)
+                .hasMessageContaining("-PdataPath=");
+    }
+
+    @Test
+    void namesTheGradlePropertyForAMissingWorldsDirectory() {
+        Path missing = root.resolve("no-racetracks-here");
+
+        assertThatThrownBy(() -> new ServerSettings("0.0.0.0", 25565, data(), missing, Optional.empty(), false))
+                .isInstanceOf(MissingServerDirectoryException.class)
+                .hasMessageContaining("-PworldsPath=");
+    }
+
     /**
      * A file is not a directory. The catalogue reads a directory of {@code .json} definitions, so a
      * path pointing at one of those definitions rather than at the folder holding them is the

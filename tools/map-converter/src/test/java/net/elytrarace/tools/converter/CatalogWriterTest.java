@@ -128,6 +128,33 @@ class CatalogWriterTest {
     }
 
     @Test
+    void writesSchemaVersionOneForMapsAndCups() {
+        assertThat(CatalogWriter.toJson(MAP, List.of()).get("schemaVersion").getAsInt()).isEqualTo(1);
+        CupDefinition cup = new CupDefinition("test_cup", List.of("elytraraceblueandred"), GameMode.RACE);
+        assertThat(CatalogWriter.toJson(cup, List.of()).get("schemaVersion").getAsInt()).isEqualTo(1);
+    }
+
+    @Test
+    void writesEveryRingIndexExplicitlyEqualToItsPosition() {
+        JsonObject json = CatalogWriter.toJson(MAP, List.of());
+
+        assertThat(json.getAsJsonArray("rings")).hasSize(2);
+        for (int position = 0; position < 2; position++) {
+            assertThat(json.getAsJsonArray("rings").get(position).getAsJsonObject().get("index").getAsInt())
+                    .as("index of the ring at position %s", position)
+                    .isEqualTo(position);
+        }
+    }
+
+    @Test
+    void writesTheWorldExplicitlyEvenWhenItEqualsTheName() {
+        MapDefinition sameName = new MapDefinition("sky-drift", "sky-drift", MAP.spawn(), MAP.rings(),
+                MAP.referenceTime(), MAP.boostConfig(), MAP.guideLine());
+
+        assertThat(CatalogWriter.toJson(sameName, List.of()).get("world").getAsString()).isEqualTo("sky-drift");
+    }
+
+    @Test
     void writesAnEmptyPointsArrayForACourseWithNoGuides() {
         MapDefinition noGuides = new MapDefinition(MAP.name(), MAP.world(), MAP.spawn(), MAP.rings(),
                 MAP.referenceTime(), MAP.boostConfig(), new GuideLine(List.of(), 2, 1.0));

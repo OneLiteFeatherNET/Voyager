@@ -59,6 +59,10 @@ dependencies {
     // are never silently on two different Minestom versions.
     testImplementation("net.minestom:testing:$minestomRebuildVersion")
 
+    // Test-scope JSON Schema check for map and cup files (see the json-schema-validator pin in
+    // settings.gradle.kts). Never on runtimeClasspath: the adapters are the only runtime check.
+    testImplementation(libs.json.schema.validator)
+
     // Xerus resolves its version from the aonyx-bom platform, same as the tree being replaced
     // (see server/build.gradle.kts). The BOM constraint has to be `api`, not `implementation`:
     // voyager-server consumes voyager-platform's unversioned `libs.xerus` transitively, and an

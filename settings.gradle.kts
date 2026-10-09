@@ -43,6 +43,14 @@ dependencyResolutionManagement {
             library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
             library("archunit.junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
+            // JSON Schema 2020-12 validator, test scope only (voyager-platform): it checks the committed map and
+            // cup files and the test fixtures against schema/*.schema.json. It is never on a main classpath, so
+            // the loader stays the only runtime check. Pinned to 3.0.7, released 2026-08-20. 3.0.8 was released
+            // 2026-09-30, inside the two-week cooling window before 2026-10-09, so it is not used yet.
+            // Approved by the owner on 2026-10-09 (openspec change simplify-map-data-format, design decision 5).
+            version("json-schema-validator", "3.0.7")
+            library("json.schema.validator", "com.networknt", "json-schema-validator").versionRef("json-schema-validator")
+
             version("junit", "6.1.1")
             version("assertj", "3.27.7")
             library("junit.bom", "org.junit", "junit-bom").versionRef("junit")
@@ -87,6 +95,7 @@ include("voyager-physics")
 include("voyager-race")
 include("voyager-platform")
 include("voyager-server")
+include("voyager-setup")
 include("voyager-fitness")
 
 // Tooling that is not part of the rebuild's module graph.

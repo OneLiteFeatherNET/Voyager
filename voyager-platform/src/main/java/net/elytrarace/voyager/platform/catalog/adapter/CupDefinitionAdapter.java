@@ -20,7 +20,7 @@ import java.util.List;
  *
  * <p>The order of {@code mapNames} is the rotation, so the list is built in file order and never
  * sorted. The names are not resolved here — a cup that names an unknown map is a cross-catalogue
- * question, answered once by {@code CatalogConsistency} where both catalogues are in hand.
+ * question, answered once by {@code CatalogConsistency} where both directories are in hand.
  */
 @ApiStatus.Internal
 public final class CupDefinitionAdapter implements JsonDeserializer<CupDefinition> {
@@ -30,6 +30,7 @@ public final class CupDefinitionAdapter implements JsonDeserializer<CupDefinitio
         JsonObject json = JsonFields.object(element, "a cup");
         String name = JsonFields.string(json, "name", "a cup");
         String what = "cup '%s'".formatted(name);
+        SchemaVersion.read(json, what);
 
         List<String> mapNames = new ArrayList<>();
         for (JsonElement mapName : JsonFields.array(json, "mapNames", what)) {

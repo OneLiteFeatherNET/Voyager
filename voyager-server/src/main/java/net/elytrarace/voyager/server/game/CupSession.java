@@ -2,11 +2,12 @@ package net.elytrarace.voyager.server.game;
 
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
-import net.elytrarace.voyager.api.race.MapCatalog;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalBrackets;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
@@ -112,8 +113,7 @@ public final class CupSession implements RacePhaseListener {
     /** {@link #preparedMapIndex} when no map of the current cup has been entered yet. */
     private static final int NO_MAP = -1;
 
-    private final CupDefinition cup;
-    private final MapCatalog maps;
+    private final CatalogHolder catalog;
     private final MapInstances instances;
     private final MapTransition transition;
     private final RaceRuns runs;
@@ -124,6 +124,18 @@ public final class CupSession implements RacePhaseListener {
     private final Duration step;
     private final Supplier<Collection<Player>> players;
     private final CupStandings standings = new CupStandings();
+
+    /**
+     * The cup being played: the boot cup until a round starts, then the cup of the catalogue that round pinned.
+     * Written only by {@link #start}.
+     */
+    private CupDefinition cup;
+
+    /**
+     * The catalogue the current round pinned in {@link #start}, or {@code null} before the first round. Every
+     * map a round enters comes from here, so a reload applied during the round cannot change it.
+     */
+    private @Nullable LoadedCatalog pinned;
 
     /**
      * The racing line, drawn per racer. Built here rather than injected for the same reason the three
@@ -156,11 +168,11 @@ public final class CupSession implements RacePhaseListener {
 
     private boolean skipRequested;
 
-    private CupSession(CupDefinition cup, MapCatalog maps, MapInstances instances, MapTransition transition,
+    private CupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition,
             RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts,
             RaceTimings timings, Duration step, Supplier<Collection<Player>> players) {
-        this.cup = cup;
-        this.maps = maps;
+        this.catalog = catalog;
+        this.cup = catalog.current().cup();
         this.instances = instances;
         this.transition = transition;
         this.runs = runs;
@@ -181,24 +193,34 @@ public final class CupSession implements RacePhaseListener {
      * implementation detail of how a cup is played, not of how one is wired, and keeping them out of
      * the signature keeps the composition root from having to know they exist.
      *
+     * @param catalog the holder whose current catalogue each {@link #start} pins
      * @param step the wall-clock duration one {@link #tick()} stands for; 50 ms on a 20 TPS server.
      *     It has to match the interval this is actually ticked at or every phase length and every
      *     recorded race time is scaled by the difference.
      */
-    public static CupSession create(CupDefinition cup, MapCatalog maps, MapInstances instances,
+    public static CupSession create(CatalogHolder catalog, MapInstances instances,
             MapTransition transition, RaceRuns runs, FlightTracker tracker, RaceTimings timings,
             Duration step, Supplier<Collection<Player>> players) {
         CurrentMapBlocks blocks = new CurrentMapBlocks();
         FireworkBoostTracker boosts = new FireworkBoostTracker();
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(players, boosts), tracker, new MinestomCollisionSpace(blocks));
-        return new CupSession(cup, maps, instances, transition, runs, flight, blocks, boosts, timings,
+        return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
                 step, players);
     }
 
-    /** The cup being played. */
+    /** The cup being played: the one the current round pinned, or the boot cup before the first round. */
     public CupDefinition cup() {
         return cup;
+    }
+
+    /**
+     * The catalogue the current round pinned, or the holder's current one before the first round.
+     * Package-private: the tests assert the pin, the game asks {@link #cup()}.
+     */
+    LoadedCatalog pinned() {
+        LoadedCatalog held = pinned;
+        return held != null ? held : catalog.current();
     }
 
     /** Whether a cup is currently running. */
@@ -226,6 +248,9 @@ public final class CupSession implements RacePhaseListener {
         if (previous != null && previous.isRunning()) {
             previous.finish();
         }
+        // The one place a pending catalogue becomes current, and the round then plays only what it pinned here.
+        pinned = catalog.promoteForNewRound();
+        cup = pinned.cup();
         standings.clear();
         lastSimulated.clear();
         // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
@@ -437,10 +462,10 @@ public final class CupSession implements RacePhaseListener {
         if (preparedMapIndex == mapIndex && held != null) {
             return held;
         }
-        MapDefinition map = maps.byName(mapName).orElseThrow(() -> new IllegalStateException(
-                ("cup '%s' plays a map named '%s' that the map catalogue does not hold; "
-                        + "CatalogConsistency.requireEveryCupMapResolves runs at boot and should have "
-                        + "refused this cup").formatted(cup.name(), mapName)));
+        MapDefinition map = pinned().snapshot().mapByName(mapName).orElseThrow(() -> new IllegalStateException(
+                ("cup '%s' plays a map named '%s' that the round's catalogue does not hold; "
+                        + "CatalogReloader checks the played cup's maps and should have refused this cup")
+                        .formatted(cup.name(), mapName)));
         currentMap = map;
         preparedMapIndex = mapIndex;
         Instance instance = instances.forWorld(map.world());
@@ -517,10 +542,11 @@ public final class CupSession implements RacePhaseListener {
     public String describe() {
         XerusPhaseDriver current = driver;
         if (current == null) {
-            return "cup '%s' (%s map(s), %s) — armed, waiting for the first player to join"
-                    .formatted(cup.name(), cup.mapNames().size(), cup.mode());
+            return "cup '%s' (%s map(s), %s) — armed, waiting for the first player to join%n%s"
+                    .formatted(cup.name(), cup.mapNames().size(), cup.mode(), catalogueLine());
         }
         StringBuilder text = new StringBuilder();
+        text.append(catalogueLine());
         text.append("collision world: %s%n".formatted(blocks.hasWorld() ? "attached" : "none"));
         text.append("cup '%s' %s — map %s/%s '%s', phase %s after %s, race clock %s (%s tick(s))%n".formatted(
                 cup.name(),
@@ -539,6 +565,18 @@ public final class CupSession implements RacePhaseListener {
                     standing.score().bestTime().map(CupSession::seconds).orElse("-")));
         }
         return text.toString();
+    }
+
+    /**
+     * The catalogue line of {@link #describe()}: when the pinned catalogue was read, and whether a reload is
+     * waiting for the next round.
+     */
+    private String catalogueLine() {
+        String line = "catalogue loaded %s%n".formatted(pinned().loadedAt());
+        if (catalog.pending().isPresent()) {
+            line += "  a reload waits for the next round%n";
+        }
+        return line;
     }
 
     /**

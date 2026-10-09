@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The setup server's logging: the same shape as voyager-server's log4j2.xml, with shutdownHook="disable"
+  for the same reason (see that file).
+
+  Log4j registers a JVM shutdown hook that tears the logging context down, and JVM shutdown hooks run
+  concurrently with each other. On the first SIGTERM this server took, the shutdown printed one line
+  and then nothing — not the final world health, not Minestom's own "server stopped successfully" —
+  because the appenders had already gone. Disabling the hook keeps the console appender alive until
+  the process actually exits, which is the only way the last thing a shutdown does can be read.
+-->
+<Configuration status="WARN" shutdownHook="disable">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=white, DEBUG=cyan, TRACE=blue} [%logger{36}] %msg%n%throwable" disableAnsi="false"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <!-- Minestom internals: reduce noise from packet/network layers -->
+        <Logger name="net.minestom.server.network" level="warn" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Logger name="net.elytrarace.voyager" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
