@@ -11,6 +11,7 @@ import net.elytrarace.voyager.platform.catalog.CatalogConsistency;
 import net.elytrarace.voyager.platform.catalog.CatalogLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
+import net.elytrarace.voyager.platform.catalog.CupResolution;
 import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupMapException;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
@@ -18,7 +19,7 @@ import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
-import net.elytrarace.voyager.server.game.CupResolution;
+
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceManager;

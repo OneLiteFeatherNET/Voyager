@@ -6,10 +6,10 @@ import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
+import net.elytrarace.voyager.platform.catalog.CupResolution;
+import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupException;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
-import net.elytrarace.voyager.server.game.CupResolution;
-import net.elytrarace.voyager.server.game.exception.UnresolvedCupException;
 
 import net.minestom.server.instance.InstanceManager;
 
