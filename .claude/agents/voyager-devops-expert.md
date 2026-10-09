@@ -998,4 +998,4 @@ Steer by these anchors and use the names exactly as written; the full project vo
 
 - "Conventional Commits" — CI and build changes ship under feat/fix/ci/build scopes that release tooling can read.
 - "Testing Pyramid" — CI runs the fast unit layer on every push, integration and server tests on top.
-- "ADR according to Nygard" — infrastructure decisions such as the Kubernetes move are recorded as short ADRs.
+- "MADR" — infrastructure decisions such as the Kubernetes move are recorded as MADR records in docs/decisions/
