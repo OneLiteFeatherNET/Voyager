@@ -16,6 +16,7 @@ import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerHandAnimationEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
@@ -90,6 +91,22 @@ class RingPreviewTest {
         assertThat(fixture.displays(left)).isEmpty();
     }
 
+    @Test
+    void aBuilderWhoDisconnectsTakesTheirPreviewsAndTheirSessionAway(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.enter("map new skyfortress");
+        fixture.seedRings(0, 10);
+        fixture.enter("map open skyfortress");
+        fixture.awaitPreviews(2);
+        Instance world = fixture.world();
+
+        env.process().eventHandler().call(new PlayerDisconnectEvent(fixture.builder()));
+        env.tick();
+
+        assertThat(fixture.displays(world)).isEmpty();
+        assertThat(fixture.sessions().find(fixture.builder().getUuid())).isEmpty();
+    }
+
     private Fixture fixture(Env env) throws IOException {
         data = Files.createDirectories(root.resolve("data"));
         worlds = Files.createDirectories(root.resolve("worlds"));
@@ -99,6 +116,7 @@ class RingPreviewTest {
         env.process().command().register(
                 new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds)));
         new WandListener(sessions).register(env.process().eventHandler());
+        sessions.register(env.process().eventHandler());
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         return new Fixture(env, builder, store, sessions);
