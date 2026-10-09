@@ -109,8 +109,8 @@
         },
         "particleSpacing": {
           "type": "number",
-          "exclusiveMinimum": 0,
-          "description": "Blocks between drawn particles on the racing line."
+          "minimum": 0.25,
+          "description": "Blocks between drawn particles on the racing line. The loader refuses less than 0.25."
         },
         "points": {
           "type": "array",
@@ -125,7 +125,8 @@
       "properties": {
         "orderIndex": {
           "type": "integer",
-          "description": "Where the point sits on the line. Must not be a ring's own slot; the loader refuses that."
+          "not": { "multipleOf": 100 },
+          "description": "Where the point sits on the line, in steps of 100 per ring. A multiple of 100 is a ring's own slot, which the loader refuses."
         },
         "position": { "$ref": "#/$defs/vec3" }
       }

@@ -147,6 +147,24 @@ class FileSchemaTest {
     }
 
     @Test
+    void guidePointOnARingsOwnSlotIsRejected() {
+        // A multiple of 100 is a ring's slot; GuidePoint refuses it, and the schema says so too.
+        String onSlot = VALID_MAP.replace("\"orderIndex\": 150", "\"orderIndex\": 200");
+
+        assertThat(errors(mapSchema(), JSON.readTree(onSlot))).anySatisfy(
+                error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/guideLine/points/0/orderIndex"));
+    }
+
+    @Test
+    void particleSpacingBelowTheMinimumIsRejected() {
+        // GuideLine refuses anything under 0.25 blocks; the schema must not accept what the loader refuses.
+        String tooDense = VALID_MAP.replace("\"particleSpacing\": 1.0", "\"particleSpacing\": 0.1");
+
+        assertThat(errors(mapSchema(), JSON.readTree(tooDense))).anySatisfy(
+                error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/guideLine/particleSpacing"));
+    }
+
+    @Test
     void mapWithAMisspelledKeyIsRejectedNamingIt() {
         // The schema is stricter than the loader on purpose: the loader ignores unknown keys, the editor does not.
         String misspelt = VALID_MAP.replace("\"referenceTimeSeconds\"", "\"referenceTimeSecond\"");
