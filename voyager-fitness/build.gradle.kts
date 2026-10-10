@@ -16,6 +16,17 @@ dependencies {
 }
 
 tasks.test {
+    // The frozen baseline lives under src/test/resources/archunit_store and archunit.properties names it relative to the
+    // working directory. Pinning that directory to the module makes the path a visible setting, not a Gradle default.
+    workingDir = projectDir
+
+    // On CI the baseline may neither be created nor updated (design D3). A frozen rule with no committed entry, or a
+    // fixed violation still in the committed store, then fails the build instead of being written silently.
+    if (System.getenv("CI") == "true") {
+        systemProperty("archunit.freeze.store.default.allowStoreCreation", "false")
+        systemProperty("archunit.freeze.store.default.allowStoreUpdate", "false")
+    }
+
     // Only the rebuild's modules. The tree being replaced does not satisfy this rule and is
     // deliberately not held to it; it is deleted at E7.
     systemProperty(
