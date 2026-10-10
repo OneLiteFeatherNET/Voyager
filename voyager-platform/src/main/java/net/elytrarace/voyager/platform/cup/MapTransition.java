@@ -1,7 +1,8 @@
-package net.elytrarace.voyager.platform.world;
+package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.world.MapInstances;
 import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;

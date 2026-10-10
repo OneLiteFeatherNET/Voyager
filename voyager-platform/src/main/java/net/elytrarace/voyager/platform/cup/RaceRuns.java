@@ -1,8 +1,8 @@
-package net.elytrarace.voyager.platform.world;
+package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.platform.world.exception.UnstartedRunException;
+import net.elytrarace.voyager.platform.cup.exception.UnstartedRunException;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.run.RaceRun;
 
