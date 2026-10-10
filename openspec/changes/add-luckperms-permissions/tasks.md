@@ -15,8 +15,8 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 ## 2. Decisions recorded as ADRs (status Proposed)
 
-- [ ] 2.1 Write `docs/decisions/0024-permission-port-with-luckperms-adapter.md` in MADR 4.0. Context: the permission port in `voyager-api`, the LuckPerms adapter in `voyager-platform`, the level-based fallback and the rejected Cygnus fail-open fallback. Status: `Proposed`. Re-check at apply time that 0024 is still free in `docs/decisions/` and renumber if not. Verify: the file exists, `## Status` reads `Proposed`, and every MADR section is present.
-- [ ] 2.2 Write `docs/decisions/0025-velocity-modern-forwarding-with-secret.md` in MADR 4.0. Context: Minestom `Auth.Velocity`, the secret sources, the offline fallback, and the CloudNet RC16 note that proxy authentication moved to the Minestom implementation. Status: `Proposed`. Verify: the file exists and `## Status` reads `Proposed`.
+- [x] 2.1 Write `docs/decisions/0024-permission-port-with-luckperms-adapter.md` in MADR 4.0. Context: the permission port in `voyager-api`, the LuckPerms adapter in `voyager-platform`, the level-based fallback and the rejected Cygnus fail-open fallback. Status: `Proposed`. Re-check at apply time that 0024 is still free in `docs/decisions/` and renumber if not. Verify: the file exists, `## Status` reads `Proposed`, and every MADR section is present.
+- [x] 2.2 Write `docs/decisions/0025-velocity-modern-forwarding-with-secret.md` in MADR 4.0. Context: Minestom `Auth.Velocity`, the secret sources, the offline fallback, and the CloudNet RC16 note that proxy authentication moved to the Minestom implementation. Status: `Proposed`. Verify: the file exists and `## Status` reads `Proposed`.
 
 ## 3. Fitness rules (Red first)
 
