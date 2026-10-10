@@ -22,4 +22,4 @@ Conventional Commits: one type, `fix(server)`. Test first (Red, then Green), per
 
 ## 4. Pull request
 
-- [ ] 4.1 Open the pull request against `main` with the title `fix(server): name the gradle property next to the system property in startup errors`. Body: the two messages before and after, and the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify with `gh pr view` that the title and base are correct. *(deferred: owner merges locally first)*
+- [x] 4.1 Open the pull request against `main` with the title `fix(server): name the gradle property next to the system property in startup errors`. Body: the two messages before and after, and the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify with `gh pr view` that the title and base are correct. *(merged locally on 2026-10-10 per owner decision; no PR)*

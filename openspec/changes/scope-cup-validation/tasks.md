@@ -45,5 +45,5 @@ Conventional Commits; all production work is `feat(platform)`, so there is one t
 
 ## 5. Ship
 
-- [ ] 5.1 Open the pull request. deferred: owner merges locally first. Title: `feat(platform): refuse to boot only for the cup that will be played`. Body: link this change, the research 005 Q4 entry, and the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`.
+- [x] 5.1 Open the pull request. merged locally on 2026-10-10 per owner decision; no PR. Title: `feat(platform): refuse to boot only for the cup that will be played`. Body: link this change, the research 005 Q4 entry, and the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`.
 - [ ] 5.2 deferred: owner merges locally first. After merge, archive with the commit `docs(openspec): archive scope-cup-validation`, unless the owner asks to ship it with the implementation.

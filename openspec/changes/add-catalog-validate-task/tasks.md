@@ -57,8 +57,8 @@ integration test (4.7) is the one exception and is marked as such.
   Done: Refused, no-chunk and throwing-world tests in `CatalogValidationTest`.
 - [x] 4.6 Green: the deep step in `CatalogValidation`, run only for worlds that pass `WorldFolders`, with the per-world try/catch of requirement "one failing world does not hide another". Verify: 4.5 passes; 4.1 to 4.4 still pass.
   Done: Per-world try/catch; `aFailingWorldDoesNotHideTheNextOne`.
-- [ ] 4.7 Integration (relaxed F.I.R.S.T.: real Falco read, not Fast): `CatalogValidationDeepIT` copies the shipped world `ElytraraceBlueAndRed` into a `@TempDir` (the path is supplied by the test through a system property, not read from the repository) and asserts `MapInstances.healthOf` is sound, through the real `HealthSource`. Verify: the test passes; a copy with one region file truncated fails it.
-  Note: Not written as a test. The shipped world was checked through `validateCatalog` instead (see report). Owner to decide whether the IT is needed.
+- [x] 4.7 Integration (relaxed F.I.R.S.T.: real Falco read, not Fast): `CatalogValidationDeepIT` copies the shipped world `ElytraraceBlueAndRed` into a `@TempDir` (the path is supplied by the test through a system property, not read from the repository) and asserts `MapInstances.healthOf` is sound, through the real `HealthSource`. Verify: the test passes; a copy with one region file truncated fails it.
+  Done: `CatalogValidationDeepIT` (`@Tag("integration")`, run by `:voyager-platform:integrationTest`, which `check` depends on and `test` excludes). The world location comes from the `voyager.it.world` system property, set from `run/run/worlds/ElytraraceBlueAndRed` under the root project (override with `-PvoyagerItWorld`). Without the world the test is skipped with an assumption message. With the world present both tests pass. The truncated-region case first reported `Server threw exception` without the file; `MapInstances.readEveryChunk` now throws `UnreadableRegionException`, which names the region file.
 - [x] 4.8 Measure and record: time `./gradlew :voyager-server:validateCatalog -PworldsPath=<copy of the shipped world>` three times, and record the median and the Minestom registry start-up time in `design.md`, decision 3, replacing the words "not measured". Verify: the design names both numbers and the machine they were measured on.
   Done: measured on the shipped world; numbers in `design.md`, decision 3, and `docs/reference/config-check.md`.
 
@@ -113,5 +113,5 @@ integration test (4.7) is the one exception and is marked as such.
 
 - [x] 10.1 Run `./gradlew build` (both trees). Verify: green.
   Done: `./gradlew build --continue --offline --rerun-tasks` is green (87 tasks executed).
-- [ ] 10.2 Open the pull request with the title `feat(build): check maps, cups and worlds together before the server starts`. Its body lists the measured runtime from 4.8, the manual Gradle checks from 6.1 and 6.3, the skip switch, and the merge order (`fix-run-data-sync`, `unify-catalog-loading`). Add the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: the PR title is a valid Conventional Commit.
-  Note: deferred: owner merges locally first
+- [x] 10.2 Open the pull request with the title `feat(build): check maps, cups and worlds together before the server starts`. Its body lists the measured runtime from 4.8, the manual Gradle checks from 6.1 and 6.3, the skip switch, and the merge order (`fix-run-data-sync`, `unify-catalog-loading`). Add the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: the PR title is a valid Conventional Commit.
+  merged locally on 2026-10-10 per owner decision; no PR
