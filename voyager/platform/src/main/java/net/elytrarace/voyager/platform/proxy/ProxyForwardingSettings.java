@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.proxy;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -46,6 +47,21 @@ public record ProxyForwardingSettings(@Nullable String secret) {
             return fromSource(fromProperty, PROPERTY_NAME);
         }
         return new ProxyForwardingSettings(null);
+    }
+
+    /**
+     * Reads the settings from the running process: the environment, and the one system property.
+     *
+     * @return the settings; offline when neither source is set
+     * @throws IllegalArgumentException when the source that is set holds only whitespace
+     */
+    public static ProxyForwardingSettings fromEnvironment() {
+        Map<String, String> properties = new HashMap<>();
+        String secret = System.getProperty(PROPERTY_NAME);
+        if (secret != null) {
+            properties.put(PROPERTY_NAME, secret);
+        }
+        return from(System.getenv(), properties);
     }
 
     /**

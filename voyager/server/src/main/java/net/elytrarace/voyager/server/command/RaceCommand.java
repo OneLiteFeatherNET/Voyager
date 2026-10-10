@@ -1,5 +1,8 @@
 package net.elytrarace.voyager.server.command;
 
+import net.elytrarace.voyager.api.permission.PermissionNode;
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
+import net.elytrarace.voyager.platform.permission.PlayerSubjects;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
@@ -17,7 +20,7 @@ import net.minestom.server.command.builder.arguments.ArgumentType;
  *   <tr><th>{@code /race}</th><td>where the cup stands: phase, map, race clock, every racer's ring
  *       count, where the client says they are and where the server's simulation has them</td></tr>
  *   <tr><th>{@code /race reload}</th><td>re-read the maps and cups and apply them from the next round;
- *       gated by {@link ReloadPermission}, registered in every mode</td></tr>
+ *       gated by {@link PermissionNode#VOYAGER_COMMAND_RACE_RELOAD}, registered in every mode</td></tr>
  *   <tr><th>{@code /race start}</th><td>restart the cup from map one with no lobby wait</td></tr>
  *   <tr><th>{@code /race skip}</th><td>end the current map now, as if everybody had finished</td></tr>
  * </table>
@@ -37,14 +40,16 @@ public final class RaceCommand extends Command {
      * @param devMode whether to register {@code start} and {@code skip}; the status and {@code reload}
      *     syntax are registered either way
      * @param reloads runs {@code reload}; the sender's permission is checked before it is reached
+     * @param policy answers whether a sender may run each gated subcommand, by its node
      */
-    public RaceCommand(CupSession session, WaitingRoom room, boolean devMode, CatalogReloadService reloads) {
+    public RaceCommand(CupSession session, WaitingRoom room, boolean devMode, CatalogReloadService reloads,
+            PermissionPolicy policy) {
         super("race");
         setDefaultExecutor((sender, context) -> status(sender, session, room));
         // Checked here rather than as a syntax condition: a failed condition makes Minestom report the command as
         // unknown, which tells a player nothing. A refused sender is told why.
         addSyntax((sender, context) -> {
-            if (ReloadPermission.mayReload(sender)) {
+            if (may(policy, sender, PermissionNode.VOYAGER_COMMAND_RACE_RELOAD)) {
                 reloads.request(sender::sendMessage);
             } else {
                 sender.sendMessage(Messages.reloadDenied());
@@ -54,12 +59,24 @@ public final class RaceCommand extends Command {
             return;
         }
         addSyntax((sender, context) -> {
+            if (!may(policy, sender, PermissionNode.VOYAGER_COMMAND_RACE_START)) {
+                sender.sendMessage(Messages.commandDenied());
+                return;
+            }
             session.start(true);
             sender.sendMessage(Messages.cupRestarted(session.cup().name()));
         }, ArgumentType.Literal("start"));
-        addSyntax((sender, context) -> sender.sendMessage(
-                session.requestSkip() ? Messages.skipTaken() : Messages.skipRefused()),
-                ArgumentType.Literal("skip"));
+        addSyntax((sender, context) -> {
+            if (!may(policy, sender, PermissionNode.VOYAGER_COMMAND_RACE_SKIP)) {
+                sender.sendMessage(Messages.commandDenied());
+                return;
+            }
+            sender.sendMessage(session.requestSkip() ? Messages.skipTaken() : Messages.skipRefused());
+        }, ArgumentType.Literal("skip"));
+    }
+
+    private static boolean may(PermissionPolicy policy, CommandSender sender, PermissionNode node) {
+        return policy.allows(PlayerSubjects.subjectOf(sender), node);
     }
 
     /**

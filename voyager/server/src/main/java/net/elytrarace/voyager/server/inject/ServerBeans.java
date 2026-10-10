@@ -4,10 +4,15 @@ import io.avaje.inject.Bean;
 import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
+import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
+import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsPolicy;
+import net.elytrarace.voyager.platform.permission.luckperms.NetLuckPermsGateway;
 import net.elytrarace.voyager.platform.catalog.CatalogReloader;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
@@ -21,6 +26,9 @@ import net.elytrarace.voyager.server.command.RaceCommand;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceManager;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.util.Collection;
@@ -53,6 +61,8 @@ import java.util.function.Supplier;
  */
 @Factory
 public final class ServerBeans {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerBeans.class);
 
     @Bean
     InstanceManager instanceManager() {
@@ -96,13 +106,27 @@ public final class ServerBeans {
     }
 
     /**
+     * The one permission policy every gated command asks. LuckPerms answers when its loader is on the class path, and
+     * the level-based fallback answers when it is not. The choice is made here and nowhere else (ADR-0024).
+     */
+    @Bean
+    PermissionPolicy permissionPolicy() {
+        if (LuckPermsBootstrap.isPresent()) {
+            return new LuckPermsPolicy(new NetLuckPermsGateway());
+        }
+        LOGGER.warn("LuckPerms is not on the class path: gated commands fall back to operator level 4 for players, "
+                + "and the console is allowed everything. Put the LuckPerms loader on the class path to grant nodes.");
+        return new LevelPermissionPolicy();
+    }
+
+    /**
      * The operator's race command, built here with the cup it drives and the reload it offers. Its constructor only
      * adds syntax and registers nothing; {@code VoyagerServer} registers it when the server is ready to take commands.
      */
     @Bean
     RaceCommand raceCommand(CupSession session, WaitingRoom room, CatalogReloadService reloads,
-            @External ServerSettings settings) {
-        return new RaceCommand(session, room, settings.devMode(), reloads);
+            PermissionPolicy policy, @External ServerSettings settings) {
+        return new RaceCommand(session, room, settings.devMode(), reloads, policy);
     }
 
     /**

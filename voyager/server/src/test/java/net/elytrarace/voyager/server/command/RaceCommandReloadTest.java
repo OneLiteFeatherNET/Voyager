@@ -1,6 +1,9 @@
 package net.elytrarace.voyager.server.command;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
+import net.elytrarace.voyager.api.permission.PermissionSubject;
+import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
@@ -38,6 +41,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,8 +49,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@code /race reload} as the command manager sees it: the console reaches the reload, a player below the
- * operator level does not, and the command is there whether or not dev mode is on.
+ * The {@code /race} subcommands as the command manager sees them: the console reaches the reload, a player below the
+ * operator level does not, the command is there whether or not dev mode is on, and each gated subcommand asks the
+ * policy for its own node. The status line stays open to every sender.
  */
 @EnvTest
 class RaceCommandReloadTest {
@@ -57,6 +62,22 @@ class RaceCommandReloadTest {
 
     @TempDir
     Path tempDir;
+
+    /** Answers every question with one fixed answer and records the node names it was asked about. */
+    private static final class RecordingPolicy implements PermissionPolicy {
+        private final boolean allow;
+        private final List<String> asked = new ArrayList<>();
+
+        RecordingPolicy(boolean allow) {
+            this.allow = allow;
+        }
+
+        @Override
+        public boolean allows(PermissionSubject subject, String node) {
+            asked.add(node);
+            return allow;
+        }
+    }
 
     @Test
     void theConsoleReachesTheReload(Env env) {
@@ -90,7 +111,65 @@ class RaceCommandReloadTest {
         assertThat(reloads.get()).isEqualTo(1);
     }
 
+    @Test
+    void theReloadAsksThePolicyForTheReloadNode(Env env) {
+        AtomicInteger reloads = new AtomicInteger();
+        RecordingPolicy policy = new RecordingPolicy(true);
+        register(env, reloads, false, policy);
+
+        env.process().command().execute(connect(env), "race reload");
+
+        assertThat(policy.asked).containsExactly("voyager.command.race.reload");
+        assertThat(reloads.get()).isEqualTo(1);
+    }
+
+    @Test
+    void aPlayerTheNodeDeniesDoesNotReachTheReloadEvenAtOperatorLevelFour(Env env) {
+        AtomicInteger reloads = new AtomicInteger();
+        register(env, reloads, false, new RecordingPolicy(false));
+        Player player = connect(env);
+        player.setPermissionLevel(4);
+
+        env.process().command().execute(player, "race reload");
+
+        assertThat(reloads.get()).isZero();
+    }
+
+    @Test
+    void theDevStartAsksThePolicyForTheStartNode(Env env) {
+        RecordingPolicy policy = new RecordingPolicy(false);
+        register(env, new AtomicInteger(), true, policy);
+
+        env.process().command().execute(connect(env), "race start");
+
+        assertThat(policy.asked).containsExactly("voyager.command.race.start");
+    }
+
+    @Test
+    void theDevSkipAsksThePolicyForTheSkipNode(Env env) {
+        RecordingPolicy policy = new RecordingPolicy(false);
+        register(env, new AtomicInteger(), true, policy);
+
+        env.process().command().execute(connect(env), "race skip");
+
+        assertThat(policy.asked).containsExactly("voyager.command.race.skip");
+    }
+
+    @Test
+    void theStatusLineStaysOpenAndDoesNotAskThePolicy(Env env) {
+        RecordingPolicy policy = new RecordingPolicy(false);
+        register(env, new AtomicInteger(), false, policy);
+
+        env.process().command().execute(connect(env), "race");
+
+        assertThat(policy.asked).isEmpty();
+    }
+
     private void register(Env env, AtomicInteger reloads, boolean devMode) {
+        register(env, reloads, devMode, new LevelPermissionPolicy());
+    }
+
+    private void register(Env env, AtomicInteger reloads, boolean devMode, PermissionPolicy policy) {
         CatalogHolder holder = new CatalogHolder(catalog());
         CatalogReloadService service = new CatalogReloadService(() -> {
             reloads.incrementAndGet();
@@ -105,7 +184,7 @@ class RaceCommandReloadTest {
         CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
                 blocks, boosts, TIMINGS, STEP, List::of);
         WaitingRoom room = new WaitingRoom(session, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS, racer -> { });
-        env.process().command().register(new RaceCommand(session, room, devMode, service));
+        env.process().command().register(new RaceCommand(session, room, devMode, service, policy));
     }
 
     private static Player connect(Env env) {
