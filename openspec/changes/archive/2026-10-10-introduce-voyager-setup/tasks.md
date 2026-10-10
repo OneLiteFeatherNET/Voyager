@@ -76,4 +76,4 @@ Run `./gradlew :voyager-setup:test :voyager-platform:test :voyager-api:test :voy
 ## 11. Pull request
 
 - [x] 11.1 (merged locally on 2026-10-10 per owner decision; no PR) Open the pull request with the title `feat(setup): start a minestom setup server that places rings where the builder looks`. The body lists the commits by type, the spike record, the open questions answered (O2 to O6; O1 resolved on 2026-10-09), the boot log of 10.2, and the follow-up table. End the body with the footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: `gh pr view` shows the title; the title passes commitlint.
-- [ ] 11.2 After the squash merge, archive with `docs(openspec): archive introduce-voyager-setup` unless the archive ships with the implementation. Verify: `openspec/changes/archive/` holds the change directory.
+- [x] 11.2 After the squash merge, archive with `docs(openspec): archive introduce-voyager-setup` unless the archive ships with the implementation. Verify: `openspec/changes/archive/` holds the change directory.
