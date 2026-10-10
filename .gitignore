@@ -56,3 +56,10 @@ gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
 /run/
+# IDE state, tool output and local run state (chore(git): ignore ide state and tool output)
+.idea/
+*.iml
+graphify-out/
+.claude/scheduled_tasks.lock
+/legacy/plugins/setup/run/
+/docker/mariadb/mariadb/
