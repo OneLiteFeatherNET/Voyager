@@ -13,8 +13,9 @@ infrastructure rather than as slices.
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL organise behaviour by feature. A slice SHALL own the use-case types, ports and adapters for its
-feature in every ring it touches. The slices are `flight`, `ring`, `run`, `flow`, `scoring`, `cup`, `line`, `catalog`
-and `hud`, and the future slices `mapsetup` (in `voyager-setup`) and `record` (in `voyager-persistence`).
+feature in every ring it touches. The slices are `flight`, `ring`, `run`, `flow`, `scoring`, `cup`, `line`, `catalog`,
+`hud` and `mapsetup` (its contract in `api.mapsetup`, its use cases in `voyager-setup`), and the future slice `record`
+(in `voyager-persistence`).
 
 #### Scenario: New feature gets its own slice
 - **WHEN** a feature such as a race leaderboard is added
@@ -74,10 +75,16 @@ from that slice's `internal` subpackage.
 
 THE SYSTEM SHALL keep the dependency graph between slices of one module free of cycles. A slice that needs a
 type from a slice that already depends on it SHALL move the type into the kernel or into a slice that both can depend on.
+The rule covers infrastructure packages as well: a cycle between a slice and an infrastructure package, or between two
+infrastructure packages, is a cycle.
 
 #### Scenario: Two slices depend on each other
 - **WHEN** the run slice depends on scoring and scoring depends on run
 - **THEN** the architecture rules report a slice cycle and the build fails
+
+#### Scenario: Slice and infrastructure package depend on each other
+- **WHEN** the `catalog` package of `voyager-platform` depends on the `world` package and `world` depends on `catalog`
+- **THEN** the architecture rules report the cycle and name both packages; today this cycle exists (migration item 27)
 
 ### Requirement: Shared kernel holds only pure values
 **Priority:** MoSCoW Must
@@ -142,5 +149,5 @@ WHERE a future slice is added to `voyager-setup` or `voyager-persistence`, THE S
 on the same ring rules and the same slice rules as its module's neighbours.
 
 #### Scenario: Map setup slice
-- **WHEN** the map setup slice is added to `voyager-setup`
-- **THEN** it depends on `voyager-platform` and `voyager-api` only, and its packages sit under `net.elytrarace.voyager.setup.mapsetup..`
+- **WHEN** the map setup slice is checked against this requirement
+- **THEN** its contract sits in `net.elytrarace.voyager.api.mapsetup..`, its pure packages in `net.elytrarace.voyager.setup.mapsetup..`, and it depends on `voyager-platform` and `voyager-api` only. Its Minestom adapter code in `net.elytrarace.voyager.setup.adapter..` does not meet the "Framework adapters live in voyager-platform" requirement of `architecture/module-rings` and is migration item 26

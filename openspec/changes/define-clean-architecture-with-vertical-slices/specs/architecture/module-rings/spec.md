@@ -55,6 +55,22 @@ plain JUnit test.
 - **WHEN** a race is played through the use cases in a unit test
 - **THEN** no Minestom instance, network socket or file is needed to complete the race
 
+### Requirement: Framework adapters live in voyager-platform
+**Priority:** MoSCoW Must
+
+THE SYSTEM SHALL keep the Minestom, Xerus, Gson and Falco adapter code (listeners, entity and block access, commands that
+touch the server, message components) in `voyager-platform`. A composition root MAY call Minestom only to bootstrap the
+server and to wire adapters. A composition root SHALL NOT hold a Minestom adapter or a rule of a slice; those move to ring 3
+or ring 2.
+
+#### Scenario: Minestom listener in the setup module
+- **WHEN** a class in `voyager-setup` registers a Minestom event listener
+- **THEN** the change is rejected until the listener moves into `voyager-platform`; today `voyager-setup` holds seven such classes (migration item 26)
+
+#### Scenario: Server bootstrap calls Minestom
+- **WHEN** `VoyagerServer` starts the Minestom server and builds the graph
+- **THEN** the call is allowed, because it is bootstrap and wiring
+
 #### Scenario: Minestom type inside the use-case ring
 - **WHEN** a class in `voyager-race` imports `net.minestom..`
 - **THEN** the architecture rules fail the build

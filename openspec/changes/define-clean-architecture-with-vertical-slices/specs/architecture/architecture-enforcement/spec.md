@@ -82,12 +82,17 @@ THE SYSTEM SHALL fail the layered rule when a layer matches no class, so that th
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL add `slices().matching(...).should().beFreeOfCycles()` rules for the slice packages of `voyager-race`
-(`net.elytrarace.voyager.race.(*)..`), of `voyager-platform` (its feature slices, excluding the infrastructure packages named in
-`architecture/vertical-slices`), and of `voyager-api` (`net.elytrarace.voyager.api.(*)..`), each with `allowEmptyShould(false)`.
+(`net.elytrarace.voyager.race.(*)..`), of `voyager-platform` (every package directly under `net.elytrarace.voyager.platform`,
+infrastructure packages included, because a cycle through infrastructure is still a cycle), and of `voyager-api`
+(`net.elytrarace.voyager.api.(*)..`), each with `allowEmptyShould(false)`.
 
 #### Scenario: Scoring depends on run and run on scoring
 - **WHEN** a class in `race.scoring` depends on `race.run` and a class in `race.run` depends on `race.scoring`
 - **THEN** the cycle rule fails and reports both slices
+
+#### Scenario: Catalog and world depend on each other
+- **WHEN** a class in `platform.catalog` depends on `platform.world` and a class in `platform.world` depends on `platform.catalog`
+- **THEN** the cycle rule fails and reports both packages; the rule is held back until migration item 27 is fixed
 
 ### Requirement: Slice internals stay private
 **Priority:** MoSCoW Must
@@ -102,7 +107,7 @@ THE SYSTEM SHALL add, for every slice that has an `internal` subpackage, a rule 
 ### Requirement: Avaje types are confined to the composition roots
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL forbid `io.avaje.inject..` outside `..server..` and `..setup..`, and SHALL forbid `io.avaje.inject.BeanScope` outside `..server.inject..` and `VoyagerServer`.
+THE SYSTEM SHALL forbid `io.avaje.inject..` outside `..server..` and `..setup..`, and SHALL forbid `io.avaje.inject.BeanScope` outside `..server.inject..`, `VoyagerServer`, `..setup.inject..` and `SetupServer`.
 
 #### Scenario: BeanScope used in a slice
 - **WHEN** a class in `..race.cup..` references `io.avaje.inject.BeanScope`
@@ -177,6 +182,16 @@ so that every module on the classpath is still imported and named by at least on
 #### Scenario: Module added without a rule
 - **WHEN** a rebuild module is added and no rule names its package prefix
 - **THEN** `FitnessCoverageTest` fails
+
+### Requirement: Minestom stays out of the setup module
+**Priority:** MoSCoW Must
+
+THE SYSTEM SHALL forbid `net.minestom..` in every class of `..setup..`, so that Minestom adapter code lives in `voyager-platform`
+as `architecture/module-rings` requires. The rule SHALL enter the suite only after migration item 26 is fixed.
+
+#### Scenario: Minestom listener in the setup module
+- **WHEN** a class in `net.elytrarace.voyager.setup..` imports `net.minestom..`
+- **THEN** the rule fails and names the class; today `setup.adapter` has seven such classes, and the rule is held back
 
 ### Requirement: Rules enter the suite only after the violations they flag are fixed
 **Priority:** MoSCoW Must

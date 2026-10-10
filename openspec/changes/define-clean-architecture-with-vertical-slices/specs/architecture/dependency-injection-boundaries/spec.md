@@ -35,15 +35,15 @@ THE SYSTEM SHALL NOT place any `jakarta.inject` or avaje annotation on a class, 
 - **THEN** the architecture rules fail the build and name the offending class
 
 #### Scenario: Platform class constructed by the root
-- **WHEN** the graph needs `JsonMapCatalog`
-- **THEN** a `@Bean` method in `voyager-server` calls its constructor, and `JsonMapCatalog` carries no annotation
+- **WHEN** the graph needs `CatalogHolder`
+- **THEN** a `@Bean` method in `voyager-server` calls its constructor, and `CatalogHolder` carries no annotation
 
 ### Requirement: Only composition roots use DI annotations and the avaje container
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL use `jakarta.inject` annotations and avaje-inject `@Factory`, `@Bean` and `BeanScope` only in the composition roots
 `voyager-server` and `voyager-setup`, and avaje-inject only in their `inject` packages and in the one process entry-point class
-of each deployable (`VoyagerServer` for the server). No avaje type SHALL appear in a public signature outside those places.
+of each deployable (`VoyagerServer` for the server, `SetupServer` for the setup server). No avaje type SHALL appear in a public signature outside those places.
 
 #### Scenario: Container type in a slice
 - **WHEN** a class in `net.elytrarace.voyager.race.cup..` or `net.elytrarace.voyager.platform..` imports `io.avaje.inject..`
@@ -117,8 +117,8 @@ THE SYSTEM SHALL construct the objects under test with `new` in every unit test.
 order or the outcome of another.
 
 #### Scenario: Unit test of a platform adapter
-- **WHEN** a unit test of `JsonCupCatalog` runs
-- **THEN** it passes its collaborators to the constructor and does not start a container
+- **WHEN** a unit test of `CatalogReloader` runs
+- **THEN** it passes its `Clock` and `WorldOpener` to the constructor and does not start a container
 
 #### Scenario: Graph test
 - **WHEN** a composition-root test resolves the server beans
@@ -155,9 +155,9 @@ Process-wide services SHALL be singletons of the composition root, not static fi
 WHEN a constructor takes a collaborator, THE SYSTEM SHALL declare the parameter with the narrowest interface that the class
 calls, and SHALL NOT pass a whole composition object or a catalogue when a single port is enough.
 
-#### Scenario: Cup resolution needs a catalogue lookup
-- **WHEN** `CupResolution` needs a cup by name
-- **THEN** its constructor takes the `CupCatalog` port from `voyager-api`, not the JSON implementation class
+#### Scenario: Cup selection needs the catalogue
+- **WHEN** cup selection needs a cup by name
+- **THEN** the selection rule takes the `CupCatalog` port from `voyager-api` or the parsed definitions, not a platform reader. Today `CupResolution` takes the platform's `CatalogReading`; that is migration item 23, and the scenario holds once it is fixed
 
 ### Requirement: Factories are injectable through a creator
 **Priority:** MoSCoW Should
