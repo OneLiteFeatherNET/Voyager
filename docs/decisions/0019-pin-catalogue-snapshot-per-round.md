@@ -73,9 +73,10 @@ fingerprint poll is a possible follow-up, default off.
 - Bad: a valid edit made during a cup waits for the next cup. The reply and `/race` say so.
 - Bad: a finished cup starts a new round only when a player next joins an idle server, or with `/race start` in dev mode.
   While the server holds players and no cup runs, a pending reload waits for that join. The how-to states this.
-- Bad: a broken cup that is not played still rejects a reload, because the reload checks every file. Boot does not refuse
-  for an unplayed cup (`scope-cup-validation`), so the reload is stricter than boot. Aligning the reload with boot is a
-  follow-up; `design.md`, Answers to the Open Questions, 2, records the state.
+- Bad: a reload refuses for the same problems that refuse boot, and no others. A broken cup that is not played does not
+  refuse a reload; it adds one warning line to the reply, as boot logs one warning. This alignment is commit `23d1c51`
+  (`fix(server): let a broken unplayed cup warn instead of refusing a reload`). Before that commit the reload checked every
+  cup file and refused on any broken one, which was stricter than boot.
 - Neutral: the bean graph holds the holder, not a snapshot. `MapCatalog` and `CupCatalog` ports are removed.
 
 ### Confirmation
