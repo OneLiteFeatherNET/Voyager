@@ -2,9 +2,10 @@
 
 ## Status
 
-Proposed
+Accepted
 
-Owner approval is pending. `CLAUDE.md` requires an accepted ADR before the change that implements it is merged.
+The project owner accepted this record on 2026-10-10. `CLAUDE.md` requires an accepted ADR before the change that
+implements it is merged.
 
 ## Date
 
@@ -12,7 +13,7 @@ Owner approval is pending. `CLAUDE.md` requires an accepted ADR before the chang
 
 ## Decision makers
 
-- Project owner (approval pending)
+- Project owner (accepted 2026-10-10)
 - Atlas (architect, drafted this record with the change `hot-reload-catalogs`)
 
 ## Context and problem statement
@@ -72,9 +73,9 @@ fingerprint poll is a possible follow-up, default off.
 - Bad: a valid edit made during a cup waits for the next cup. The reply and `/race` say so.
 - Bad: a finished cup starts a new round only when a player next joins an idle server, or with `/race start` in dev mode.
   While the server holds players and no cup runs, a pending reload waits for that join. The how-to states this.
-- Bad: a broken cup that is not played still rejects a reload, because the reload checks every file. Boot does not check
-  unplayed cups for refusal. This is stricter than boot, and it stays until the owner decides otherwise (change
-  `hot-reload-catalogs`, open question 2).
+- Bad: a broken cup that is not played still rejects a reload, because the reload checks every file. Boot does not refuse
+  for an unplayed cup (`scope-cup-validation`), so the reload is stricter than boot. Aligning the reload with boot is a
+  follow-up; `design.md`, Answers to the Open Questions, 2, records the state.
 - Neutral: the bean graph holds the holder, not a snapshot. `MapCatalog` and `CupCatalog` ports are removed.
 
 ### Confirmation

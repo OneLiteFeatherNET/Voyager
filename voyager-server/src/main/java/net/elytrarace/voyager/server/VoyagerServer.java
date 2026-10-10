@@ -10,6 +10,7 @@ import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
+import net.elytrarace.voyager.server.command.ConsoleCommandReader;
 import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;
@@ -198,10 +199,17 @@ public final class VoyagerServer {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
         scheduleTick(session);
-        registerShutdownTask(graph, instances, catalog);
+        // Built now so the shutdown task can stop it; started only once the server listens, because a command
+        // typed before then would reach a server that is not yet able to take one.
+        ConsoleCommandReader console = new ConsoleCommandReader(
+                System.in,
+                ConsoleCommandReader.consoleOf(MinecraftServer.getCommandManager()),
+                line -> MinecraftServer.getCommandManager().getConsoleSender().sendMessage(line));
+        registerShutdownTask(graph, instances, catalog, console);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
         server.start(settings.host(), settings.port());
+        console.start();
         LOGGER.info("Voyager started. {}", session.describe().trim());
     }
 
@@ -385,9 +393,11 @@ public final class VoyagerServer {
      * save path is precisely how a bug anywhere else turns into a corrupted racetrack nobody notices
      * until a player flies into the hole.
      */
-    private static void registerShutdownTask(BeanScope graph, MapInstances instances, CatalogHolder catalog) {
+    private static void registerShutdownTask(BeanScope graph, MapInstances instances, CatalogHolder catalog,
+            ConsoleCommandReader console) {
         MinecraftServer.getSchedulerManager().buildShutdownTask(() -> {
             LOGGER.info("Shutting down");
+            console.stop();
             for (MapDefinition map : catalog.current().rotation()) {
                 LOGGER.info("Final world health — {}", instances.healthOf(map.world()).describe());
             }

@@ -1,14 +1,19 @@
 # Reload maps and cups without a restart
 
-Use `/race reload` to apply edited map and cup files to a running server. The server reads the data directory again,
+Use `race reload` to apply edited map and cup files to a running server. The server reads the data directory again,
 checks all of it, and plays the result from the next round. A round is one cup run, from its start until the cup
 finishes or is stopped.
 
 ## Run the reload
 
 1. Save the edited files in `maps/` and `cups/` under the data directory.
-2. Run `/race reload` from the server console, or as a player with operator level 4.
+2. Type `race reload` in the server console and press Enter. Type it without the slash. The reply appears in the
+   console. A player with operator level 4 can run `/race reload` in chat instead.
 3. Read the reply.
+
+The console reads its commands from standard input. A server started without an interactive standard input, for
+example `docker run` without `-i`, has no console to type into. On such a server only a player with operator level 4
+can run the reload.
 
 The reply is one of two things:
 
@@ -67,7 +72,7 @@ A world that was open before a refused reload stays as it was. A world that a re
 ## Who may reload
 
 The console may always reload. A player needs operator level 4. Minestom has no named permission nodes, and this server
-does not yet grant operator levels to anyone, so today only the console can run `/race reload`. A player below level 4
+does not yet grant operator levels to anyone, so today only the console can run the reload. A player below level 4
 is told that the command needs operator level 4, and the reload does not run.
 
 ## Limits

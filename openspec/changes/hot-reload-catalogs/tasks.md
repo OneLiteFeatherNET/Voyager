@@ -10,10 +10,14 @@ that matters is asserted through a captured appender.
 - [x] 0.1 Confirm that `unify-catalog-loading` is applied (merged, or archived) and that `add-catalog-validate-task` is merged.
   Verify: `CatalogLoader.read` returns a `CatalogReading` whose `problems()` is a list of `CatalogProblem`, and `CatalogSnapshot`
   exists as designed. If it does not, record the adapted shape in design.md (decision 5) before group 2.
-- [ ] 0.2 Owner decision on design open question 2 (`scope-cup-validation` before this change, or accept that one broken unrelated Answer recorded in design.md, Open Questions 2 (as built; owner confirmation pending with ADR-0019).
-  cup blocks reloads). Verify: the answer is recorded in design.md, "Open Questions".
-- [ ] 0.3 Ask the owner (AskUserQuestion) on design open question 1 (pinned rounds only, or geometry-only map-boundary swaps) and Answers recorded in design.md, Open Questions 1 and 3 (as built). The group was started before the owner was asked; owner confirmation is pending.
-  open question 3 (permission source). Verify: answers recorded in design.md. Do not start group 2 before this.
+- [x] 0.2 Owner decision on design open question 2 (`scope-cup-validation` before this change, or accept that a broken unrelated
+  cup blocks reloads). Verify: the answer is recorded in design.md, "Open Questions". Recorded 2026-10-10: `scope-cup-validation`
+  is before this change and is merged on `main`. The reload still checks every cup file; aligning it with boot is an open
+  follow-up (design.md, Answer 2).
+- [x] 0.3 Owner decisions on design open questions 1 and 3 (pinned rounds only, or geometry-only map-boundary swaps; which
+  permission source). Verify: answers recorded in design.md. Recorded 2026-10-10: question 1 is pinned rounds only, by owner
+  decision. Question 3 has no owner decision: the owner named no permission source, so the console-only state is recorded as
+  the answer and the source stays open (design.md, Answer 3). Groups 1 to 2 were started before these answers were recorded.
 
 ## 1. Spike: prove the assumptions (throwaway code, nothing committed)
 
@@ -94,14 +98,17 @@ that matters is asserted through a captured appender.
 
 ## 7. Documentation
 
-- [ ] 7.1 ADR `docs/decisions/0019-pin-catalogue-snapshot-per-round.md` (MADR 4.0) for decisions 1, 3 and 8. Number 0019: 0017 and 0018 are reserved by other changes File written as `0019`, status Proposed; owner approval pending.
-  against 0016 (reserved by `switch-di-to-avaje-inject`). Ask the owner to approve the ADR before the PR (CLAUDE.md: ADRs need
-  approval). Verify: the ADR status is accepted before merge.
+- [x] 7.1 ADR `docs/decisions/0019-pin-catalogue-snapshot-per-round.md` (MADR 4.0) for decisions 1, 3 and 8. Number 0019 (0017
+  and 0018 are reserved by other changes; 0016 is reserved by `switch-di-to-avaje-inject`). Status set to Accepted by the owner
+  on 2026-10-10 (commit `14ad0cc`). Verify: the ADR status is accepted before merge.
 - [x] 7.2 How-to `docs/guides/reload-catalogs.md` (Diataxis how-to): the command, the permission, "applies at the next round", the
   reloadable and non-reloadable table from design decision 4, and what the report looks like. Verify: every statement matches a
   passing test or the spike result.
-- [ ] 7.3 Research: set roadmap Q7 status in `docs/research/005-simpler-map-and-cup-setup.md` and add a short record of the implemented Q7 status line done in research 005. Research 006 was not created, per owner instruction.
-  round pin (Lumen, English, research paper style) as `docs/research/006-hot-reload-round-pinning.md`. Verify: links resolve.
+- [x] 7.3 Research: set roadmap Q7 status in `docs/research/005-simpler-map-and-cup-setup.md`. Checked 2026-10-10: the Q7 row
+  there records the implemented state (no watcher, `/race reload`, the round pin of ADR-0019, the fingerprint poll as the
+  deferred follow-up). The row carries no links, so there is none to resolve. Not done: the Lumen paper
+  `docs/research/006-hot-reload-round-pinning.md`. It is not written, per the owner instruction recorded with this task, and
+  the number is taken by `006-minestom-26-2-setup-spikes.md`. The Q7 row is the record of the round pin in research.
 - [x] 7.4 Confirm that no decision row of the greenfield design spec changes. Verify: `git diff` on that spec is empty.
 
 ## 8. Verification
@@ -109,16 +116,34 @@ that matters is asserted through a captured appender.
 - [x] 8.1 `./gradlew build` for both trees, exit 0. Verify: `:voyager-*` and `:server` tests green.
 - [x] 8.2 Grep the new tests for `Thread.sleep`, `Clock.systemUTC`, `Instant.now`, `LocalDateTime.now` and `System.currentTimeMillis`.
   Verify: no match.
-- [ ] 8.3 Smoke test on a copy of the run data (the repository data is not changed): boot with `./gradlew :voyager-server:shadowJar` and Open: smoke test not run.
-  the worlds path; change one map's ring count; `/race reload` reports pending; the next round plays the change. Then introduce invalid
-  JSON; `/race reload` reports the file; the server keeps ticking and still listens. Verify: both outcomes noted in the PR body.
+- [x] 8.3 Smoke test on a copy of the run data (the repository data is not changed). Run 2026-10-10 from the shadow jar
+  `voyager-server-1.12.0.jar`, with `-DVOYAGER_DATA_PATH` on a copy of `run/run/data`, `-DVOYAGER_WORLDS_PATH` on
+  `run/run/worlds`, `127.0.0.1:25567`, and stdin from a named pipe. The script is `scratchpad/smoke/run-smoke.sh`; the
+  evidence files are in `scratchpad/smoke/`. Results of the final run:
+  1. `Listening on 127.0.0.1:25567`.
+  2. `race reload` on the copied data: `Catalogue reloaded: the changed maps and cups play from the next round`.
+  3. In the copy, `referenceTimeSeconds` 60.0 changed to 75.0, then `race reload`: the same pending reply. `race status`
+     then shows `a reload waits for the next round`.
+  4. In the copy, `elytraraceblueandred.json` cut to 200 bytes, then `race reload`:
+     `Reload refused, the running catalogue is unchanged: 1 problem(s)`, then
+     `ERROR data/maps/elytraraceblueandred.json file: ... is not a valid definition: java.io.EOFException: End of input at line 7 column 5 path $.spawn.`
+  5. The server still runs: `LISTEN 127.0.0.1:25567`. `race status` answers
+     `cup 'test_cup' (1 map(s), RACE) — armed, waiting for the first player to join`. No `race tick threw` line was logged.
+  6. `nosuchcommand`: `Unknown command: nosuchcommand`.
+  7. SIGTERM: exit 143, `Shutting down`, `World handles closed; nothing was saved, by design`,
+     `Minestom server stopped successfully`. No server process is left.
+  Not covered by this run: (a) the next round playing the change, because no player joined, so no round started (the
+  round pin is covered by `CupSessionRoundPinTest`); (b) a new world opened during a reload, because the only world was open
+  at boot (spike 1.2 stays source-verified); (c) `race bogus` is not an unknown command: RaceCommand's default executor answers
+  it with the status, which is existing behaviour; (d) the status line prints a literal `%n` after `a reload waits for the next
+  round`, a formatting bug in the describe text (task 5.4), not fixed in this change.
 
 ## 9. Pull request
 
 - [x] 9.1 Commit per type on the branch, one type each: `refactor(server)` (holder seam and port removal), `test(...)` where a test lands
   alone, `feat(server)` (reloader, round pin, command, graph), `docs(...)` (ADR, how-to, research). Verify: `git log --format=%s` shows
   one type per commit, all Conventional Commits.
-- [ ] 9.2 Open the pull request (deferred: owner merges locally first) with the title `feat(server): pick up changed maps and cups between rounds without a restart`. Body:
+- [x] 9.2 Merged locally on 2026-10-10 per owner decision; no PR. The title that would be used is `feat(server): pick up changed maps and cups between rounds without a restart`. Body:
   the spike results (1.1 to 1.3), the EARS requirement list with the test that covers each, the sequence from design decision 7, the
   smoke result (8.3), the base branch (the `unify-catalog-loading` branch while it is not merged), and the footer
   `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: `gh pr view` shows the title and the base branch.

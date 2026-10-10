@@ -263,8 +263,17 @@ Rollback: revert the squash commit. Catalogues then load at boot only, as before
   `platform.catalog.exception`), not in the form the dependency change described. `LoadedCatalog` resolves the selected cup at
   load time, and that resolution is platform code. Decision 2 and decision 9 hold otherwise.
 - **A reload rejects a broken cup that the server does not play; boot only warns about it.** Decision 5 said that one broken
-  unrelated cup rejects every reload until `scope-cup-validation` lands. That is what is built, and it is stricter than boot.
-  See Open Question 2.
+  unrelated cup rejects every reload until `scope-cup-validation` lands. `scope-cup-validation` has now landed (merged on
+  `main`, owner decision 2026-10-10). Boot follows its rule: only the played cup refuses, and the other broken cups are
+  logged as one warning. The reload does not follow it yet: `CatalogReloader.reload` still checks every cup file, so a
+  broken unplayed cup rejects a reload. That is stricter than boot. Aligning the reload with boot is not part of this change
+  and the owner has not scheduled it. See Answer 2.
+- **The server console reads commands from standard input; decision 3 did not include this.** Decision 3 names `/race reload`
+  as the trigger, but Minestom 26.2 does not read `System.in`, and no operator level is granted, so no one could reach the
+  command on a running server. `ConsoleCommandReader` (`voyager-server`, `command`, commit `8ce3e92`) reads lines on a daemon
+  virtual thread and runs each one through the command manager as the console sender. An unknown command gets one reply line.
+  The console form is `race reload`, without the slash. The rules of decision 3 do not change; only the operator's route to
+  the command is new. `docs/guides/reload-catalogs.md` says so.
 
 ## Spike Results
 
@@ -279,8 +288,10 @@ from the Minestom source of the version the tree uses for the rebuild.
 - **1.2 (open question 5): opening a world off the tick thread.** Safe, by source reading. `InstanceManager` keeps its instances
   in a `CopyOnWriteArraySet`. `createPartition` only enqueues a `PartitionLoad` update (an MPSC queue, `signalUpdate`), which the
   tick threads apply, so the caller does not touch the dispatcher's partitions. `unregisterInstance` synchronises on the instance
-  and unloads its chunks. Chunks are read by the Falco loader on the reload thread. A live check of a reload on a running server
-  is task 8.3, which is still open. No fallback (tick stall or restart for new worlds) is needed unless 8.3 disproves this.
+  and unloads its chunks. Chunks are read by the Falco loader on the reload thread. Task 8.3 (smoke test, 2026-10-10) did not
+  exercise this path: its only world was already open at boot, so the reload only checked the region data and opened nothing.
+  The claim therefore stays source-verified. No live check of a new world opening during a reload has been made. No fallback
+  (tick stall or restart for new worlds) is in the code.
 - **1.3 (open question 3, API): the permission source.** Minestom 26.2 has no named permission API. `CommandSender` carries no
   permission set. `Player` carries a numeric operator level from 0 to 4 (`getPermissionLevel`). `ConsoleSender` is a type, not a
   level. The predicate is `ReloadPermission.mayReload(CommandSender)`: the console is allowed, a player needs level 4.
@@ -288,29 +299,32 @@ from the Minestom source of the version the tree uses for the rebuild.
 
 ## Answers to the Open Questions
 
-The answers below describe what is implemented. Each one that is an owner decision is recorded as implemented, and the owner
-confirms it when ADR-0019 is accepted.
+The answers below record the owner's decisions of 2026-10-10 and the state that is built. Where the owner decided nothing,
+the answer says so.
 
-1. **Pinned rounds only.** Implemented as recommended. A valid edit waits for the next cup. Geometry-only swaps at a map
-   boundary are not implemented, and nothing in this change needs them.
-2. **Broken unrelated cups block reloads.** Accepted for this change. `scope-cup-validation` is not merged, so a reload checks
-   every cup in `cups/`, and a broken cup that the server does not play rejects it. Boot only warns about such a cup. This is
-   deliberately stricter than boot, and the how-to says so.
-3. **Permission source.** None is granted yet. The console may reload. A player needs operator level 4, and this server grants
-   no level. Until the owner names a source, only the console can run `/race reload`.
+1. **Pinned rounds only. Owner decision, 2026-10-10.** A valid edit waits for the next cup. Geometry-only swaps at a map
+   boundary are not implemented, and this change does not need them.
+2. **Owner: `scope-cup-validation` before this change. Resolved, 2026-10-10.** It is merged on `main` (merge `badc124`).
+   Boot applies its rule: only the played cup refuses. The reload still checks every cup file, so a broken cup that the
+   server does not play rejects a reload (Deviations). The owner resolved the question of merge order, not that reload
+   alignment. The alignment is an open follow-up, not done here.
+3. **Permission source. No source named by the owner, 2026-10-10.** The console may reload. A player needs operator level 4,
+   and this server grants no level, so today only the console can run `race reload`. The console-only state is the default
+   this change ships with. Naming a permission source is still the owner's decision and is open (Open Questions, 3).
 4. **Who starts a cup.** Answered by spike 1.1 above.
-5. **Instance registration off the tick thread.** Answered by spike 1.2 above (safe by source reading; live check in 8.3).
-6. **Is the pinned-round answer the one the owner expects?** Owner confirmation is pending, with ADR-0019 approval.
+5. **Instance registration off the tick thread.** Answered by spike 1.2 above. Still source-verified only; task 8.3 did not
+   open a new world (see the spike result).
+6. **Is the pinned-round answer the one the owner expects?** Yes. Owner decision 1 is pinned rounds only, and ADR-0019 was
+   accepted on 2026-10-10.
 
 ## Open Questions
 
-1. **Owner:** may a valid edit wait for the next cup (decision 1), or must geometry-only changes apply at the next map boundary too?
-   Pinned rounds only is recommended (no mixed-catalogue comparison within a cup). The alternative is geometry-only map-boundary swaps.
-2. **Owner:** `scope-cup-validation` before this change, or accept that a broken unrelated cup blocks reloads until it lands?
-   (The behaviour of `scope-cup-validation` is approved, 2026-10-09; the merge order is still open.)
-3. **Owner:** which permission source grants `voyager.race.reload` on the live server?
+1. **Answered 2026-10-10: pinned rounds only** (Answer 1). Geometry-only map-boundary swaps are not part of this change.
+2. **Answered 2026-10-10: `scope-cup-validation` before this change** (Answer 2). The reload alignment with boot is open.
+3. **Open, owner:** which permission source grants `voyager.race.reload` on the live server? Not decided on 2026-10-10; the
+   console-only state stands until the owner names one (Answer 3).
 4. **Spike 1.1:** does a finished cup start again by itself in production, or only by `/race start` or a restart? The answer sets the
    "pending" wording. **Answered (1.1):** it starts only on the next first player spawn while idle, or by `/race start` in dev mode.
 5. **Spike 1.2:** instance registration from a non-tick thread. If unsafe, choose between a one-time tick stall for new worlds and "new
    worlds need a restart". **Answered (1.2):** safe by source reading; no fallback needed unless task 8.3 disproves it.
-6. **Owner:** is the pinned-round answer to research 005 open question 5 the one the owner expects?
+6. **Answered 2026-10-10: ADR-0019 accepted,** which records the pinned-round answer to research 005 open question 5 (Answer 6).
