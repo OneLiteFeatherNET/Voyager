@@ -292,16 +292,16 @@ it, and it names Polar and the FAWE inventory as open, not decided.
 - **Left-click on air.** If Minestom 26.2 sends no event for a left-click on air, removal works only on blocks. Spike 1.2 decides.
 - **Time-based claims.** None. The 10-second test-fly target of research 005 belongs to S4, not to this change.
 
-## Open questions (owner, AskUserQuestion before apply)
+## Open questions (owner answers, 2026-10-10)
 
 | # | Question | Options and trade-offs | Recommendation |
 |---|---|---|---|
 | O1 | Draft layout | **Resolved 2026-10-09:** flat `maps/<id>.json` with world `<worldsPath>/<id>`, as the game reads today. Drafts without a ring or spawn wait in `drafts/` (section 4). No publish step, no `align-map-folder-with-game-catalog`. | Owner decision |
-| O2 | Removal gesture before undo | Plain left-click as specified (fast, unrecoverable) vs sneak plus left-click (one extra key; fewer accidents until S8) | Sneak plus left-click, if the owner agrees to change the spec |
-| O3 | Settings | Duplicate two properties now (debt recorded) vs extract a resolver to `voyager-platform` first (refactor(platform), delays this change) | Duplicate now; extract before the second setup feature |
-| O4 | Terrain in the setup world | Cancel block edits (no silent loss; builders use the external editor) vs allow edits (lost on restart without a save path) | Cancel block edits |
-| O5 | Defaults | Radius sqrt(13), reach 32 blocks, provisional reference time, boost and guide seeds | Designer confirms (Drift); seeds stay provisional as in the sample |
-| O6 | US-6.01 closure | Research 005 lists spike X1 (FAWE inventory, Must) as not yet recorded. Close US-6.01 now on the owner's 2026-10-09 approval, or after X1 is in `docs/research/` | Close after X1 is recorded; task 2.3 checks it |
+| O2 | Removal gesture before undo | Plain left-click as specified (fast, unrecoverable) vs sneak plus left-click (one extra key; fewer accidents until S8) | **Decided 2026-10-10: sneak plus left-click removes a ring; a plain left-click changes no ring.** Spec `setup/ring-placement` and `WandListener` changed in the commit `feat(setup): remove a ring only on sneak and left-click`. |
+| O3 | Settings | Duplicate two properties now (debt recorded) vs extract a resolver to `voyager-platform` first (refactor(platform), delays this change) | **Decided 2026-10-10: duplicate now; extract a shared resolver before the second setup feature.** The debt stays in the Risks section. |
+| O4 | Terrain in the setup world | Cancel block edits (no silent loss; builders use the external editor) vs allow edits (lost on restart without a save path) | **Decided 2026-10-10: cancel block edits in an open map** (`TerrainGuard`; spec `setup/ring-placement`). |
+| O5 | Defaults | Radius sqrt(13), reach 32 blocks, provisional reference time, boost and guide seeds | **Decided 2026-10-10: radius sqrt(13) and reach 32 blocks.** The reference time, boost and guide line stay provisional seeds, as in the sample, until a designer confirms them. |
+| O6 | US-6.01 closure | Research 005 lists spike X1 (FAWE inventory, Must) as not yet recorded. Close US-6.01 now on the owner's 2026-10-09 approval, or after X1 is in `docs/research/` | **Decided 2026-10-10: US-6.01 closed after X1 was recorded** in `docs/research/007-fawe-usage-inventory.md`, on the owner's approval of 2026-10-09 (research 005, section 7.4). |
 
 ## Migration Plan
 
@@ -310,6 +310,9 @@ removed from `settings.gradle.kts`, and the platform additions have no caller ou
 and no data migrates.
 
 ## Follow-up changes (not part of this change)
+
+Accepted by the owner on 2026-10-10.
+
 
 | Change | Type(scope) | Research ID | MoSCoW | Depends on |
 |---|---|---|---|---|
