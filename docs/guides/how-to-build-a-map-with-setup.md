@@ -35,13 +35,15 @@ can load. It covers the first slice of `voyager-setup`: the commands `/map new`,
 - **Right-click** places a ring at your eye position, facing the direction you look. The ring's normal is that direction,
   its radius is `sqrt(13)` (3.605551275463989), it scores 10 points and it is a standard ring. Its index is the number of
   rings before it. A preview block appears where the ring is.
-- **Left-click** removes the nearest ring that your look ray crosses within 32 blocks. The rings after it are renumbered.
-  If no ring is in reach, nothing changes and you are told so.
+- **Sneak plus left-click** (hold Shift, then left-click) removes the nearest ring that your look ray crosses within 32
+  blocks. The rings after it are renumbered. If no ring is in reach, nothing changes and you are told so. A plain
+  left-click changes no ring.
 
 Every change is saved before you see it. If a save fails, you are told that the change was not saved, and the draft
 stays as it was.
 
-There is no undo in this slice. A left-click removes a ring for good; place it again if you removed it by mistake.
+There is no undo in this slice. A sneak plus left-click removes a ring for good; place it again if you removed it by
+mistake.
 
 Right-clicking a block with the wand places a ring and does not place a block. Breaking and placing blocks in an open map
 is cancelled, because the setup server never saves a world.

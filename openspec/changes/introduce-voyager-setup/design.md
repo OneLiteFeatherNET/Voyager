@@ -188,8 +188,8 @@ to `drafts/`, so `maps/` never holds an incomplete draft.
   preview handles. Every mutation is: compute with `DraftEditor`, `DraftStore.save`, then update the session and previews.
   If the save throws, the session keeps the old draft.
 - `setup.adapter.WandListener`: right-click with the wand calls `RingFromPose` with the player's eye position and look
-  direction (converted by `platform.convert.Vectors`), then the placement path above. Left-click calls `RingPicker` with the
-  same ray and removes the ring. The events that carry the left-click (on air and on a block) are fixed by spike 1.2.
+  direction (converted by `platform.convert.Vectors`), then the placement path above. Sneak plus left-click calls `RingPicker`
+  with the same ray and removes the ring; a plain left-click changes nothing (owner decision O2). The events that carry the left-click (on air and on a block) are fixed by spike 1.2.
 - `setup.adapter.SetupCommands`: a Minestom `Command` tree for `/map new <id>`, `/map open <id>`, `/map spawn`, `/map status`,
   using the same command API as `server.command.RaceCommand`. Map-id parsing goes through `MapId`.
 - `setup.adapter.RingPreview`: spawns and removes display entities. Its transform call is written after spike 1.1.
@@ -221,7 +221,7 @@ in the class comment.
    -> session.draft = newDraft; RingPreview.spawn(ring)                        [adapter]
    -> Messages: "Ring 12 placed"  (on DraftWriteFailedException: old draft kept, "not saved")
 
- builder left-click (wand)
+ builder sneak plus left-click (wand)
    -> RingPicker.nearestCrossed(draft.rings(), eye, look, REACH_BLOCKS)        [pure]
    -> DraftEditor.withoutRing(draft, index) -> save -> RingPreview.remove(index)
 ```
@@ -283,7 +283,8 @@ it, and it names Polar and the FAWE inventory as open, not decided.
   (section 4). No silent choice.
 - **A region-less void world fails `MapInstances`.** Mitigation: spike 1.3 decides the template; the template ships with one
   empty region file if needed.
-- **No undo.** A left-click removes a ring for good, short of re-placing it. Mitigation proposed as an owner question (O2).
+- **No undo.** A sneak plus left-click removes a ring for good, short of re-placing it. Mitigation: the removal gesture needs
+  sneak (O2, decided 2026-10-10); undo is follow-up `add-setup-undo`.
 - **Settings duplication.** `SetupSettings` duplicates three of `ServerSettings`' properties until a shared resolver exists.
   Recorded as debt. The greenfield design says duplicated resolution is how the two roots drift; the debt is small and visible.
 - **`apiDoesNotPerformFileIo` and `Path` in the port.** If ArchUnit flags the `Path` return of `worldDirectory`, the accessor

@@ -59,8 +59,10 @@ class BuilderWorkflowTest {
             env.tick();
         }
         moveTo(env, builder, 5.0);
+        builder.setSneaking(true);
         env.process().eventHandler().call(new PlayerHandAnimationEvent(builder, PlayerHand.MAIN));
         env.tick();
+        builder.setSneaking(false);
         command(env, builder, sessions, "map spawn");
         command(env, builder, sessions, "map status");
 

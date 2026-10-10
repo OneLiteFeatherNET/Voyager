@@ -71,7 +71,7 @@ class RingPreviewTest {
         fixture.rightClick();
         fixture.awaitPreviews(1);
         fixture.moveTo(new Pos(0, 64, -5));
-        fixture.leftClick();
+        fixture.sneakLeftClick();
 
         fixture.awaitPreviews(0);
         assertThat(fixture.store.load(ID).rings()).isEmpty();
@@ -150,6 +150,15 @@ class RingPreviewTest {
 
         void leftClick() {
             env.process().eventHandler().call(new PlayerHandAnimationEvent(builder, PlayerHand.MAIN));
+            env.tick();
+        }
+
+        /** The removal gesture of owner decision O2: sneak, then left-click. */
+        void sneakLeftClick() {
+            builder.setSneaking(true);
+            env.tick();
+            leftClick();
+            builder.setSneaking(false);
             env.tick();
         }
 
