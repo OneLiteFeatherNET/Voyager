@@ -1,5 +1,7 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.elytrarace.voyager.race.flow.StartGate;
+
 import java.time.Duration;
 
 /**
@@ -35,7 +37,7 @@ import java.time.Duration;
 public final class StartCountdown {
 
     /** How long the count lasts: three seconds. Longer and the racer disengages before the start. */
-    public static final Duration LENGTH = Duration.ofSeconds(3);
+    public static final Duration LENGTH = StartGate.COMMIT_WINDOW;
 
     /** What {@link #digitFor} answers when there is no digit to show. */
     public static final int NONE = 0;

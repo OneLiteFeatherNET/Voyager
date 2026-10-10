@@ -1,5 +1,7 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.elytrarace.voyager.race.flow.StartGate;
+
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -147,5 +149,11 @@ class StartCountdownTest {
         countdown.show(seconds(3));
 
         assertThat(countdown.show(seconds(3))).isEqualTo(StartCountdown.NONE);
+    }
+
+    /** The countdown's length is the commit window of the start gate, so the two cannot drift apart. */
+    @Test
+    void lengthIsTheCommitWindow() {
+        assertThat(StartCountdown.LENGTH).isEqualTo(StartGate.COMMIT_WINDOW);
     }
 }
