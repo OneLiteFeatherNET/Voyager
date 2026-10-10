@@ -159,6 +159,33 @@ Items not covered, each with the reason no dependency rule can express it:
 
 Items 4, 19, 20 (except as frozen by R3), 21 and 22 are resolved or acceptable and need no entry.
 
+**Red run (2026-10-10, `SliceBoundaryRulesTest` with all rules unfrozen).** R1 to R6 fail, R7 and R8 pass. Counts are
+the header counts of the ArchUnit report, and each equals the sum of its per-file lines.
+
+| Rule | Violations | Source files (violations) | Item |
+|---|---|---|---|
+| R1 | 39 | `server.game.CupSession` (24), `CupStandings` (12), `CupStanding` (3) | 1, 2, 3 |
+| R2 | 94 | `server.game.CupSession` (29), `Racers` (19), `Rockets` (23), `LivePlayerSampler` (16), `CurrentMapBlocks` (7) | 6, 7, 8, 9, 28 |
+| R3 | 52 | `platform.world.RaceRuns` (7), `platform.tick.XerusPhaseDriver` (33), `platform.tick.RacePhaseListener` (2), `platform.render.GuideLineRenderer` (6), `platform.text.Messages` (4) | 11, 13, 15, 20 |
+| R4 | 1 cycle | `catalog` to `world` (`CatalogValidation` to `WorldFolders`, `WorldHealth`; `MapInstances` to `WorldOpener`) and `JsonDraftStore` to `VoidWorldTemplate` | 27; the `JsonDraftStore` edge goes with item 24 |
+| R5 | 46 | `catalog.JsonDraftStore` (30), `catalog.writer.MapDraftJsonWriter` (12), `catalog.MapDraftAdapter` (4) | 24, 29 |
+| R6 | 170 | `setup.adapter` (153 across seven classes: `WandListener` 44, `SetupCommands` 50, `RingPreviews` 15, `TerrainGuard` 18, `Wand` 16, `BuilderSessions` 7, `MapSession` 3) and the setup composition root (17: `setup.SetupServer` 10, `setup.inject.SetupBeans` 3, its avaje-generated `SetupBeans$DI` 3, `setup.inject.DInjectModule` 1) | 26 for the adapter; **not named by any item for the composition root** |
+
+**Gap found by the Red run.** The setup composition root imports `net.minestom` (`SetupServer` for `MinecraftServer` and
+`ServerFlag`; `SetupBeans` for `MinecraftServer` and `InstanceManager`), and no migration item names it. Item 26 names
+only `setup.adapter`. The spec scenario "the seven classes of `setup.adapter` that the baseline records" is therefore
+wrong for R6, and the 17 composition-root violations cannot be stored under an approved item. Options for the owner:
+
+- **A (proposed).** Addendum 30, provisional: the setup composition root holds Minestom bootstrap and bean wiring; target
+  `voyager-platform` (the bootstrap) or a later `regroup-setup-adapters`. R6 freezes all 170 violations, mapped 153 to item
+  26 and 17 to item 30. The rule keeps "every class of `..setup..`" as written. Needs the spec scenario corrected.
+- **B.** Treat the setup bootstrap as wiring, as the migration list already does for `VoyagerServer` (its Minestom bootstrap is
+  "wiring", archived design line 95). R6 then excludes the composition-root classes. This changes the spec, because
+  R2 scopes the server rule to `server.game` for the same reason, so it is consistent, but it is a narrowing the owner must
+  approve explicitly.
+
+The Red run is recorded here; no baseline is written until the owner chooses. Item 30 is not yet in the owner's accepted set (28 and 29).
+
 Addenda, provisional until the owner confirms the numbers:
 - **Item 28 (addendum, provisional):** `server/game/CupSession.java` imports Minestom. It is in the R2 baseline, and the migration
   list names it only for the scoring import and the tick order.

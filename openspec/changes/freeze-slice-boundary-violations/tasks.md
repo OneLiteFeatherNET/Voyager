@@ -6,8 +6,8 @@ code or existing tests.
 
 ## 1. Red: rules fail on the known violations
 
-- [ ] 1.1 Add `voyager-fitness/src/test/java/net/elytrarace/fitness/SliceBoundaryRulesTest.java` with rules R1 to R8 from design D6, each an `@ArchTest` with `allowEmptyShould(false)` and a stable `as(...)` description, none frozen yet. Verify: `./gradlew :voyager-fitness:test --tests 'net.elytrarace.fitness.SliceBoundaryRulesTest'` exits non-zero, and the failure output names the rules R1 to R6 and R4, and no rule fails with the empty-should error (the package patterns match classes).
-- [ ] 1.2 Reconcile the Red output with design D6 and D7. Replace the expected item numbers with the confirmed ones, record the violation count per rule, and add an addendum item for each violation that no migration item names. Ask the owner to confirm the addendum numbers before group 2. Verify: every violation in the Red output appears in the reconciled D7 table, and the R7 and R8 rows show zero violations or are changed to frozen.
+- [x] 1.1 Add `voyager-fitness/src/test/java/net/elytrarace/fitness/SliceBoundaryRulesTest.java` with rules R1 to R8 from design D6, each an `@ArchTest` with `allowEmptyShould(false)` and a stable `as(...)` description, none frozen yet. Verify: `./gradlew :voyager-fitness:test --tests 'net.elytrarace.fitness.SliceBoundaryRulesTest'` exits non-zero, and the failure output names the rules R1 to R6 and R4, and no rule fails with the empty-should error (the package patterns match classes).
+- [ ] 1.2 (Open: blocked on the owner's confirmation of addendum 30, see design D7 "Red run") Reconcile the Red output with design D6 and D7. Replace the expected item numbers with the confirmed ones, record the violation count per rule, and add an addendum item for each violation that no migration item names. Ask the owner to confirm the addendum numbers before group 2. Verify: every violation in the Red output appears in the reconciled D7 table, and the R7 and R8 rows show zero violations or are changed to frozen.
 
 ## 2. Green: freeze the rules and commit the baseline
 
