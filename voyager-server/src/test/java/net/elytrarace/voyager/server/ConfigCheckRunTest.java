@@ -54,7 +54,7 @@ class ConfigCheckRunTest {
         writeRacetrack(env, worlds, SHIPPED_WORLD);
 
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
-        int exit = ConfigCheck.run(settings(data, worlds, "test_cup"), env.process().instance(), stream(captured));
+        int exit = ConfigCheck.run(settings(data, worlds, "alpha_cup"), env.process().instance(), stream(captured));
 
         assertThat(exit).isZero();
         assertThat(text(captured)).doesNotContain("ERROR");
@@ -70,7 +70,7 @@ class ConfigCheckRunTest {
         Files.createDirectories(worlds);
 
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
-        int exit = ConfigCheck.run(settings(data, worlds, "test_cup"), env.process().instance(), stream(captured));
+        int exit = ConfigCheck.run(settings(data, worlds, "alpha_cup"), env.process().instance(), stream(captured));
 
         assertThat(exit).isOne();
         assertThat(text(captured)).contains("ERROR " + broken.toAbsolutePath() + " file:");
@@ -86,7 +86,7 @@ class ConfigCheckRunTest {
         Path mapFile = data.resolve("maps/elytraraceblueandred.json");
 
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
-        int exit = ConfigCheck.run(settings(data, worlds, "test_cup"), env.process().instance(), stream(captured));
+        int exit = ConfigCheck.run(settings(data, worlds, "alpha_cup"), env.process().instance(), stream(captured));
 
         assertThat(exit).isOne();
         assertThat(text(captured)).contains("ERROR " + mapFile.toAbsolutePath() + " world:");
@@ -103,7 +103,7 @@ class ConfigCheckRunTest {
         ShippedCatalogue.copyMapsInto(data);
         ShippedCatalogue.copyCupsInto(data);
         writeRacetrack(env, worlds, SHIPPED_WORLD);
-        ServerSettings settings = settings(data, worlds, "test_cup");
+        ServerSettings settings = settings(data, worlds, "alpha_cup");
 
         ConfigCheck.run(settings, env.process().instance(), stream(new ByteArrayOutputStream()));
 
@@ -208,7 +208,7 @@ class ConfigCheckRunTest {
         writeRacetrack(env, worlds, SHIPPED_WORLD);
         Files.writeString(data.resolve("cups").resolve("zz-broken.json"), "");
 
-        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings(data, worlds, "test_cup"),
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings(data, worlds, "alpha_cup"),
                 env.process().instance());
 
         assertThat(refusals).isEmpty();
@@ -262,7 +262,7 @@ class ConfigCheckRunTest {
     private static Map<String, String> properties(Path data, Path worlds) {
         return Map.of(ServerSettings.DATA_PATH_PROPERTY, data.toString(),
                 ServerSettings.WORLDS_PATH_PROPERTY, worlds.toString(),
-                ServerSettings.CUP_PROPERTY, "test_cup");
+                ServerSettings.CUP_PROPERTY, "alpha_cup");
     }
 
     private static ServerSettings settings(Path data, Path worlds, String cup) {
