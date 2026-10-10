@@ -11,8 +11,8 @@ A cup starts only when enough racers are online. The minimum comes from `VOYAGER
 
 | Run | Minimum when not set | How to set it |
 |---|---|---|
-| Production-like (`runServer`) | 2 | `./gradlew :voyager-server:runServer -PminPlayers=<N>` |
-| Dev (`runServerDev`, `voyager.dev` set) | 1 | `./gradlew :voyager-server:runServerDev -PminPlayers=<N>` |
+| Production-like (`runServer`) | 2 | `./gradlew :voyager:server:runServer -PminPlayers=<N>` |
+| Dev (`runServerDev`, `voyager.dev` set) | 1 | `./gradlew :voyager:server:runServerDev -PminPlayers=<N>` |
 
 An explicit value wins in both modes. A value that is not a whole number, or is below 1, refuses the start and names
 `VOYAGER_MIN_PLAYERS` in the log.
@@ -22,14 +22,14 @@ An explicit value wins in both modes. A value that is not a whole number, or is 
 For a playtest with two racers on a development machine:
 
 ```bash
-./gradlew :voyager-server:runServerDev -PminPlayers=2
+./gradlew :voyager:server:runServerDev -PminPlayers=2
 ```
 
 Dev mode also shortens the lobby to 10 seconds and the results screen to 5 seconds, and it registers `/race start` and
 `/race skip`. For a run that behaves like production, use the packaged server instead:
 
 ```bash
-./gradlew :voyager-server:runServer -PminPlayers=2
+./gradlew :voyager:server:runServer -PminPlayers=2
 ```
 
 Wait for the line `Listening on <host>:<port>` in the log before connecting. Connect each racer with a 26.2 client to
@@ -78,7 +78,7 @@ These commands are not registered on a production run.
 3. Read the start-up log. A refused `VOYAGER_MIN_PLAYERS` stops the server before it listens, with the key named.
 4. If the cup is not waiting but racing, a map is in progress. A countdown starts only after the cup has finished or
    was aborted. Use `/race start` in dev mode to start a cup at once, or `/race skip` to end the map being raced.
-5. If the server reports a problem with a world, run `./gradlew :voyager-server:validateCatalog` and fix what it lists.
+5. If the server reports a problem with a world, run `./gradlew :voyager:server:validateCatalog` and fix what it lists.
 
 ## Related
 

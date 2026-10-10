@@ -2,7 +2,7 @@
 
 This guide walks through running the Voyager game server locally against a world that was
 already created with the Setup Server. It does not cover map creation — that is handled
-separately by the Setup Server (`plugins/setup`).
+separately by the Setup Server (`legacy/plugins/setup`).
 
 ## Prerequisites
 
@@ -15,10 +15,10 @@ separately by the Setup Server (`plugins/setup`).
 From the project root:
 
 ```bash
-./gradlew :server:shadowJar
+./gradlew :legacy:server:shadowJar
 ```
 
-Output artifact: `server/build/libs/Voyager-<version>.jar`
+Output artifact: `legacy/server/build/libs/Voyager-<version>.jar`
 
 The shadow JAR bundles all runtime dependencies. No additional classpath setup is needed.
 
@@ -60,7 +60,7 @@ The path `/home/user/worlds/my-race-map` is what you pass to the server at runti
 
 ```bash
 java -XX:+UseZGC -XX:+UseCompactObjectHeaders -Xms256M -Xmx512M \
-  -jar server/build/libs/*.jar
+  -jar legacy/server/build/libs/*.jar
 ```
 
 By default the server binds to `0.0.0.0:25565`. To use a different address or port pass them
@@ -68,7 +68,7 @@ as positional arguments:
 
 ```bash
 java -XX:+UseZGC -XX:+UseCompactObjectHeaders -Xms256M -Xmx512M \
-  -jar server/build/libs/*.jar 0.0.0.0 25566
+  -jar legacy/server/build/libs/*.jar 0.0.0.0 25566
 ```
 
 To override database credentials at runtime:
@@ -77,7 +77,7 @@ To override database credentials at runtime:
 DB_HOST=localhost DB_PORT=3306 DB_NAME=voyager-project \
 DB_USER=voyager-project DB_PASSWORD=voyager-project \
   java -XX:+UseZGC -XX:+UseCompactObjectHeaders -Xms256M -Xmx512M \
-  -jar server/build/libs/*.jar
+  -jar legacy/server/build/libs/*.jar
 ```
 
 ## Step 5 — Connect
@@ -99,7 +99,7 @@ java.net.BindException: Address already in use
 Pass a different port as the second argument:
 
 ```bash
-java ... -jar server/build/libs/*.jar 0.0.0.0 25566
+java ... -jar legacy/server/build/libs/*.jar 0.0.0.0 25566
 ```
 
 **World not loading / AnvilLoader exception**

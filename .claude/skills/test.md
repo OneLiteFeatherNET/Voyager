@@ -9,10 +9,10 @@ Run tests and provide a clear summary.
 
 ## Steps
 
-1. Determine scope from user input (default: `:server:test`)
+1. Determine scope from user input (default: `:legacy:server:test`)
 2. Run tests:
 ```bash
-JAVA_HOME=/home/themeinerlp/.sdkman/candidates/java/25.0.1-open PATH="/home/themeinerlp/.sdkman/candidates/java/25.0.1-open/bin:$PATH" ./gradlew :server:clean :server:test --no-daemon
+JAVA_HOME=/home/themeinerlp/.sdkman/candidates/java/25.0.1-open PATH="/home/themeinerlp/.sdkman/candidates/java/25.0.1-open/bin:$PATH" ./gradlew :legacy:server:clean :legacy:server:test --no-daemon
 ```
 3. Count PASSED, FAILED, SKIPPED
 4. For failures: show test name + error message

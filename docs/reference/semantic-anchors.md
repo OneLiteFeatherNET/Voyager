@@ -21,9 +21,9 @@ Voyager uses anchors as a shared vocabulary for humans and agents.
 | Anchor (exact) | How Voyager applies it | Where it is enforced or used |
 |---|---|---|
 | Vertical Slice Architecture (VSA) | The rebuild organises behaviour in slices: race, ring, cup and map setup. | [ADR-0017](../decisions/0017-clean-architecture-with-vertical-slices.md), `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` |
-| Clean Architecture | Dependencies point inward. `voyager-api` holds no implementation, and Minestom appears only in the platform and server adapters. | [ADR-0017](../decisions/0017-clean-architecture-with-vertical-slices.md), `voyager-api`, `voyager-fitness/src/test/java/net/elytrarace/fitness/ApiPurityTest.java` |
+| Clean Architecture | Dependencies point inward. `voyager-api` holds no implementation, and Minestom appears only in the platform and server adapters. | [ADR-0017](../decisions/0017-clean-architecture-with-vertical-slices.md), `voyager-api`, `voyager/fitness/src/test/java/net/elytrarace/fitness/ApiPurityTest.java` |
 | Hexagonal Architecture (Ports & Adapters) | Domain ports live in `voyager-api`, and `voyager-platform` supplies the Minestom adapters. | `voyager-platform`, `voyager-fitness` |
-| Domain-Driven Design according to Evans | Domain packages (`race`, `physics`, `math`) use the ubiquitous vocabulary of the game. | `voyager-api/src/main/java/net/elytrarace/voyager/api/` |
+| Domain-Driven Design according to Evans | Domain packages (`race`, `physics`, `math`) use the ubiquitous vocabulary of the game. | `voyager/api/src/main/java/net/elytrarace/voyager/api/` |
 | Tracer Bullet | Candidate. Use it for the first flyable end-to-end slice. | Not yet applied |
 | Walking Skeleton | Candidate. Use it for the first build that starts a server and loads a map. | Not yet applied |
 | ADR according to Nygard | Candidate. Current decision records use MADR, see Documentation. | Not yet applied |
@@ -35,7 +35,7 @@ Voyager uses anchors as a shared vocabulary for humans and agents.
 | SOLID Principles | Interfaces stay small and depend on abstractions. | `.claude/skills/java-style/SKILL.md` (judgment) |
 | SOLID-Dependency Inversion Principle | Services depend on `voyager-api` interfaces, not on Minestom types. | `voyager-fitness` (ArchUnit) |
 | Separation of Concerns | Each `voyager-*` module owns one concern. | `settings.gradle.kts`, `FitnessCoverageTest` |
-| Defensive Programming according to McConnell | Record compact constructors check invariants before use. | `voyager-api/src/main/java/net/elytrarace/voyager/api/` |
+| Defensive Programming according to McConnell | Record compact constructors check invariants before use. | `voyager/api/src/main/java/net/elytrarace/voyager/api/` |
 | Code Smells | Review criterion for refactoring. | Code review |
 | Refactoring Catalog according to Fowler | Named refactorings guide structural changes. | Code review |
 
@@ -43,10 +43,10 @@ Voyager uses anchors as a shared vocabulary for humans and agents.
 
 | Anchor (exact) | How Voyager applies it | Where it is enforced or used |
 |---|---|---|
-| Testing Pyramid | Many unit tests in `voyager-api`, with architecture rules at the top in `voyager-fitness`. | `voyager-api/src/test`, `voyager-fitness/src/test` |
+| Testing Pyramid | Many unit tests in `voyager-api`, with architecture rules at the top in `voyager-fitness`. | `voyager/api/src/test`, `voyager/fitness/src/test` |
 | Red/Green TDD | New behaviour starts with a failing test, then production code. | Review (F.I.R.S.T. criteria, see below) |
 | TDD, Chicago School | Applied in unit tests: state-based assertions on real collaborators, no mocks of our own types. Matches F.I.R.S.T. | `.claude/agents/voyager-senior-testing.md` |
-| Arrange-Act-Assert (AAA) | Test bodies follow arrange, act, assert in that order. | `voyager-api/src/test` |
+| Arrange-Act-Assert (AAA) | Test bodies follow arrange, act, assert in that order. | `voyager/api/src/test` |
 | Property-Based Testing | Candidate for numeric code in `math` and `physics`. | Not yet applied |
 
 Candidate, not yet applied: "TDD, London School" (mock-based interaction tests). Use it only after a

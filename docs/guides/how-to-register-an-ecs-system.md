@@ -6,7 +6,7 @@ Use this guide when you add a new system to the game server's ECS. It covers the
 
 Before you begin:
 
-- You can build and run the `server` module (`./gradlew :server:build`)
+- You can build and run the `server` module (`./gradlew :legacy:server:build`)
 - You understand the ECS roles: `Entity` (container), `Component` (data), `System` (per-tick logic)
 - Your behaviour owns mutable per-entity state that must live on the entity graph, not in an ad-hoc map
 
@@ -136,8 +136,8 @@ Do not hold map-specific state inside the system itself. The system must be pure
 Build the server module and start it:
 
 ```shell
-$ ./gradlew :server:build
-$ java -jar server/build/libs/*.jar
+$ ./gradlew :legacy:server:build
+$ java -jar legacy/server/build/libs/*.jar
 ```
 
 On game start, the log lists every registered system indirectly through `GameOrchestrator`:

@@ -14,18 +14,24 @@ file — is the authority for the design rules until the rebuild lands.
 
 ### The rebuild (`voyager-*`)
 
-| Module | Contents |
-|---|---|
-| `voyager-api` | Interfaces, records, enums, exceptions. No implementation, no I/O. |
-| `voyager-fitness` | Test-only. ArchUnit over every `voyager-*` module. |
+The rebuild's modules live under `voyager/`. The artifact name (`voyager-*`) is unchanged; the Gradle path is `:voyager:<name>`.
 
-Further modules — `voyager-physics`, `voyager-race`, `voyager-persistence`, `voyager-platform`,
-`voyager-server`, `voyager-setup` — arrive in later stages. See the spec's delivery plan.
+| Module | Gradle path | Contents |
+|---|---|---|
+| `voyager-api` | `:voyager:api` | Interfaces, records, enums, exceptions. No implementation, no I/O. |
+| `voyager-physics` | `:voyager:physics` | Elytra flight physics. |
+| `voyager-race` | `:voyager:race` | Race, cup and scoring use cases. |
+| `voyager-platform` | `:voyager:platform` | Minestom and Falco adapters, catalogue reader. |
+| `voyager-server` | `:voyager:server` | Game server composition root. |
+| `voyager-setup` | `:voyager:setup` | Setup server composition root. |
+| `voyager-fitness` | `:voyager:fitness` | Test-only. ArchUnit over every rebuild module. |
+
+`voyager-persistence` arrives in a later stage. See the spec's delivery plan.
 
 ### The tree being replaced
 
-`server`, `plugins/game`, `plugins/setup`, `shared/common`, `shared/conversation-api`,
-`shared/database`, `shared/spline`. Do not add features here. It is deleted in one cut once the
+`legacy/server`, `legacy/plugins/game`, `legacy/plugins/setup`, `legacy/shared/common`, `legacy/shared/conversation-api`,
+`legacy/shared/database`, `legacy/shared/spline`. Do not add features here. It is deleted in one cut once the
 rebuild reaches a flyable build with a green Vanilla trace suite.
 
 ## Key Decisions
@@ -33,7 +39,7 @@ rebuild reaches a flyable build with a green Vanilla trace suite.
 - **Java**: 25 for every `voyager-*` module. Vanilla itself requires Java 25 since Minecraft 26.1.
 - **Target**: Minecraft 26.2, Minestom `2026.08.28-26.2`. Mojang moved to calendar versioning in
   2026; there is no 1.22, it became 26.1. `settings.gradle.kts` still pins the old tree to Minestom
-  `2026.04.13-1.21.11` — that version applies only to `server`/`plugins/*`, not to the rebuild.
+  `2026.04.13-1.21.11` — that version applies only to `legacy/server`/`legacy/plugins/*`, not to the rebuild.
 - **Dependency injection**: avaje-inject 12.7 (compile-time, no reflection) with jakarta.inject; DI annotations only in the composition roots (voyager-server, later voyager-setup) — see ADR-0016.
 - **Commits**: Conventional Commits, no Co-Author line beyond the configured attribution.
 - **Version Catalog**: declared programmatically in `settings.gradle.kts`. Do not add
@@ -51,25 +57,28 @@ The architecture direction is "Vertical Slice Architecture (VSA)" combined with 
 
 ```bash
 ./gradlew build                    # Everything, both trees
-./gradlew :voyager-api:test        # The rebuild's API module
-./gradlew :voyager-fitness:test    # Architecture rules over the whole rebuild
+./gradlew :voyager:api:test        # The rebuild's API module
+./gradlew :voyager:fitness:test    # Architecture rules over the whole rebuild
+./gradlew :voyager:server:runServer      # Rebuilt game server, from the shadow JAR
+./gradlew :voyager:server:validateCatalog # Checks the maps, cups and worlds; starts nothing
+./gradlew :voyager:setup:runSetupDev     # Rebuilt setup server (map authoring), port 25566
 ```
 
 The tree being replaced still has to build and still gets maintained until it is cut:
 
 ```bash
-./gradlew :server:build            # Minestom game server
-./gradlew :server:shadowJar        # Fat JAR -> server/build/libs/server-<version>.jar
-./gradlew :server:runServer        # Build that JAR and run it from run/ (also runServerDev, -Debug, -Hotswap)
-./gradlew :plugins:setup:runServer # Paper 1.21.8 test server with FAWE and VoidGen downloaded
+./gradlew :legacy:server:build            # Minestom game server
+./gradlew :legacy:server:shadowJar        # Fat JAR -> legacy/server/build/libs/server-<version>.jar
+./gradlew :legacy:server:runServer        # Build that JAR and run it from run/ (also runServerDev, -Debug, -Hotswap)
+./gradlew :legacy:plugins:setup:runServer # Paper 1.21.8 test server with FAWE and VoidGen downloaded
 ```
 
-`java -jar server/build/libs/server-<version>.jar [host] [port]` runs the same JAR outside Gradle;
-both arguments are optional. `:plugins:game:shadowJar` and `:plugins:game:runServer` (Paper 1.21.5)
-exist too, but `plugins/game` is the Paper game plugin the Minestom `server` module already replaced.
+`java -jar legacy/server/build/libs/server-<version>.jar [host] [port]` runs the same JAR outside Gradle;
+both arguments are optional. `:legacy:plugins:game:shadowJar` and `:legacy:plugins:game:runServer` (Paper 1.21.5)
+exist too, but `legacy/plugins/game` is the Paper game plugin the Minestom `server` module already replaced.
 
-Tests use JUnit 6 with AssertJ across both trees. `server` adds Minestom Testing and Mockito;
-`plugins/setup` has plain JUnit tests; `plugins/game` has no tests at all. Architecture rules for the
+Tests use JUnit 6 with AssertJ across both trees. `legacy/server` adds Minestom Testing and Mockito;
+`legacy/plugins/setup` has plain JUnit tests; `legacy/plugins/game` has no tests at all. Architecture rules for the
 rebuild live in `voyager-fitness` and are declared with `allowEmptyShould(false)` — a rule that
 passes because it matched nothing is a defect, not a pass.
 
@@ -77,13 +86,13 @@ passes because it matched nothing is a defect, not a pass.
 The rebuild (`voyager-*`) is organised in Clean Architecture rings and Vertical Slices; see `docs/explanation/architecture.md` and ADR-0017. The subsections below describe the tree being replaced, except the Phase System, which the rebuild uses too.
 
 ### Entity-Component-System (ECS)
-The game uses a custom ECS pattern in `shared/common` (`net.elytrarace.common.ecs`):
+The game uses a custom ECS pattern in `legacy/shared/common` (`net.elytrarace.common.ecs`):
 - `Entity` — UUID-identified container for components (stored as `Map<Class, Component>`)
 - `Component` — Marker interface for data holders
 - `System` — Declares required components and processes matching entities each tick
 - `EntityManager` — Orchestrates entities and systems; `update(deltaTime)` drives the game loop at 20 TPS
 
-Game-specific components are in `plugins/game/src/.../components/` (GameState, Phase, Cup, Map, World, Spline, Session). Systems are in `.../system/` (CollisionSystem, PhaseSystem, CupSystem, etc.).
+Game-specific components are in `legacy/plugins/game/src/.../components/` (GameState, Phase, Cup, Map, World, Spline, Session). Systems are in `.../system/` (CollisionSystem, PhaseSystem, CupSystem, etc.).
 
 ### Phase System
 Game phases (Lobby → Preparation → Game → End) are managed via [Xerus](https://github.com/OneLiteFeatherNET/Xerus) (`net.theevilreaper.xerus.api.phase.*`). Phases have start/finish lifecycle with callbacks. `LinearPhaseSeries` chains phases sequentially.
@@ -149,7 +158,7 @@ full for the rebuild and applies them module by module. The rebuild is where the
 enforced today: mechanically where `voyager-fitness` already has a test for one (rules 5 and 9),
 and as judgment calls in `.claude/skills/java-style/SKILL.md` otherwise, which also explains when a
 rule legitimately doesn't apply. The tree being replaced is where they were written down without
-being enforced — see the skill's baseline reality check for how far short `server` falls.
+being enforced — see the skill's baseline reality check for how far short `legacy/server` falls.
 
 1. **Sealed interface hierarchy** — a domain interface needing a controlled extension point is
    `sealed … permits BaseX`, with a `non-sealed abstract BaseX` implementation.
@@ -176,13 +185,15 @@ being enforced — see the skill's baseline reality check for how far short `ser
 
 ### Module Isolation
 
-- `shared/common`, `shared/conversation-api`, `shared/spline` must NOT import `net.minestom.*`.
-- `server` module must NOT import `org.bukkit.*` (Paper).
-- `shared/database` must NOT import server- or game-specific classes.
+- `legacy/shared/common`, `legacy/shared/conversation-api`, `legacy/shared/spline` must NOT import `net.minestom.*`.
+- `legacy/server` module must NOT import `org.bukkit.*` (Paper).
+- `legacy/shared/database` must NOT import server- or game-specific classes.
+
+The rebuild's isolation rules are not listed here: `voyager-fitness` enforces them (see ArchUnit Enforcement below).
 
 ### ArchUnit Enforcement
 
-Rules for the rebuild live in `voyager-fitness/src/test/java/net/elytrarace/fitness/`. That module
+Rules for the rebuild live in `voyager/fitness/src/test/java/net/elytrarace/fitness/`. That module
 depends on every `voyager-*` module carrying production sources, and `FitnessCoverageTest` holds each
 of them to two conditions: ArchUnit imported at least one of its classes, and at least one declared
 `@ArchTest` rule names its package prefix. A module added to the build without an entry in that
@@ -190,7 +201,7 @@ test's project-to-prefix map fails it, and an entry that is on the classpath but
 it fails it too — the previous suite declared rules for four modules its classpath never contained,
 so they never ran.
 
-The old tree's rules remain in `server/src/test/java/net/elytrarace/arch/`, unchanged.
+The old tree's rules remain in `legacy/server/src/test/java/net/elytrarace/arch/`, unchanged.
 
 ## Agent Team Workflow (MANDATORY)
 

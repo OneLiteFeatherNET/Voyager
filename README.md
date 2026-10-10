@@ -87,13 +87,15 @@ We're continuing this approach and want to see how far it can go. Can a team of 
 ## Project Structure
 
 ```
-server/              Standalone Minestom game server (the main thing)
-plugins/game/        Legacy Paper plugin (being replaced by server/)
-plugins/setup/       Map/cup editor plugin (stays on Paper)
-shared/common/       ECS framework, services, utilities (platform-agnostic)
-shared/phase/        Game phase lifecycle (Lobby → Game → End)
-shared/conversation-api/  Player prompt system (platform-agnostic)
-shared/database/     Hibernate persistence layer
+voyager/                    Greenfield rebuild: api, physics, race, platform, server, setup, fitness
+legacy/server/              Standalone Minestom game server (the tree being replaced)
+legacy/plugins/game/        Legacy Paper plugin (being replaced by legacy/server/)
+legacy/plugins/setup/       Map/cup editor plugin (stays on Paper)
+legacy/shared/common/       ECS framework, services, utilities (platform-agnostic)
+legacy/shared/conversation-api/  Player prompt system (platform-agnostic)
+legacy/shared/database/     Hibernate persistence layer
+legacy/shared/spline/       Spline generation (platform-agnostic)
+tools/                      Map converter and trace recorder, outside the module graph of both trees
 docs/                Architecture decisions, research papers, ADRs, design specs
 .claude/agents/      The 24 AI agent definitions
 .claude/skills/      Reusable slash-command workflows
@@ -109,10 +111,10 @@ docker compose -f docker/mariadb/compose.yml up -d
 ./gradlew build
 
 # Build the standalone server
-./gradlew :server:shadowJar
+./gradlew :legacy:server:shadowJar
 
 # Run it (DB required — set VOYAGER_DB_URL, VOYAGER_DB_USER, VOYAGER_DB_PASSWORD or use Docker defaults)
-java -jar server/build/libs/*.jar
+java -jar legacy/server/build/libs/*.jar
 
 # Run tests
 ./gradlew test

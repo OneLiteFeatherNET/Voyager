@@ -97,8 +97,8 @@ The files the converter writes declare `"schemaVersion": 1`.
 
 The JSON Schema documents for both file kinds are in the platform module:
 
-- `voyager-platform/src/main/resources/schema/map.schema.json`
-- `voyager-platform/src/main/resources/schema/cup.schema.json`
+- `voyager/platform/src/main/resources/schema/map.schema.json`
+- `voyager/platform/src/main/resources/schema/cup.schema.json`
 
 Both use draft 2020-12. Each file in the committed data declares its schema with a relative `$schema` path, so an editor that supports `$schema` offers completion and reports errors while the file is edited. For a file in the repository the path resolves from the file's own location. A file copied into a data directory outside the repository does not resolve it, so the editor must be given the schema another way.
 

@@ -54,7 +54,7 @@ The game server accepts the following environment variables:
    tasks create task ElytraRace
    ```
 3. Adjust the task configuration under `local/tasks/ElytraRace.json` accordingly.
-4. Copy the server JAR (shadow JAR from `:server:shadowJar`) into the template `ElytraRace/default`.
+4. Copy the server JAR (shadow JAR from `:legacy:server:shadowJar`) into the template `ElytraRace/default`.
 
 ### Template Structure
 

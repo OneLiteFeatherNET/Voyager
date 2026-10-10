@@ -13,16 +13,16 @@ Rennen fliegen kann: einloggen, Rennen startet, durch Ringe fliegen, Punkte beko
 sehen. Funktionsumfang mindestens auf dem Stand der alten Paper-Version — Phasen Lobby → Rennen →
 Ende, Ringe geben Punkte, Endwertung mit den besten drei Spielern.
 
-**Arbeite im Modul `server/`.** Nicht in `voyager-*`. Die `voyager-*`-Module sind ein separater,
+**Arbeite im Modul `legacy/server/`.** Nicht in `voyager-*`. Die `voyager-*`-Module sind ein separater,
 parallel laufender Greenfield-Neubau, der heute nicht spielbar wird und den du nicht anfassen
-sollst. `server/` ist ein weitgehend fertiges Minestom-Modul und der einzige Weg, der heute trägt.
+sollst. `legacy/server/` ist ein weitgehend fertiges Minestom-Modul und der einzige Weg, der heute trägt.
 
 ## Definition of Done, in dieser Reihenfolge
 
 Arbeite sie von oben nach unten ab. Jede Zeile ist beobachtbar — „implementiert" zählt nicht,
 „ich habe es laufen sehen" zählt.
 
-1. `./gradlew :server:shadowJar` erzeugt ein Jar, und `java -jar` startet daraus einen Server,
+1. `./gradlew :legacy:server:shadowJar` erzeugt ein Jar, und `java -jar` startet daraus einen Server,
    der auf einen Port bindet, ohne zu crashen.
 2. Ein Client verbindet sich und landet in einer geladenen Welt, nicht im Void.
 3. Ein Rennen lässt sich starten und durchläuft Lobby → Rennen → Ende bis zum Schluss.
@@ -66,9 +66,9 @@ Wirkung außerhalb dieses Repos (Push auf einen geteilten Branch, ein Deployment
 | Datei | Wofür |
 |---|---|
 | `docs/migration/status.md` | **Mit Vorsicht.** Seit ihrem Erstellungs-Commit nie aktualisiert und in weiten Teilen falsch. Prüfe jede Aussage gegen den Code. |
-| `server/src/main/java/net/elytrarace/server/VoyagerServer.java` | Einstiegspunkt, Bootstrap, Verdrahtung |
-| `server/src/main/java/net/elytrarace/server/game/GameOrchestrator.java` | Der lebende Spielablauf |
-| `server/src/main/java/net/elytrarace/server/phase/` | Lobby-, Game-, End-Phase |
+| `legacy/server/src/main/java/net/elytrarace/server/VoyagerServer.java` | Einstiegspunkt, Bootstrap, Verdrahtung |
+| `legacy/server/src/main/java/net/elytrarace/server/game/GameOrchestrator.java` | Der lebende Spielablauf |
+| `legacy/server/src/main/java/net/elytrarace/server/phase/` | Lobby-, Game-, End-Phase |
 | `docs/reference/elytra-physics-26.2.md` | Verifizierte Elytra-Physik aus dem dekompilierten 26.2-Quelltext |
 
 ## Bekannte Fallen, die dich sonst Stunden kosten

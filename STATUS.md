@@ -150,10 +150,10 @@ Done when: the old tree is gone and every module is on Java 25.
 - **Style sweep over the tree being replaced.** The project settled two rules during E1 —
   messages built with `String.formatted` rather than concatenation, and exceptions living in their
   own `exception` subpackage. Both are applied throughout `voyager-*`. The old tree has 31
-  concatenation sites (`shared/common` 9, `plugins/setup` 8, `server` 6, `plugins/game` 5,
-  `shared/database` 2, `shared/conversation-api` 1) and keeps its exceptions beside the code.
-  Deliberately deferred: that code is deleted at E7, and a parallel effort is working in `server/`.
-  Worth doing only if `server/` turns out to live materially longer than the cut-over plan assumes.
+  concatenation sites (`legacy/shared/common` 9, `legacy/plugins/setup` 8, `server` 6, `legacy/plugins/game` 5,
+  `legacy/shared/database` 2, `legacy/shared/conversation-api` 1) and keeps its exceptions beside the code.
+  Deliberately deferred: that code is deleted at E7, and a parallel effort is working in `legacy/server/`.
+  Worth doing only if `legacy/server/` turns out to live materially longer than the cut-over plan assumes.
 
 ## Notes to resolve
 
@@ -187,16 +187,16 @@ Gradle 9.6.0 from #210).
 
 | PR | Why | What it needs |
 |---|---|---|
-| #203 + #204 | Adventure 5.x removes `TranslationRegistry` (now `TranslationStore`) and drops `UTF8ResourceBundleControl`. Used by `shared/common`'s `PluginTranslationRegistry` and `LanguageServiceImpl`, and by `plugins/setup/.../ElytraRace.java:52-53`. 18 compile errors. | A migration, or deferral until the old tree is cut. **Never merge #203 alone** — `shared/common` pins `adventure-bom:4.26.1` and declares `adventure-api` without a version, so the BOM decides and #203 looks inert until someone bumps the BOM for an unrelated reason. |
+| #203 + #204 | Adventure 5.x removes `TranslationRegistry` (now `TranslationStore`) and drops `UTF8ResourceBundleControl`. Used by `legacy/shared/common`'s `PluginTranslationRegistry` and `LanguageServiceImpl`, and by `legacy/plugins/setup/.../ElytraRace.java:52-53`. 18 compile errors. | A migration, or deferral until the old tree is cut. **Never merge #203 alone** — `legacy/shared/common` pins `adventure-bom:4.26.1` and declares `adventure-api` without a version, so the BOM decides and #203 looks inert until someone bumps the BOM for an unrelated reason. |
 | #214 vs #208 | Both pin `actions/checkout`, to different targets (v4-digest vs v5-digest). | A human picks one. |
 | #234 vs #209 | Both pin `actions/setup-java`, v5-digest vs v6-digest. | A human picks one. |
 | #231 | `package-lock.json` has a real transitive conflict from the semantic-release major (undici 6->7). | A proper `npm install` regeneration, not a hand splice. |
 | #211 | `run-paper` 3.1.0 needs Gradle plugin API 9.7.0; the wrapper is on 9.5.1. **#210 does not fix this** — it only reaches 9.6.0. | Gradle 9.7. |
-| #218 | `aonyx-bom` 0.7.3 forces Minestom 2026.05.17, which removed `MinestomAdventure.AUTOMATIC_COMPONENT_TRANSLATION`, used at `server/.../VoyagerServer.java:82`. | Deferral until the cut is cheapest — `voyager-server` is written fresh against 26.2 where the constant is gone anyway. |
-| #225 | Shadow 9.5.0 finalises `java.toolchain.languageVersion` during plugin apply, before `server/build.gradle.kts:39` sets it. | An ordering fix, not a version fix: `server` applies shadow in its `plugins` block and sets the toolchain in the script body, which runs later. `buildSrc`'s `voyager.java-conventions` sets the same property from a convention plugin, i.e. before shadow — so the rebuild is *predicted* safe, unverified until `voyager-server` gets its fat JAR. |
+| #218 | `aonyx-bom` 0.7.3 forces Minestom 2026.05.17, which removed `MinestomAdventure.AUTOMATIC_COMPONENT_TRANSLATION`, used at `legacy/server/.../VoyagerServer.java:82`. | Deferral until the cut is cheapest — `voyager-server` is written fresh against 26.2 where the constant is gone anyway. |
+| #225 | Shadow 9.5.0 finalises `java.toolchain.languageVersion` during plugin apply, before `legacy/server/build.gradle.kts:39` sets it. | An ordering fix, not a version fix: `server` applies shadow in its `plugins` block and sets the toolchain in the script body, which runs later. `buildSrc`'s `voyager.java-conventions` sets the same property from a convention plugin, i.e. before shadow — so the rebuild is *predicted* safe, unverified until `voyager-server` gets its fat JAR. |
 
-**Adventure escaped the version catalogue.** It is hardcoded in `shared/common/build.gradle.kts:8`
-and `shared/conversation-api/build.gradle.kts:6-7`, and those two lines pin different versions of
+**Adventure escaped the version catalogue.** It is hardcoded in `legacy/shared/common/build.gradle.kts:8`
+and `legacy/shared/conversation-api/build.gradle.kts:6-7`, and those two lines pin different versions of
 the same library family — `adventure-api:4.26.1` beside `adventure-text-minimessage:4.21.0`.
 
 **The Adventure migration is not a rename.** `PluginTranslationRegistry` deliberately disables the

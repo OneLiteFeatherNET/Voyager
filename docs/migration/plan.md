@@ -18,12 +18,12 @@
 
 | Module | Action |
 |---|---|
-| `shared/common` | Already Bukkit-free -- no changes needed |
+| `legacy/shared/common` | Already Bukkit-free -- no changes needed |
 | `shared/phase` | Already Bukkit-free -- no changes needed |
-| `shared/conversation-api` | **Rewrite** -- 7 files with Bukkit imports |
-| `shared/database` | Unchanged -- Hibernate/HikariCP stays |
-| `plugins/game` | **Fully migrate** to Minestom |
-| `plugins/setup` | **Out of scope** for MVP (FAWE-dependent) |
+| `legacy/shared/conversation-api` | **Rewrite** -- 7 files with Bukkit imports |
+| `legacy/shared/database` | Unchanged -- Hibernate/HikariCP stays |
+| `legacy/plugins/game` | **Fully migrate** to Minestom |
+| `legacy/plugins/setup` | **Out of scope** for MVP (FAWE-dependent) |
 
 ---
 
@@ -37,7 +37,7 @@ Set up basic build and server infrastructure.
 |---|---|---|---|---|---|
 | M1-01 | `chore: configure Java 25 upgrade in Gradle` | Set `sourceCompatibility`, `targetCompatibility` and `--release` flag to Java 25. Switch Gradle toolchain to JDK 25. | S | -- | voyager-build-agent |
 | M1-02 | `chore: add Minestom dependency to version catalog` | Add Minestom as library in `settings.gradle.kts` version catalog. Paper dependency remains for shared modules. | S | -- | voyager-build-agent |
-| M1-03 | `refactor: create new 'server' module for standalone server` | Create new Gradle submodule `server` that acts as standalone Minestom server. Configure dependencies to `shared/common`, `shared/phase`, `shared/database`. | M | M1-01, M1-02 | voyager-build-agent |
+| M1-03 | `refactor: create new 'server' module for standalone server` | Create new Gradle submodule `server` that acts as standalone Minestom server. Configure dependencies to `legacy/shared/common`, `shared/phase`, `legacy/shared/database`. | M | M1-01, M1-02 | voyager-build-agent |
 | M1-04 | `feat: implement Minestom server bootstrap with main()` | `main()` method, `MinecraftServer.init()`, create default instance, start server on configurable port. Basic server configuration (MOTD, max players) via file or environment variables. | M | M1-03 | voyager-core-agent |
 | M1-05 | `chore: update GitHub Actions CI/CD for Java 25 and new module` | Update build matrix to Java 25. Include `server` module in build pipeline. Generate shadow JAR artifact for server module. | S | M1-03 | voyager-build-agent |
 | M1-06 | `test: write server bootstrap integration test` | Test that starts the Minestom server, binds to a port, and shuts down cleanly. Verifies lifecycle works. | S | M1-04 | voyager-test-agent |
@@ -51,10 +51,10 @@ Rewrite conversation API platform-agnostic and remove last Bukkit dependencies.
 | ID | Title | Description | Size | Dependency | Agent |
 |---|---|---|---|---|---|
 | M2-01 | `refactor: define platform abstractions for conversation API` | Define interfaces for `ConversationPlayer`, `ConversationScheduler` and `ConversationMessenger` that don't use Bukkit types. These replace direct Bukkit references (`Plugin`, `Player`, `Bukkit.getScheduler()`). | M | -- | voyager-core-agent |
-| M2-02 | `refactor: free conversation API from Bukkit imports` | Migrate all 7 files in `shared/conversation-api`: `Conversation`, `ConversationContext`, `ConversationFactory`, `ConversationTracker`, `InactivityConversationCanceller`, `PlayerNamePrompt`, `PluginNameConversationPrefix`. Replace Bukkit types with new abstractions from M2-01. | L | M2-01 | voyager-core-agent |
+| M2-02 | `refactor: free conversation API from Bukkit imports` | Migrate all 7 files in `legacy/shared/conversation-api`: `Conversation`, `ConversationContext`, `ConversationFactory`, `ConversationTracker`, `InactivityConversationCanceller`, `PlayerNamePrompt`, `PluginNameConversationPrefix`. Replace Bukkit types with new abstractions from M2-01. | L | M2-01 | voyager-core-agent |
 | M2-03 | `feat: implement Minestom adapter for conversation API` | Create implementations of `ConversationPlayer`, `ConversationScheduler` and `ConversationMessenger` for Minestom. These live in the `server` module. | M | M2-02, M1-03 | voyager-core-agent |
 | M2-04 | `test: unit tests for platform-agnostic conversation API` | Tests for `Conversation`, `ConversationFactory` and `ConversationTracker` with mock implementations of the new interfaces. Ensure prompt chains, timeout, and cancellation work correctly. | M | M2-02 | voyager-test-agent |
-| M2-05 | `refactor: remove Paper dependency from shared/conversation-api build.gradle.kts` | After successful migration, remove `paper-api` dependency from the conversation API module. Verify compilation. | S | M2-02 | voyager-build-agent |
+| M2-05 | `refactor: remove Paper dependency from legacy/shared/conversation-api build.gradle.kts` | After successful migration, remove `paper-api` dependency from the conversation API module. Verify compilation. | S | M2-02 | voyager-build-agent |
 
 ---
 
@@ -98,7 +98,7 @@ Integration, persistence, performance, and deployment.
 |---|---|---|---|---|---|
 | M5-01 | `feat: implement CloudNet v4 integration` | Integrate CloudNet v4 bridge module: service registration, player routing, server status updates. Automatic shutdown after game end. | L | M3-04 | voyager-infra-agent |
 | M5-02 | `feat: extend database schema with scores and statistics` | New Hibernate entities for match results, lap times, and player statistics. Migration scripts for the extended schema. | M | M4-03 | voyager-core-agent |
-| M5-03 | `feat: persist results and statistics` | Write match results, lap times and player statistics to database after game end. Use existing `shared/database` layer. | M | M5-02 | voyager-core-agent |
+| M5-03 | `feat: persist results and statistics` | Write match results, lap times and player statistics to database after game end. Use existing `legacy/shared/database` layer. | M | M5-02 | voyager-core-agent |
 | M5-04 | `chore: create Docker image for standalone server` | Multi-stage Dockerfile: build with Java 25, runtime as minimal JRE image. Extend `docker-compose.yml` with server service alongside MariaDB. | M | M1-05 | voyager-infra-agent |
 | M5-05 | `perf: performance profiling and optimization` | Test physics loop, collision detection, and instance management under load (20+ players). Identify hotspots and optimize. | L | M4-01, M4-02 | voyager-core-agent |
 | M5-06 | `docs: migration documentation and operations manual` | Documentation for deployment, configuration, map format, and CloudNet setup. Document changes compared to the Paper version. | M | M5-01, M5-04 | voyager-docs-agent |

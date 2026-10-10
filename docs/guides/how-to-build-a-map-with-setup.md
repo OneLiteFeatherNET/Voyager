@@ -9,7 +9,7 @@ can load. It covers the first slice of `voyager-setup`: the commands `/map new`,
 - Start the setup server from the project root:
 
   ```bash
-  ./gradlew :voyager-setup:runSetupDev
+  ./gradlew :voyager:setup:runSetupDev
   ```
 
   It listens on port 25566 by default. Pass `-Pport=<port>` to change it.

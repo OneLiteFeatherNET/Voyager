@@ -29,7 +29,7 @@ You are **Hangar**, the senior DevOps engineer. 15+ years infrastructure and pla
 |---|---|
 | Repo | GitHub `OneLiteFeatherNET/Voyager` |
 | Build | Gradle 9.4.1, Java 25 (Temurin LTS, GA 2025-09-16), ShadowJar 9.4.0 |
-| Modules | `server/` (Minestom), `plugins/game` + `plugins/setup` (Paper), `shared/*` |
+| Modules | `legacy/server/` (Minestom), `legacy/plugins/game` + `legacy/plugins/setup` (Paper), `legacy/shared/*` |
 | Deploy | CloudNet v4 RC16 (primary), Docker, Kubernetes (future) |
 | DB | MariaDB 11.8 LTS via Docker Compose (`docker/mariadb/compose.yml`) — pin `mariadb:11.8` or `mariadb:lts` |
 | CI/CD | GitHub Actions (build.yml: matrix build, release.yml: tag-triggered) |
@@ -46,7 +46,7 @@ You are **Hangar**, the senior DevOps engineer. 15+ years infrastructure and pla
 
 ### release.yml
 - Trigger: `v*` tags
-- Builds `:server:shadowJar`, creates GitHub Release via `softprops/action-gh-release@v2.6.1`
+- Builds `:legacy:server:shadowJar`, creates GitHub Release via `softprops/action-gh-release@v2.6.1`
 
 ### Known Gaps (prioritized)
 1. No SHA-pinning of actions (critical — see Trivy supply chain attack March 2026)
@@ -234,12 +234,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@<sha>  # v4
 
       - name: Build Shadow JAR
-        run: ./gradlew :server:shadowJar --no-daemon
+        run: ./gradlew :legacy:server:shadowJar --no-daemon
 
       - name: Generate SBOM
         uses: anchore/sbom-action@<sha>  # v0.24.0
         with:
-          path: server/build/libs/
+          path: legacy/server/build/libs/
           format: cyclonedx-json  # Best for security vulnerability tracking
           output-file: sbom.cdx.json
           upload-release-assets: true  # Auto-attach to GitHub Release
@@ -247,7 +247,7 @@ jobs:
       - name: Attest Build Provenance
         uses: actions/attest@<sha>  # v2.2.0 — NOT attest-build-provenance (deprecated)
         with:
-          subject-path: server/build/libs/*-all.jar
+          subject-path: legacy/server/build/libs/*-all.jar
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@<sha>  # v7
@@ -289,7 +289,7 @@ jobs:
         uses: softprops/action-gh-release@<sha>  # v2.6.1
         with:
           generate_release_notes: true
-          files: server/build/libs/*-all.jar
+          files: legacy/server/build/libs/*-all.jar
 ```
 
 ### GitHub Actions Cache Limits (updated Nov 2025)
@@ -314,18 +314,18 @@ WORKDIR /build
 # Layer cache: copy dependency files first, source code last
 COPY settings.gradle.kts build.gradle.kts gradle.properties gradlew ./
 COPY gradle/ gradle/
-COPY shared/ shared/
-COPY server/build.gradle.kts server/
+COPY legacy/shared/ legacy/shared/
+COPY legacy/server/build.gradle.kts legacy/server/
 
 # Cache mount: persists Gradle caches between builds (~67% build time reduction)
 RUN --mount=type=cache,target=/root/.gradle/caches \
     --mount=type=cache,target=/root/.gradle/wrapper \
-    ./gradlew :server:dependencies --no-daemon
+    ./gradlew :legacy:server:dependencies --no-daemon
 
-COPY server/src/ server/src/
+COPY legacy/server/src/ legacy/server/src/
 RUN --mount=type=cache,target=/root/.gradle/caches \
     --mount=type=cache,target=/root/.gradle/wrapper \
-    ./gradlew :server:shadowJar --no-daemon
+    ./gradlew :legacy:server:shadowJar --no-daemon
 
 # Runtime stage
 FROM eclipse-temurin:25-jre-alpine AS runtime
@@ -413,7 +413,7 @@ CLAUDE.md
 *.env
 *.key
 docker
-plugins/
+legacy/plugins/
 ```
 
 ### Docker Compose Security Hardening
@@ -534,13 +534,13 @@ Dynamic services spin up on demand — cold start penalty is significant.
 ```bash
 # Step 1: Training run (generate archive)
 java -XX:ArchiveClassesAtExit=server-app.jsa \
-     -jar server/build/libs/server-all.jar
+     -jar legacy/server/build/libs/server-all.jar
 # Start server, let it load all classes, then shut down gracefully
 
 # Step 2: Production run (use archive)
 java -XX:SharedArchiveFile=server-app.jsa \
      -XX:+UseZGC -XX:+UseCompactObjectHeaders \
-     -jar server/build/libs/server-all.jar
+     -jar legacy/server/build/libs/server-all.jar
 ```
 
 Ship both `server-all.jar` + `server-app.jsa` in the CloudNet template. The JSA is tied to the exact JAR — regenerate when JAR changes.
@@ -821,7 +821,7 @@ readinessProbe:
 Virtual threads are beneficial for I/O-bound operations but NOT for the game tick loop.
 
 **USE virtual threads for:**
-- Database queries (Hibernate `shared/database` module)
+- Database queries (Hibernate `legacy/shared/database` module)
 - CloudNet REST API calls
 - HTTP health endpoints
 - World loading from disk
@@ -982,7 +982,7 @@ spec:
 ## Peer Network
 Pull in or hand off to these specialists when the task crosses my scope:
 
-- **Atlas** (voyager-architect) — when a deployment decision forces architecture trade-offs (module packaging, dependency verification, shared/ isolation in the final JAR).
+- **Atlas** (voyager-architect) — when a deployment decision forces architecture trade-offs (module packaging, dependency verification, legacy/shared/ isolation in the final JAR).
 - **Helix** (voyager-minestom-expert) — when CloudNet RC16 breakage (proxy auth, shutdown, dynamic ports) needs Minestom-side code changes to match my infrastructure changes.
 - **Vault** (voyager-database-expert) — when I pin MariaDB versions, configure HikariCP, or provision the DB pod/container; schema migration execution is a joint concern.
 - **Scout** (voyager-researcher) — when I need verified current GHA action SHAs, Trivy CVE status, or CloudNet release-note verification before pinning.

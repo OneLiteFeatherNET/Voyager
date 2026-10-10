@@ -1,11 +1,11 @@
 ---
 name: create-repository
-description: Scaffold a new Hibernate repository in shared/database following the sealed-interface + DefaultImpl pattern.
+description: Scaffold a new Hibernate repository in legacy/shared/database following the sealed-interface + DefaultImpl pattern.
 ---
 
 # Create Hibernate Repository
 
-Scaffold a new Hibernate ORM repository in `shared/database` following the ManisGame sealed-interface pattern exactly.
+Scaffold a new Hibernate ORM repository in `legacy/shared/database` following the ManisGame sealed-interface pattern exactly.
 
 ## Input
 
@@ -19,7 +19,7 @@ Collect the following before starting:
 
 ### 1. Create the entity class
 
-File: `shared/database/src/main/java/net/elytrarace/database/entity/{Name}.java`
+File: `legacy/shared/database/src/main/java/net/elytrarace/database/entity/{Name}.java`
 
 ```java
 package net.elytrarace.database.entity;
@@ -61,7 +61,7 @@ Rules for entities:
 
 ### 2. Check / create `package-info.java` for the entity package
 
-File: `shared/database/src/main/java/net/elytrarace/database/entity/package-info.java`
+File: `legacy/shared/database/src/main/java/net/elytrarace/database/entity/package-info.java`
 
 ```java
 @NotNullByDefault
@@ -74,7 +74,7 @@ Only create this file if it does not already exist.
 
 ### 3. Create the sealed repository interface
 
-File: `shared/database/src/main/java/net/elytrarace/database/repository/{Name}Repository.java`
+File: `legacy/shared/database/src/main/java/net/elytrarace/database/repository/{Name}Repository.java`
 
 ```java
 package net.elytrarace.database.repository;
@@ -115,7 +115,7 @@ Rules:
 
 ### 4. Check / create `package-info.java` for the repository package
 
-File: `shared/database/src/main/java/net/elytrarace/database/repository/package-info.java`
+File: `legacy/shared/database/src/main/java/net/elytrarace/database/repository/package-info.java`
 
 ```java
 @NotNullByDefault
@@ -128,7 +128,7 @@ Only create this file if it does not already exist.
 
 ### 5. Create the `Default{Name}Repository` implementation
 
-File: `shared/database/src/main/java/net/elytrarace/database/repository/Default{Name}Repository.java`
+File: `legacy/shared/database/src/main/java/net/elytrarace/database/repository/Default{Name}Repository.java`
 
 ```java
 package net.elytrarace.database.repository;
@@ -193,7 +193,7 @@ Rules:
 
 ### 6. Register the entity with Hibernate
 
-Open the Hibernate configuration class / `SessionFactory` builder in `shared/database` (or in the module that initializes the database) and add the new entity class:
+Open the Hibernate configuration class / `SessionFactory` builder in `legacy/shared/database` (or in the module that initializes the database) and add the new entity class:
 
 ```java
 configuration.addAnnotatedClass({Name}.class);
@@ -203,7 +203,7 @@ If no central configuration exists yet, create one and document it. Do not skip 
 
 ### 7. Write a JUnit 5 test
 
-File: `shared/database/src/test/java/net/elytrarace/database/repository/{Name}RepositoryTest.java`
+File: `legacy/shared/database/src/test/java/net/elytrarace/database/repository/{Name}RepositoryTest.java`
 
 Use Mockito to mock `SessionFactory` and `Session` for unit tests, or an embedded H2 database for integration tests. The build only ships `mariadb` at runtime, so H2 must be added as `testImplementation` if used.
 
@@ -256,7 +256,7 @@ class {Name}RepositoryTest {
 }
 ```
 
-Add Mockito as `testImplementation` to `shared/database/build.gradle.kts` if not already present:
+Add Mockito as `testImplementation` to `legacy/shared/database/build.gradle.kts` if not already present:
 
 ```kotlin
 testImplementation("org.mockito:mockito-core:5.+")
@@ -267,19 +267,19 @@ testImplementation("org.mockito:mockito-core:5.+")
 Run:
 
 ```bash
-./gradlew :shared:database:build
+./gradlew :legacy:shared:database:build
 ```
 
 Resolve all compilation errors before declaring the skill done.
 
 ## Output
 
-- `shared/database/src/main/java/net/elytrarace/database/entity/{Name}.java`
-- `shared/database/src/main/java/net/elytrarace/database/entity/package-info.java` (if new)
-- `shared/database/src/main/java/net/elytrarace/database/repository/{Name}Repository.java`
-- `shared/database/src/main/java/net/elytrarace/database/repository/Default{Name}Repository.java`
-- `shared/database/src/main/java/net/elytrarace/database/repository/package-info.java` (if new)
-- `shared/database/src/test/java/net/elytrarace/database/repository/{Name}RepositoryTest.java`
+- `legacy/shared/database/src/main/java/net/elytrarace/database/entity/{Name}.java`
+- `legacy/shared/database/src/main/java/net/elytrarace/database/entity/package-info.java` (if new)
+- `legacy/shared/database/src/main/java/net/elytrarace/database/repository/{Name}Repository.java`
+- `legacy/shared/database/src/main/java/net/elytrarace/database/repository/Default{Name}Repository.java`
+- `legacy/shared/database/src/main/java/net/elytrarace/database/repository/package-info.java` (if new)
+- `legacy/shared/database/src/test/java/net/elytrarace/database/repository/{Name}RepositoryTest.java`
 - Updated Hibernate configuration with `addAnnotatedClass({Name}.class)`
 
 ## Invariants (never break these)
@@ -287,6 +287,6 @@ Resolve all compilation errors before declaring the skill done.
 - The interface is `sealed`; the implementation is `final` and package-private-constructed.
 - `Default{Name}Repository` constructor is **package-private** — never `public`.
 - Every package has a `package-info.java` annotated with `@NotNullByDefault`.
-- `shared/database` must NOT import `net.minestom.*` or `org.bukkit.*`.
+- `legacy/shared/database` must NOT import `net.minestom.*` or `org.bukkit.*`.
 - `Optional` for nullable single results; `List` for collections.
 - All write operations are wrapped in explicit Hibernate transactions with rollback on failure.
