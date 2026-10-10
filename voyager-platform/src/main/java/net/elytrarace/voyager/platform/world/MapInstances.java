@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.world;
 
 import net.elytrarace.voyager.platform.catalog.WorldOpener;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
+import net.elytrarace.voyager.platform.world.exception.UnreadableRegionException;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -18,6 +19,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -133,7 +135,7 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
      *
      * @param world the world directory's name
      * @throws UnknownWorldException if no region data sits behind the name
-     * @throws java.util.concurrent.CompletionException if a chunk read fails outright
+     * @throws UnreadableRegionException if a chunk in a region file cannot be read; the message names the file
      */
     public void readEveryChunk(String world) {
         LoadedWorld entry = load(world);
@@ -149,10 +151,14 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
                 }
                 int firstChunkX = Integer.parseInt(region.group(1)) * CHUNKS_PER_REGION;
                 int firstChunkZ = Integer.parseInt(region.group(2)) * CHUNKS_PER_REGION;
-                for (int chunkX = firstChunkX; chunkX < firstChunkX + CHUNKS_PER_REGION; chunkX++) {
-                    for (int chunkZ = firstChunkZ; chunkZ < firstChunkZ + CHUNKS_PER_REGION; chunkZ++) {
-                        entry.instance().loadChunk(chunkX, chunkZ).join();
+                try {
+                    for (int chunkX = firstChunkX; chunkX < firstChunkX + CHUNKS_PER_REGION; chunkX++) {
+                        for (int chunkZ = firstChunkZ; chunkZ < firstChunkZ + CHUNKS_PER_REGION; chunkZ++) {
+                            entry.instance().loadChunk(chunkX, chunkZ).join();
+                        }
                     }
+                } catch (CompletionException exception) {
+                    throw new UnreadableRegionException(world, file, exception.getCause() == null ? exception : exception.getCause());
                 }
             }
         } catch (IOException exception) {
