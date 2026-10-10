@@ -19,7 +19,7 @@ val minestomRebuildVersion = "2026.08.28-26.2"
 // We still take falco-anvil alone. falco-instance generates worlds and we only read them;
 // falco-light is a lighting engine we have no use for until an acceptance run shows a world
 // rendering dark.
-val falcoVersion = "3.0.0"
+val falcoVersion = "3.0.1"
 
 dependencies {
     api(project(":voyager:api"))
