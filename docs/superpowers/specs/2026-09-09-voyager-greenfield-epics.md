@@ -41,7 +41,7 @@ breakdown before work starts — used only where that breakdown is itself a tick
 | E3 | `voyager-race`: state machine, rings, scoring | Full race playable without a server | E1, E2 |
 | E4 | `voyager-platform` + `voyager-server` | First flyable build | E1, E2, E3 |
 | E5 | `voyager-persistence` | Records and profiles survive restart | E1, E4 (persistence is bolted onto a working server) |
-| E6 | `voyager-setup` on Minestom | A map is configurable without Paper | E1, E4; blocked on FAWE research (E6.0) |
+| E6 | `voyager-setup` on Minestom | A map is configurable without Paper | E1, E4; E6.0 closed 2026-10-10 (research 005 and 007; owner approval 2026-10-09) |
 | E7 | Cut-over | Old tree removed; Java 25 everywhere | E4 reached **and** trace suite green (cut-over gate) — see note below |
 
 **Cut-over gate, stated precisely (per spec, "Delivery plan"):** the gate for starting E7
@@ -1542,21 +1542,23 @@ FAWE's functionality the setup workflow actually uses) will work without Paper/F
 Minestom setup server.
 
 **Acceptance Criteria**
-- [ ] Current FAWE usage in `plugins/setup` is inventoried: exact operations used (not
+- [x] Current FAWE usage in `plugins/setup` is inventoried: exact operations used (not
       "FAWE" as a whole), so the replacement scope is bounded by actual need, not by
-      FAWE's full feature set
-- [ ] At least two candidate approaches are evaluated with concrete pro/contra (examples
+      FAWE's full feature set. Evidence: `docs/research/007-fawe-usage-inventory.md` (2026-10-10)
+- [x] At least two candidate approaches are evaluated with concrete pro/contra (examples
       to investigate, not prescribed: a Minestom-native region-edit tool if one exists;
       hand-rolled block-region operations sufficient for the actual inventory above; a
       hybrid where heavy editing still happens on a throwaway Paper+FAWE instance and only
-      the result is imported into the Minestom setup flow)
-- [ ] A recommendation is presented to the project owner via `AskUserQuestion` with
+      the result is imported into the Minestom setup flow). Evidence: `docs/research/005-simpler-map-and-cup-setup.md`
+      sections 4.1 and 7.2; options A to D in `docs/decisions/0018-pose-placement-authoring-model-for-setup.md`
+- [x] A recommendation is presented to the project owner via `AskUserQuestion` with
       trade-offs, per the Decision Framework — this research ticket does not conclude with
-      a unilateral choice
-- [ ] Finding is written into `docs/research/` (Lumen's domain) documenting methodology
-      and rationale, not just the conclusion
-- [ ] **E6 epic and E6.1+ sub-tickets are not scheduled for implementation until this
-      ticket's recommendation is approved by the project owner**
+      a unilateral choice. Evidence: owner approval of 2026-10-09, `docs/research/005-simpler-map-and-cup-setup.md` section 7.4
+- [x] Finding is written into `docs/research/` (Lumen's domain) documenting methodology
+      and rationale, not just the conclusion. Evidence: research 005 and 007
+- [x] **E6 epic and E6.1+ sub-tickets are not scheduled for implementation until this
+      ticket's recommendation is approved by the project owner**. Approved 2026-10-09; E6.1 is
+      done in `introduce-voyager-setup`
 
 **Technical Details:** Risk register: "FAWE has no Minestom equivalent" — Impact: "Blocks
 E6". Resolution: "Own research epic before E6 planning." This ticket is that epic.
