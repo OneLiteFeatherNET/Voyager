@@ -4,6 +4,7 @@ import net.elytrarace.voyager.platform.permission.luckperms.exception.Permission
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -22,5 +23,11 @@ class LuckPermsBootstrapTest {
         assertThatThrownBy(LuckPermsBootstrap::start)
                 .isInstanceOf(PermissionBackendStartException.class)
                 .hasMessageContaining("LuckPerms did not start");
+    }
+
+    /** The shutdown task calls stop whether or not LuckPerms ever started, so stopping an absent backend must do nothing. */
+    @Test
+    void stoppingWithoutAStartIsANoOp() {
+        assertThatCode(LuckPermsBootstrap::stop).doesNotThrowAnyException();
     }
 }

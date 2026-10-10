@@ -446,6 +446,8 @@ public final class VoyagerServer {
             // After the world handles, so a bean's preDestroy hook, should one ever be added, runs
             // once nothing is still reading a world through it.
             graph.close();
+            // Last: disables LuckPerms and with it the H2 database, before the JVM runs its own hooks (ADR-0024).
+            LuckPermsBootstrap.stop();
         });
     }
 }

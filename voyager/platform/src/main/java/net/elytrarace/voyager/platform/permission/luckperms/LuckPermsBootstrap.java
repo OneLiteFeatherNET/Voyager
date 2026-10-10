@@ -29,7 +29,8 @@ public final class LuckPermsBootstrap {
     }
 
     /**
-     * Starts LuckPerms and registers its shutdown hook. Call only when {@link #isPresent()} is true.
+     * Starts LuckPerms. Call only when {@link #isPresent()} is true. LuckPerms is disabled by {@link #stop()}, which the
+     * server runs in its own shutdown, not by a JVM shutdown hook (see {@link MinestomLoaderStart}).
      *
      * @throws PermissionBackendStartException when the loader is missing or fails to start; the cause is attached
      */
@@ -39,5 +40,13 @@ public final class LuckPermsBootstrap {
         } catch (RuntimeException | LinkageError failure) {
             throw new PermissionBackendStartException("LuckPerms did not start: %s".formatted(failure), failure);
         }
+    }
+
+    /**
+     * Disables LuckPerms, closing its storage and with it the H2 database. Idempotent, and a no-op when LuckPerms never
+     * started, so a shutdown task may call it unconditionally. Must run before the JVM exits.
+     */
+    public static void stop() {
+        MinestomLoaderStart.stop();
     }
 }

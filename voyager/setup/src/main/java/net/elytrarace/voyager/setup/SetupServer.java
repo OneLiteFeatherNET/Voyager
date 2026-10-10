@@ -181,6 +181,7 @@ public final class SetupServer {
         MinecraftServer.getSchedulerManager().buildShutdownTask(() -> {
             LOGGER.info("Shutting down");
             graph.close();
+            LuckPermsBootstrap.stop();
         });
     }
 }
