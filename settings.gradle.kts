@@ -74,7 +74,7 @@ dependencyResolutionManagement {
             // in voyager-platform. The Minestom loader is compileOnly there too, because LuckPermsBootstrap starts it, and
             // runtimeOnly in the two composition roots only, never on a test class path. The loader is a snapshot, so the
             // Sonatype snapshot repository is declared for net.luckperms only (see build.gradle.kts). Any bump needs owner approval.
-            version("luckperms-api", "5.5")
+            version("luckperms-api", "6.0.1")
             version("luckperms-minestom-loader", "5.6-SNAPSHOT")
             library("luckperms.api", "net.luckperms", "api").versionRef("luckperms-api")
             library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms-minestom-loader")
