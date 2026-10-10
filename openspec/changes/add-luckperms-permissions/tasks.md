@@ -73,17 +73,22 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 - [x] 11.1 Reference page `docs/reference/permission-nodes.md` (Diátaxis reference): the five nodes, what each gates and by which command, the console rule, the fallback table, and that `/race status` stays open. Verify: every node in the enum appears in the page, and the page is linked from `docs/reference/`.
 - [ ] 11.2 How-to `docs/guides/how-to-grant-permissions.md`: grant a node in LuckPerms, and use operator level 4 when LuckPerms is absent. Verify: each command in the guide runs as written on the spike server.
+  Note (not ticked): the `lp` syntax runs on the real server console. LuckPerms answers `Benutzer ... konnte nicht gefunden werden` for a name it has never stored, which confirms the guide's precondition that the player must have joined. The grant to an existing user was not executed here.
 - [x] 11.3 How-to `docs/guides/how-to-run-behind-a-proxy.md`: set `VOYAGER_VELOCITY_SECRET` (or the property), match the proxy's forwarding secret, and what the WARN line means. Verify: the secret is never printed in the guide's sample output.
 - [x] 11.4 Update the decision table in `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` with rows D13 (permission port, ADR-0024) and D14 (Velocity forwarding, ADR-0025), and add the `stop` line to the "Extensions must be bootstrapped explicitly" section where it describes stdin. Verify: `grep -n "D13\|D14" docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` shows both rows.
 
 ## 12. Integration checks and acceptance
 
-- [ ] 12.1 Run `./gradlew :voyager:api:test :voyager:platform:test :voyager:server:test :voyager:setup:test :voyager:fitness:test`. Verify: exit 0 in each.
-- [ ] 12.2 Run `./gradlew build --continue` from the repository root. Verify: exit 0 across both trees.
+- [x] 12.1 Run `./gradlew :voyager:api:test :voyager:platform:test :voyager:server:test :voyager:setup:test :voyager:fitness:test`. Verify: exit 0 in each.
+- [x] 12.2 Run `./gradlew build --continue` from the repository root. Verify: exit 0 across both trees.
 - [ ] 12.3 Acceptance, with LuckPerms absent: start `voyager-server`, join as a level-3 player and as a level-4 player, and run `/race reload` as each. Verify: the level-3 player gets the denial message; the level-4 player gets the reload report.
+  Note (owner acceptance, not ticked): needs a real client joining as a level-3 and a level-4 player. Not run in this session.
 - [ ] 12.4 Acceptance, with LuckPerms present (spike environment): grant `voyager.command.race.reload` to one user only, and run `/race reload` as that user and as another level-4 user. Verify: only the granted user is allowed.
+  Note (owner acceptance, not ticked): needs two real joined users. The console `lp` path runs; the player-level check is untested.
 - [ ] 12.5 Acceptance: start with `-Dservice.bind.port=25571` and no arguments, then write `stop` to stdin. Verify: the server binds 25571, the process exits with status 0 and the log ends with the shutdown message.
+  Note (not ticked): the bind property works (`Listening on 0.0.0.0:25571`), and `stop` on stdin exits with status 0 after `Minestom server stopped successfully` and `Goodbye!`. The log does not end with the shutdown message: in 1 of 2 runs H2's exit hook prints `NoClassDefFoundError: org/h2/api/ErrorCode` after LuckPerms closes its storage. Owner decision needed.
 - [ ] 12.6 Acceptance: start with `VOYAGER_VELOCITY_SECRET` set and connect through a Velocity proxy that uses the same secret. Verify: the player's UUID matches the account's UUID. Record the proxy version used.
+  Note (owner acceptance, not ticked): needs a real Velocity proxy with the same secret. Not run in this session.
 
 ## 13. Pull request
 
