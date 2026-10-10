@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.race.cup;
 
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.race.scoring.CupScore;
@@ -36,7 +36,7 @@ import java.util.UUID;
  * <p>Not thread-safe: written from the tick thread and read from a command, which is the same thread
  * in Minestom.
  */
-final class CupStandings {
+public final class CupStandings {
 
     /**
      * The sort key standing in for "no completion time", so a racer who finished nothing lands
@@ -49,7 +49,7 @@ final class CupStandings {
     private final Map<UUID, Map<Integer, MapScore>> byPlayer = new LinkedHashMap<>();
 
     /** Records {@code score} as {@code playerId}'s result on map {@code mapIndex}, replacing any earlier one. */
-    void record(UUID playerId, int mapIndex, MapScore score) {
+    public void record(UUID playerId, int mapIndex, MapScore score) {
         byPlayer.computeIfAbsent(playerId, ignored -> new TreeMap<>()).put(mapIndex, score);
     }
 
@@ -61,7 +61,7 @@ final class CupStandings {
      * already carries — so this must be called exactly once per map. It is, from
      * {@code CupSession.mapFinished}.
      */
-    void closeMap(int mapIndex, GameMode mode) {
+    public void closeMap(int mapIndex, GameMode mode) {
         List<Placement<UUID>> field = new ArrayList<>();
         byPlayer.forEach((playerId, scores) -> {
             MapScore score = scores.get(mapIndex);
@@ -79,19 +79,19 @@ final class CupStandings {
 
     /** {@code playerId}'s score on map {@code mapIndex}, or {@code null} if they have none. */
     @org.jetbrains.annotations.Nullable
-    MapScore scoreOn(UUID playerId, int mapIndex) {
+    public MapScore scoreOn(UUID playerId, int mapIndex) {
         Map<Integer, MapScore> scores = byPlayer.get(playerId);
         return scores == null ? null : scores.get(mapIndex);
     }
 
     /** {@code playerId}'s scores, one per map they have a result on, in map order. */
-    List<MapScore> of(UUID playerId) {
+    public List<MapScore> of(UUID playerId) {
         Map<Integer, MapScore> scores = byPlayer.get(playerId);
         return scores == null ? List.of() : List.copyOf(scores.values());
     }
 
     /** Everyone with at least one recorded map score. */
-    Set<UUID> players() {
+    public Set<UUID> players() {
         return Set.copyOf(byPlayer.keySet());
     }
 
@@ -101,7 +101,7 @@ final class CupStandings {
      * rather than by hash order. A racer with no completion time at all sorts behind every racer who
      * has one, on the same points.
      */
-    List<CupStanding> cupOrder() {
+    public List<CupStanding> cupOrder() {
         List<CupStanding> rows = new ArrayList<>();
         byPlayer.keySet().forEach(playerId -> rows.add(new CupStanding(playerId, totalOf(playerId))));
         rows.sort(Comparator
@@ -111,12 +111,12 @@ final class CupStandings {
     }
 
     /** {@code playerId}'s cup total across every map they have a result on. */
-    CupScore totalOf(UUID playerId) {
+    public CupScore totalOf(UUID playerId) {
         return CupScorer.accumulate(of(playerId));
     }
 
     /** Drops everything — a fresh cup, not a continuation of the last one. */
-    void clear() {
+    public void clear() {
         byPlayer.clear();
     }
 }

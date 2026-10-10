@@ -1,6 +1,6 @@
 package net.elytrarace.voyager.platform.catalog;
 
-import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupException;
+import net.elytrarace.voyager.race.cup.exception.UnresolvedCupException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

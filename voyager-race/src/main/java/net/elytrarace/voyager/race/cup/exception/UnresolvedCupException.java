@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.platform.catalog.exception;
+package net.elytrarace.voyager.race.cup.exception;
 
 import java.util.Collection;
 

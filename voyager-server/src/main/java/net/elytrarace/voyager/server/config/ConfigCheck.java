@@ -7,7 +7,7 @@ import net.elytrarace.voyager.platform.catalog.CatalogLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
 import net.elytrarace.voyager.platform.catalog.CupResolution;
-import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupException;
+import net.elytrarace.voyager.race.cup.exception.UnresolvedCupException;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
 

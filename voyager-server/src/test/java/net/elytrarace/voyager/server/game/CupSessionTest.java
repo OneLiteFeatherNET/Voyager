@@ -19,6 +19,7 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.race.cup.CupStandings;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.ServerFlag;

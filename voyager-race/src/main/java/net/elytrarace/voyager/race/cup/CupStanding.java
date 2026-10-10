@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.race.cup;
 
 import net.elytrarace.voyager.race.scoring.CupScore;
 
@@ -15,5 +15,5 @@ import java.util.UUID;
  * @param playerId whose standing this is
  * @param score their cup total
  */
-record CupStanding(UUID playerId, CupScore score) {
+public record CupStanding(UUID playerId, CupScore score) {
 }

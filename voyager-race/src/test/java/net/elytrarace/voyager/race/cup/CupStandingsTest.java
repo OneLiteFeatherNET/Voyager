@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.race.cup;
 
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.MedalTier;
