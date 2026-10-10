@@ -292,4 +292,27 @@ class ConfigCheckRunTest {
     private static String text(ByteArrayOutputStream captured) {
         return captured.toString(StandardCharsets.UTF_8);
     }
+
+    /**
+     * A minimum that is not a number refuses the validate-and-exit run with status one, before Minestom is
+     * initialised: the instance supplier is never asked.
+     */
+    @Test
+    void nonNumericMinimumExitsWithStatusOne() throws IOException {
+        Path data = Files.createDirectories(root.resolve("data"));
+        Path worlds = Files.createDirectories(root.resolve("worlds"));
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+
+        int exit = VoyagerServer.configCheck(new String[0], Map.of(
+                ServerSettings.DATA_PATH_PROPERTY, data.toString(),
+                ServerSettings.WORLDS_PATH_PROPERTY, worlds.toString(),
+                ServerSettings.MIN_RACERS_PROPERTY, "two"),
+                () -> {
+                    throw new AssertionError("the settings were refused, so Minestom must not be initialised");
+                },
+                stream(captured));
+
+        assertThat(exit).isOne();
+        assertThat(text(captured)).contains("VOYAGER_MIN_PLAYERS");
+    }
 }

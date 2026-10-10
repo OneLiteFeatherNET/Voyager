@@ -47,9 +47,11 @@ import java.util.function.Function;
  * @param cupName the cup to play, or empty to play the catalogue's only cup
  * @param devMode whether {@code voyager.dev} is set; shortens the lobby and registers the
  *     operator subcommands
+ * @param minimumRacers how many racers must be online before a cup starts; at least one. Defaults
+ *     to {@link #PRODUCTION_MINIMUM_RACERS}, or {@link #DEV_MINIMUM_RACERS} under dev mode
  */
 public record ServerSettings(String host, int port, Path dataPath, Path worldsPath,
-        Optional<String> cupName, boolean devMode) {
+        Optional<String> cupName, boolean devMode, int minimumRacers) {
 
     /** The property naming the directory holding {@code maps/} and {@code cups/}. */
     public static final String DATA_PATH_PROPERTY = "VOYAGER_DATA_PATH";
@@ -62,6 +64,15 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
 
     /** The property that turns on dev mode. */
     public static final String DEV_MODE_PROPERTY = "voyager.dev";
+
+    /** The property naming how many racers must be online before a cup starts; absent means the mode's default. */
+    public static final String MIN_RACERS_PROPERTY = "VOYAGER_MIN_PLAYERS";
+
+    /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is off. */
+    public static final int PRODUCTION_MINIMUM_RACERS = 2;
+
+    /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is on. */
+    public static final int DEV_MINIMUM_RACERS = 1;
 
     /** The host bound when none is given. */
     static final String DEFAULT_HOST = "0.0.0.0";
@@ -88,11 +99,21 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
             Duration.ofSeconds(10), PRODUCTION_TIMINGS.race(),
             Duration.ofSeconds(5), Duration.ofSeconds(10));
 
+    /**
+     * The settings with the minimum racer count the run's mode defaults to, for callers that do not set one.
+     */
+    public ServerSettings(String host, int port, Path dataPath, Path worldsPath, Optional<String> cupName,
+            boolean devMode) {
+        this(host, port, dataPath, worldsPath, cupName, devMode,
+                devMode ? DEV_MINIMUM_RACERS : PRODUCTION_MINIMUM_RACERS);
+    }
+
     public ServerSettings {
         if (host.isBlank()) {
             throw new IllegalArgumentException("host must not be blank");
         }
         requirePort(port);
+        requireMinimumRacers(minimumRacers);
         requireDirectory(dataPath, MissingServerDirectoryException.DATA);
         requireDirectory(worldsPath, MissingServerDirectoryException.WORLDS);
     }
@@ -119,13 +140,18 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     static ServerSettings fromProperties(String[] args, Function<String, @Nullable String> property) {
         String host = args.length > 0 ? args[0] : DEFAULT_HOST;
         int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
+        boolean devMode = Boolean.parseBoolean(property.apply(DEV_MODE_PROPERTY));
+        String minimum = blankToNull(property.apply(MIN_RACERS_PROPERTY));
         return new ServerSettings(
                 host,
                 port,
                 Path.of(valueOr(property.apply(DATA_PATH_PROPERTY), DEFAULT_DATA_PATH)),
                 Path.of(valueOr(property.apply(WORLDS_PATH_PROPERTY), DEFAULT_WORLDS_PATH)),
                 Optional.ofNullable(blankToNull(property.apply(CUP_PROPERTY))),
-                Boolean.parseBoolean(property.apply(DEV_MODE_PROPERTY)));
+                devMode,
+                minimum == null
+                        ? (devMode ? DEV_MINIMUM_RACERS : PRODUCTION_MINIMUM_RACERS)
+                        : parseMinimumRacers(minimum));
     }
 
     /**
@@ -138,9 +164,9 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
 
     /** One line naming every resolved value, for the boot log. Absolute paths, deliberately. */
     public String describe() {
-        return "host=%s port=%s data=%s worlds=%s cup=%s dev=%s".formatted(
+        return "host=%s port=%s data=%s worlds=%s cup=%s dev=%s minimum=%s".formatted(
                 host, port, dataPath.toAbsolutePath(), worldsPath.toAbsolutePath(),
-                cupName.orElse("<the only one>"), devMode);
+                cupName.orElse("<the only one>"), devMode, minimumRacers);
     }
 
     /**
@@ -153,6 +179,32 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
             return Integer.parseInt(raw);
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("port must be a number, was '%s'".formatted(raw), exception);
+        }
+    }
+
+    /**
+     * The minimum racer count a setting names.
+     *
+     * @throws IllegalArgumentException if the text is not a whole number
+     */
+    static int parseMinimumRacers(String raw) {
+        try {
+            return Integer.parseInt(raw.strip());
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    "%s must be a whole number, was '%s'".formatted(MIN_RACERS_PROPERTY, raw), exception);
+        }
+    }
+
+    /**
+     * The one range rule for the minimum racer count, shared by the constructor and the configuration check.
+     *
+     * @throws IllegalArgumentException if the count is below one
+     */
+    static void requireMinimumRacers(int minimumRacers) {
+        if (minimumRacers < 1) {
+            throw new IllegalArgumentException(
+                    "%s must be at least 1, was %s".formatted(MIN_RACERS_PROPERTY, minimumRacers));
         }
     }
 

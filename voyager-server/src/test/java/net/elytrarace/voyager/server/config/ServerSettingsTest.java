@@ -9,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -263,6 +264,53 @@ class ServerSettingsTest {
                 .contains(data().toAbsolutePath().toString())
                 .contains(worlds().toAbsolutePath().toString())
                 .contains("cup_x")
-                .contains("dev=true");
+                .contains("dev=true")
+                .contains("minimum=");
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // The minimum racer count
+    // ------------------------------------------------------------------------------------------
+
+    @Test
+    void productionDefaultMinimumIsTwo() {
+        ServerSettings settings = ServerSettings.fromProperties(new String[0], propertiesWith(Map.of()));
+
+        assertThat(settings.minimumRacers()).isEqualTo(2);
+    }
+
+    @Test
+    void devDefaultMinimumIsOne() {
+        ServerSettings settings = ServerSettings.fromProperties(new String[0],
+                propertiesWith(Map.of(ServerSettings.DEV_MODE_PROPERTY, "true")));
+
+        assertThat(settings.minimumRacers()).isEqualTo(1);
+    }
+
+    @Test
+    void explicitMinimumWinsUnderDevMode() {
+        ServerSettings settings = ServerSettings.fromProperties(new String[0], propertiesWith(Map.of(
+                ServerSettings.DEV_MODE_PROPERTY, "true",
+                ServerSettings.MIN_RACERS_PROPERTY, "3")));
+
+        assertThat(settings.minimumRacers()).isEqualTo(3);
+    }
+
+    @Test
+    void minimumBelowOneIsRefusedAndNamesTheKey() {
+        assertThatThrownBy(() -> ServerSettings.fromProperties(new String[0],
+                propertiesWith(Map.of(ServerSettings.MIN_RACERS_PROPERTY, "0"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("VOYAGER_MIN_PLAYERS")
+                .hasMessageContaining("0");
+    }
+
+    /** The properties the settings read, with the two directories every case needs under the temp root. */
+    private java.util.function.Function<String, String> propertiesWith(Map<String, String> extra) {
+        Map<String, String> properties = new java.util.HashMap<>(Map.of(
+                ServerSettings.DATA_PATH_PROPERTY, data().toString(),
+                ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString()));
+        properties.putAll(extra);
+        return properties::get;
     }
 }

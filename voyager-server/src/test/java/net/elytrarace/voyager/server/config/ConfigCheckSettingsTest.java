@@ -73,4 +73,37 @@ class ConfigCheckSettingsTest {
         return Map.of(ServerSettings.DATA_PATH_PROPERTY, data.toString(),
                 ServerSettings.WORLDS_PATH_PROPERTY, worlds.toString());
     }
+
+    @Test
+    void nonNumericMinimumIsReportedUnderItsKey() throws Exception {
+        List<ConfigProblem> problems = ConfigCheck.settingsProblems(new String[0], withMinimum("two"));
+
+        assertThat(problems).singleElement().satisfies(problem -> {
+            assertThat(problem.key()).isEqualTo("VOYAGER_MIN_PLAYERS");
+            assertThat(problem.message()).contains("two");
+            assertThat(problem.severity()).isEqualTo(Severity.ERROR);
+        });
+    }
+
+    @Test
+    void zeroMinimumIsReported() throws Exception {
+        List<ConfigProblem> problems = ConfigCheck.settingsProblems(new String[0], withMinimum("0"));
+
+        assertThat(problems).singleElement().satisfies(problem -> {
+            assertThat(problem.key()).isEqualTo("VOYAGER_MIN_PLAYERS");
+            assertThat(problem.message()).contains("0");
+        });
+    }
+
+    @Test
+    void unsetMinimumIsNoProblem() throws Exception {
+        assertThat(ConfigCheck.settingsProblems(new String[0], validDirectories())).isEmpty();
+    }
+
+    /** The valid directories plus one minimum racer setting, so only that setting can be wrong. */
+    private Map<String, String> withMinimum(String value) throws Exception {
+        Map<String, String> properties = new java.util.HashMap<>(validDirectories());
+        properties.put(ServerSettings.MIN_RACERS_PROPERTY, value);
+        return properties;
+    }
 }
