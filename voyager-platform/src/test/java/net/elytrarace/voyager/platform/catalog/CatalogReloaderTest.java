@@ -161,14 +161,40 @@ class CatalogReloaderTest {
     }
 
     @Test
-    void aMalformedUnplayedCupIsRejectedBecauseEveryProblemIsReported() {
+    void aMalformedPlayedCupIsRejectedAndNamed() {
         Path data = validCatalogue();
-        CatalogFixtures.write(data.resolve("cups"), "spare.json", "{ not json");
-        CatalogReloader reloader = new CatalogReloader(CLOCK, new FakeWorldOpener());
+        CatalogFixtures.write(data.resolve("cups"), "tour.json", "{ not json");
+        CatalogReloader reloader = new CatalogReloader(CLOCK, new FakeWorldOpener("ridge-world", "dune-world"));
 
         List<String> problems = rejectedBy(reloader.reload(data, Optional.of("tour")));
 
-        assertThat(String.join("\n", problems)).contains("spare.json");
+        assertThat(String.join("\n", problems)).contains("tour.json");
+    }
+
+    @Test
+    void aMalformedUnplayedCupWarnsOnceAndTheReloadIsApplied() {
+        Path data = validCatalogue();
+        CatalogFixtures.write(data.resolve("cups"), "spare.json", "{ not json");
+        CatalogReloader reloader = new CatalogReloader(CLOCK, new FakeWorldOpener("ridge-world", "dune-world"));
+
+        ReloadOutcome outcome = reloader.reload(data, Optional.of("tour"));
+
+        assertThat(outcome).isInstanceOf(ReloadOutcome.Applied.class);
+        assertThat(((ReloadOutcome.Applied) outcome).warnings())
+                .singleElement().asString().contains("1 cup(s) are not playable").contains("spare.json");
+    }
+
+    @Test
+    void anUnplayedCupNamingAnUnknownMapWarnsAndTheReloadIsApplied() {
+        Path data = validCatalogue();
+        CatalogFixtures.cup(data.resolve("cups"), "spare.json", "spare", "RACE", "missing-map");
+        CatalogReloader reloader = new CatalogReloader(CLOCK, new FakeWorldOpener("ridge-world", "dune-world"));
+
+        ReloadOutcome outcome = reloader.reload(data, Optional.of("tour"));
+
+        assertThat(outcome).isInstanceOf(ReloadOutcome.Applied.class);
+        assertThat(((ReloadOutcome.Applied) outcome).warnings())
+                .singleElement().asString().contains("spare").contains("missing-map");
     }
 
     // ---- reload: worlds -------------------------------------------------------------------------

@@ -12,8 +12,8 @@ that matters is asserted through a captured appender.
   exists as designed. If it does not, record the adapted shape in design.md (decision 5) before group 2.
 - [x] 0.2 Owner decision on design open question 2 (`scope-cup-validation` before this change, or accept that a broken unrelated
   cup blocks reloads). Verify: the answer is recorded in design.md, "Open Questions". Recorded 2026-10-10: `scope-cup-validation`
-  is before this change and is merged on `main`. The reload still checks every cup file; aligning it with boot is an open
-  follow-up (design.md, Answer 2).
+  is before this change and is merged on `main`. The reload was aligned with boot's cup policy afterwards (design.md,
+  Deviations).
 - [x] 0.3 Owner decisions on design open questions 1 and 3 (pinned rounds only, or geometry-only map-boundary swaps; which
   permission source). Verify: answers recorded in design.md. Recorded 2026-10-10: question 1 is pinned rounds only, by owner
   decision. Question 3 has no owner decision: the owner named no permission source, so the console-only state is recorded as

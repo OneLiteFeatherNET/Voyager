@@ -78,8 +78,9 @@ public final class CatalogReloader {
      * A reload: reads the directory, checks the whole catalogue and the worlds of the chosen cup, and opens the
      * worlds that are not open yet. Never throws for a bad edit.
      *
-     * <p>Every problem the reading finds is reported, not only those of the chosen cup, so a broken unplayed cup
-     * file also rejects the reload until it is fixed. That is stricter than boot, on purpose; see the how-to.
+     * <p>The same policy as boot: a problem in {@code maps/} or in the directory refuses the reload; a problem in
+     * the chosen cup, or a selection that names no cup, refuses it too. A broken cup that is not played does not
+     * refuse. It becomes one warning in {@link ReloadOutcome.Applied#warnings()}, the one line boot logs for it.
      *
      * @param dataDirectory the directory holding {@code maps/} and {@code cups/}
      * @param chosen        the cup to play, or empty for the directory's only cup
@@ -88,15 +89,15 @@ public final class CatalogReloader {
     public ReloadOutcome reload(Path dataDirectory, Optional<String> chosen) {
         CatalogReading reading = CatalogLoader.read(dataDirectory);
         List<String> problems = new ArrayList<>();
-        for (CatalogProblem problem : reading.problems()) {
+        for (CatalogProblem problem : reading.catalogueProblems()) {
             problems.add(CatalogValidation.problemOf(problem).format());
         }
 
         Optional<CupDefinition> played = resolveCup(reading, chosen, problems);
-        // The cross-check is skipped while a file is broken, as CatalogLoader.load skips it: a map that does not
-        // parse would otherwise be reported as a dangling entry of every cup that names it.
-        if (reading.problems().isEmpty()) {
-            CatalogConsistency.unresolvedCupMaps(reading.snapshot().maps(), reading.snapshot().cups())
+        // As boot does: the cross-check runs for the played cup only, and only when no map or directory is broken.
+        // A map that does not parse would otherwise be reported as a dangling entry of every cup that names it.
+        if (played.isPresent() && reading.catalogueProblems().isEmpty()) {
+            CatalogConsistency.unresolvedCupMaps(reading.snapshot().maps(), Map.of(played.get().name(), played.get()))
                     .ifPresent(unresolved -> problems.add(problem(
                             dataDirectory.resolve("cups").toString(), "cup", unresolved.getMessage())));
         }
@@ -115,7 +116,15 @@ public final class CatalogReloader {
         if (!problems.isEmpty()) {
             return new ReloadOutcome.Rejected(problems);
         }
-        return openAndApply(reading, cup, needed);
+        ReloadOutcome outcome = openAndApply(reading, cup, needed);
+        List<String> skipped = CupResolution.skippedCups(reading, cup);
+        if (outcome instanceof ReloadOutcome.Applied applied && !skipped.isEmpty()) {
+            List<String> warnings = new ArrayList<>();
+            warnings.add(CupResolution.skippedWarning(skipped));
+            warnings.addAll(applied.warnings());
+            return new ReloadOutcome.Applied(applied.loaded(), warnings);
+        }
+        return outcome;
     }
 
     private ReloadOutcome openAndApply(CatalogReading reading, CupDefinition cup, Set<String> needed) {
@@ -153,14 +162,21 @@ public final class CatalogReloader {
         }
     }
 
-    /** The cup the reload would play, or empty with a problem added when none can be chosen. */
+    /**
+     * The cup the reload would play, or empty with the problem added when none can be chosen: the played cup's own
+     * file problem, or the selection's refusal.
+     */
     private static Optional<CupDefinition> resolveCup(CatalogReading reading, Optional<String> chosen,
             List<String> problems) {
         try {
             return Optional.of(CupResolution.resolve(reading, chosen));
         } catch (RuntimeException refusal) {
-            boolean alreadyListed = reading.problems().stream().anyMatch(problem -> problem.cause() == refusal);
-            if (!alreadyListed) {
+            Optional<CatalogProblem> ownFile = reading.cupFileProblems().stream()
+                    .filter(problem -> problem.cause() == refusal)
+                    .findFirst();
+            if (ownFile.isPresent()) {
+                problems.add(CatalogValidation.problemOf(ownFile.get()).format());
+            } else {
                 problems.add(problem("cup selection", "cup", refusal.getMessage()));
             }
             return Optional.empty();

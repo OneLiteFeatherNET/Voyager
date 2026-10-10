@@ -53,7 +53,10 @@ ERROR ridge-world world: holds no region data; the maps of cup 'tour' need it
 
 Every problem is listed in one reply, so one refusal shows the whole list to fix.
 
-Unlike boot, a reload also refuses a broken cup that the server does not play. Fix or remove that file, then reload.
+A reload applies boot's cup policy. It refuses for a problem that affects the cup the server plays: a broken played cup, a
+selection that names no cup, or a map the played cup names that does not exist. A broken cup that the server does not play
+does not refuse the reload. The reply carries one warning that names the file, and the reload proceeds. Fix that file when
+you can; boot and every later reload will keep warning about it.
 
 ## What a reload can and cannot change
 

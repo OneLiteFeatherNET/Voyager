@@ -262,12 +262,14 @@ Rollback: revert the squash commit. Catalogues then load at boot only, as before
 - **`CupResolution` and `UnresolvedCupException` live in `voyager-platform`** (`platform.catalog` and
   `platform.catalog.exception`), not in the form the dependency change described. `LoadedCatalog` resolves the selected cup at
   load time, and that resolution is platform code. Decision 2 and decision 9 hold otherwise.
-- **A reload rejects a broken cup that the server does not play; boot only warns about it.** Decision 5 said that one broken
-  unrelated cup rejects every reload until `scope-cup-validation` lands. `scope-cup-validation` has now landed (merged on
-  `main`, owner decision 2026-10-10). Boot follows its rule: only the played cup refuses, and the other broken cups are
-  logged as one warning. The reload does not follow it yet: `CatalogReloader.reload` still checks every cup file, so a
-  broken unplayed cup rejects a reload. That is stricter than boot. Aligning the reload with boot is not part of this change
-  and the owner has not scheduled it. See Answer 2.
+- **A reload follows boot's cup policy: a broken cup that the server does not play warns, it does not refuse.** Decision 5
+  said that one broken unrelated cup would reject every reload until `scope-cup-validation` landed. That change has landed
+  (merged on `main`, owner decision 2026-10-10), and the reload was then stricter than boot for one more release: it still
+  checked every cup file. `CatalogReloader.reload` now uses the boot policy. A problem in `maps/` or in the directory, a
+  played cup that does not parse or is named twice, a selection that names no cup, and a map the played cup names that
+  does not exist all refuse the reload. A broken cup that is not played produces the same single warning boot logs, in
+  `ReloadOutcome.Applied.warnings()`, and the reload proceeds. Fix: `fix(server): let a broken unplayed cup warn instead
+  of refusing a reload`. See Answer 2.
 - **The server console reads commands from standard input; decision 3 did not include this.** Decision 3 names `/race reload`
   as the trigger, but Minestom 26.2 does not read `System.in`, and no operator level is granted, so no one could reach the
   command on a running server. `ConsoleCommandReader` (`voyager-server`, `command`, commit `8ce3e92`) reads lines on a daemon
@@ -305,9 +307,8 @@ the answer says so.
 1. **Pinned rounds only. Owner decision, 2026-10-10.** A valid edit waits for the next cup. Geometry-only swaps at a map
    boundary are not implemented, and this change does not need them.
 2. **Owner: `scope-cup-validation` before this change. Resolved, 2026-10-10.** It is merged on `main` (merge `badc124`).
-   Boot applies its rule: only the played cup refuses. The reload still checks every cup file, so a broken cup that the
-   server does not play rejects a reload (Deviations). The owner resolved the question of merge order, not that reload
-   alignment. The alignment is an open follow-up, not done here.
+   Boot applies its rule: only the played cup refuses. The reload follows the same rule since 2026-10-10 (Deviations).
+   The owner resolved the question of merge order; the reload alignment was a separate fix.
 3. **Permission source. No source named by the owner, 2026-10-10.** The console may reload. A player needs operator level 4,
    and this server grants no level, so today only the console can run `race reload`. The console-only state is the default
    this change ships with. Naming a permission source is still the owner's decision and is open (Open Questions, 3).
@@ -320,7 +321,7 @@ the answer says so.
 ## Open Questions
 
 1. **Answered 2026-10-10: pinned rounds only** (Answer 1). Geometry-only map-boundary swaps are not part of this change.
-2. **Answered 2026-10-10: `scope-cup-validation` before this change** (Answer 2). The reload alignment with boot is open.
+2. **Answered 2026-10-10: `scope-cup-validation` before this change** (Answer 2). The reload alignment with boot is done (Deviations).
 3. **Open, owner:** which permission source grants `voyager.race.reload` on the live server? Not decided on 2026-10-10; the
    console-only state stands until the owner names one (Answer 3).
 4. **Spike 1.1:** does a finished cup start again by itself in production, or only by `/race start` or a restart? The answer sets the
