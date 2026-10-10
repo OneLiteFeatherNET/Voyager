@@ -21,7 +21,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -153,9 +152,9 @@ class SetupCommandsTest {
         /** Runs a command that opens a map, then ticks until the builder has arrived in that map's world. */
         void enter(String command) {
             run(command);
-            env.tickWhile(() -> sessions.find(builder.getUuid())
+            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
                     .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false), Duration.ofSeconds(10));
+                    .orElse(false));
         }
 
         /** The translation keys of every chat line the builder has received so far. */

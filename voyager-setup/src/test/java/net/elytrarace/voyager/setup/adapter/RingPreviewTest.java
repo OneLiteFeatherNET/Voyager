@@ -29,7 +29,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -127,9 +126,9 @@ class RingPreviewTest {
         void enter(String command) {
             env.process().command().execute(builder, command);
             env.tick();
-            env.tickWhile(() -> sessions.find(builder.getUuid())
+            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
                     .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false), Duration.ofSeconds(10));
+                    .orElse(false));
         }
 
         Instance world() {
@@ -180,7 +179,7 @@ class RingPreviewTest {
 
         /** Ticks until the open map shows the given number of previews; the spawn is asynchronous. */
         void awaitPreviews(int count) {
-            env.tickWhile(() -> displays(world()).size() != count, Duration.ofSeconds(10));
+            BoundedTicks.tickWhile(env, () -> displays(world()).size() != count);
             assertThat(displays(world())).hasSize(count);
         }
     }
