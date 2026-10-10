@@ -20,9 +20,9 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 ## 3. Fitness rules (Red first)
 
-- [ ] 3.1 Red: add `voyager/fitness/src/test/java/net/elytrarace/fitness/PermissionBoundaryTest.java` with `luckPermsIsConfinedToItsAdapter` (classes depending on `net.luckperms..` or `me.lucko..` must reside in `net.elytrarace.voyager.platform.permission.luckperms..`) and `commandsAskOnlyThePolicy` (classes in `..server.command..` and `..setup.adapter..` must not depend on `..platform.permission.luckperms..`), both with `allowEmptyShould(false)`. Verify: `./gradlew :voyager:fitness:test` fails on `luckPermsIsConfinedToItsAdapter` with "failed to check any classes", because no class uses LuckPerms yet.
-- [ ] 3.2 Red proof for the second rule: temporarily add an import of `net.elytrarace.voyager.platform.permission.luckperms.LuckPermsPolicy` to `RaceCommand` on the scratch branch. Verify: `commandsAskOnlyThePolicy` fails and names `RaceCommand`. Revert the import.
-- [ ] 3.3 Green: the rules pass once groups 5 and 6 exist and no class outside the adapter package names LuckPerms. Verify: `./gradlew :voyager:fitness:test` passes; `FitnessCoverageTest` still accepts `voyager-platform`.
+- [x] 3.1 Red: add `voyager/fitness/src/test/java/net/elytrarace/fitness/PermissionBoundaryTest.java` with `luckPermsIsConfinedToItsAdapter` (classes depending on `net.luckperms..` or `me.lucko..` must reside in `net.elytrarace.voyager.platform.permission.luckperms..`) and `commandsAskOnlyThePolicy` (classes in `..server.command..` and `..setup.adapter..` must not depend on `..platform.permission.luckperms..`), both with `allowEmptyShould(false)`. Verify: `./gradlew :voyager:fitness:test` fails on `luckPermsIsConfinedToItsAdapter` with "failed to check any classes", because no class uses LuckPerms yet.
+- [x] 3.2 Red proof for the second rule: temporarily add an import of `net.elytrarace.voyager.platform.permission.luckperms.LuckPermsPolicy` to `RaceCommand` on the scratch branch. Verify: `commandsAskOnlyThePolicy` fails and names `RaceCommand`. Revert the import.
+- [x] 3.3 Green: the rules pass once groups 5 and 6 exist and no class outside the adapter package names LuckPerms. Verify: `./gradlew :voyager:fitness:test` passes; `FitnessCoverageTest` still accepts `voyager-platform`.
 
 ## 4. Permission port in voyager-api (Red then Green)
 
@@ -41,7 +41,7 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 - [x] 6.1 Red: `LuckPermsPolicyTest` uses a fake `LuckPermsGateway` and asserts: no user for the UUID means deny; node TRUE means allow; node UNDEFINED means deny; node FALSE means deny. Verify: the test fails because the classes do not exist. The test imports no `net.luckperms` type.
 - [x] 6.2 Green: add `LuckPermsGateway` (interface, in `permission.luckperms`) and `LuckPermsPolicy`. Verify: `6.1` passes.
-- [ ] 6.3 Red then Green: `NetLuckPermsGateway` is the only class in `permission.luckperms` that imports `net.luckperms`. Add it and `LuckPermsBootstrap` (`isPresent()` by `Class.forName` on `me.lucko.luckperms.minestom.loader.MinestomLoader` without initialisation; `start()` as in spike 1.1; a failed start throws `PermissionBackendStartException` in `permission.luckperms.exception`). Test `LuckPermsBootstrapTest` runs with the loader off the test class path and asserts `isPresent()` is false and `start()` is not reached. Verify: the test passes, and `./gradlew :voyager:fitness:test` passes `luckPermsIsConfinedToItsAdapter`.
+- [x] 6.3 Red then Green: `NetLuckPermsGateway` is the only class in `permission.luckperms` that imports `net.luckperms`. Add it and `LuckPermsBootstrap` (`isPresent()` by `Class.forName` on `me.lucko.luckperms.minestom.loader.MinestomLoader` without initialisation; `start()` as in spike 1.1; a failed start throws `PermissionBackendStartException` in `permission.luckperms.exception`). Test `LuckPermsBootstrapTest` runs with the loader off the test class path and asserts `isPresent()` is false and `start()` is not reached. Verify: the test passes, and `./gradlew :voyager:fitness:test` passes `luckPermsIsConfinedToItsAdapter`.
 
 ## 7. Proxy forwarding and bind settings (Red then Green)
 
