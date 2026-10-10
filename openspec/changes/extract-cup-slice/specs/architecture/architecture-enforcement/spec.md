@@ -27,6 +27,10 @@ migration items 1 to 3 and moved the cup flow out of the server.
 - **WHEN** a class in `..server..` imports `race.cup`
 - **THEN** the rule fails and names the class
 
+#### Scenario: Scoring import in server before the move
+- **WHEN** a class in `..server..` that is not in the baseline imports `race.scoring`
+- **THEN** the rule fails and names the class. The baseline of this rule is empty once this change is merged, so the same check applies to every class in `..server..`, not only to those the move left behind.
+
 ### Requirement: Server holds no Minestom adapter outside the composition root
 **Priority:** MoSCoW Must
 
@@ -38,6 +42,10 @@ plain. The Minestom adapters that `server.game` held are in `voyager-platform` o
 #### Scenario: Minestom type in a server adapter class
 - **WHEN** a class in `net.elytrarace.voyager.server..` outside those packages and not `VoyagerServer` imports `net.minestom..`
 - **THEN** the rule fails and names the class
+
+#### Scenario: Minestom type in the game package
+- **WHEN** a class in `net.elytrarace.voyager.server..` imports `net.minestom..`, including a class that is placed in the former `server.game` package
+- **THEN** the rule fails and names the class. The former package `server.game` is deleted by this change, so the rule covers the whole server module outside its composition root.
 
 #### Scenario: Composition root and command may use Minestom
 - **WHEN** a class in `server.inject`, `server.config`, `server.command`, or `VoyagerServer` imports `net.minestom..`

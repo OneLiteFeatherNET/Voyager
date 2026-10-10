@@ -2,7 +2,7 @@ package net.elytrarace.voyager.platform.catalog;
 
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.platform.catalog.exception.DuplicateCatalogEntryException;
-import net.elytrarace.voyager.platform.catalog.exception.UnresolvedCupException;
+import net.elytrarace.voyager.race.cup.exception.UnresolvedCupException;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -45,6 +45,22 @@ public abstract class CupResolution {
      * @throws RuntimeException the problem of a cup file this selection names: a malformed file, or a
      *     duplicate name
      */
+    /**
+     * The refusal of a cup selection, as the server reports it: the message of the {@link UnresolvedCupException} that
+     * {@link #resolve} throws, or empty when the selection resolves. Any other failure is rethrown unchanged.
+     *
+     * <p>This is what lets the composition root report a refused selection without naming the exception type, which
+     * the architecture keeps out of the server module.
+     */
+    public static Optional<String> refusalOf(CatalogReading reading, Optional<String> chosen) {
+        try {
+            resolve(reading, chosen);
+            return Optional.empty();
+        } catch (UnresolvedCupException exception) {
+            return Optional.of(exception.getMessage());
+        }
+    }
+
     @Contract(pure = true)
     public static CupDefinition resolve(CatalogReading reading, Optional<String> chosen) {
         CatalogSnapshot catalog = reading.snapshot();

@@ -15,9 +15,9 @@ import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
-import net.elytrarace.voyager.server.game.CatalogReloadService;
-import net.elytrarace.voyager.server.game.CupSession;
-import net.elytrarace.voyager.server.game.Racers;
+import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.cup.TickPipeline;
+import net.elytrarace.voyager.platform.flight.Racers;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Pos;
@@ -70,10 +70,10 @@ import java.util.function.Supplier;
  *
  * <p>Seven of {@code voyager-race}'s entry points carry {@code @ApiStatus.Internal} —
  * {@code RaceCore}, {@code RingPass}, {@code RaceStateMachine}, {@code ProgressTracker},
- * {@code CupScorer}, {@code MapScorer}, {@code PlacementBonus} — and this module calls three of them
- * directly ({@code MapScorer}, {@code CupScorer}, {@code PlacementBonus}, all from
- * {@code net.elytrarace.voyager.server.game}). <strong>The annotation stays where it is and this
- * module ignores it deliberately.</strong>
+ * {@code CupScorer}, {@code MapScorer}, {@code PlacementBonus} — and until the cup moved out of this
+ * module it called three of them directly ({@code MapScorer}, {@code CupScorer}, {@code
+ * PlacementBonus}; the cup's scoring now lives in {@code race.cup}). <strong>The annotation stays
+ * where it is, and the rule below is why.</strong>
  *
  * <p>Two reasons, and the second is the one that settles it.
  *
@@ -180,6 +180,7 @@ public final class VoyagerServer {
         CatalogHolder catalog = graph.get(CatalogHolder.class);
         MapInstances instances = graph.get(MapInstances.class);
         CupSession session = graph.get(CupSession.class);
+        TickPipeline pipeline = graph.get(TickPipeline.class);
 
         try {
             openEveryWorld(catalog.current().rotation(), instances);
@@ -191,14 +192,13 @@ public final class VoyagerServer {
         }
 
         registerEvents(session, settings, catalog, instances);
-        MinecraftServer.getCommandManager().register(
-                new RaceCommand(session, settings.devMode(), graph.get(CatalogReloadService.class)));
+        MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         LOGGER.info("/race reload is registered: the console and operators at level {} may run it",
                 ReloadPermission.REQUIRED_LEVEL);
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
-        scheduleTick(session);
+        scheduleTick(pipeline, session);
         // Built now so the shutdown task can stop it; started only once the server listens, because a command
         // typed before then would reach a server that is not yet able to take one.
         ConsoleCommandReader console = new ConsoleCommandReader(
@@ -352,21 +352,21 @@ public final class VoyagerServer {
     }
 
     /**
-     * One {@link CupSession#tick()} per server tick, at {@link ExecutionType#TICK_START}.
+     * One run of the cup's {@link TickPipeline} per server tick, at {@link ExecutionType#TICK_START}.
      *
      * <p>The guard is not decoration. A tick that throws throws again on the next one, twenty times a
      * second, and the stack trace that mattered is then the one at the top of a hundred thousand
      * identical ones. So the first failure stops the cup and is logged once, with everything a
      * {@code /race} afterwards can still be asked about left standing.
      */
-    private static void scheduleTick(CupSession session) {
+    private static void scheduleTick(TickPipeline pipeline, CupSession session) {
         AtomicBoolean broken = new AtomicBoolean();
         MinecraftServer.getSchedulerManager().scheduleTask(() -> {
             if (broken.get()) {
                 return;
             }
             try {
-                session.tick();
+                pipeline.run();
             } catch (RuntimeException exception) {
                 broken.set(true);
                 session.stop();

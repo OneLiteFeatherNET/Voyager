@@ -9,6 +9,11 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
+import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
+import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
+import net.elytrarace.voyager.platform.tick.FlightTickDriver;
+import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.catalog.ReloadOutcome;
@@ -17,8 +22,8 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
-import net.elytrarace.voyager.server.game.CatalogReloadService;
-import net.elytrarace.voyager.server.game.CupSession;
+import net.elytrarace.voyager.server.CatalogReloadService;
+import net.elytrarace.voyager.platform.cup.CupSession;
 import net.minestom.server.command.ConsoleSender;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -91,8 +96,12 @@ class RaceCommandReloadTest {
         }, holder, Runnable::run);
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
         RaceRuns runs = new RaceRuns();
-        CupSession session = CupSession.create(holder, instances, new MapTransition(instances, runs), runs,
-                new FlightTracker(), TIMINGS, STEP, List::of);
+        CurrentMapBlocks blocks = new CurrentMapBlocks();
+        FireworkBoostTracker boosts = new FireworkBoostTracker();
+        FlightTickDriver flight = new FlightTickDriver(new LivePlayerSampler(List::of, boosts), new FlightTracker(),
+                new MinestomCollisionSpace(blocks));
+        CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
+                blocks, boosts, TIMINGS, STEP, List::of);
         env.process().command().register(new RaceCommand(session, devMode, service));
     }
 

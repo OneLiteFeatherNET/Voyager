@@ -12,7 +12,9 @@ import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
-import net.elytrarace.voyager.server.game.CatalogReloadService;
+import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.server.CatalogReloadService;
+import net.elytrarace.voyager.server.command.RaceCommand;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceManager;
@@ -88,6 +90,15 @@ public final class ServerBeans {
             @External ServerSettings settings) {
         return new CatalogReloadService(() -> reloader.reload(settings.dataPath(), settings.cupName()), holder,
                 Thread::startVirtualThread);
+    }
+
+    /**
+     * The operator's race command, built here with the cup it drives and the reload it offers. Its constructor only
+     * adds syntax and registers nothing; {@code VoyagerServer} registers it when the server is ready to take commands.
+     */
+    @Bean
+    RaceCommand raceCommand(CupSession session, CatalogReloadService reloads, @External ServerSettings settings) {
+        return new RaceCommand(session, settings.devMode(), reloads);
     }
 
     @Bean

@@ -27,18 +27,32 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 class SliceBoundaryRulesTest {
 
     @ArchTest
-    static final ArchRule r1_serverDoesNotDependOnRaceScoring = freeze(
+    static final ArchRule r1_serverDoesNotDependOnRaceScoringOrCup =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.server..")
-                    .should().dependOnClassesThat().resideInAPackage("net.elytrarace.voyager.race.scoring..")
-                    .as("classes in net.elytrarace.voyager.server.. do not depend on net.elytrarace.voyager.race.scoring..")
-                    .allowEmptyShould(false));
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "net.elytrarace.voyager.race.scoring..", "net.elytrarace.voyager.race.cup..")
+                    .as("classes in net.elytrarace.voyager.server.. do not depend on net.elytrarace.voyager.race.scoring.. "
+                            + "or net.elytrarace.voyager.race.cup..")
+                    .allowEmptyShould(false);
 
+    /**
+     * R2 retargeted: the server's adapter code does not use Minestom. The composition root (server.inject, server.config),
+     * the command adapter (server.command) and the bootstrap class VoyagerServer may use it, and nothing else in the
+     * server module may, because the Minestom adapters moved to voyager-platform.
+     */
     @ArchTest
-    static final ArchRule r2_serverGameDoesNotUseMinestom = freeze(
-            noClasses().that().resideInAPackage("net.elytrarace.voyager.server.game..")
+    static final ArchRule r2_serverOutsideTheCompositionRootDoesNotUseMinestom =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.server..")
+                    .and().resideOutsideOfPackages(
+                            "net.elytrarace.voyager.server.inject..",
+                            "net.elytrarace.voyager.server.config..",
+                            "net.elytrarace.voyager.server.command..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.server.VoyagerServer")
                     .should().dependOnClassesThat().resideInAPackage("net.minestom..")
-                    .as("classes in net.elytrarace.voyager.server.game.. do not depend on net.minestom..")
-                    .allowEmptyShould(false));
+                    .as("classes in net.elytrarace.voyager.server.. outside the composition root (server.inject, "
+                            + "server.config), the command adapter (server.command) and VoyagerServer do not depend "
+                            + "on net.minestom..")
+                    .allowEmptyShould(false);
 
     @ArchTest
     static final ArchRule r3_platformInfrastructureDoesNotDependOnRace = freeze(
