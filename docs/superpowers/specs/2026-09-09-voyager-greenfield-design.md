@@ -133,6 +133,14 @@ voyager-fitness      -> all                            (test-only, ArchUnit)
 `voyager-api` contains no implementation. `voyager-physics` depends only on `api` and is
 free of Minestom, of the game, and of the database.
 
+**Rings and slices (refinement, 2026-10-10).** The rings and the vertical slices that organise these modules are
+recorded in [ADR-0017](../../decisions/0017-clean-architecture-with-vertical-slices.md) and explained in
+[docs/explanation/architecture.md](../../explanation/architecture.md). They refine decision D8: the eight-module cut
+is unchanged, and slices are packages inside the modules. They refine decision D10: DI annotations appear only in
+the composition roots (`voyager-server`, `voyager-setup`), and no platform class carries one. The record does not
+change "ECS at the tick layer only" below; the rebuild's tick is an explicit ordered list (see Dependency
+injection).
+
 ### Package root
 
 Every module of the rebuild places its packages under `net.elytrarace.voyager..` — `voyager-api`
