@@ -52,7 +52,7 @@ dependencies {
     // runtime metadata then says nothing about a library its code calls, and a consumer that got
     // Minestom from somewhere else would find out at the first log line. Acceptable only because
     // Minestom cannot run without slf4j at all, so no consumer of this module can be without it.
-    compileOnly("org.slf4j:slf4j-api:2.0.18")
+    compileOnly("org.slf4j:slf4j-api:2.0.19")
 
     // LuckPerms, behind the PermissionPolicy port (ADR-0024). Compile-only: the adapter is optional at runtime, and the
     // runtime jar comes from the composition roots. The loader is compile-only here as well, because LuckPermsBootstrap

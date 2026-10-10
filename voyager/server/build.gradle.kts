@@ -21,7 +21,7 @@ dependencies {
     // Same reasoning as voyager-platform's line: Minestom and falco-anvil both put slf4j-api on the
     // runtime classpath and neither exposes it for compilation, so a module that logs needs it
     // compileOnly. A second pin is not a second version — it is the one Minestom already resolves.
-    compileOnly("org.slf4j:slf4j-api:2.0.18")
+    compileOnly("org.slf4j:slf4j-api:2.0.19")
 
     // The composition root is the one module that has to answer "what happens when something logs".
     // Log4j2 as the slf4j 2.x provider, exactly as legacy/server/build.gradle.kts does for the tree being
