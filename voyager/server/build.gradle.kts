@@ -60,6 +60,13 @@ tasks.test {
     // ConnectionManager.createPlayer's `assert ServerFlag.INSIDE_TEST || ...isVirtual()` fails — the
     // same flag voyager-platform and server set for their own Minestom-backed tests.
     systemProperty("minestom.inside-test", "true")
+
+    // The golden master transcripts (src/test/resources/golden/cup-session) were recorded on a de_DE JVM: decimal
+    // commas in "0,000 s", formatted by CupAnnouncer.seconds() with the default locale. Pin the test JVM to that
+    // locale so the comparison does not depend on the runner's locale (CI runs en/C.UTF-8). Do not regenerate the
+    // goldens to suit a different locale; a change to what the transcripts record is a behaviour change.
+    systemProperty("user.language", "de")
+    systemProperty("user.country", "DE")
 }
 
 // The working directory every run task uses, and the two directories the server resolves inside it.
