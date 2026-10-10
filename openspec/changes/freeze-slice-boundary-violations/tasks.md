@@ -7,7 +7,7 @@ code or existing tests.
 ## 1. Red: rules fail on the known violations
 
 - [x] 1.1 Add `voyager-fitness/src/test/java/net/elytrarace/fitness/SliceBoundaryRulesTest.java` with rules R1 to R8 from design D6, each an `@ArchTest` with `allowEmptyShould(false)` and a stable `as(...)` description, none frozen yet. Verify: `./gradlew :voyager-fitness:test --tests 'net.elytrarace.fitness.SliceBoundaryRulesTest'` exits non-zero, and the failure output names the rules R1 to R6 and R4, and no rule fails with the empty-should error (the package patterns match classes).
-- [ ] 1.2 (Open: blocked on the owner's confirmation of addendum 30, see design D7 "Red run") Reconcile the Red output with design D6 and D7. Replace the expected item numbers with the confirmed ones, record the violation count per rule, and add an addendum item for each violation that no migration item names. Ask the owner to confirm the addendum numbers before group 2. Verify: every violation in the Red output appears in the reconciled D7 table, and the R7 and R8 rows show zero violations or are changed to frozen.
+- [x] 1.2 Reconcile the Red output with design D6 and D7 (done: D7 "Red run"; the owner chose option B, so no addendum 30). Replace the expected item numbers with the confirmed ones, record the violation count per rule, and add an addendum item for each violation that no migration item names. Ask the owner to confirm the addendum numbers before group 2. Verify: every violation in the Red output appears in the reconciled D7 table, and the R7 and R8 rows show zero violations or are changed to frozen.
 
 ## 2. Green: freeze the rules and commit the baseline
 
@@ -17,7 +17,7 @@ code or existing tests.
 ## 3. Verify the failure modes
 
 - [ ] 3.1 In a throwaway worktree branched from the up-to-date remote `main`, with this change's files copied in by absolute path, add a forbidden `net.minestom` import to a new class in `server.game` that is not in the baseline and run `./gradlew :voyager-fitness:test`. Verify: the run exits non-zero and the output names the rule R2 and the new class. Remove the worktree afterwards.
-- [ ] 3.2 In the same worktree, with `CI=true`, delete one frozen rule's entry from `stored.rules` and run the tests. Verify: the run exits non-zero with the message "Creating new violation store is disabled". Record the exact message for the how-to guide.
+- [ ] 3.2 In the same worktree, with `CI=true`, delete one frozen rule's entry from `stored.rules` and run the tests. Verify: the run exits non-zero with "Updating frozen violations is disabled", because the store exists. Then remove `stored.rules` altogether and run again with `CI=true`. Verify: the run exits non-zero with "Creating new violation store is disabled". Record both exact messages for the how-to guide.
 - [ ] 3.3 In the same worktree, with `CI=true`, remove one baselined import from its class without shrinking the store and run the tests. Verify: the run exits non-zero with the message "Updating frozen violations is disabled". Record the exact message for the how-to guide.
 - [ ] 3.4 In the main checkout, with `CI=true` and the committed store unchanged, run `./gradlew :voyager-fitness:test`. Verify: it exits 0, `git status` shows no change under `archunit_store/`, and the test classes `FitnessCoverageTest`, `ApiPurityTest`, `DesignRuleTest` and `NullabilityConventionTest` all pass.
 
