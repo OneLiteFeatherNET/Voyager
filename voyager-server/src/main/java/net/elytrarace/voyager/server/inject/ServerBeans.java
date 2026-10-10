@@ -4,7 +4,10 @@ import io.avaje.inject.Bean;
 import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 
+import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.catalog.CatalogReloader;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
@@ -97,8 +100,22 @@ public final class ServerBeans {
      * adds syntax and registers nothing; {@code VoyagerServer} registers it when the server is ready to take commands.
      */
     @Bean
-    RaceCommand raceCommand(CupSession session, CatalogReloadService reloads, @External ServerSettings settings) {
-        return new RaceCommand(session, settings.devMode(), reloads);
+    RaceCommand raceCommand(CupSession session, WaitingRoom room, CatalogReloadService reloads,
+            @External ServerSettings settings) {
+        return new RaceCommand(session, room, settings.devMode(), reloads);
+    }
+
+    /**
+     * The waiting room: starts, cancels and aborts the cup from the racers online, with the minimum the settings
+     * name. A finished cup places its racers at the first map's spawn, which is the spawn a new joiner gets.
+     */
+    @Bean
+    WaitingRoom waitingRoom(CupSession session, Supplier<Collection<Player>> players, CatalogHolder catalog,
+            MapInstances instances, @External ServerSettings settings) {
+        return new WaitingRoom(session, players, settings.minimumRacers(), racer -> {
+            MapDefinition first = catalog.current().rotation().getFirst();
+            racer.setInstance(instances.forWorld(first.world()), Vectors.toMinestom(first.spawn()).asPos());
+        });
     }
 
     @Bean

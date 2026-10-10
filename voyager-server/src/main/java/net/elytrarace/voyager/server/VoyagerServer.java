@@ -6,7 +6,6 @@ import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.convert.Vectors;
-import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
@@ -16,6 +15,7 @@ import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.minestom.server.MinecraftServer;
@@ -181,6 +181,7 @@ public final class VoyagerServer {
         MapInstances instances = graph.get(MapInstances.class);
         CupSession session = graph.get(CupSession.class);
         TickPipeline pipeline = graph.get(TickPipeline.class);
+        WaitingRoom waitingRoom = graph.get(WaitingRoom.class);
 
         try {
             openEveryWorld(catalog.current().rotation(), instances);
@@ -191,14 +192,14 @@ public final class VoyagerServer {
             return;
         }
 
-        registerEvents(session, settings, catalog, instances);
+        registerEvents(session, waitingRoom, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         LOGGER.info("/race reload is registered: the console and operators at level {} may run it",
                 ReloadPermission.REQUIRED_LEVEL);
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
-        scheduleTick(pipeline, session);
+        scheduleTick(pipeline, waitingRoom, session);
         // Built now so the shutdown task can stop it; started only once the server listens, because a command
         // typed before then would reach a server that is not yet able to take one.
         ConsoleCommandReader console = new ConsoleCommandReader(
@@ -293,7 +294,7 @@ public final class VoyagerServer {
         }
     }
 
-    private static void registerEvents(CupSession session, ServerSettings settings,
+    private static void registerEvents(CupSession session, WaitingRoom waitingRoom, ServerSettings settings,
             CatalogHolder catalog, MapInstances instances) {
         GlobalEventHandler events = MinecraftServer.getGlobalEventHandler();
 
@@ -311,21 +312,11 @@ public final class VoyagerServer {
             if (!event.isFirstSpawn()) {
                 return;
             }
+            // Prepared without flight equipment: a waiting racer stands on the spawn and cannot fly off it.
+            // The room decides whether this join starts, joins or waits for a cup, and says so to the racer.
             Racers.prepare(event.getPlayer());
             LOGGER.info("{} joined", event.getPlayer().getUsername());
-            if (!session.running()) {
-                // The first player starts the cup. Started at boot instead, it would play its whole
-                // rotation to an empty world while the first client was still connecting — see
-                // CupSession's class javadoc.
-                LOGGER.info("First player online — starting cup '{}'", session.cup().name());
-                session.start(false);
-                return;
-            }
-            // A player who joins into a running cup is not moved and holds no run until the next map
-            // starts. That is inherited behaviour and this line does not change it — but until now
-            // such a player stood in a racing world with no elytra behaviour and no explanation of
-            // why, which is indistinguishable from a broken server.
-            event.getPlayer().sendMessage(Messages.joinedMidCup());
+            waitingRoom.joined(event.getPlayer());
         });
 
         events.addListener(PlayerUseItemEvent.class, event -> {
@@ -347,7 +338,8 @@ public final class VoyagerServer {
         });
 
         if (settings.devMode()) {
-            LOGGER.info("Join with a 26.2 client and the cup starts on its own; /race shows where it stands");
+            LOGGER.info("Join with a 26.2 client; the cup starts once {} racer(s) are online, and /race shows where it stands",
+                    settings.minimumRacers());
         }
     }
 
@@ -359,7 +351,7 @@ public final class VoyagerServer {
      * identical ones. So the first failure stops the cup and is logged once, with everything a
      * {@code /race} afterwards can still be asked about left standing.
      */
-    private static void scheduleTick(TickPipeline pipeline, CupSession session) {
+    private static void scheduleTick(TickPipeline pipeline, WaitingRoom waitingRoom, CupSession session) {
         AtomicBoolean broken = new AtomicBoolean();
         MinecraftServer.getSchedulerManager().scheduleTask(() -> {
             if (broken.get()) {
@@ -367,6 +359,8 @@ public final class VoyagerServer {
             }
             try {
                 pipeline.run();
+                // After the cup's own tick, inside the same guard: the room reads the cup as this tick left it.
+                waitingRoom.tick();
             } catch (RuntimeException exception) {
                 broken.set(true);
                 session.stop();
