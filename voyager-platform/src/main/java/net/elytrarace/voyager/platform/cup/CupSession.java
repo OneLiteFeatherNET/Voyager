@@ -3,7 +3,6 @@ package net.elytrarace.voyager.platform.cup;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.api.race.MedalBrackets;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
@@ -13,6 +12,7 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.hud.HudState;
+import net.elytrarace.voyager.platform.hud.HudStates;
 import net.elytrarace.voyager.platform.hud.RaceFeedback;
 import net.elytrarace.voyager.platform.hud.RaceHud;
 import net.elytrarace.voyager.platform.hud.StartCountdown;
@@ -31,12 +31,11 @@ import net.elytrarace.voyager.race.flow.RacePhase;
 import net.elytrarace.voyager.race.cup.CupStanding;
 import net.elytrarace.voyager.race.cup.CupStandings;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.race.cup.MapFigures;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.elytrarace.voyager.race.scoring.MapScorer;
-import net.elytrarace.voyager.race.scoring.MedalCountdown;
-import net.elytrarace.voyager.race.scoring.MedalOutlook;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.Rockets;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
@@ -421,7 +420,7 @@ public final class CupSession implements RacePhaseListener {
         MapDefinition map = enterMap(mapIndex, mapName);
         Component subtitle = Messages.countdownSubtitle(
                 map.name(), map.rings().size(), map.referenceTime());
-        HudState armed = startingState(mapIndex, map);
+        HudState armed = HudStates.of(MapFigures.starting(map, mapIndex + 1, cup.mapNames().size()));
         for (Player racer : players.get()) {
             RaceFeedback.countdown(racer, digit, subtitle);
             hud.arm(racer, armed);
@@ -502,7 +501,8 @@ public final class CupSession implements RacePhaseListener {
             RaceRun advanced = runs.advance(id, map, clock,
                     Vectors.toDomain(racer.getPosition()), racer.isFlyingWithElytra());
             report(racer, map, advanced, wasFinished, clock);
-            hud.render(racer, flightState(map, advanced, clock));
+            hud.render(racer, HudStates.of(MapFigures.inFlight(advanced, clock, map, preparedMapIndex + 1,
+                    cup.mapNames().size())));
             // After the advance, not before it: a racer who passed a ring on this tick is heading for
             // the next one from this tick, and showing them the stretch they have just flown out of
             // for another four ticks is the one moment the line would be visibly wrong.
@@ -695,37 +695,6 @@ public final class CupSession implements RacePhaseListener {
                 return;
             }
         }
-    }
-
-    /**
-     * The HUD value for a racer mid-flight.
-     *
-     * <p>A racer who has already crossed the last ring is shown the clock they <em>finished</em> on,
-     * not the one still running: their medal is decided and a boss bar counting down a band they can
-     * no longer lose would be counting nothing.
-     */
-    private HudState flightState(MapDefinition map, RaceRun run, RaceClock clock) {
-        Duration elapsed = run.finishedAt().map(RaceClock::elapsed).orElse(clock.elapsed());
-        List<Integer> ringTicks = run.passedOnGameTick();
-        int lastRingTick = ringTicks.isEmpty() ? 0 : ringTicks.getLast();
-        return new HudState(clock.gameTick(), elapsed, run.progress().passedCount(), map.rings().size(),
-                lastRingTick, preparedMapIndex + 1, cup.mapNames().size(), map.name(),
-                outlookAt(elapsed, map));
-    }
-
-    /** The HUD value shown during the start countdown: nothing flown yet, and the best medal on offer. */
-    private HudState startingState(int mapIndex, MapDefinition map) {
-        return new HudState(0, Duration.ZERO, 0, map.rings().size(), 0, mapIndex + 1,
-                cup.mapNames().size(), map.name(), outlookAt(Duration.ZERO, map));
-    }
-
-    /**
-     * {@code MedalBrackets.DEFAULT}, which is the same constant {@code MapScorer} classifies a
-     * finished run with — so the band the boss bar showed on the last tick of a race and the medal
-     * the results screen awards cannot disagree.
-     */
-    private static MedalOutlook outlookAt(Duration elapsed, MapDefinition map) {
-        return MedalCountdown.outlook(elapsed, map.referenceTime(), MedalBrackets.DEFAULT);
     }
 
     /**
