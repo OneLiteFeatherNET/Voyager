@@ -79,7 +79,7 @@ the test JVM's system properties `archunit.freeze.store.default.allowStoreCreati
 Behaviour on CI, all of it failing the build:
 - a frozen rule with no entry in an existing committed `stored.rules` fails with "Updating frozen violations is
   disabled", because ArchUnit reaches that message when it saves the new violation, and the entry must be committed with its
-  migration item (the source of ArchUnit 1.5.0 confirmed this; task 3.2 confirms it on the running build);
+  migration item (confirmed on the running build by task 3.2);
 - a committed store with no `stored.rules` at all fails with "Creating new violation store is disabled", the only case
   that message describes;
 - a violation that was fixed but is still in the committed store makes the update fail with "Updating frozen violations is
