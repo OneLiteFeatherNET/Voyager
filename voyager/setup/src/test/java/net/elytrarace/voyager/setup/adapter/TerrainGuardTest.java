@@ -99,9 +99,7 @@ class TerrainGuardTest {
         void enter(String command) {
             env.process().command().execute(builder, command);
             env.tick();
-            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
-                    .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false));
+            BoundedTicks.awaitArrival(env, sessions, builder);
         }
 
         Instance world() {

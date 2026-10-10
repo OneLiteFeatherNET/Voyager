@@ -171,9 +171,7 @@ class SetupCommandsTest {
         /** Runs a command that opens a map, then ticks until the builder has arrived in that map's world. */
         void enter(String command) {
             run(command);
-            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
-                    .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false));
+            BoundedTicks.awaitArrival(env, sessions, builder);
         }
 
         /** The translation keys of every chat line the builder has received so far. */

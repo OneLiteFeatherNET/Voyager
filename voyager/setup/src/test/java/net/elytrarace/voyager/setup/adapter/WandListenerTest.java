@@ -221,9 +221,7 @@ class WandListenerTest {
         /** Runs a command that opens a map, then ticks until the builder has arrived in that map's world. */
         void enter(String command) {
             run(command);
-            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
-                    .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false));
+            BoundedTicks.awaitArrival(env, sessions, builder);
         }
 
         void moveTo(Pos position) {

@@ -79,9 +79,7 @@ class BuilderWorkflowTest {
     private static void command(Env env, Player builder, BuilderSessions sessions, String command) {
         env.process().command().execute(builder, command);
         env.tick();
-        BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
-                .map(session -> session.instance() != builder.getInstance())
-                .orElse(false));
+        BoundedTicks.awaitArrival(env, sessions, builder);
     }
 
     private static void moveTo(Env env, Player builder, double z) {

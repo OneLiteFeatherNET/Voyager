@@ -46,6 +46,13 @@ configurations.named("testRuntimeClasspath") {
 tasks.test {
     // Minestom's test environment creates players; without this flag ConnectionManager refuses them.
     systemProperty("minestom.inside-test", "true")
+
+    // Print the full failure of every failed test in the build log, message included. Gradle's default output shows
+    // only the exception class and line, so a failure on a CI runner is otherwise unreadable there.
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 // The directories the setup server reads, relative to the project root. The server's defaults
