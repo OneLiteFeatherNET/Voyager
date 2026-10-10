@@ -27,18 +27,20 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 class SliceBoundaryRulesTest {
 
     @ArchTest
-    static final ArchRule r1_serverDoesNotDependOnRaceScoring = freeze(
+    static final ArchRule r1_serverDoesNotDependOnRaceScoringOrCup =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.server..")
-                    .should().dependOnClassesThat().resideInAPackage("net.elytrarace.voyager.race.scoring..")
-                    .as("classes in net.elytrarace.voyager.server.. do not depend on net.elytrarace.voyager.race.scoring..")
-                    .allowEmptyShould(false));
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "net.elytrarace.voyager.race.scoring..", "net.elytrarace.voyager.race.cup..")
+                    .as("classes in net.elytrarace.voyager.server.. do not depend on net.elytrarace.voyager.race.scoring.. "
+                            + "or net.elytrarace.voyager.race.cup..")
+                    .allowEmptyShould(false);
 
     @ArchTest
-    static final ArchRule r2_serverGameDoesNotUseMinestom = freeze(
+    static final ArchRule r2_serverGameDoesNotUseMinestom =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.server.game..")
                     .should().dependOnClassesThat().resideInAPackage("net.minestom..")
                     .as("classes in net.elytrarace.voyager.server.game.. do not depend on net.minestom..")
-                    .allowEmptyShould(false));
+                    .allowEmptyShould(false);
 
     @ArchTest
     static final ArchRule r3_platformInfrastructureDoesNotDependOnRace = freeze(

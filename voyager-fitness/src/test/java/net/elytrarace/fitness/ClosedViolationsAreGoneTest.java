@@ -33,7 +33,9 @@ class ClosedViolationsAreGoneTest {
     private static final Path STORE = Path.of("src/test/resources/archunit_store");
 
     /** Source file names of the migration items closed so far, such as {@code CupStandings.java}. */
-    private static final List<String> CLOSED_SOURCES = List.of("CupStanding.java", "CupStandings.java");
+    private static final List<String> CLOSED_SOURCES = List.of(
+            "CupStanding.java", "CupStandings.java", "Racers.java", "Rockets.java", "CurrentMapBlocks.java",
+            "LivePlayerSampler.java", "CupSession.java");
 
     @Test
     void noStoredViolationPointsIntoAClosedItemsSource() throws IOException {
