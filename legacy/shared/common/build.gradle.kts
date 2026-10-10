@@ -12,7 +12,7 @@ dependencies {
     // Gson (was provided transitively by Paper)
     api("com.google.code.gson:gson:2.14.0")
     // Guava (was provided transitively by Paper)
-    implementation("com.google.guava:guava:33.7.0-android")
+    implementation("com.google.guava:guava:33.7.0-jre")
     // Logging (was provided transitively by Paper)
     api("org.slf4j:slf4j-api:2.0.18")
     // Annotations
