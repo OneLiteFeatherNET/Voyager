@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.cup;
 
+import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
@@ -27,6 +28,9 @@ import net.elytrarace.voyager.race.cup.CupRound;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.cup.MapFigures;
+import net.elytrarace.voyager.race.reset.ResetCause;
+import net.elytrarace.voyager.race.reset.ResetPlan;
+import net.elytrarace.voyager.race.reset.RunReset;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.Rockets;
@@ -34,6 +38,7 @@ import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.world.DimensionType;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -120,6 +125,7 @@ public final class CupSession implements RacePhaseListener {
     private final Supplier<Collection<Player>> players;
     private final CupRound round = new CupRound();
     private final CupAnnouncer announcer;
+    private final RunResetter resetter;
 
     /**
      * The cup being played: the boot cup until a round starts, then the cup of the catalogue that round pinned.
@@ -195,6 +201,7 @@ public final class CupSession implements RacePhaseListener {
         this.step = step;
         this.players = players;
         this.announcer = new CupAnnouncer(players);
+        this.resetter = new RunResetter(runs, boosts, flight);
     }
 
     /** The cup being played: the one the current round pinned, or the boot cup before the first round. */
@@ -589,16 +596,50 @@ public final class CupSession implements RacePhaseListener {
                 continue;
             }
             boolean wasFinished = held.get().finished();
-            RaceRun advanced = runs.advance(id, map, clock,
-                    Vectors.toDomain(racer.getPosition()), racer.isFlyingWithElytra());
+            Vec3 position = Vectors.toDomain(racer.getPosition());
+            RaceRun advanced = runs.advance(id, map, clock, position, racer.isFlyingWithElytra());
             announcer.report(racer, map, advanced, wasFinished, clock);
-            hud.render(racer, HudStates.of(MapFigures.inFlight(advanced, clock, map, preparedMapIndex + 1,
+            RaceRun shown = sendBackIfLostOrLanded(racer, map, held.get(), advanced, position);
+            hud.render(racer, HudStates.of(MapFigures.inFlight(shown, clock, map, preparedMapIndex + 1,
                     cup.mapNames().size())));
             // After the advance, not before it: a racer who passed a ring on this tick is heading for
             // the next one from this tick, and showing them the stretch they have just flown out of
-            // for another four ticks is the one moment the line would be visibly wrong.
-            lines.render(racer, map, advanced.progress().passedCount(), clock.gameTick());
+            // for another four ticks is the one moment the line would be visibly wrong. A racer who was
+            // sent back on this tick is shown the run they were sent back with, for the same reason.
+            lines.render(racer, map, shown.progress().passedCount(), clock.gameTick());
         }
+    }
+
+    /**
+     * Sends {@code racer} back if this tick took them off the course, and returns the run they hold afterwards.
+     *
+     * <p>A racer is sent back when they are outside the vertical bounds of the dimension of the world they stand in,
+     * or when they have just landed, and only while their run is unfinished before and after this tick. A finished
+     * run is never reset. This is called only from {@link #raceTick}, so it runs in the {@code GAME} phase alone, and
+     * only for a racer who holds a run; a racer who is waiting, or who joined mid-race, is never considered.
+     *
+     * @return {@code advanced}, unless a reset happened, in which case the run the reset left behind
+     */
+    private RaceRun sendBackIfLostOrLanded(Player racer, MapDefinition map, RaceRun before, RaceRun advanced,
+            Vec3 position) {
+        if (before.finished() || advanced.finished()) {
+            return advanced;
+        }
+        DimensionType dimension = racer.getInstance().getCachedDimensionType();
+        double floor = dimension.minY();
+        double ceiling = floor + dimension.height();
+        ResetCause cause;
+        if (RunReset.isOutOfBounds(position, floor, ceiling)) {
+            cause = ResetCause.OUT_OF_BOUNDS;
+        } else if (RunReset.isLanded(before, racer.isFlyingWithElytra(), racer.isOnGround())) {
+            cause = ResetCause.LANDED;
+        } else {
+            return advanced;
+        }
+        ResetPlan plan = RunReset.plan(map, advanced, cause);
+        resetter.reset(racer, plan);
+        LOGGER.info("Racer {} reset for {} to {}", racer.getUsername(), cause, plan.position());
+        return plan.run();
     }
 
     @Override

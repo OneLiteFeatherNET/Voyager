@@ -956,6 +956,147 @@ class CupSessionTest {
     // ------------------------------------------------------------------------------------------
 
     /** Everything one cup needs, assembled the way the composition root assembles it. */
+    // ------------------------------------------------------------------------------------------
+    // Course reset: leaving the world, landing
+    // ------------------------------------------------------------------------------------------
+
+    /** Far below the overworld's floor of -64, so the racer has left the world. */
+    private static final Vec3 BELOW_THE_WORLD = RIDGE_SPAWN.plus(new Vec3(0, -165, 0));
+
+    /**
+     * A racer who leaves the world before passing any ring goes back to the map's spawn, and is gliding again.
+     */
+    @Test
+    void aRacerWhoLeavesTheWorldBeforeAnyRingIsSentBackToTheSpawn(Env env) throws IOException {
+        Fixture fixture = start(env);
+
+        fixture.runUntil(tick -> {
+            if (tick == 5) {
+                assertThat(fixture.session.describe()).contains("phase GAME");
+                fixture.teleport(BELOW_THE_WORLD);
+            }
+            return tick == 6;
+        });
+
+        assertThat(fixture.racer.getPosition().samePoint(spawnOf(RIDGE_RUN)))
+                .describedAs("the racer is back on the spawn of the map")
+                .isTrue();
+        assertThat(fixture.racer.isFlyingWithElytra()).describedAs("and gliding again").isTrue();
+        assertThat(fixture.runs.of(fixture.racer.getUuid()))
+                .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isZero());
+    }
+
+    /** The centre of {@link #DUNE_RUN}'s first ring, which the second map's racer passes and then lands from. */
+    private static final Pos DUNE_RING_ZERO_CENTRE = new Pos(-37.5, 71.0, -78.5);
+
+    /**
+     * A racer who lands after passing a ring goes back to that ring's centre, and the ring stays passed.
+     *
+     * <p>The first map of the cup has one ring, and passing it finishes the map, so the landing is played on the
+     * second map, which has two. The racer passes ring 0 on the second game tick, lands on the tick after, and is
+     * sent back to the ring's centre with the ring still passed.
+     */
+    @Test
+    void aRacerWhoLandsAfterPassingARingIsSentBackToItsCentreAndKeepsIt(Env env) throws IOException {
+        Fixture fixture = start(env);
+        int[] duneGameTicks = {0};
+
+        fixture.runUntil(tick -> {
+            if (!fixture.session.describe().contains("'dune-run', phase GAME")) {
+                return false;
+            }
+            duneGameTicks[0]++;
+            if (duneGameTicks[0] == 2) {
+                // Crosses ring 0's plane (z -78.5) at its centre, from the spawn at z -88.5.
+                fixture.teleport(new Vec3(DUNE_SPAWN.x(), DUNE_SPAWN.y(), DUNE_SPAWN.z() + 15.0));
+            }
+            if (duneGameTicks[0] == 3) {
+                assertThat(fixture.runs.of(fixture.racer.getUuid()))
+                        .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isEqualTo(1));
+                fixture.racer.setFlyingWithElytra(false);
+                fixture.racer.refreshOnGround(true);
+            }
+            return duneGameTicks[0] == 4;
+        });
+
+        assertThat(fixture.racer.getPosition().samePoint(DUNE_RING_ZERO_CENTRE))
+                .describedAs("the centre of the ring passed last")
+                .isTrue();
+        assertThat(fixture.runs.of(fixture.racer.getUuid()))
+                .describedAs("the ring passed before the landing stays passed")
+                .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isEqualTo(1));
+        assertThat(fixture.racer.isFlyingWithElytra()).describedAs("gliding again").isTrue();
+    }
+
+    /**
+     * A racer who has finished is not sent back, whatever they do afterwards. The second racer keeps the map
+     * running, so the first is still standing on the course when they leave the world.
+     */
+    @Test
+    void aRacerWhoHasFinishedIsNotSentBackWhenTheyLeaveTheWorldAfterwards(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.addLatecomer(RIDGE, RIDGE_RUN);
+
+        fixture.runUntil(tick -> {
+            if (tick == 5) {
+                fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+            }
+            if (tick == 6) {
+                assertThat(fixture.runs.of(fixture.racer.getUuid()))
+                        .hasValueSatisfying(run -> assertThat(run.finished()).isTrue());
+                fixture.teleport(BELOW_THE_WORLD);
+            }
+            return tick == 8;
+        });
+
+        assertThat(fixture.racer.getPosition().y())
+                .describedAs("a finished racer stays where they fell")
+                .isEqualTo(BELOW_THE_WORLD.y());
+    }
+
+    /**
+     * A player who joined mid-race holds no run and is neither reset nor moved, however far below the world they are.
+     */
+    @Test
+    void aPlayerWhoJoinedMidRaceWithoutARunIsNeitherResetNorMoved(Env env) throws IOException {
+        Fixture fixture = start(env);
+        Player[] latecomer = new Player[1];
+
+        fixture.runUntil(tick -> {
+            if (tick == 5) {
+                assertThat(fixture.session.describe()).contains("phase GAME");
+                latecomer[0] = fixture.addLatecomer(RIDGE, RIDGE_RUN);
+                latecomer[0].teleport(new Pos(0.5, -100.0, 0.5)).join();
+            }
+            return tick == 7;
+        });
+
+        assertThat(latecomer[0].getPosition().y())
+                .describedAs("the latecomer is still where they fell")
+                .isEqualTo(-100.0);
+        assertThat(fixture.runs.of(latecomer[0].getUuid())).isEmpty();
+    }
+
+    /**
+     * Nothing is reset in the lobby: a racer below the floor while the cup waits is left where they are.
+     */
+    @Test
+    void aRacerBelowTheFloorInTheLobbyIsNotSentBack(Env env) throws IOException {
+        // A lobby of ten seconds, so the cup is still waiting for the two ticks this case plays.
+        Fixture fixture = start(env, new RaceTimings(Duration.ofSeconds(10), TIMINGS.race(),
+                TIMINGS.endBetweenMaps(), TIMINGS.endAfterLastMap()));
+
+        fixture.runUntil(tick -> {
+            if (tick == 1) {
+                fixture.teleport(BELOW_THE_WORLD);
+            }
+            return tick == 2;
+        });
+
+        assertThat(fixture.session.describe()).describedAs("still in the lobby").contains("phase LOBBY");
+        assertThat(fixture.racer.getPosition().y()).isEqualTo(BELOW_THE_WORLD.y());
+    }
+
     private final class Fixture {
 
         private final MapInstances worlds;
@@ -1067,6 +1208,11 @@ class CupSessionTest {
     }
 
     private Fixture start(Env env) throws IOException {
+        return start(env, TIMINGS);
+    }
+
+    /** As {@link #start(Env)}, with the cup's timings given, for a case that needs a lobby longer than the standard one. */
+    private Fixture start(Env env, RaceTimings timings) throws IOException {
         writeWorld(env, RIDGE, RIDGE_SPAWN, RIDGE_FLOOR);
         writeWorld(env, DUNE, DUNE_SPAWN, DUNE_FLOOR);
 
@@ -1087,7 +1233,7 @@ class CupSessionTest {
         // and a fixed field could not produce one.
         List<Player> field = new ArrayList<>(List.of(racer));
         CupWiring.Cup cup = CupWiring.assemble(holder(), instances, transition, runs, new FlightTracker(),
-                TIMINGS, STEP, () -> field);
+                timings, STEP, () -> field);
         cup.session().start(false);
         return new Fixture(instances, runs, cup.session(), cup.pipeline(), racer, connection, field, env);
     }
