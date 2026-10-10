@@ -64,5 +64,5 @@ smallest production change (Green), then cleanup (Refactor). Unit tests use `@Te
 ## 9. Verify and open the pull request
 
 - [x] 9.1 Run `./gradlew build` over both trees and `openspec validate unify-catalog-loading --strict`; both must pass before the PR opens.
-- [ ] 9.2 Open the pull request with title `refactor(platform): load map and cup catalogues through one entry point`, body linking this change, and the referral footer required by project memory.
+- [x] 9.2 (merged locally on 2026-10-10 per owner decision; no PR) Open the pull request with title `refactor(platform): load map and cup catalogues through one entry point`, body linking this change, and the referral footer required by project memory.
   - Deferred: owner merges locally first.

@@ -46,7 +46,7 @@ after it. Adapter tests parse JSON strings, so they need no filesystem at all. C
 
 ## 7. Pull request
 
-- [ ] 7.1 (deferred: owner merges locally first) Open the pull request against `main` with the title `feat(platform): let map files leave out what the loader can derive`. The body covers: the world default decision and the three options from design decision 2; the schema decision (editor-side, test-scope check, the approved validator and its pin); the before and after example; the test list per task; the build result from 6.1; the smoke result from 6.2; and the commit list by type. End the body with the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: `gh pr view` shows the title and base `main`.
+- [x] 7.1 (merged locally on 2026-10-10 per owner decision; no PR) Open the pull request against `main` with the title `feat(platform): let map files leave out what the loader can derive`. The body covers: the world default decision and the three options from design decision 2; the schema decision (editor-side, test-scope check, the approved validator and its pin); the before and after example; the test list per task; the build result from 6.1; the smoke result from 6.2; and the commit list by type. End the body with the referral footer `https://claude.ai/referral/m5Ak2Sa7aQ`. Verify: `gh pr view` shows the title and base `main`.
 
 ## Workflow follow-up
 
