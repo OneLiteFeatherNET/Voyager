@@ -9,7 +9,7 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
-import net.elytrarace.voyager.server.command.ConsoleCommandReader;
+import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
 import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;

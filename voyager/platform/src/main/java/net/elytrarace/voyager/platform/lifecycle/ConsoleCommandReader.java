@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.command;
+package net.elytrarace.voyager.platform.lifecycle;
 
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.command.builder.CommandResult;
