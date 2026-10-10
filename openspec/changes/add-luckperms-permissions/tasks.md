@@ -45,10 +45,10 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 ## 7. Proxy forwarding and bind settings (Red then Green)
 
-- [ ] 7.1 Red: `ProxyForwardingSettingsTest` asserts: the environment value wins over the property; the property is used when the environment is absent; a blank value throws; neither set gives an offline result; `toString` contains no part of the secret. Verify: the test fails because the record does not exist.
-- [ ] 7.2 Green: add `ProxyForwardingSettings` in `net.elytrarace.voyager.platform.proxy`, with the value masked in `toString`. Verify: `7.1` passes.
-- [ ] 7.3 Red: `ServerSettingsBindTest` (in `voyager-server`) and `SetupSettingsBindTest` (in `voyager-setup`) assert the precedence: positional arguments, then `service.bind.host` and `service.bind.port`, then `0.0.0.0` and 25565; and that a port of `70000` is refused with an error that names `service.bind.port`. Verify: the tests fail on the current `fromProperties`.
-- [ ] 7.4 Green: change `ServerSettings.fromProperties` and `SetupSettings.fromProperties` to read the properties in that order. Verify: `7.3` passes; the existing `config-check-mode` tests still pass.
+- [x] 7.1 Red: `ProxyForwardingSettingsTest` asserts: the environment value wins over the property; the property is used when the environment is absent; a blank value throws; neither set gives an offline result; `toString` contains no part of the secret. Verify: the test fails because the record does not exist.
+- [x] 7.2 Green: add `ProxyForwardingSettings` in `net.elytrarace.voyager.platform.proxy`, with the value masked in `toString`. Verify: `7.1` passes.
+- [x] 7.3 Red: `ServerSettingsBindTest` (in `voyager-server`) and `SetupSettingsBindTest` (in `voyager-setup`) assert the precedence: positional arguments, then `service.bind.host` and `service.bind.port`, then `0.0.0.0` and 25565; and that a port of `70000` is refused with an error that names `service.bind.port`. Verify: the tests fail on the current `fromProperties`.
+- [x] 7.4 Green: change `ServerSettings.fromProperties` and `SetupSettings.fromProperties` to read the properties in that order. Verify: `7.3` passes; the existing `config-check-mode` tests still pass.
 
 ## 8. Stdin stop and /stop (Red then Green)
 
