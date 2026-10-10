@@ -161,6 +161,6 @@ and summarised in `docs/explanation/architecture.md`. Each item belongs to a fol
 - Related: [ADR-0018](0018-pose-placement-authoring-model-for-setup.md) (setup authoring model) and
   [ADR-0019](0019-pin-catalogue-snapshot-per-round.md) (catalogue reload).
 - Explanation for readers: `docs/explanation/architecture.md`.
-- Normative specs and the migration list: `openspec/changes/define-clean-architecture-with-vertical-slices/`.
+- Normative specs and the migration list: `openspec/changes/archive/2026-10-10-define-clean-architecture-with-vertical-slices/`.
   The archive step moves this folder and updates the links.
 - Anchors: "Clean Architecture" and "Vertical Slice Architecture (VSA)" in `docs/reference/semantic-anchors.md`.
