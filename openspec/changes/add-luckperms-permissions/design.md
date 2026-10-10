@@ -69,13 +69,14 @@ bar `ReloadPermission.REQUIRED_LEVEL` already sets). Players below level 4 are d
 Rejected alternative, Cygnus's behaviour: "absent LuckPerms grants every check". Cygnus's own guide records that a jar which
 lost the loader would then grant every player every permission, with only two log lines to show for it. For a server that
 runs on a public network, that is the wrong failure mode. The cost of the chosen fallback is that local runs need
-`/op` (level 4) to use gated commands, which the server already requires for `/race reload` today. The WARN line at startup
+operator level 4 to use gated commands. Minestom 26.2 has no `/op` command and Voyager has no command that sets the level, so
+without LuckPerms only the console runs gated commands. That is what the fallback guarantees. The WARN line at startup
 names the fallback.
 
 ### 4. LuckPerms: optional, detected, and a failed start stops the server
 
 Detection reads the loader class by name with `Class.forName(..., false, ...)`, as Cygnus does, so the server compiles and runs
-without the jar. If the class is present, `LuckPermsBootstrap.start()` calls `MinestomLoader.get().load().registerShutdownHook().start()`
+without the jar. If the class is present, `LuckPermsBootstrap.start()` calls `MinestomLoader.get().load().start()` (no loader JVM hook; see the fix note in risks)
 before the port binds. A throw here stops startup (spec requirement "A failed LuckPerms start refuses to listen"). The fallback
 is never used silently when the loader is present but broken.
 
@@ -191,6 +192,13 @@ Risks found:
 - **R1 result (spike 1.1 input).** SHA-256 of the cached `minestom-loader-5.6-SNAPSHOT.jar` is
   `65f94eac0008ee7414dfa4c66f16063f320ef12f3b5d6a337b98a14d6990b7ce`. The cached `api-5.5.jar` is
   `cd910f936adc4dee7705fb51cc29401fde4f29aba6ee73a6475a3a0515f6294f`.
+- **Shutdown fix (2026-10-10).** The loader's own JVM hook (`registerShutdownHook`) disabled LuckPerms at JVM exit, at the
+  same time as H2's exit hook. H2 then needed `org/h2/api/ErrorCode` from a LuckPerms class loader the hook had just closed,
+  and printed `NoClassDefFoundError`. Decision 4 is therefore amended: LuckPerms starts with `load().start()` and no loader
+  hook, and `LuckPermsBootstrap.stop()` disables it from the server's shutdown task, before the JVM runs its hooks. The
+  loader's bootstrap is read from its private `plugin` field, the only route to `onDisable` (no public accessor exists).
+  Signal-path shutdown (Minestom's own SIGTERM hook) still runs the same shutdown task, but it does so on a JVM hook thread,
+  so the ordering there is not guaranteed; the stdin `stop` path is the one owner runs.
 - **Spike 1.4, Velocity.** `Auth.Velocity(String)` and `MinecraftServer.init(Auth)` exist in the 26.2 jar (`javap`). A forwarded
   login cannot be produced through the test environment, which skips the handshake. The UUID check therefore moves to acceptance
   task 12.6, as task 1.4 allows.

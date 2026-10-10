@@ -24,7 +24,7 @@ read the real player UUID that the proxy forwards, or LuckPerms looks up the wro
   does not own, such as CloudNet's `cloudnet.bridge.maintenance`, asked by the bridge in `add-cloudnet-deployment`). No
   implementation and no Minestom or LuckPerms type in it.
 - Add a fallback adapter in `voyager-platform`: console allowed for every node, a player allowed only at operator
-  level 4. This is the policy whenever LuckPerms is absent. Absent LuckPerms never grants a player more than `/op` does.
+  level 4. This is the policy whenever LuckPerms is absent. Absent LuckPerms never grants a player more than operator level 4 gives.
 - Add a LuckPerms adapter in `voyager-platform` (`platform.permission.luckperms`). It is the only package that names
   a `net.luckperms` or `me.lucko` type. It is optional at runtime: detected by class name and started through the
   loader, as Cygnus does.
