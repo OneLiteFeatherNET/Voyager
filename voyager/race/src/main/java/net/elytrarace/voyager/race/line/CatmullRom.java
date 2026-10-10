@@ -25,7 +25,7 @@ import java.util.List;
  * is what makes the interesting assertions ("a straight line stays straight", "a bend does not
  * overshoot", "reversing the points mirrors the curve") writable without a course.
  *
- * <h2>Ported from {@code shared/spline}, with two changes</h2>
+ * <h2>Ported from {@code legacy/shared/spline}, with two changes</h2>
  *
  * <p>The tree being replaced has the same algorithm in {@code SplineGenerator}. It is good and this
  * is a port rather than a rewrite, but it takes {@code org.apache.commons.geometry}'s

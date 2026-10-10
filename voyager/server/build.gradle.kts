@@ -24,7 +24,7 @@ dependencies {
     compileOnly("org.slf4j:slf4j-api:2.0.18")
 
     // The composition root is the one module that has to answer "what happens when something logs".
-    // Log4j2 as the slf4j 2.x provider, exactly as server/build.gradle.kts does for the tree being
+    // Log4j2 as the slf4j 2.x provider, exactly as legacy/server/build.gradle.kts does for the tree being
     // replaced, with the configuration in src/main/resources/log4j2.xml. runtimeOnly: no code here
     // names a Log4j type, and it must not.
     runtimeOnly(libs.log4j2.core)
@@ -51,7 +51,7 @@ tasks.test {
 //
 // THE DOUBLED `run/run` IS NOT A TYPO. workingDir is <root>/run and the server's default data path
 // is the *relative* path `run/data`, so it resolves to <root>/run/run/data. That is the convention
-// the tree being replaced established (server/build.gradle.kts + VoyagerServer's system-property
+// the tree being replaced established (legacy/server/build.gradle.kts + VoyagerServer's system-property
 // defaults) and it is where the one real world already sits on a developer checkout. Deriving both
 // the Gradle side and the Copy destination from these three values is what keeps the build and the
 // runtime from drifting onto two different answers.

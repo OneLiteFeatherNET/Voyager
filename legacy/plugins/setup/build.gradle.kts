@@ -9,9 +9,9 @@ plugins {
 dependencies {
     compileOnly(libs.minecraft.paper)
     implementation(libs.minecraft.cloud.paper)
-    implementation(project(":shared:common"))
-    implementation(project(":shared:conversation-api"))
-    implementation(project(":shared:spline"))
+    implementation(project(":legacy:shared:common"))
+    implementation(project(":legacy:shared:conversation-api"))
+    implementation(project(":legacy:shared:spline"))
     // FAWE
     implementation(platform(libs.fawe.bom))
     compileOnly(libs.bundles.fawe)

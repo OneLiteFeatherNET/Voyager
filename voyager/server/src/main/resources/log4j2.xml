@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   The composition root is the one module that has to answer "what happens when something logs".
-  Same shape as server/src/main/resources/log4j2.xml in the tree being replaced, with the rebuild's
+  Same shape as legacy/server/src/main/resources/log4j2.xml in the tree being replaced, with the rebuild's
   package in place of the old one, plus one difference: shutdownHook="disable".
 
   Log4j registers a JVM shutdown hook that tears the logging context down, and JVM shutdown hooks run

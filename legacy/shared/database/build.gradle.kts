@@ -6,7 +6,7 @@ dependencies {
     implementation(libs.bundles.flyway)
     implementation(libs.mariadb)
     implementation(libs.jetbrains.annotations)
-    implementation(project(":shared:common"))
+    implementation(project(":legacy:shared:common"))
 
     testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

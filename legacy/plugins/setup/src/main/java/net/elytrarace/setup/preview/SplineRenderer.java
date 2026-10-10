@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Paper-side spline rendering. Builds PathPoints from portals + guide points,
- * delegates generation to shared/spline, renders as Bukkit particles.
+ * delegates generation to legacy/shared/spline, renders as Bukkit particles.
  */
 public final class SplineRenderer {
 

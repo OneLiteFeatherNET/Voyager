@@ -15,8 +15,8 @@ dependencies {
     implementation(libs.minecraft.minestom)
     implementation(libs.aves)
     implementation(libs.xerus)
-    implementation(project(":shared:common"))
-    implementation(project(":shared:database"))
+    implementation(project(":legacy:shared:common"))
+    implementation(project(":legacy:shared:database"))
     implementation(libs.geometry)
     runtimeOnly(libs.bundles.hibernate)
     runtimeOnly(libs.mariadb)
@@ -64,8 +64,8 @@ tasks {
     // Limitation: existing object instances won't reinitialize new fields — they stay null/zero until
     // the relevant objects are reconstructed (e.g. game round restart).
     // Optional JDWP: -PdebugPort=5005 enables a debugger port alongside hot-swap.
-    //   ./gradlew :server:runServerHotswap
-    //   ./gradlew :server:runServerHotswap -PdebugPort=5005 -Pport=25566
+    //   ./gradlew :legacy:server:runServerHotswap
+    //   ./gradlew :legacy:server:runServerHotswap -PdebugPort=5005 -Pport=25566
     register<JavaExec>("runServerHotswap") {
         group = "voyager"
         description = "Run Voyager under JBR 25 + HotswapAgent for structural hot-reload (new methods/fields/classes)"
@@ -103,8 +103,8 @@ tasks {
 
     // JDWP-only hot-reload: method-body changes without JBR (plain OpenJDK).
     // Suspend the JVM until a debugger connects: -Psuspend=y
-    //   ./gradlew :server:runServerDebug
-    //   ./gradlew :server:runServerDebug -PdebugPort=5006 -Pport=25566
+    //   ./gradlew :legacy:server:runServerDebug
+    //   ./gradlew :legacy:server:runServerDebug -PdebugPort=5006 -Pport=25566
     register<JavaExec>("runServerDebug") {
         group = "voyager"
         description = "Run Voyager server with JDWP hot-swap (connect IDE debugger to port 5005)"
@@ -132,8 +132,8 @@ tasks {
 
     // Fast local dev: skips shadow JAR — only recompiles changed classes.
     // Use this for iterative development.
-    //   ./gradlew :server:runServerDev
-    //   ./gradlew :server:runServerDev -Pport=25566
+    //   ./gradlew :legacy:server:runServerDev
+    //   ./gradlew :legacy:server:runServerDev -Pport=25566
     register<JavaExec>("runServerDev") {
         group = "voyager"
         description = "Run the Voyager server for local development (no shadow JAR rebuild)"
@@ -158,7 +158,7 @@ tasks {
 
     // Production-like run: builds the fat JAR first.
     // Use this to verify packaging before deployment.
-    //   ./gradlew :server:runServer
+    //   ./gradlew :legacy:server:runServer
     register<JavaExec>("runServer") {
         group = "voyager"
         description = "Build shadow JAR and run the Voyager server (production-like)"

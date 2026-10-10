@@ -2,7 +2,7 @@ plugins {
     `java-library`
 }
 dependencies {
-    api(project(":shared:common"))
+    api(project(":legacy:shared:common"))
     implementation(libs.geometry)
     compileOnly(libs.jetbrains.annotations)
     // Test

@@ -11,8 +11,8 @@ plugins {
 dependencies {
     compileOnly(libs.minecraft.paper)
     implementation(libs.minecraft.cloud.paper)
-    implementation(project(":shared:common"))
-    implementation(project(":shared:database"))
+    implementation(project(":legacy:shared:common"))
+    implementation(project(":legacy:shared:database"))
     // Math
     implementation(libs.geometry)
 }

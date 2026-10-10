@@ -64,7 +64,7 @@ dependencies {
     testImplementation(libs.json.schema.validator)
 
     // Xerus resolves its version from the aonyx-bom platform, same as the tree being replaced
-    // (see server/build.gradle.kts). The BOM constraint has to be `api`, not `implementation`:
+    // (see legacy/server/build.gradle.kts). The BOM constraint has to be `api`, not `implementation`:
     // voyager-server consumes voyager-platform's unversioned `libs.xerus` transitively, and an
     // implementation-scoped platform constraint does not reach a downstream consumer's classpath —
     // it would leave voyager-server unable to resolve a version for Xerus at all.
@@ -82,7 +82,7 @@ dependencies {
 tasks.test {
     // VelocityExitTest creates a real Player through Minestom's test environment. Without this,
     // ConnectionManager.createPlayer's `assert ServerFlag.INSIDE_TEST || ...isVirtual()` fails —
-    // the same flag server/build.gradle.kts sets for its own Minestom-backed tests.
+    // the same flag legacy/server/build.gradle.kts sets for its own Minestom-backed tests.
     systemProperty("minestom.inside-test", "true")
     exclude("**/VelocityExitCustomTpsTest.class")
     // Integration tests read real worlds through Falco; they run in integrationTest, never here.

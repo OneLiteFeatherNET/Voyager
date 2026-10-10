@@ -10,8 +10,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 /**
  * Architecture rules enforcing platform-layer isolation:
  * <ul>
- *   <li>{@code shared/common} must never reference Minestom.</li>
- *   <li>{@code shared/common} must never reference Paper/Bukkit.</li>
+ *   <li>{@code legacy/shared/common} must never reference Minestom.</li>
+ *   <li>{@code legacy/shared/common} must never reference Paper/Bukkit.</li>
  *   <li>{@code server} must never reference Paper/Bukkit.</li>
  * </ul>
  *
@@ -25,7 +25,7 @@ class LayerArchitectureTest {
     static final ArchRule shared_common_must_not_use_minestom =
             noClasses().that().resideInAPackage("net.elytrarace.common..")
                     .should().dependOnClassesThat().resideInAPackage("net.minestom..")
-                    .because("shared/common must stay platform-agnostic — no Minestom imports allowed");
+                    .because("legacy/shared/common must stay platform-agnostic — no Minestom imports allowed");
 
     @ArchTest
     static final ArchRule server_must_not_use_paper =
@@ -38,5 +38,5 @@ class LayerArchitectureTest {
     static final ArchRule shared_common_must_not_use_paper =
             noClasses().that().resideInAPackage("net.elytrarace.common..")
                     .should().dependOnClassesThat().resideInAPackage("org.bukkit..")
-                    .because("shared/common must be platform-agnostic — no Paper/Bukkit imports allowed");
+                    .because("legacy/shared/common must be platform-agnostic — no Paper/Bukkit imports allowed");
 }
