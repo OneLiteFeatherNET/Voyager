@@ -22,8 +22,9 @@ import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
- * The wand's gestures. Right-click places a ring at the builder's eye, looking along the flight; left-click removes the
- * nearest ring the look ray crosses within reach. Each change is saved before it is shown.
+ * The wand's gestures. Right-click places a ring at the builder's eye, looking along the flight. Sneak plus left-click
+ * removes the nearest ring the look ray crosses within reach; a plain left-click changes no ring (owner decision O2,
+ * 2026-10-10). Each change is saved before it is shown.
  *
  * <p>Right-click arrives twice on a block: as an interaction with the block and as a use of the item (research 006,
  * spike 1.2). The block interaction is cancelled, so no block is placed, and a right-click whose pose repeats the last
@@ -63,11 +64,12 @@ public final class WandListener {
     }
 
     private void onSwing(PlayerHandAnimationEvent event) {
-        if (!Wand.is(event.getPlayer().getItemInHand(event.getHand()))) {
+        Player builder = event.getPlayer();
+        if (!builder.isSneaking() || !Wand.is(builder.getItemInHand(event.getHand()))) {
             return;
         }
         event.setCancelled(true);
-        remove(event.getPlayer());
+        remove(builder);
     }
 
     private void place(Player builder) {

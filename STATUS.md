@@ -105,9 +105,9 @@ Done when: records and profiles survive a restart.
 ### E6 — Setup on Minestom — UNBLOCKED 2026-10-09
 Done when: a map is configurable without Paper.
 
-- [ ] E6.0 **Research: FastAsyncWorldEdit replacement** — research 005 approved 2026-10-09 (section 7.4) and spikes recorded in 006; spike X1 (FAWE operation inventory) is still open, see US-6.01
+- [x] E6.0 **Research: FastAsyncWorldEdit replacement** — research 005 approved 2026-10-09 (section 7.4), spikes in 006, FAWE operation inventory in 007 (2026-10-10); closed, see US-6.01
 - [x] E6.1 Setup server bootstrap — done in `introduce-voyager-setup`: boot from `voyager-setup`, `/map new`, `/map open`, `/map spawn`, `/map status`, wand, previews, autosave; decision in ADR-0018
-- [ ] E6.2 Map editing tool — ring placement and removal with the wand are done; the FAWE-equivalent operations (spike X1) are open
+- [ ] E6.2 Map editing tool — ring placement and removal with the wand are done (removal on sneak plus left-click, owner decision O2); the FAWE-equivalent operations are inventoried in research 007: they are all selection operations that the ring model replaces, and no block operation needs an equivalent
 - [ ] E6.3 Conversation API verification
 - [ ] E6.4 Cross-server Anvil compatibility
 

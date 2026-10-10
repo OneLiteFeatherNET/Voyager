@@ -31,7 +31,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -114,7 +113,7 @@ class WandListenerTest {
     }
 
     @Test
-    void aLeftClickThroughTheMiddleOfThreeRingsRemovesItAndRenumbersTheLaterOne(Env env) throws IOException {
+    void aSneakLeftClickThroughTheMiddleOfThreeRingsRemovesItAndRenumbersTheLaterOne(Env env) throws IOException {
         folders();
         Fixture fixture = fixture(env, store());
         fixture.enter("map new skyfortress");
@@ -122,7 +121,7 @@ class WandListenerTest {
         fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
 
-        fixture.leftClick();
+        fixture.sneakLeftClick();
 
         List<Ring> rings = store().load(ID).rings();
         assertThat(rings).extracting(Ring::index).containsExactly(0, 1);
@@ -130,7 +129,7 @@ class WandListenerTest {
     }
 
     @Test
-    void aLeftClickWithNoRingInReachChangesNothingAndSaysSo(Env env) throws IOException {
+    void aSneakLeftClickWithNoRingInReachChangesNothingAndSaysSo(Env env) throws IOException {
         folders();
         Fixture fixture = fixture(env, store());
         fixture.enter("map new skyfortress");
@@ -139,10 +138,28 @@ class WandListenerTest {
         fixture.moveTo(new Pos(0, 64, 5));
         fixture.lookDown();
 
-        fixture.leftClick();
+        fixture.sneakLeftClick();
 
         assertThat(store().load(ID).rings()).hasSize(3);
         assertThat(fixture.keys()).contains("voyager.setup.ring.none");
+    }
+
+    @Test
+    void aPlainLeftClickThroughARingChangesNothingAndSaysNothing(Env env) throws IOException {
+        folders();
+        Fixture fixture = fixture(env, store());
+        fixture.enter("map new skyfortress");
+        fixture.run("map spawn");
+        fixture.seedRings(0, 10, 20);
+        fixture.enter("map open skyfortress");
+        fixture.moveTo(new Pos(0, 64, 5));
+        byte[] before = Files.readAllBytes(data.resolve("maps").resolve("skyfortress.json"));
+
+        fixture.leftClick();
+
+        assertThat(Files.readAllBytes(data.resolve("maps").resolve("skyfortress.json"))).isEqualTo(before);
+        assertThat(store().load(ID).rings()).hasSize(3);
+        assertThat(fixture.keys()).doesNotContain("voyager.setup.ring.removed", "voyager.setup.ring.none");
     }
 
     @Test
@@ -203,9 +220,9 @@ class WandListenerTest {
         /** Runs a command that opens a map, then ticks until the builder has arrived in that map's world. */
         void enter(String command) {
             run(command);
-            env.tickWhile(() -> sessions.find(builder.getUuid())
+            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
                     .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false), Duration.ofSeconds(10));
+                    .orElse(false));
         }
 
         void moveTo(Pos position) {
@@ -229,8 +246,18 @@ class WandListenerTest {
             env.tick();
         }
 
+        /** A left-click without sneaking: the swing reaches the server, and the wand does nothing to rings. */
         void leftClick() {
             env.process().eventHandler().call(new PlayerHandAnimationEvent(builder, PlayerHand.MAIN));
+            env.tick();
+        }
+
+        /** The removal gesture of owner decision O2: sneak, then left-click. */
+        void sneakLeftClick() {
+            builder.setSneaking(true);
+            env.tick();
+            leftClick();
+            builder.setSneaking(false);
             env.tick();
         }
 

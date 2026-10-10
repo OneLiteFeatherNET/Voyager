@@ -21,7 +21,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -44,6 +43,10 @@ class SetupCommandsTest {
 
     private Fixture fixture(Env env) throws IOException {
         folders();
+        return wire(env);
+    }
+
+    private Fixture wire(Env env) {
         Instance start = env.createFlatInstance();
         BuilderSessions sessions = new BuilderSessions();
         MapInstances instances = new MapInstances(env.process().instance(), worlds);
@@ -66,6 +69,20 @@ class SetupCommandsTest {
         assertThat(fixture.sessions.find(fixture.builder.getUuid()).map(MapSession::id))
                 .contains(new MapId("skyfortress"));
         assertThat(Wand.isHeldBy(fixture.builder)).isTrue();
+    }
+
+    @Test
+    void aWorldCopyThatFailsLeavesNoDraftBehind(Env env) throws IOException {
+        data = Files.createDirectories(root.resolve("data"));
+        worlds = Files.writeString(root.resolve("worlds"), "a file, not a folder: no world can be created under it");
+        Fixture fixture = wire(env);
+
+        fixture.run("map new skyfortress");
+
+        assertThat(data.resolve("drafts").resolve("skyfortress.json")).doesNotExist();
+        assertThat(data.resolve("maps").resolve("skyfortress.json")).doesNotExist();
+        assertThat(fixture.keys()).contains("voyager.setup.refused");
+        assertThat(fixture.sessions.find(fixture.builder.getUuid())).isEmpty();
     }
 
     @Test
@@ -153,9 +170,9 @@ class SetupCommandsTest {
         /** Runs a command that opens a map, then ticks until the builder has arrived in that map's world. */
         void enter(String command) {
             run(command);
-            env.tickWhile(() -> sessions.find(builder.getUuid())
+            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
                     .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false), Duration.ofSeconds(10));
+                    .orElse(false));
         }
 
         /** The translation keys of every chat line the builder has received so far. */

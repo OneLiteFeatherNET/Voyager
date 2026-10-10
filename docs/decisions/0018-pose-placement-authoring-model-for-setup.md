@@ -41,7 +41,7 @@ only.
 
 - **A. Pose placement of disc rings.** The builder right-clicks a wand while standing at the ring centre and looking
   along the flight direction. The eye position is the centre, the look direction the normal, the map default radius
-  the radius. Left-click removes the ring the look ray crosses.
+  the radius. Sneak plus left-click removes the ring the look ray crosses; a plain left-click changes no ring (owner decision O2).
 - **B. Record one lap and derive the gates.** The builder flies one lap; the server records the path and proposes rings.
   Fewer actions for a first preview (research 005 estimates nine in total), but it needs a live flight stream and a
   race run in the setup server. It is a follow-up (`add-setup-record-one-lap`), not a replacement.
@@ -85,7 +85,7 @@ The status of a draft lists the problems that keep it from being game-loadable.
 - Good, because one action per ring, and the builder's own position is the ring's position.
 - Good, because the stored ring is the existing `Ring`, validated by the existing constructor.
 - Bad, because the builder must stand in the ring's place. A ring placed from the wrong place is removed and placed again.
-- Bad, because there is no undo in this slice. A left-click removes a ring for good (follow-up `add-setup-undo`; the
+- Bad, because there is no undo in this slice. A sneak plus left-click removes a ring for good (follow-up `add-setup-undo`; the
   removal gesture is an open owner question, O2 in the change's design).
 
 ### B. Record one lap

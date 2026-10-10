@@ -32,20 +32,31 @@ tell the builder that no ring was placed.
 - **WHEN** the look direction is (0, 0, 0)
 - **THEN** no ring is added, the file is not written, and the builder sees a message that no ring was placed
 
-### Requirement: Left-click removes the ring the look ray crosses
+### Requirement: Sneak and left-click remove the ring the look ray crosses
 **Priority:** MoSCoW Must
 
-WHEN the builder left-clicks with the wand in an open map, THE SYSTEM SHALL remove the nearest ring whose disc the look ray
-crosses within 32 blocks of the eye, SHALL renumber every later ring so that index equals list position, and SHALL autosave
+WHEN the builder sneaks and left-clicks with the wand in an open map, THE SYSTEM SHALL remove the nearest ring whose disc the
+look ray crosses within 32 blocks of the eye, SHALL renumber later rings so that index equals list position, and SHALL autosave
 the draft. IF no ring is crossed, THEN THE SYSTEM SHALL change nothing and SHALL tell the builder.
 
 #### Scenario: Remove the middle ring of three
-- **WHEN** a builder looks through ring 1 of three rings and left-clicks
+- **WHEN** a builder sneaks, looks through ring 1 of three rings and left-clicks
 - **THEN** the draft holds two rings, the former ring 2 now has index 1, and the file is saved
 
 #### Scenario: Nothing in the line of sight
-- **WHEN** a builder left-clicks while the look ray crosses no ring within 32 blocks
+- **WHEN** a builder sneaks and left-clicks while the look ray crosses no ring within 32 blocks
 - **THEN** the draft is unchanged and the builder sees a message that no ring was found
+
+### Requirement: A plain left-click changes no ring
+**Priority:** MoSCoW Must
+
+WHEN the builder left-clicks with the wand without sneaking, THE SYSTEM SHALL change no ring, SHALL NOT write the file, and
+SHALL send no removal or not-found message (owner decision O2, 2026-10-10: sneak plus left-click is the removal gesture until
+undo exists).
+
+#### Scenario: Plain left-click through a ring
+- **WHEN** a builder who is not sneaking looks through ring 1 of three rings and left-clicks
+- **THEN** the draft is unchanged, the file is not written, and the builder sees no removal or not-found message
 
 ### Requirement: Rings are only appended and removed in this change
 **Priority:** MoSCoW Must
@@ -75,4 +86,4 @@ server cannot persist are not made silently.
 
 #### Scenario: Builder breaks a block
 - **WHEN** a builder left-clicks a block while holding any item in an open map
-- **THEN** the block stays and the block-break event is cancelled; a left-click with the wand is still handled as a removal, see the removal requirement
+- **THEN** the block stays and the block-break event is cancelled; a sneak plus left-click with the wand is still handled as a removal, see the removal requirement

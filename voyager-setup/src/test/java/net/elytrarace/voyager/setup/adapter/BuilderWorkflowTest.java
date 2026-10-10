@@ -21,7 +21,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,8 +58,10 @@ class BuilderWorkflowTest {
             env.tick();
         }
         moveTo(env, builder, 5.0);
+        builder.setSneaking(true);
         env.process().eventHandler().call(new PlayerHandAnimationEvent(builder, PlayerHand.MAIN));
         env.tick();
+        builder.setSneaking(false);
         command(env, builder, sessions, "map spawn");
         command(env, builder, sessions, "map status");
 
@@ -77,9 +78,9 @@ class BuilderWorkflowTest {
     private static void command(Env env, Player builder, BuilderSessions sessions, String command) {
         env.process().command().execute(builder, command);
         env.tick();
-        env.tickWhile(() -> sessions.find(builder.getUuid())
+        BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
                 .map(session -> session.instance() != builder.getInstance())
-                .orElse(false), Duration.ofSeconds(10));
+                .orElse(false));
     }
 
     private static void moveTo(Env env, Player builder, double z) {

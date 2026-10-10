@@ -29,7 +29,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +70,7 @@ class RingPreviewTest {
         fixture.rightClick();
         fixture.awaitPreviews(1);
         fixture.moveTo(new Pos(0, 64, -5));
-        fixture.leftClick();
+        fixture.sneakLeftClick();
 
         fixture.awaitPreviews(0);
         assertThat(fixture.store.load(ID).rings()).isEmpty();
@@ -127,9 +126,9 @@ class RingPreviewTest {
         void enter(String command) {
             env.process().command().execute(builder, command);
             env.tick();
-            env.tickWhile(() -> sessions.find(builder.getUuid())
+            BoundedTicks.tickWhile(env, () -> sessions.find(builder.getUuid())
                     .map(session -> session.instance() != builder.getInstance())
-                    .orElse(false), Duration.ofSeconds(10));
+                    .orElse(false));
         }
 
         Instance world() {
@@ -153,6 +152,15 @@ class RingPreviewTest {
             env.tick();
         }
 
+        /** The removal gesture of owner decision O2: sneak, then left-click. */
+        void sneakLeftClick() {
+            builder.setSneaking(true);
+            env.tick();
+            leftClick();
+            builder.setSneaking(false);
+            env.tick();
+        }
+
         void seedRings(double... zs) {
             double eyeY = 64 + builder.getEyeHeight();
             MapDraft draft = store.load(ID);
@@ -171,7 +179,7 @@ class RingPreviewTest {
 
         /** Ticks until the open map shows the given number of previews; the spawn is asynchronous. */
         void awaitPreviews(int count) {
-            env.tickWhile(() -> displays(world()).size() != count, Duration.ofSeconds(10));
+            BoundedTicks.tickWhile(env, () -> displays(world()).size() != count);
             assertThat(displays(world())).hasSize(count);
         }
     }

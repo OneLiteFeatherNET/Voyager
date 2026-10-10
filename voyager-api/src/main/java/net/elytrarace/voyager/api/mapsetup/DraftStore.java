@@ -8,7 +8,8 @@ package net.elytrarace.voyager.api.mapsetup;
 public interface DraftStore {
 
     /**
-     * Creates the draft of a new map and its world folder's claim on the name.
+     * Creates the world folder of a new map from the void template, then its draft. A failure at either step leaves
+     * neither behind.
      *
      * @param skeleton the draft with no rings and no spawn, built by the caller
      * @return the draft as stored

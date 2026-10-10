@@ -188,8 +188,8 @@ to `drafts/`, so `maps/` never holds an incomplete draft.
   preview handles. Every mutation is: compute with `DraftEditor`, `DraftStore.save`, then update the session and previews.
   If the save throws, the session keeps the old draft.
 - `setup.adapter.WandListener`: right-click with the wand calls `RingFromPose` with the player's eye position and look
-  direction (converted by `platform.convert.Vectors`), then the placement path above. Left-click calls `RingPicker` with the
-  same ray and removes the ring. The events that carry the left-click (on air and on a block) are fixed by spike 1.2.
+  direction (converted by `platform.convert.Vectors`), then the placement path above. Sneak plus left-click calls `RingPicker`
+  with the same ray and removes the ring; a plain left-click changes nothing (owner decision O2). The events that carry the left-click (on air and on a block) are fixed by spike 1.2.
 - `setup.adapter.SetupCommands`: a Minestom `Command` tree for `/map new <id>`, `/map open <id>`, `/map spawn`, `/map status`,
   using the same command API as `server.command.RaceCommand`. Map-id parsing goes through `MapId`.
 - `setup.adapter.RingPreview`: spawns and removes display entities. Its transform call is written after spike 1.1.
@@ -221,7 +221,7 @@ in the class comment.
    -> session.draft = newDraft; RingPreview.spawn(ring)                        [adapter]
    -> Messages: "Ring 12 placed"  (on DraftWriteFailedException: old draft kept, "not saved")
 
- builder left-click (wand)
+ builder sneak plus left-click (wand)
    -> RingPicker.nearestCrossed(draft.rings(), eye, look, REACH_BLOCKS)        [pure]
    -> DraftEditor.withoutRing(draft, index) -> save -> RingPreview.remove(index)
 ```
@@ -283,7 +283,8 @@ it, and it names Polar and the FAWE inventory as open, not decided.
   (section 4). No silent choice.
 - **A region-less void world fails `MapInstances`.** Mitigation: spike 1.3 decides the template; the template ships with one
   empty region file if needed.
-- **No undo.** A left-click removes a ring for good, short of re-placing it. Mitigation proposed as an owner question (O2).
+- **No undo.** A sneak plus left-click removes a ring for good, short of re-placing it. Mitigation: the removal gesture needs
+  sneak (O2, decided 2026-10-10); undo is follow-up `add-setup-undo`.
 - **Settings duplication.** `SetupSettings` duplicates three of `ServerSettings`' properties until a shared resolver exists.
   Recorded as debt. The greenfield design says duplicated resolution is how the two roots drift; the debt is small and visible.
 - **`apiDoesNotPerformFileIo` and `Path` in the port.** If ArchUnit flags the `Path` return of `worldDirectory`, the accessor
@@ -291,16 +292,16 @@ it, and it names Polar and the FAWE inventory as open, not decided.
 - **Left-click on air.** If Minestom 26.2 sends no event for a left-click on air, removal works only on blocks. Spike 1.2 decides.
 - **Time-based claims.** None. The 10-second test-fly target of research 005 belongs to S4, not to this change.
 
-## Open questions (owner, AskUserQuestion before apply)
+## Open questions (owner answers, 2026-10-10)
 
 | # | Question | Options and trade-offs | Recommendation |
 |---|---|---|---|
 | O1 | Draft layout | **Resolved 2026-10-09:** flat `maps/<id>.json` with world `<worldsPath>/<id>`, as the game reads today. Drafts without a ring or spawn wait in `drafts/` (section 4). No publish step, no `align-map-folder-with-game-catalog`. | Owner decision |
-| O2 | Removal gesture before undo | Plain left-click as specified (fast, unrecoverable) vs sneak plus left-click (one extra key; fewer accidents until S8) | Sneak plus left-click, if the owner agrees to change the spec |
-| O3 | Settings | Duplicate two properties now (debt recorded) vs extract a resolver to `voyager-platform` first (refactor(platform), delays this change) | Duplicate now; extract before the second setup feature |
-| O4 | Terrain in the setup world | Cancel block edits (no silent loss; builders use the external editor) vs allow edits (lost on restart without a save path) | Cancel block edits |
-| O5 | Defaults | Radius sqrt(13), reach 32 blocks, provisional reference time, boost and guide seeds | Designer confirms (Drift); seeds stay provisional as in the sample |
-| O6 | US-6.01 closure | Research 005 lists spike X1 (FAWE inventory, Must) as not yet recorded. Close US-6.01 now on the owner's 2026-10-09 approval, or after X1 is in `docs/research/` | Close after X1 is recorded; task 2.3 checks it |
+| O2 | Removal gesture before undo | Plain left-click as specified (fast, unrecoverable) vs sneak plus left-click (one extra key; fewer accidents until S8) | **Decided 2026-10-10: sneak plus left-click removes a ring; a plain left-click changes no ring.** Spec `setup/ring-placement` and `WandListener` changed in the commit `feat(setup): remove a ring only on sneak and left-click`. |
+| O3 | Settings | Duplicate two properties now (debt recorded) vs extract a resolver to `voyager-platform` first (refactor(platform), delays this change) | **Decided 2026-10-10: duplicate now; extract a shared resolver before the second setup feature.** The debt stays in the Risks section. |
+| O4 | Terrain in the setup world | Cancel block edits (no silent loss; builders use the external editor) vs allow edits (lost on restart without a save path) | **Decided 2026-10-10: cancel block edits in an open map** (`TerrainGuard`; spec `setup/ring-placement`). |
+| O5 | Defaults | Radius sqrt(13), reach 32 blocks, provisional reference time, boost and guide seeds | **Decided 2026-10-10: radius sqrt(13) and reach 32 blocks.** The reference time, boost and guide line stay provisional seeds, as in the sample, until a designer confirms them. |
+| O6 | US-6.01 closure | Research 005 lists spike X1 (FAWE inventory, Must) as not yet recorded. Close US-6.01 now on the owner's 2026-10-09 approval, or after X1 is in `docs/research/` | **Decided 2026-10-10: US-6.01 closed after X1 was recorded** in `docs/research/007-fawe-usage-inventory.md`, on the owner's approval of 2026-10-09 (research 005, section 7.4). |
 
 ## Migration Plan
 
@@ -309,6 +310,9 @@ removed from `settings.gradle.kts`, and the platform additions have no caller ou
 and no data migrates.
 
 ## Follow-up changes (not part of this change)
+
+Accepted by the owner on 2026-10-10.
+
 
 | Change | Type(scope) | Research ID | MoSCoW | Depends on |
 |---|---|---|---|---|

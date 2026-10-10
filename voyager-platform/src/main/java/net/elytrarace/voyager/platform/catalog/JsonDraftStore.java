@@ -12,10 +12,12 @@ import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
 import net.elytrarace.voyager.api.mapsetup.exception.InvalidDraftException;
 import net.elytrarace.voyager.platform.catalog.adapter.MapDraftAdapter;
 import net.elytrarace.voyager.platform.catalog.writer.MapDraftJsonWriter;
+import net.elytrarace.voyager.platform.world.VoidWorldTemplate;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -79,13 +81,28 @@ public final class JsonDraftStore implements DraftStore {
         void move(Path source, Path target, CopyOption... options) throws IOException;
     }
 
+    /**
+     * Copies the void world first and writes the skeleton second. A failed copy leaves no draft; a failed draft write
+     * takes the copied world back, so either both exist afterwards or neither does.
+     */
     @Override
     public MapDraft create(MapDraft skeleton) {
         MapId id = skeleton.id();
-        if (Files.exists(mapFile(id)) || Files.exists(draftFile(id)) || Files.isDirectory(worlds.resolve(id.value()))) {
+        Path world = worlds.resolve(id.value());
+        if (Files.exists(mapFile(id)) || Files.exists(draftFile(id)) || Files.isDirectory(world)) {
             throw DraftAlreadyExistsException.of(id);
         }
-        save(skeleton);
+        VoidWorldTemplate.copyTo(world);
+        try {
+            save(skeleton);
+        } catch (RuntimeException exception) {
+            try {
+                VoidWorldTemplate.remove(world);
+            } catch (UncheckedIOException cleanup) {
+                exception.addSuppressed(cleanup);
+            }
+            throw exception;
+        }
         return skeleton;
     }
 
