@@ -3,21 +3,29 @@ package net.elytrarace.voyager.server;
 import io.avaje.inject.BeanScope;
 
 import net.elytrarace.voyager.api.config.ConfigProblem;
+import net.elytrarace.voyager.api.permission.PermissionNode;
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
-import net.elytrarace.voyager.server.command.ConsoleCommandReader;
+import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
+import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
+import net.elytrarace.voyager.platform.lifecycle.StopCommand;
+import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
+import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
+import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
+import net.elytrarace.voyager.platform.proxy.VelocityAuth;
 import net.elytrarace.voyager.server.command.RaceCommand;
-import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Pos;
@@ -154,7 +162,35 @@ public final class VoyagerServer {
         }
         LOGGER.info("Loaded {} message(s) from {}", translations.size(), VoyagerTranslator.BUNDLE_RESOURCE);
 
-        MinecraftServer server = MinecraftServer.init();
+        // Velocity forwarding is decided before Minestom starts, because the auth is fixed at init. A blank secret
+        // refuses to start rather than running offline; no secret runs offline with a WARN (ADR-0025).
+        Auth auth;
+        try {
+            ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromEnvironment();
+            auth = VelocityAuth.of(forwarding);
+            if (auth == null) {
+                LOGGER.warn("No Velocity secret is set ({} or -D{}): the server runs in offline mode and player UUIDs are "
+                        + "not forwarded from a proxy. LuckPerms cannot find a proxied player's grants in that case.",
+                        ProxyForwardingSettings.ENVIRONMENT_NAME, ProxyForwardingSettings.PROPERTY_NAME);
+            }
+        } catch (IllegalArgumentException exception) {
+            LOGGER.error("Voyager refused to start: {}", exception.getMessage());
+            System.exit(1);
+            return;
+        }
+        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+
+        // LuckPerms is started only when its loader is on the class path, and before the port binds. A start that
+        // throws refuses to listen; it never falls back to the level-based policy (ADR-0024).
+        if (LuckPermsBootstrap.isPresent()) {
+            try {
+                LuckPermsBootstrap.start();
+            } catch (PermissionBackendStartException exception) {
+                LOGGER.error("Voyager refused to start: {}", exception.getMessage(), exception);
+                System.exit(1);
+                return;
+            }
+        }
 
         // Every problem that concerns the played cup, the maps or the worlds, at once, before the graph is
         // built: boot refuses with the whole report rather than the first problem the graph trips over. A
@@ -194,17 +230,23 @@ public final class VoyagerServer {
 
         registerEvents(session, waitingRoom, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
-        LOGGER.info("/race reload is registered: the console and operators at level {} may run it",
-                ReloadPermission.REQUIRED_LEVEL);
+        LOGGER.info("/race reload is registered: gated by {}", PermissionNode.VOYAGER_COMMAND_RACE_RELOAD.value());
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
         scheduleTick(pipeline, waitingRoom, session);
+        // The one clean shutdown: the stdin line `stop` and /stop both end here. The stop runs on a platform thread,
+        // because the reader's own thread is the one the stop closes.
+        ServiceShutdown shutdown = new ServiceShutdown(() -> {
+            MinecraftServer.stopCleanly();
+            System.exit(0);
+        }, runnable -> Thread.ofPlatform().name("voyager-shutdown").start(runnable));
+        MinecraftServer.getCommandManager().register(new StopCommand(graph.get(PermissionPolicy.class), shutdown));
         // Built now so the shutdown task can stop it; started only once the server listens, because a command
         // typed before then would reach a server that is not yet able to take one.
         ConsoleCommandReader console = new ConsoleCommandReader(
                 System.in,
-                ConsoleCommandReader.consoleOf(MinecraftServer.getCommandManager()),
+                shutdown.consoleDispatcher(ConsoleCommandReader.consoleOf(MinecraftServer.getCommandManager())),
                 line -> MinecraftServer.getCommandManager().getConsoleSender().sendMessage(line));
         registerShutdownTask(graph, instances, catalog, console);
 
@@ -404,6 +446,8 @@ public final class VoyagerServer {
             // After the world handles, so a bean's preDestroy hook, should one ever be added, runs
             // once nothing is still reading a world through it.
             graph.close();
+            // Last: disables LuckPerms and with it the H2 database, before the JVM runs its own hooks (ADR-0024).
+            LuckPermsBootstrap.stop();
         });
     }
 }

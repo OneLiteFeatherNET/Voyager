@@ -69,13 +69,14 @@ bar `ReloadPermission.REQUIRED_LEVEL` already sets). Players below level 4 are d
 Rejected alternative, Cygnus's behaviour: "absent LuckPerms grants every check". Cygnus's own guide records that a jar which
 lost the loader would then grant every player every permission, with only two log lines to show for it. For a server that
 runs on a public network, that is the wrong failure mode. The cost of the chosen fallback is that local runs need
-`/op` (level 4) to use gated commands, which the server already requires for `/race reload` today. The WARN line at startup
+operator level 4 to use gated commands. Minestom 26.2 has no `/op` command and Voyager has no command that sets the level, so
+without LuckPerms only the console runs gated commands. That is what the fallback guarantees. The WARN line at startup
 names the fallback.
 
 ### 4. LuckPerms: optional, detected, and a failed start stops the server
 
 Detection reads the loader class by name with `Class.forName(..., false, ...)`, as Cygnus does, so the server compiles and runs
-without the jar. If the class is present, `LuckPermsBootstrap.start()` calls `MinestomLoader.get().load().registerShutdownHook().start()`
+without the jar. If the class is present, `LuckPermsBootstrap.start()` calls `MinestomLoader.get().load().start()` (no loader JVM hook; see the fix note in risks)
 before the port binds. A throw here stops startup (spec requirement "A failed LuckPerms start refuses to listen"). The fallback
 is never used silently when the loader is present but broken.
 
@@ -162,6 +163,45 @@ Risks found:
 - **R2 Duplicate LuckPerms API.** The loader jar contains `net/luckperms/api/*` classes itself, and the adapter compiles against
   `net.luckperms:api:5.5`. Mitigation: spike task 1.3 compares the two; the adapter uses only the intersection of both APIs.
 - **R3 Runtime unknown.** Nothing here has booted LuckPerms on 26.2. Mitigation: spike task 1.1, with a stated fallback.
+  **Spike result (2026-10-10): PASS for the loader start; two runtime requirements found.** Evidence comes from a throwaway
+  program kept outside the repository, run on the server's runtime classpath (Minestom 2026.08.28-26.2, loader 5.6-SNAPSHOT):
+  - Log, with the server's `log4j2.xml`: `[luckperms] Loading storage provider... [H2]`, `[luckperms] Successfully enabled.
+    (took 492ms)`; at shutdown `Starting shutdown process...`, `Closing storage...`, `Goodbye!`.
+  - `MinestomLoader.get().load().registerShutdownHook().start()` after `MinecraftServer.init()` returns. `loadUser(uuid)`
+    followed by `getUser(uuid)` returns a user. `MinecraftServer.start` binds, and `stopCleanly()` exits with status 0.
+  - A Minestom test-environment player with an offline profile is refused when LuckPerms holds no preloaded data for its UUID
+    (`User ... doesn't have data preloaded - denying login`). The same player is accepted after `loadUser`. LuckPerms preloads
+    through `AsyncPlayerPreLoginEvent` in a real connection; that path was **not** exercised, because the test environment does
+    not perform a real login. Residual risk, checked again by acceptance tasks 12.3 and 12.4.
+  - Runtime requirements: **Guava** and **failureaccess** (`com.google.common.util.concurrent.internal`) are not on the server's
+    runtime classpath, so the build must declare them (Cygnus bundles Guava for the same reason). On its first start LuckPerms
+    downloads its own libraries (H2 driver, configurate, Caffeine, and others) into `data/libs`, so the first start needs network.
+  - One of three runs printed `NoClassDefFoundError: org/h2/api/ErrorCode` from H2's exit hook after `stopCleanly()`. It was the
+    run without the server's log configuration, and the process still exited 0. Watch for it in acceptance task 12.5.
+- **R3a Spike 1.2, data directory.** LuckPerms writes to `data/` under the JVM's working directory. The path is hard-coded
+  (`LPMinestomBootstrap.getDataDirectory()` returns `Paths.get("data")`), with no property to move it. The files are
+  `data/config.yml`, `data/contexts.json`, `data/luckperms-h2-v2.mv.db`, `data/libs/` and `data/translations/`. The only control
+  is the working directory. `add-cloudnet-deployment` must therefore start the server with the service directory as its working
+  directory, so that `<service>/data` is the LuckPerms directory. Voyager's own default data path, `run/data`, is relative to the
+  same working directory and is a different directory. Under `./gradlew :voyager:server:runServer` the working directory is
+  `run/`, so LuckPerms writes to `run/data/`.
+- **R2 result (spike 1.3).** For the nine `net.luckperms.api` types the adapter needs (`LuckPermsProvider`, `LuckPerms`,
+  `UserManager`, `User`, `CachedDataManager`, `CachedPermissionData`, `Tristate`, `ContextManager`, `QueryOptions`), the
+  signatures in the loader jar equal those in `net.luckperms:api:5.5` (`javap`, sorted and diffed, no difference). The
+  adapter's member list is fixed in task 6.2.
+- **R1 result (spike 1.1 input).** SHA-256 of the cached `minestom-loader-5.6-SNAPSHOT.jar` is
+  `65f94eac0008ee7414dfa4c66f16063f320ef12f3b5d6a337b98a14d6990b7ce`. The cached `api-5.5.jar` is
+  `cd910f936adc4dee7705fb51cc29401fde4f29aba6ee73a6475a3a0515f6294f`.
+- **Shutdown fix (2026-10-10).** The loader's own JVM hook (`registerShutdownHook`) disabled LuckPerms at JVM exit, at the
+  same time as H2's exit hook. H2 then needed `org/h2/api/ErrorCode` from a LuckPerms class loader the hook had just closed,
+  and printed `NoClassDefFoundError`. Decision 4 is therefore amended: LuckPerms starts with `load().start()` and no loader
+  hook, and `LuckPermsBootstrap.stop()` disables it from the server's shutdown task, before the JVM runs its hooks. The
+  loader's bootstrap is read from its private `plugin` field, the only route to `onDisable` (no public accessor exists).
+  Signal-path shutdown (Minestom's own SIGTERM hook) still runs the same shutdown task, but it does so on a JVM hook thread,
+  so the ordering there is not guaranteed; the stdin `stop` path is the one owner runs.
+- **Spike 1.4, Velocity.** `Auth.Velocity(String)` and `MinecraftServer.init(Auth)` exist in the 26.2 jar (`javap`). A forwarded
+  login cannot be produced through the test environment, which skips the handshake. The UUID check therefore moves to acceptance
+  task 12.6, as task 1.4 allows.
 - **R4 Cygnus's fail-open fallback.** Copying Cygnus's `TRUE` fallback would expose every node. Mitigation: Decision 3.
 - **R5 No Minestom extension system.** Minestom 26.2 contains no extension classes. The loader is therefore started directly,
   and must stay out of `extensions/` in change `add-cloudnet-deployment`, where a fork of the extension system arrives.

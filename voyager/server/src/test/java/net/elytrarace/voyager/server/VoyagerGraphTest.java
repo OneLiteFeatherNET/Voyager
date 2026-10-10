@@ -2,6 +2,7 @@ package net.elytrarace.voyager.server;
 
 import io.avaje.inject.BeanScope;
 
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.race.CupCatalog;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapCatalog;
@@ -15,7 +16,9 @@ import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.server.inject.ServerBeans;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -145,6 +148,26 @@ class VoyagerGraphTest {
             Player racer = env.createConnection().connect(instance, new Pos(0, 42, 0));
 
             assertThat(players.get()).containsExactly(racer);
+        }
+    }
+
+    /** LuckPerms is absent from this module's test class path, so the graph must choose the level-based fallback. */
+    @Test
+    void resolvesTheLevelFallbackPolicyWhenLuckPermsIsAbsent(Env env) throws IOException {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
+            assertThat(scope.get(PermissionPolicy.class)).isInstanceOf(LevelPermissionPolicy.class);
+        }
+    }
+
+    /** The fallback is never silent: the one startup warning names it, read from the log rather than the console. */
+    @Test
+    void warnsOnceAtStartupNamingTheFallbackWhenLuckPermsIsAbsent(Env env) throws IOException {
+        try (LogCapture capture = LogCapture.of(ServerBeans.class);
+                BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
+            scope.get(PermissionPolicy.class);
+
+            assertThat(capture.warnings()).singleElement()
+                    .asString().contains("LuckPerms").contains("operator level 4");
         }
     }
 

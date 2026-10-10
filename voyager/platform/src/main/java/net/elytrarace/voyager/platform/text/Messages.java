@@ -69,6 +69,7 @@ public abstract class Messages {
     private static final String COMMAND_RELOAD_REJECTED = "voyager.command.reload.rejected";
     private static final String COMMAND_RELOAD_FAILED = "voyager.command.reload.failed";
     private static final String COMMAND_RELOAD_DENIED = "voyager.command.reload.denied";
+    private static final String COMMAND_DENIED = "voyager.command.denied";
     private static final String COMMAND_RELOAD_PROBLEM = "voyager.command.reload.problem";
     private static final String COMMAND_RELOAD_WARNING = "voyager.command.reload.warning";
 
@@ -364,7 +365,13 @@ public abstract class Messages {
         return Component.translatable(COMMAND_RELOAD_WARNING, Component.text(line));
     }
 
-    /** {@code /race reload}'s answer to a sender below the operator level. */
+    /** The answer to a sender who lacks the permission node a gated command or action needs. */
+    @Contract(pure = true)
+    public static Component commandDenied() {
+        return Component.translatable(COMMAND_DENIED);
+    }
+
+    /** {@code /race reload}'s answer to a sender who lacks the reload permission. */
     @Contract(pure = true)
     public static Component reloadDenied() {
         return Component.translatable(COMMAND_RELOAD_DENIED);

@@ -1,6 +1,8 @@
 package net.elytrarace.voyager.setup.adapter;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.permission.PermissionNode;
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
@@ -11,6 +13,8 @@ import net.elytrarace.voyager.api.mapsetup.exception.InvalidDraftException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
 import net.elytrarace.voyager.api.mapsetup.exception.InvalidMapIdException;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.permission.PlayerSubjects;
+import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.text.SetupMessages;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.WorldFolders;
@@ -45,26 +49,44 @@ public final class SetupCommands extends Command {
     private final BuilderSessions sessions;
     private final Path worlds;
     private final MapInstances instances;
+    private final PermissionPolicy policy;
 
     /**
      * @param store     the draft store the commands save through
      * @param sessions  the open map of each builder
      * @param worlds    the directory the world folders sit in
      * @param instances the loader of the map worlds
+     * @param policy    answers whether a sender holds {@code voyager.setup.use}; every subcommand asks it
      */
-    public SetupCommands(DraftStore store, BuilderSessions sessions, Path worlds, MapInstances instances) {
+    public SetupCommands(DraftStore store, BuilderSessions sessions, Path worlds, MapInstances instances,
+            PermissionPolicy policy) {
         super("map");
         this.store = store;
         this.sessions = sessions;
         this.worlds = worlds;
         this.instances = instances;
+        this.policy = policy;
 
         ArgumentWord newId = ArgumentType.Word("id");
-        addSyntax((sender, context) -> create(sender, context.get(newId)), ArgumentType.Literal("new"), newId);
+        addSyntax((sender, context) -> gated(sender, () -> create(sender, context.get(newId))),
+                ArgumentType.Literal("new"), newId);
         ArgumentWord openId = ArgumentType.Word("id");
-        addSyntax((sender, context) -> open(sender, context.get(openId)), ArgumentType.Literal("open"), openId);
-        addSyntax((sender, context) -> spawn(sender), ArgumentType.Literal("spawn"));
-        addSyntax((sender, context) -> status(sender), ArgumentType.Literal("status"));
+        addSyntax((sender, context) -> gated(sender, () -> open(sender, context.get(openId))),
+                ArgumentType.Literal("open"), openId);
+        addSyntax((sender, context) -> gated(sender, () -> spawn(sender)), ArgumentType.Literal("spawn"));
+        addSyntax((sender, context) -> gated(sender, () -> status(sender)), ArgumentType.Literal("status"));
+    }
+
+    /**
+     * Runs a subcommand for a sender who holds {@code voyager.setup.use}; tells every other sender so, and changes
+     * nothing. The check is made per subcommand, so a refused builder never reaches a draft or a world.
+     */
+    private void gated(CommandSender sender, Runnable subcommand) {
+        if (policy.allows(PlayerSubjects.subjectOf(sender), PermissionNode.VOYAGER_SETUP_USE)) {
+            subcommand.run();
+        } else {
+            sender.sendMessage(Messages.commandDenied());
+        }
     }
 
     private void create(CommandSender sender, String raw) {

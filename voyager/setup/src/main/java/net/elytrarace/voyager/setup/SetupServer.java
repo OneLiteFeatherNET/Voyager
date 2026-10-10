@@ -1,5 +1,14 @@
 package net.elytrarace.voyager.setup;
 
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
+import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
+import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
+import net.elytrarace.voyager.platform.lifecycle.StopCommand;
+import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
+import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
+import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
+import net.elytrarace.voyager.platform.proxy.VelocityAuth;
+import net.minestom.server.Auth;
 import io.avaje.inject.BeanScope;
 
 import net.elytrarace.voyager.api.config.ConfigProblem;
@@ -70,7 +79,32 @@ public final class SetupServer {
         LOGGER.info("Voyager setup server — data={} worlds={} at {}:{}", settings.dataPath().toAbsolutePath(),
                 settings.worldsPath().toAbsolutePath(), settings.host(), settings.port());
 
-        MinecraftServer server = MinecraftServer.init();
+        // Velocity forwarding is fixed at init, so it is read first; a blank secret refuses to start (ADR-0025).
+        Auth auth;
+        try {
+            ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromEnvironment();
+            auth = VelocityAuth.of(forwarding);
+            if (auth == null) {
+                LOGGER.warn("No Velocity secret is set ({} or -D{}): the setup server runs in offline mode and player UUIDs "
+                        + "are not forwarded from a proxy.", ProxyForwardingSettings.ENVIRONMENT_NAME,
+                        ProxyForwardingSettings.PROPERTY_NAME);
+            }
+        } catch (IllegalArgumentException exception) {
+            LOGGER.error("Setup server refused to start: {}", exception.getMessage());
+            System.exit(1);
+            return;
+        }
+        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+        // LuckPerms starts before the port binds, and a failed start refuses to listen (ADR-0024).
+        if (LuckPermsBootstrap.isPresent()) {
+            try {
+                LuckPermsBootstrap.start();
+            } catch (PermissionBackendStartException exception) {
+                LOGGER.error("Setup server refused to start: {}", exception.getMessage(), exception);
+                System.exit(1);
+                return;
+            }
+        }
         BeanScope graph;
         try {
             graph = openGraph(settings);
@@ -83,10 +117,22 @@ public final class SetupServer {
         graph.get(WandListener.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(TerrainGuard.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(BuilderSessions.class).register(MinecraftServer.getGlobalEventHandler());
+        // The one clean shutdown: the stdin line `stop` and /stop both end here, on a platform thread, never the reader's.
+        ServiceShutdown shutdown = new ServiceShutdown(() -> {
+            MinecraftServer.stopCleanly();
+            System.exit(0);
+        }, runnable -> Thread.ofPlatform().name("voyager-shutdown").start(runnable));
+        MinecraftServer.getCommandManager().register(new StopCommand(graph.get(PermissionPolicy.class), shutdown));
         registerShutdownTask(graph);
+        // Started only once the server listens, so a line typed before then never reaches a server that cannot take it.
+        ConsoleCommandReader console = new ConsoleCommandReader(
+                System.in,
+                shutdown.consoleDispatcher(ConsoleCommandReader.consoleOf(MinecraftServer.getCommandManager())),
+                line -> MinecraftServer.getCommandManager().getConsoleSender().sendMessage(line));
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
         server.start(settings.host(), settings.port());
+        console.start();
     }
 
     /**
@@ -135,6 +181,7 @@ public final class SetupServer {
         MinecraftServer.getSchedulerManager().buildShutdownTask(() -> {
             LOGGER.info("Shutting down");
             graph.close();
+            LuckPermsBootstrap.stop();
         });
     }
 }

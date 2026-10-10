@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.setup.adapter;
 
+import static net.elytrarace.voyager.setup.adapter.AllowEveryone.ALLOW_ALL;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
@@ -57,8 +58,8 @@ class WandListenerTest {
         Instance start = env.createFlatInstance();
         BuilderSessions sessions = new BuilderSessions();
         env.process().command().register(
-                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds)));
-        new WandListener(sessions).register(env.process().eventHandler());
+                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
+        new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);

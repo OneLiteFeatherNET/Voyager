@@ -70,6 +70,20 @@ dependencyResolutionManagement {
             library("avaje.inject.test", "io.avaje", "avaje-inject-test").versionRef("avaje-inject")
             library("jakarta.inject", "jakarta.inject", "jakarta.inject-api").version("2.0.1")
 
+            // LuckPerms, the optional permission backend behind the PermissionPolicy port (ADR-0024). The API is compileOnly
+            // in voyager-platform. The Minestom loader is compileOnly there too, because LuckPermsBootstrap starts it, and
+            // runtimeOnly in the two composition roots only, never on a test class path. The loader is a snapshot, so the
+            // Sonatype snapshot repository is declared for net.luckperms only (see build.gradle.kts). Any bump needs owner approval.
+            version("luckperms-api", "5.5")
+            version("luckperms-minestom-loader", "5.6-SNAPSHOT")
+            library("luckperms.api", "net.luckperms", "api").versionRef("luckperms-api")
+            library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms-minestom-loader")
+
+            // Guava and failureaccess: the LuckPerms loader needs them on the runtime class path and Minestom does not bring
+            // them (spike 1.1, design.md risk R3). Pinned to the version Cygnus uses.
+            version("guava", "33.7.2-jre")
+            library("guava", "com.google.guava", "guava").versionRef("guava")
+
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
             bundle("flyway", listOf("flyway.core", "flyway.mysql"))
             bundle("fawe", listOf("fawe.core", "fawe.bukkit"))

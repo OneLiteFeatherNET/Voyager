@@ -54,6 +54,18 @@ dependencies {
     // Minestom cannot run without slf4j at all, so no consumer of this module can be without it.
     compileOnly("org.slf4j:slf4j-api:2.0.18")
 
+    // LuckPerms, behind the PermissionPolicy port (ADR-0024). Compile-only: the adapter is optional at runtime, and the
+    // runtime jar comes from the composition roots. The loader is compile-only here as well, because LuckPermsBootstrap
+    // starts it, and its compile-time classes are all that is needed. Excluding net.kyori.adventure keeps Minestom's own
+    // Adventure version the only one on the class path. The API bundled inside the loader carries the same signatures as
+    // net.luckperms:api:5.5 for every member the adapter calls (spike 1.3).
+    compileOnly(libs.luckperms.api) {
+        exclude(group = "net.kyori.adventure")
+    }
+    compileOnly(libs.luckperms.minestom.loader) {
+        exclude(group = "net.kyori.adventure")
+    }
+
     // Same reasoning as the main artifact above: pinned to the exact rebuild version, not the
     // catalog's `minestom` alias, so the test environment and the api dependency it tests against
     // are never silently on two different Minestom versions.

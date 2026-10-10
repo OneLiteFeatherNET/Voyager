@@ -68,6 +68,12 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The property naming how many racers must be online before a cup starts; absent means the mode's default. */
     public static final String MIN_RACERS_PROPERTY = "VOYAGER_MIN_PLAYERS";
 
+    /** The system property naming the interface to bind; read when no positional host is given. */
+    public static final String BIND_HOST_PROPERTY = "service.bind.host";
+
+    /** The system property naming the port to bind; read when no positional port is given. A node sets it. */
+    public static final String BIND_PORT_PROPERTY = "service.bind.port";
+
     /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is off. */
     public static final int PRODUCTION_MINIMUM_RACERS = 2;
 
@@ -122,7 +128,8 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
      * Reads the settings from {@code args} and the system properties.
      *
      * <p>{@code args} is {@code [host] [port]}, both optional, matching the tree being replaced's
-     * command line so the same invocation works against either jar. A port that is not a number is
+     * command line so the same invocation works against either jar. Each of host and port takes the
+     * argument when one is given, then {@link #BIND_HOST_PROPERTY} or {@link #BIND_PORT_PROPERTY}, then the default. A port that is not a number is
      * a refusal rather than a warning and a fallback: a server that silently binds 25565 when it was
      * told 25566 is a server two people are about to fight over.
      *
@@ -138,8 +145,8 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
      * same settings from a map in a test. Same defaults, same parsing, same refusals.
      */
     static ServerSettings fromProperties(String[] args, Function<String, @Nullable String> property) {
-        String host = args.length > 0 ? args[0] : DEFAULT_HOST;
-        int port = args.length > 1 ? parsePort(args[1]) : DEFAULT_PORT;
+        String host = args.length > 0 ? args[0] : blankToDefault(property.apply(BIND_HOST_PROPERTY), DEFAULT_HOST);
+        int port = args.length > 1 ? parsePort(args[1]) : bindPort(property.apply(BIND_PORT_PROPERTY));
         boolean devMode = Boolean.parseBoolean(property.apply(DEV_MODE_PROPERTY));
         String minimum = blankToNull(property.apply(MIN_RACERS_PROPERTY));
         return new ServerSettings(
@@ -180,6 +187,28 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("port must be a number, was '%s'".formatted(raw), exception);
         }
+    }
+
+    /**
+     * The port the {@link #BIND_PORT_PROPERTY} names, or the default when it is absent or blank.
+     *
+     * @throws IllegalArgumentException if the text is not a number from 1 to 65535; the message names the property
+     */
+    static int bindPort(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
+            return DEFAULT_PORT;
+        }
+        int port;
+        try {
+            port = Integer.parseInt(raw.strip());
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    "%s must be a number, was '%s'".formatted(BIND_PORT_PROPERTY, raw), exception);
+        }
+        if (port < 1 || port > 65535) {
+            throw new IllegalArgumentException("%s must be in 1..65535, was %d".formatted(BIND_PORT_PROPERTY, port));
+        }
+        return port;
     }
 
     /**
@@ -235,6 +264,10 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
 
     private static String valueOr(@Nullable String value, String fallback) {
         return value == null ? fallback : value;
+    }
+
+    private static String blankToDefault(@Nullable String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private static @Nullable String blankToNull(@Nullable String value) {

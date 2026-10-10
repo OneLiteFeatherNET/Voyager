@@ -42,6 +42,8 @@ These were decided with the project owner before this document was written.
 | D10 | `io.avaje:avaje-inject` 12.7 for dependency injection (compile-time, no reflection), JSR-330 annotations confined to the composition roots | Wiring errors fail the build instead of boot; no reflection on the tick path; the container is actively released. Supersedes the earlier container choice; see ADR-0016 |
 | D11 | No legacy data import; the rebuild starts with an empty database | Greenfield means greenfield — player history from the 2023 build is not carried over |
 | D12 | `CLAUDE.md` is superseded by this specification | It describes a tree that no longer matches reality; the design rules live here now |
+| D13 | Permission port in `voyager-api`, LuckPerms as an optional adapter in `voyager-platform`, and a fail-closed level-based fallback (ADR-0024) | Command code asks one question and never names a backend; a jar without the loader fails closed, so a lost loader never widens access on a public network |
+| D14 | Velocity modern forwarding with the secret from `VOYAGER_VELOCITY_SECRET` or `voyager.velocity.secret`; a blank secret refuses to start (ADR-0025) | A proxied player keeps the real UUID that LuckPerms keys on, and a misconfigured secret cannot silently turn signature checking off |
 
 ### Non-goals
 
@@ -955,6 +957,11 @@ resolution fails on a transitive dependency with no visible relationship to Clou
 artifact at all. It reads two system properties and one stdin stream; that is the entire contract,
 expressible in plain JDK types. Bundling CloudNet's driver or bridge classes produces duplicates
 across classloaders, not a working service.
+
+**The stdin contract has one command.** The line `stop` on standard input runs the clean shutdown and exits with status 0.
+The shutdown runs on a platform thread, not on the reader's thread, because stopping closes the reader's input. Every other
+line goes to the console command dispatcher, and `end` is not a command: it gets the reply `Unknown command: end`.
+A player stops the server with `/stop` only when the player holds `voyager.command.stop`.
 
 If Voyager later needs to *call* CloudNet — routing a player to a lobby task after a cup, resolving
 permissions across the network, reading service snapshots — that is a separate ninth module,

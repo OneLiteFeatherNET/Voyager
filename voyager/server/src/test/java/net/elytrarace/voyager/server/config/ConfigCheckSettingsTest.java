@@ -8,6 +8,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,19 @@ class ConfigCheckSettingsTest {
         assertThat(problems).singleElement().satisfies(problem -> {
             assertThat(problem.key()).isEqualTo("port");
             assertThat(problem.message()).contains("abc");
+        });
+    }
+
+    @Test
+    void reportsABindPortPropertyOutOfRangeNamingThePropertyInsteadOfTheCommandLine() throws Exception {
+        Map<String, String> properties = new HashMap<>(validDirectories());
+        properties.put(ServerSettings.BIND_PORT_PROPERTY, "70000");
+
+        List<ConfigProblem> problems = ConfigCheck.settingsProblems(new String[0], properties);
+
+        assertThat(problems).singleElement().satisfies(problem -> {
+            assertThat(problem.key()).isEqualTo(ServerSettings.BIND_PORT_PROPERTY);
+            assertThat(problem.message()).contains("service.bind.port").contains("70000");
         });
     }
 
@@ -102,7 +116,7 @@ class ConfigCheckSettingsTest {
 
     /** The valid directories plus one minimum racer setting, so only that setting can be wrong. */
     private Map<String, String> withMinimum(String value) throws Exception {
-        Map<String, String> properties = new java.util.HashMap<>(validDirectories());
+        Map<String, String> properties = new HashMap<>(validDirectories());
         properties.put(ServerSettings.MIN_RACERS_PROPERTY, value);
         return properties;
     }

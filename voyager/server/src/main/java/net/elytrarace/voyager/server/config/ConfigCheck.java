@@ -77,6 +77,9 @@ public final class ConfigCheck {
                 problems.add(error(PORT_KEY, PORT_SOURCE, exception.getMessage()));
             }
         }
+        if (args.length <= 1) {
+            bindPortProblem(problems, properties);
+        }
         directoryProblem(problems, properties, ServerSettings.DATA_PATH_PROPERTY,
                 ServerSettings.DEFAULT_DATA_PATH, MissingServerDirectoryException.DATA);
         directoryProblem(problems, properties, ServerSettings.WORLDS_PATH_PROPERTY,
@@ -253,6 +256,19 @@ public final class ConfigCheck {
         } catch (IllegalArgumentException exception) {
             problems.add(error(ServerSettings.MIN_RACERS_PROPERTY,
                     "system property " + ServerSettings.MIN_RACERS_PROPERTY, exception.getMessage()));
+        }
+    }
+
+    /**
+     * The bind port a node sets through the system property, checked only when no positional port overrides it, as the
+     * settings read it. The message names the property.
+     */
+    private static void bindPortProblem(List<ConfigProblem> problems, Map<String, String> properties) {
+        try {
+            ServerSettings.bindPort(properties.get(ServerSettings.BIND_PORT_PROPERTY));
+        } catch (IllegalArgumentException exception) {
+            problems.add(error(ServerSettings.BIND_PORT_PROPERTY,
+                    "system property " + ServerSettings.BIND_PORT_PROPERTY, exception.getMessage()));
         }
     }
 
