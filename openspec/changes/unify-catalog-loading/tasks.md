@@ -58,8 +58,8 @@ smallest production change (Green), then cleanup (Refactor). Unit tests use `@Te
 
 ## 8. Documentation
 
-- [ ] 8.1 Commit `docs(architecture)`: update the `catalog` row of the package table in `docs/explanation/architecture.md` (created by the sibling change; if absent, leave the row for that change and note it) and set research 005 roadmap Q1 to done, citing this change.
-  - Deferred: the architecture page arrives with `define-clean-architecture-with-vertical-slices`; no `docs/explanation/architecture.md` is created here and research 005 is not edited.
+- [x] 8.1 Commit `docs(architecture)`: update the `catalog` row of the package table in `docs/explanation/architecture.md` (created by the sibling change; if absent, leave the row for that change and note it) and set research 005 roadmap Q1 to done, citing this change.
+  - Done 2026-10-10: `docs/explanation/architecture.md` exists (from `define-clean-architecture-with-vertical-slices`); its `catalog` row names `CatalogLoader` as the one entry point and the removal of `JsonMapCatalog` and `JsonCupCatalog`. Research 005 roadmap Q1 is marked implemented by this change.
 
 ## 9. Verify and open the pull request
 

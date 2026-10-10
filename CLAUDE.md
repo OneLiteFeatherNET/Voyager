@@ -74,6 +74,7 @@ rebuild live in `voyager-fitness` and are declared with `allowEmptyShould(false)
 passes because it matched nothing is a defect, not a pass.
 
 ## Architecture
+The rebuild (`voyager-*`) is organised in Clean Architecture rings and Vertical Slices; see `docs/explanation/architecture.md` and ADR-0017. The subsections below describe the tree being replaced, except the Phase System, which the rebuild uses too.
 
 ### Entity-Component-System (ECS)
 The game uses a custom ECS pattern in `shared/common` (`net.elytrarace.common.ecs`):
