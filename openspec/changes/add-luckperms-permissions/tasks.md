@@ -65,9 +65,9 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 ## 10. Build (Gradle)
 
-- [ ] 10.1 Pin `net.luckperms:api:5.5` and `net.luckperms:minestom-loader:5.6-SNAPSHOT` in `settings.gradle.kts`, programmatically, with the Sonatype snapshot repository added for the loader. No `gradle/libs.versions.toml`. Verify: `./gradlew :voyager:platform:dependencies --configuration compileClasspath` lists `net.luckperms:api:5.5`.
-- [ ] 10.2 Add `compileOnly` for the API (excluding `net.kyori.adventure`) in `voyager/platform/build.gradle.kts`, and `runtimeOnly` for the loader (excluding `net.kyori.adventure`) in `voyager/server` and `voyager/setup`, excluded from their `testRuntimeClasspath`, as Cygnus does. Verify: `./gradlew :voyager:server:dependencies --configuration runtimeClasspath` lists `minestom-loader`; `--configuration testRuntimeClasspath` does not.
-- [ ] 10.3 Verify the loader does not reach the API classpath of `voyager-api`: `./gradlew :voyager:api:dependencies` lists no `net.luckperms`. Verify: the command output shows no match.
+- [x] 10.1 Pin `net.luckperms:api:5.5` and `net.luckperms:minestom-loader:5.6-SNAPSHOT` in `settings.gradle.kts`, programmatically, with the Sonatype snapshot repository added for the loader. No `gradle/libs.versions.toml`. Verify: `./gradlew :voyager:platform:dependencies --configuration compileClasspath` lists `net.luckperms:api:5.5`.
+- [x] 10.2 Add `compileOnly` for the API (excluding `net.kyori.adventure`) in `voyager/platform/build.gradle.kts`, and `runtimeOnly` for the loader (excluding `net.kyori.adventure`) in `voyager/server` and `voyager/setup`, excluded from their `testRuntimeClasspath`, as Cygnus does. Verify: `./gradlew :voyager:server:dependencies --configuration runtimeClasspath` lists `minestom-loader`; `--configuration testRuntimeClasspath` does not.
+- [x] 10.3 Verify the loader does not reach the API classpath of `voyager-api`: `./gradlew :voyager:api:dependencies` lists no `net.luckperms`. Verify: the command output shows no match.
 
 ## 11. Documentation
 

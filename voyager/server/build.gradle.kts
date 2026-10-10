@@ -30,6 +30,15 @@ dependencies {
     runtimeOnly(libs.log4j2.core)
     runtimeOnly(libs.log4j2.slf4j2)
 
+    // LuckPerms, the optional permission backend (ADR-0024). The loader is started by LuckPermsBootstrap when it is on the
+    // class path, so it is runtime-only here: no code in this module names it. Guava and failureaccess come with it, because
+    // the loader needs them on the runtime class path and Minestom does not bring them (spike 1.1). The loader is excluded
+    // from the test class path below, so the boot tests see LuckPerms absent, as they must (see LuckPermsBootstrap).
+    runtimeOnly(libs.luckperms.minestom.loader) {
+        exclude(group = "net.kyori.adventure")
+    }
+    runtimeOnly(libs.guava)
+
     // Pinned to the exact rebuild version for the same reason voyager-platform pins it: the test
     // environment and the Minestom this module compiles against must never be two different versions.
     testImplementation("net.minestom:testing:2026.08.28-26.2")
@@ -38,6 +47,12 @@ dependencies {
     // that logger for one test (LogCapture). runtimeOnly above is not on the test compile classpath, so
     // the appender API has to be declared here. Test scope only: no production code names a Log4j type.
     testImplementation(libs.log4j2.core)
+}
+
+// The LuckPerms loader stays off the test class path, as in Cygnus: the boot tests must see LuckPerms absent, and the
+// fallback policy is what they exercise. Excluded from the resolved configuration only, so the runtime class path keeps it.
+configurations.named("testRuntimeClasspath") {
+    exclude(group = "net.luckperms", module = "minestom-loader")
 }
 
 tasks.test {

@@ -17,6 +17,11 @@ subprojects {
         maven("https://repo.onelitefeather.dev/releases")
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://maven.enginehub.org/repo/")
+        // The LuckPerms Minestom loader is published only as a snapshot (5.6-SNAPSHOT), and only here. Filtered to its group
+        // so no other artifact is ever asked of the snapshot repository.
+        maven("https://central.sonatype.com/repository/maven-snapshots/") {
+            content { includeGroup("net.luckperms") }
+        }
         maven {
             name = "OneLiteFeatherRepository"
             url = uri("https://repo.onelitefeather.dev/onelitefeather")
