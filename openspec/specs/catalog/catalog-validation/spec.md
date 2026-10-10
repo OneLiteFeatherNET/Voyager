@@ -1,7 +1,10 @@
 # catalog/catalog-validation Specification
 
 ## Purpose
-TBD - created by archiving change add-catalog-validate-task. Update Purpose after archive.
+Defines the one-pass check of a Voyager catalogue and the worlds it references. The check reads every map and cup,
+verifies that each referenced world folder exists, holds region data and is sound, and reports every problem at once
+with its absolute source path and key, in a deterministic order. Only errors fail the result; warnings are listed
+but do not. The check needs no game client and no connected player, so it can run before the server starts.
 
 ## Requirements
 

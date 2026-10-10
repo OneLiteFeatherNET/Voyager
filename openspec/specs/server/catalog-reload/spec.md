@@ -59,9 +59,10 @@ snapshot and SHALL start the round with it, in one step that no reader can obser
 ### Requirement: A broken catalogue keeps the last good snapshot
 **Priority:** MoSCoW Must
 
-IF a reload finds any malformed file, duplicate map or cup name, cup entry naming an unknown map, missing
-selected cup, empty catalogue, or world that cannot be opened, THEN THE SYSTEM SHALL keep the current snapshot,
-SHALL discard the candidate, and SHALL report every problem found in one message to the sender.
+IF a reload finds a malformed file or duplicate name in `maps/` or the cup directory, an empty map directory, a
+malformed or unresolvable played cup, a played cup entry naming an unknown map, a selection that names no cup or an
+ambiguous one, or a world of the played cup that holds no region data or cannot be opened, THEN THE SYSTEM SHALL keep
+the current snapshot, SHALL discard the candidate, and SHALL report every such problem in one message to the sender.
 
 #### Scenario: Malformed map file is reported and nothing changes
 - **WHEN** a map file is saved with invalid JSON and `/race reload` runs
@@ -69,8 +70,31 @@ SHALL discard the candidate, and SHALL report every problem found in one message
 - **AND** the current snapshot and the running cup are unchanged
 
 #### Scenario: Several problems are listed together
-- **WHEN** two map files are malformed and one cup names an unknown map
+- **WHEN** two map files are malformed and the played cup names an unknown map
 - **THEN** the report lists all three problems in one message
+
+#### Scenario: Malformed played cup is rejected
+- **WHEN** the played cup file is saved with invalid JSON and `/race reload` runs
+- **THEN** the sender receives the cup file name in the report
+- **AND** the current snapshot and the running cup are unchanged
+
+### Requirement: A broken unplayed cup warns and does not refuse a reload
+**Priority:** MoSCoW Must
+
+IF the only problem found by a reload is in a cup that is not played, THEN THE SYSTEM SHALL NOT refuse the reload.
+It SHALL apply the reload and SHALL add one warning line to the sender's reply that names each such cup and each of
+its problems, as boot logs them.
+
+#### Scenario: Malformed unplayed cup warns and the reload is applied
+- **WHEN** a cup that is not played is saved with invalid JSON, a map edit is valid, and `/race reload` runs
+- **THEN** the reload is applied with the new map definitions
+- **AND** the sender's reply contains one warning line that names the unplayed cup file and its problem
+- **AND** the running round keeps its previous snapshot until the next round starts
+
+#### Scenario: Unplayed cup naming an unknown map warns and the reload is applied
+- **WHEN** a cup that is not played names a map that no map file provides, and `/race reload` runs
+- **THEN** the reload is applied
+- **AND** the sender's reply contains one warning line that names that cup and the unknown map
 
 ### Requirement: A reload failure never stops the server
 **Priority:** MoSCoW Must

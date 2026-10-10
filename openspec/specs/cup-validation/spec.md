@@ -1,7 +1,10 @@
 # cup-validation Specification
 
 ## Purpose
-TBD - created by archiving change scope-cup-validation. Update Purpose after archive.
+Scopes boot-time cup validation to the cup that will be played. The server resolves the selected cup and validates
+only that cup in full, so a broken cup nobody plays cannot stop boot. Problems in other cups become one aggregated
+WARN event and those cups are never played. An unnamed selection with several cup files, or a named selection that
+matches a malformed file, is still refused with a message that names the files involved.
 
 ## Requirements
 

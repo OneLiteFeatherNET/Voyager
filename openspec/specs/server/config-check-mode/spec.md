@@ -1,7 +1,11 @@
 # server/config-check-mode Specification
 
 ## Purpose
-TBD - created by archiving change add-catalog-validate-task. Update Purpose after archive.
+Defines the validate-and-exit run mode of the Voyager server, enabled with `-Dvoyager.config.check=true`. In this
+mode the server runs the catalogue and settings check, prints every problem, and exits 0 or 1 without binding a port
+or starting the game. The Gradle task `validateCatalog` runs it against the run directories, and the run tasks stop
+before the server starts when it fails, unless `-PskipCatalogCheck` is set. Normal boot refuses with the same full
+report.
 
 ## Requirements
 
