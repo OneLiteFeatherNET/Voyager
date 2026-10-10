@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.platform.world.exception;
+package net.elytrarace.voyager.platform.cup.exception;
 
 import java.util.UUID;
 

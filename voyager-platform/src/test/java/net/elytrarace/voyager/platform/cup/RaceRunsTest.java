@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.platform.world;
+package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
@@ -6,7 +6,7 @@ import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
-import net.elytrarace.voyager.platform.world.exception.UnstartedRunException;
+import net.elytrarace.voyager.platform.cup.exception.UnstartedRunException;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.run.RaceRun;
 

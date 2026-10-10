@@ -86,10 +86,10 @@ The slices and their packages today:
 |---|---|---|---|---|---|
 | `flight` | `api.physics` | `physics` (root, `collision`, `step`, `math`) | - | `platform.flight` (Racers, Rockets); `platform.cup` (LivePlayerSampler); `platform.collision` and `platform.tick` hold flight classes that move | - |
 | `ring` | `api.race` (Ring, RingType), `api.race.effect` | - | `race.collision`, `race.progress`, `race.effect`; target `race.ring` | - | - |
-| `run` | - | - | `race.run` (RaceRun) | `platform.world.RaceRuns` moves to `platform.run` | - |
+| `run` | - | - | `race.run` (RaceRun) | `platform.cup.RaceRuns`, the holder of one run per racer, which stays with the cup (decided by `move-race-run-holder`, see ADR-0023) | - |
 | `flow` | `api.race.GameMode` (kernel) | - | `race.flow` (RaceStateMachine, RaceClock, RaceTimings) | `platform.tick` XerusPhaseDriver and RacePhaseListener move to `platform.flow` | `server.config` reads RaceTimings |
 | `scoring` | `api.race` (MedalTier, MedalBrackets); target `api.scoring` | - | `race.scoring` (MapScorer, CupScorer, Placement, MedalOutlook) | consumers only: `platform.text.Messages`, `platform.hud.HudState` | - |
-| `cup` | `api.race` (CupDefinition, CupCatalog); target `api.cup` | - | `race.cup`: `CupRound` (use-case facade), `CupStandings`, `CupStanding`, `MapFigures`; `exception.UnresolvedCupException` | `platform.cup`: `CupSession` (the Minestom-facing cup), `CupAnnouncer`, `TickStep` and `TickPipeline`, `LivePlayerSampler`; `platform.world.MapTransition` moves to `platform.cup`; `platform.hud.HudStates` maps figures to HUD state | `VoyagerServer` and `CupBeans` wire it; no cup logic |
+| `cup` | `api.race` (CupDefinition, CupCatalog); target `api.cup` | - | `race.cup`: `CupRound` (use-case facade), `CupStandings`, `CupStanding`, `MapFigures`; `exception.UnresolvedCupException` | `platform.cup`: `CupSession` (the Minestom-facing cup), `CupAnnouncer`, `TickStep` and `TickPipeline`, `LivePlayerSampler`, `RaceRuns` and `MapTransition` (both moved from `platform.world` by `move-race-run-holder`); `platform.hud.HudStates` maps figures to HUD state | `VoyagerServer` and `CupBeans` wire it; no cup logic |
 | `line` | `api.race` (GuideLine, GuidePoint); target `api.line` | - | `race.line` (RacingLine, CatmullRom) | `platform.render.GuideLineRenderer` moves to `platform.line` | - |
 | `catalog` | `api.race` (MapCatalog, MapDefinition); target `api.catalog` | - | - | `platform.catalog`: one entry point, `CatalogLoader.load` and `read`, which returns an immutable `CatalogSnapshot`; `CatalogReloader` and `CatalogHolder` hold the played catalogue for hot reload; `adapter`, `writer`, `exception`. `JsonMapCatalog` and `JsonCupCatalog` are removed (unify-catalog-loading) | `server.config.ConfigCheck` (composition check) |
 | `hud` | - | - | - | `platform.hud` (HudState, HudStates, RaceHud, RaceFeedback, StartCountdown) | - |
@@ -196,13 +196,17 @@ Each rule is either enforced by a rule that fails the build, or named as a gap w
 | The server holds no scoring or cup import, and no Minestom outside its composition root | `r1_serverDoesNotDependOnRaceScoringOrCup` (plain); `r2_serverOutsideTheCompositionRootDoesNotUseMinestom` (plain) |
 | The race command is built only by the composition root | `CompositionRootRulesTest`: `raceCommandIsConstructedOnlyByTheCompositionRoot` (plain) |
 | The cup's observable behaviour is pinned tick by tick | `CupSessionGoldenMasterTest` (server module): four scenarios against committed golden files, which a move never regenerates |
-| Platform infrastructure does not depend on race | `r3_platformInfrastructureDoesNotDependOnRace` (frozen, items 11, 13, 15 and 20) |
+| Platform infrastructure does not depend on race | `r3_platformInfrastructureDoesNotDependOnRace` (frozen, items 13, 15 and 20) |
 | Mapsetup contracts live in the mapsetup slice | `r5_mapsetupContractsLiveInPlatformMapsetup` (frozen, items 24 and 29) |
 | Setup adapter code holds no Minestom; the composition root is excluded | `r6_setupAdapterDoesNotUseMinestom` (frozen, item 26) |
 
 **Proposed for `add-architecture-slice-rules`** (`test(fitness)`, each with `allowEmptyShould(false)`): a layered rule
 for the four rings; a generated rule that forbids access to each slice's `internal` package; DI placement rules that name
 the composition roots; and a rule against mutable static fields and clock reads in the inner rings.
+
+**Named gap.** The placement of the race-run holder and the map transition in `platform.cup` (ADR-0023) is enforced by
+review. `ClosedViolationsAreGoneTest` stops the stored `RaceRuns` violations from returning, but no rule forbids
+`platform.world` from depending on `platform.cup`.
 
 A rule enters the suite in one of two ways. It is plain when it passes on `main`. It is frozen when its known violations
 are recorded in a committed baseline, so that only a new violation fails the build. The baseline is refreshed as
@@ -214,21 +218,23 @@ narrowed, only to make it pass.
 
 The rebuild does not follow every rule yet. The change's `design.md` lists each violation with file and line evidence,
 numbered 1 to 27, and marks it open, resolved or acceptable. The change `extract-cup-slice` closed items 1, 2, 3, 5, 6, 7,
-8, 9 and 10, and addendum 28 (`CupSession` imports Minestom). At the time of writing, 13 violations are open, 11 are
-resolved, and three are acceptable as they stand (item 22 among them, as a package move only). The open items fall into
+8, 9 and 10, and addendum 28 (`CupSession` imports Minestom). The change `move-race-run-holder` closed items 11 and 12. At
+the time of writing, 11 violations are open, 13 are resolved, and three are acceptable as they stand (item 22 among them,
+as a package move only). The open items fall into
 three follow-ups:
 
 1. `add-architecture-slice-rules` (`test(fitness)`): the proposed rules. Starts after the violations below are fixed.
 2. Done by `extract-cup-slice`: the cup flow and the server's game package. `server.game` no longer exists. Item 23
    (`CupResolution`) stays open, because its rule needs a port first.
 3. `regroup-platform-by-slice` (`refactor(platform)`): moves slice classes out of the technical packages, and breaks the
-   `catalog` and `world` package cycle.
+   `catalog` and `world` package cycle. Items 11 and 12 (the race-run holder and the map transition) are done by
+   `move-race-run-holder`; the rest of the list is open.
 4. `flatten-api-by-slice` (`refactor(api)`): splits the flat `api.race` package and `api.physics` by slice.
 
 A fifth follow-up, `regroup-setup-adapters`, would move the Minestom adapter code of `voyager-setup` into the platform.
 It needs the owner's approval before it starts.
 
-Seven open items are not expressible as dependency rules, and no rule guards them: items 12, 14, 16, 17, 18, 23 and
+Six open items are not expressible as dependency rules, and no rule guards them: items 14, 16, 17, 18, 23 and
 25. They are tracked here and in the migration list only, and a regression in them is caught by review. Every other open
 item that a dependency rule can express is recorded in the baseline with its item number. The mapping, and the provisional
 addenda 28 (`CupSession` imports Minestom) and 29 (`MapDraftAdapter` depends on `api.mapsetup`), are in the design of

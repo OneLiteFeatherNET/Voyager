@@ -35,7 +35,7 @@ class ClosedViolationsAreGoneTest {
     /** Source file names of the migration items closed so far, such as {@code CupStandings.java}. */
     private static final List<String> CLOSED_SOURCES = List.of(
             "CupStanding.java", "CupStandings.java", "Racers.java", "Rockets.java", "CurrentMapBlocks.java",
-            "LivePlayerSampler.java", "CupSession.java");
+            "LivePlayerSampler.java", "CupSession.java", "RaceRuns.java");
 
     @Test
     void noStoredViolationPointsIntoAClosedItemsSource() throws IOException {
