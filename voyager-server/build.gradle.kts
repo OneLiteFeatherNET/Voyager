@@ -131,6 +131,7 @@ fun JavaExec.voyagerJvmDefaults() {
     providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
     providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
     providers.gradleProperty("cup").orNull?.let { systemProperty("VOYAGER_CUP", it) }
+    providers.gradleProperty("minPlayers").orNull?.let { systemProperty("VOYAGER_MIN_PLAYERS", it) }
     standardInput = System.`in`
 }
 

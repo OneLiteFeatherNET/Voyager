@@ -14,6 +14,7 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.minestom.server.coordinate.Pos;
@@ -72,6 +73,14 @@ class VoyagerGraphTest {
                 Object bean = scope.get(type);
                 assertThat(bean).as("bean %s", type.getTypeName()).isNotNull();
             }
+        }
+    }
+
+    /** The waiting room is built with the minimum the settings name, not with a default of its own. */
+    @Test
+    void waitingRoomIsBuiltWithTheConfiguredMinimum(Env env) throws IOException {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup"), 3))) {
+            assertThat(scope.get(WaitingRoom.class).minimum()).isEqualTo(3);
         }
     }
 
@@ -146,12 +155,16 @@ class VoyagerGraphTest {
     }
 
     private ServerSettings settings(Optional<String> cupName) throws IOException {
+        return settings(cupName, ServerSettings.PRODUCTION_MINIMUM_RACERS);
+    }
+
+    private ServerSettings settings(Optional<String> cupName, int minimumRacers) throws IOException {
         Path data = tempDir.resolve("data");
         Path worlds = tempDir.resolve("worlds");
         Files.createDirectories(worlds);
         ShippedCatalogue.copyMapsInto(data);
         ShippedCatalogue.copyCupsInto(data);
-        return new ServerSettings("127.0.0.1", 25570, data, worlds, cupName, false);
+        return new ServerSettings("127.0.0.1", 25570, data, worlds, cupName, false, minimumRacers);
     }
 
     /** Captures a generic type argument at compile time, the way {@code TypeToken} does. */

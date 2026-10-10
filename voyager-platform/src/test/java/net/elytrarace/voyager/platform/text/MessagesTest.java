@@ -264,4 +264,39 @@ class MessagesTest {
         assertThat(PlainTextComponentSerializer.plainText().serialize(name)).isEqualTo("Bob");
         assertThat(name.color()).isNull();
     }
+
+    // ---------------------------------------------------------------------------------------
+    // The waiting lobby
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    void waitingLineNamesOnlineAndNeeded() {
+        Component waiting = Messages.lobbyWaiting(1, 2);
+
+        assertThat(translatable(waiting).key()).isEqualTo("voyager.lobby.waiting");
+        assertThat(argumentsOf(waiting)).containsExactly("1", "2");
+    }
+
+    /**
+     * The countdown is shown in whole seconds, rounded up, so 20 s reads 20 and 6 s reads 6. A tick count would
+     * read 400 for the same lobby, which is the unit error issue #101 reported.
+     */
+    @Test
+    void countdownShowsWholeSecondsOfTheLobby() {
+        assertThat(argumentsOf(Messages.lobbyCountdown(Duration.ofSeconds(20)))).containsExactly("20");
+        assertThat(argumentsOf(Messages.lobbyCountdown(Duration.ofSeconds(6)))).containsExactly("6");
+    }
+
+    @Test
+    void countdownRoundsAPartialSecondUp() {
+        assertThat(argumentsOf(Messages.lobbyCountdown(Duration.ofMillis(5_400)))).containsExactly("6");
+    }
+
+    @Test
+    void cancelledLineNamesOnlineAndNeeded() {
+        Component cancelled = Messages.lobbyCancelled(1, 2);
+
+        assertThat(translatable(cancelled).key()).isEqualTo("voyager.lobby.cancelled");
+        assertThat(argumentsOf(cancelled)).containsExactly("1", "2");
+    }
 }

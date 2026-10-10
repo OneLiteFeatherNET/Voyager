@@ -81,6 +81,7 @@ public final class ConfigCheck {
                 ServerSettings.DEFAULT_DATA_PATH, MissingServerDirectoryException.DATA);
         directoryProblem(problems, properties, ServerSettings.WORLDS_PATH_PROPERTY,
                 ServerSettings.DEFAULT_WORLDS_PATH, MissingServerDirectoryException.WORLDS);
+        minimumRacersProblem(problems, properties);
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
@@ -235,6 +236,23 @@ public final class ConfigCheck {
         if (!ServerSettings.isDirectory(path)) {
             problems.add(error(property, path.toAbsolutePath().toString(),
                     new MissingServerDirectoryException(purpose, path).getMessage()));
+        }
+    }
+
+    /**
+     * The minimum racer setting, when it is set: a value that is not a whole number or is below one is refused under
+     * its key. An unset or blank value is no problem, because the run's mode supplies the default.
+     */
+    private static void minimumRacersProblem(List<ConfigProblem> problems, Map<String, String> properties) {
+        String raw = properties.get(ServerSettings.MIN_RACERS_PROPERTY);
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        try {
+            ServerSettings.requireMinimumRacers(ServerSettings.parseMinimumRacers(raw));
+        } catch (IllegalArgumentException exception) {
+            problems.add(error(ServerSettings.MIN_RACERS_PROPERTY,
+                    "system property " + ServerSettings.MIN_RACERS_PROPERTY, exception.getMessage()));
         }
     }
 

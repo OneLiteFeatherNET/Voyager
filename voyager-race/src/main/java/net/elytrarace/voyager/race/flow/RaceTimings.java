@@ -38,10 +38,11 @@ public record RaceTimings(Duration lobby, Duration race, Duration endBetweenMaps
      * minutes, of which three were flying.
      *
      * <ul>
-     *   <li><strong>lobby 20 s</strong> — a stopgap, and it is the one number here that is the wrong
-     *       <em>shape</em> rather than the wrong size. What a lobby should wait for is players, with
-     *       a floor and a ceiling on the wait; a fixed duration makes a full lobby wait for nothing
-     *       and an empty one start alone. That is its own task and is deliberately not built here.</li>
+     *   <li><strong>lobby 20 s</strong> — the start countdown. A cup starts only once the minimum
+     *       number of racers is online ({@link StartGate}), and then this length is the countdown
+     *       that runs before the first map. It is no longer a wait for racers to arrive: a full
+     *       lobby starts, an empty one holds, and a drop below the minimum during the countdown
+     *       cancels it until its last {@link StartGate#COMMIT_WINDOW}.</li>
      *   <li><strong>race 300 s</strong> — unchanged. The cap only matters to a racer who is lost,
      *       and shortening it is tied to a racer being able to end their own run, which does not
      *       exist yet.</li>

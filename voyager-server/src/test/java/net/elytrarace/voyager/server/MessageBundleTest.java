@@ -105,6 +105,24 @@ class MessageBundleTest {
     }
 
     @Test
+    void theWaitingLineNamesTheOnlineRacersAndTheNeeded() {
+        assertThat(render(Messages.lobbyWaiting(1, 2)))
+                .isEqualTo("Waiting for racers: 1 of 2 online");
+    }
+
+    @Test
+    void theLobbyCountdownIsWholeSeconds() {
+        assertThat(render(Messages.lobbyCountdown(Duration.ofSeconds(20))))
+                .isEqualTo("Cup starts in 20 s");
+    }
+
+    @Test
+    void theCancelledLineSaysWhyAndHowManyAreOnline() {
+        assertThat(render(Messages.lobbyCancelled(1, 2)))
+                .isEqualTo("» Start cancelled: 1 of 2 racers online. Waiting for more.");
+    }
+
+    @Test
     void theMapBannerCarriesTheBroadcastPrefix() {
         assertThat(render(Messages.mapBanner(1, 3, "skylift", 35, Duration.ofSeconds(60))))
                 .isEqualTo("» Map 1/3 · skylift — 35 rings · target 1:00");

@@ -43,6 +43,10 @@ public abstract class Messages {
     private static final String MAP_BANNER = "voyager.map.banner";
     private static final String RACE_FINISHED = "voyager.race.finished";
     private static final String JOINED_MID_CUP = "voyager.race.joined.midcup";
+    private static final String LOBBY_WAITING = "voyager.lobby.waiting";
+    private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
+    private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
+    private static final long MILLIS_PER_SECOND = 1_000L;
     private static final String MAP_RESULT_MEDAL = "voyager.result.map.medal";
     private static final String MAP_RESULT_DNF = "voyager.result.map.dnf";
     private static final String MAP_RESULT_SUBTITLE = "voyager.result.map.subtitle";
@@ -170,6 +174,31 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component joinedMidCup() {
         return Component.translatable(JOINED_MID_CUP);
+    }
+
+    /** What a waiting racer sees while the minimum is not met: how many are online and how many are needed. */
+    @Contract(pure = true)
+    public static Component lobbyWaiting(int online, int needed) {
+        return Component.translatable(LOBBY_WAITING, Component.text(online), Component.text(needed));
+    }
+
+    /**
+     * What a racer sees while the start countdown runs: the time left in whole seconds, rounded up.
+     *
+     * <p>Seconds and not ticks: a 20 second lobby is 400 ticks, and a racer shown 400 is shown the unit error
+     * issue #101 reported. Rounded up so the figure is never zero while the launch is still ahead.
+     */
+    @Contract(pure = true)
+    public static Component lobbyCountdown(Duration remaining) {
+        long millis = Math.max(0L, remaining.toMillis());
+        return Component.translatable(LOBBY_COUNTDOWN,
+                Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
+    }
+
+    /** Told to the racers still online when a countdown is cancelled for want of racers. */
+    @Contract(pure = true)
+    public static Component lobbyCancelled(int online, int needed) {
+        return Component.translatable(LOBBY_CANCELLED, Component.text(online), Component.text(needed));
     }
 
     /** A finisher's map result, in one chat line that is still there when the next map starts. */

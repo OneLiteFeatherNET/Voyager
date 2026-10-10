@@ -24,6 +24,8 @@ import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.server.config.ServerSettings;
 import net.minestom.server.command.ConsoleSender;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -102,7 +104,8 @@ class RaceCommandReloadTest {
                 new MinestomCollisionSpace(blocks));
         CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
                 blocks, boosts, TIMINGS, STEP, List::of);
-        env.process().command().register(new RaceCommand(session, devMode, service));
+        WaitingRoom room = new WaitingRoom(session, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS, racer -> { });
+        env.process().command().register(new RaceCommand(session, room, devMode, service));
     }
 
     private static Player connect(Env env) {

@@ -13,7 +13,7 @@ name, reports every problem in one pass, and exits. It starts no game server and
 | `./gradlew :voyager-server:runServerDev -PskipCatalogCheck` | Starts the server without the check, and prints one warning line. |
 
 The same check runs without Gradle as `java -Dvoyager.config.check=true -jar <server jar>`, with
-`-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH` and `-DVOYAGER_CUP` as needed.
+`-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH`, `-DVOYAGER_CUP` and `-DVOYAGER_MIN_PLAYERS` as needed.
 
 A normal boot runs the same check before it builds the object graph, and refuses with the same report.
 `-PskipCatalogCheck` skips only the Gradle dependency. It does not skip the server's own check.
@@ -46,6 +46,10 @@ Standard output carries the report. A normal boot logs the same lines at error l
 
 - The settings: the data and worlds directories exist, the port is a number from 1 to 65535, and a
   named cup exists.
+- The minimum racer count, `VOYAGER_MIN_PLAYERS`: when set, it is a whole number of at least 1. It
+  defaults to 2, or to 1 under `voyager.dev`, and an explicit value wins in both modes. An unset value
+  is no problem. A value that is not a number, or is 0, is an error under the key `VOYAGER_MIN_PLAYERS`,
+  and a normal boot refuses with it.
 - The catalogue: every map and cup file parses, names are unique, and every map a cup plays exists.
 - Each map's world: the folder exists under the worlds directory and holds region data in the
   `region/` or `dimensions/` layout.
