@@ -21,6 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Each task that closes an item appends the item's source file names to {@link #CLOSED_SOURCES}, and removes
  * the item's lines from the store in the same change. The list starts empty.
+ *
+ * <p>Ordering: a local run shrinks the store in {@link SliceBoundaryRulesTest}, and JUnit may run this test
+ * first. On the one local run that still holds the stale lines, this test fails and names them; the next run
+ * passes, because the store has been shrunk. On CI the store cannot shrink, so the same failure is the correct
+ * one and the stale lines must be committed away.
  */
 class ClosedViolationsAreGoneTest {
 
@@ -28,7 +33,7 @@ class ClosedViolationsAreGoneTest {
     private static final Path STORE = Path.of("src/test/resources/archunit_store");
 
     /** Source file names of the migration items closed so far, such as {@code CupStandings.java}. */
-    private static final List<String> CLOSED_SOURCES = List.of();
+    private static final List<String> CLOSED_SOURCES = List.of("CupStanding.java", "CupStandings.java");
 
     @Test
     void noStoredViolationPointsIntoAClosedItemsSource() throws IOException {
