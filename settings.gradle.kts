@@ -90,13 +90,13 @@ include("plugins:setup")
 include("server")
 
 // Greenfield rebuild — see docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md
-include("voyager-api")
-include("voyager-physics")
-include("voyager-race")
-include("voyager-platform")
-include("voyager-server")
-include("voyager-setup")
-include("voyager-fitness")
+include("voyager:api")
+include("voyager:physics")
+include("voyager:race")
+include("voyager:platform")
+include("voyager:server")
+include("voyager:setup")
+include("voyager:fitness")
 
 // Tooling that is not part of the rebuild's module graph.
 include("tools:trace-recorder")

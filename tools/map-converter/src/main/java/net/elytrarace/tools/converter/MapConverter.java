@@ -51,7 +51,7 @@ import java.util.stream.Stream;
  *
  * <p>Run it with
  * {@snippet lang = "shell":
- * ./gradlew :tools:map-converter:run --args="--source run/run/data --out voyager-server/src/main/resources \
+ * ./gradlew :tools:map-converter:run --args="--source run/run/data --out voyager/server/src/main/resources \
  *     --spawn ElytraraceBlueAndRed=109,-62,54"
  *}
  */

@@ -1,0 +1,726 @@
+{
+  "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
+  "schemaVersion": 1,
+  "name": "elytraraceblueandred",
+  "world": "ElytraraceBlueAndRed",
+  "spawn": {
+    "x": 109.0,
+    "y": -62.0,
+    "z": 54.0
+  },
+  "referenceTimeSeconds": 60.0,
+  "boostConfig": {
+    "burnDurationTicks": 30,
+    "cooldownTicks": 40
+  },
+  "guideLine": {
+    "lookAheadRings": 2,
+    "particleSpacing": 1.0,
+    "points": [
+      {
+        "orderIndex": 150,
+        "position": {
+          "x": -79.36444695057367,
+          "y": -17.16147985125716,
+          "z": 76.30551658704286
+        }
+      },
+      {
+        "orderIndex": 250,
+        "position": {
+          "x": -73.0217601072858,
+          "y": -4.041842591980755,
+          "z": 20.503262785176073
+        }
+      },
+      {
+        "orderIndex": 350,
+        "position": {
+          "x": -53.19751915265239,
+          "y": 15.060756536917834,
+          "z": -56.209759673894474
+        }
+      },
+      {
+        "orderIndex": 450,
+        "position": {
+          "x": -11.081239829630835,
+          "y": 13.935790001847225,
+          "z": -74.96100333405077
+        }
+      },
+      {
+        "orderIndex": 550,
+        "position": {
+          "x": -4.841604959941831,
+          "y": 15.057464008180835,
+          "z": -39.97710633728794
+        }
+      },
+      {
+        "orderIndex": 650,
+        "position": {
+          "x": 32.016290554693114,
+          "y": 11.294392835749981,
+          "z": -43.34508223968448
+        }
+      },
+      {
+        "orderIndex": 850,
+        "position": {
+          "x": 47.82450861568659,
+          "y": 6.544269973026656,
+          "z": 10.868177459258517
+        }
+      },
+      {
+        "orderIndex": 950,
+        "position": {
+          "x": 76.51977363581958,
+          "y": 15.523162050370694,
+          "z": 23.097019805852085
+        }
+      },
+      {
+        "orderIndex": 1050,
+        "position": {
+          "x": 71.60646032413258,
+          "y": 34.62682214347309,
+          "z": 10.517293632000408
+        }
+      },
+      {
+        "orderIndex": 1450,
+        "position": {
+          "x": -28.3363306091546,
+          "y": 59.200000047683716,
+          "z": -5.947205139862904
+        }
+      },
+      {
+        "orderIndex": 1950,
+        "position": {
+          "x": 18.33088111483142,
+          "y": 105.30763623313113,
+          "z": -33.7725900247997
+        }
+      },
+      {
+        "orderIndex": 2150,
+        "position": {
+          "x": 78.68166356504442,
+          "y": 126.29630129731599,
+          "z": -82.93888087343582
+        }
+      },
+      {
+        "orderIndex": 2450,
+        "position": {
+          "x": -59.51842242449986,
+          "y": 131.88114804751137,
+          "z": -82.38880411057748
+        }
+      },
+      {
+        "orderIndex": 2475,
+        "position": {
+          "x": -90.26045505422441,
+          "y": 133.38304519718372,
+          "z": -89.76431769644684
+        }
+      },
+      {
+        "orderIndex": 2550,
+        "position": {
+          "x": -102.96344015936444,
+          "y": 140.88981071621234,
+          "z": -66.49572911039051
+        }
+      },
+      {
+        "orderIndex": 2650,
+        "position": {
+          "x": -101.82588772976982,
+          "y": 158.14082734039818,
+          "z": -62.17766442815462
+        }
+      }
+    ]
+  },
+  "rings": [
+    {
+      "index": 0,
+      "center": {
+        "x": 85.0,
+        "y": -54.0,
+        "z": 54.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "BOOST"
+    },
+    {
+      "index": 1,
+      "center": {
+        "x": 2.0,
+        "y": -31.0,
+        "z": 69.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 2,
+      "center": {
+        "x": -84.0,
+        "y": -15.0,
+        "z": 64.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 3,
+      "center": {
+        "x": -61.0,
+        "y": 7.0,
+        "z": -30.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 4,
+      "center": {
+        "x": -31.0,
+        "y": 18.0,
+        "z": -73.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 5,
+      "center": {
+        "x": -2.0,
+        "y": 9.0,
+        "z": -66.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 6,
+      "center": {
+        "x": 4.0,
+        "y": 21.0,
+        "z": -31.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 7,
+      "center": {
+        "x": 47.0,
+        "y": 9.0,
+        "z": -35.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 8,
+      "center": {
+        "x": 49.0,
+        "y": 7.0,
+        "z": -3.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 9,
+      "center": {
+        "x": 66.0,
+        "y": 9.0,
+        "z": 24.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 10,
+      "center": {
+        "x": 75.0,
+        "y": 26.0,
+        "z": 19.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 11,
+      "center": {
+        "x": 53.0,
+        "y": 45.0,
+        "z": -18.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 12,
+      "center": {
+        "x": 25.0,
+        "y": 65.0,
+        "z": -31.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 13,
+      "center": {
+        "x": 7.0,
+        "y": 66.0,
+        "z": -13.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 14,
+      "center": {
+        "x": -11.0,
+        "y": 62.0,
+        "z": -10.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 15,
+      "center": {
+        "x": -47.0,
+        "y": 62.0,
+        "z": -9.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 16,
+      "center": {
+        "x": -96.0,
+        "y": 68.0,
+        "z": 2.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 17,
+      "center": {
+        "x": -120.0,
+        "y": 80.0,
+        "z": 1.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 18,
+      "center": {
+        "x": -72.0,
+        "y": 95.0,
+        "z": -8.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "BOOST"
+    },
+    {
+      "index": 19,
+      "center": {
+        "x": -5.0,
+        "y": 102.0,
+        "z": -36.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 20,
+      "center": {
+        "x": 56.0,
+        "y": 118.0,
+        "z": -32.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 21,
+      "center": {
+        "x": 77.0,
+        "y": 120.0,
+        "z": -61.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 22,
+      "center": {
+        "x": 52.0,
+        "y": 128.0,
+        "z": -97.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 23,
+      "center": {
+        "x": -4.0,
+        "y": 131.0,
+        "z": -106.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 24,
+      "center": {
+        "x": -48.0,
+        "y": 132.0,
+        "z": -96.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 25,
+      "center": {
+        "x": -103.0,
+        "y": 133.0,
+        "z": -79.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 26,
+      "center": {
+        "x": -104.0,
+        "y": 152.0,
+        "z": -66.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 27,
+      "center": {
+        "x": -66.0,
+        "y": 156.0,
+        "z": 5.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "BOOST"
+    },
+    {
+      "index": 28,
+      "center": {
+        "x": 24.0,
+        "y": 165.0,
+        "z": 40.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 29,
+      "center": {
+        "x": 43.0,
+        "y": 180.0,
+        "z": 15.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 30,
+      "center": {
+        "x": 26.0,
+        "y": 218.0,
+        "z": -3.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 31,
+      "center": {
+        "x": 14.0,
+        "y": 241.0,
+        "z": -20.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 32,
+      "center": {
+        "x": 4.0,
+        "y": 280.0,
+        "z": -7.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 33,
+      "center": {
+        "x": -1.0,
+        "y": 313.0,
+        "z": -1.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 34,
+      "center": {
+        "x": -1.0,
+        "y": 319.0,
+        "z": -1.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 3.605551275463989,
+      "points": 10,
+      "type": "STANDARD"
+    }
+  ],
+  "notes": [
+    "Converted from the old map.json/portals.json format by tools/map-converter. Every ring normal below was derived from the recorded rim points and oriented by the bisector of the flight path; see CourseConverter for why that rule and not the three simpler ones.",
+    "spawn — read from the world\u0027s level.dat (SpawnX/SpawnY/SpawnZ), not derived.",
+    "referenceTimeSeconds — PROVISIONAL seed of 60.0 s, not a measurement. It decides medal tiers only. Replace it with a real lap once someone has flown one.",
+    "points — PROVISIONAL seed of 10 on every ring, carried over from the loader in the tree being replaced. The old data records no per-ring variation, so there is nothing here to preserve; a balancing pass edits this file.",
+    "boostConfig.burnDurationTicks — PROVISIONAL seed of 30, derived rather than measured: Vanilla\u0027s rocket lifetime is 10 * flightDuration + random(6) + random(7), and this is that formula\u0027s deterministic core for flightDuration 3, the strongest rocket a player can craft. The random part is dropped on purpose — two identical boosts have to be worth the same in a race. The old file carried no burn at all. A balancing pass edits this number.",
+    "boostConfig.cooldownTicks — carried from the old map.json\u0027s cooldownMs of 2000, converted once into the ticks a server counts in: 40. It is measured from the tick a boost STARTS, and has to stay longer than the burn — two rockets burning on one racer at once is a case the simulation\u0027s boolean boost input cannot express.",
+    "guideLine.points — 16 point(s), carried from the old guides.json exactly as written. They are not rings: nothing is scored at one, and they exist only to pull the line off a straight ring-to-ring segment that would cut through terrain. orderIndex places a point between two rings, where ring i sits at i * 100; more than one guide between the same pair of rings is normal.",
+    "guideLine.lookAheadRings — PROVISIONAL seed of 2, reasoned rather than flown: the line is drawn from the ring a racer is heading for to 2 ring(s) past it, which on this course is a few seconds of flight. Drawing the whole course at once tells a racer nothing about which strand is next.",
+    "guideLine.particleSpacing — PROVISIONAL seed of 1.0 block(s) between particles, the value the tree being replaced used for the same partial-line mode. Halving it doubles what one racer\u0027s stretch costs to send every refresh.",
+    "This file is data, not code: edit the seeds above here rather than in the server.",
+    "35 rings, indexed 0..34.",
+    "rings 0, 18 and 27 — PROVISIONAL BOOST rings, chosen from the map's geometry, not by taste. Rule: take each straight segment (centre to centre, ring i to ring i+1, with no guide point in the gap, since a guide bends the drawn line off the direct run), rank them by length, and take the rings above the largest gap in that ranking. The largest gap falls between 72.95 and 56.80 blocks, so the rings are 27 (96.99 blocks), 0 (87.42) and 18 (72.95). The final ring is never a BOOST ring. The BOOST speed multiplier (1.5) is a code constant in RingEffectRegistry, not a per-map value. Tune after playtest."
+  ]
+}
