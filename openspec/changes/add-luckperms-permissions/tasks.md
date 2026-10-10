@@ -53,8 +53,8 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 ## 8. Stdin stop and /stop (Red then Green)
 
 - [x] 8.1 Red: move the existing `ConsoleCommandReaderTest` from `voyager/server` to `voyager/platform` (`git mv` of the test and the class, package `net.elytrarace.voyager.platform.lifecycle`) and add cases: the line `stop` requests shutdown; the line `end` is ignored; end of input keeps running without an error. Verify: the moved tests fail on the `stop` case before 8.3.
-- [ ] 8.2 Red: `ServiceShutdownTest` injects the shutdown action and an `Executor`, and asserts that a request runs the action on a thread other than the caller and that the action runs once when two requests arrive. Verify: the test fails because `ServiceShutdown` does not exist. No real `MinecraftServer.stopCleanly()` runs in the test.
-- [ ] 8.3 Green: add `ServiceShutdown` (its shutdown runs on a platform thread, then `System.exit(0)`), register `stop` in `ConsoleCommandReader`'s dispatcher, and add `StopCommand` (`/stop`) that asks the policy for `voyager.command.stop` and allows the console. Test `StopCommandTest` asserts a player without the node is denied and the console is allowed. Verify: `8.1`, `8.2` and `StopCommandTest` pass.
+- [x] 8.2 Red: `ServiceShutdownTest` injects the shutdown action and an `Executor`, and asserts that a request runs the action on a thread other than the caller and that the action runs once when two requests arrive. Verify: the test fails because `ServiceShutdown` does not exist. No real `MinecraftServer.stopCleanly()` runs in the test.
+- [x] 8.3 Green: add `ServiceShutdown` (its shutdown runs on a platform thread, then `System.exit(0)`), register `stop` in `ConsoleCommandReader`'s dispatcher, and add `StopCommand` (`/stop`) that asks the policy for `voyager.command.stop` and allows the console. Test `StopCommandTest` asserts a player without the node is denied and the console is allowed. Verify: `8.1`, `8.2` and `StopCommandTest` pass.
 
 ## 9. Composition roots and command gating (Red then Green)
 
