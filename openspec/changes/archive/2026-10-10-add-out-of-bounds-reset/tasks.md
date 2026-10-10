@@ -86,7 +86,7 @@ is read, no shared static state, and the Minestom tests drive ticks explicitly.
 
 - [x] 4.1 Run `CupSessionGoldenMasterTest`. All four golden files stay byte-identical (design, "Golden master"). If a
   transcript changes, stop, report the scenario, tick and line to the owner, and do not regenerate in this commit.
-- [ ] 4.2 Only if the owner approves a regeneration: a separate `test(race): regenerate cup-session golden file for
+- [x] 4.2 Not required: no golden file changed, so no regeneration was approved or made. Only if the owner approves a regeneration: a separate `test(race): regenerate cup-session golden file for
   <scenario>` commit that states the reason, with the feature commits left untouched.
 
 ## 5. Documentation (docs/, English, Diátaxis)
