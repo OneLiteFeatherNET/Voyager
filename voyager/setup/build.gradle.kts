@@ -1,5 +1,6 @@
 plugins {
     id("voyager.java-conventions")
+    alias(libs.plugins.shadow)
 }
 
 // The setup server: a second composition root, next to voyager-server. It depends on voyager-api and
@@ -98,6 +99,18 @@ tasks.register<Test>("spike") {
     classpath = spike.runtimeClasspath
     useJUnitPlatform()
     systemProperty("minestom.inside-test", "true")
+}
+
+// Production-like fat jar, as voyager-server builds one: a CloudNet service starts it with `java -jar`.
+// Run it with the automatic-translation flag as a JVM argument (ServerFlag reads it once, see runSetupDev above):
+//   java -Dminestom.automatic-component-translation=true -jar voyager-setup-<version>.jar 0.0.0.0 25566
+tasks.shadowJar {
+    archiveClassifier.set("")
+    // Keeps every META-INF/services file, including avaje's generated wiring, merged rather than overwritten.
+    mergeServiceFiles()
+    manifest {
+        attributes["Main-Class"] = "net.elytrarace.voyager.setup.SetupServer"
+    }
 }
 
 // The artifact keeps the name it had before the module moved under voyager/: the project name is now the
