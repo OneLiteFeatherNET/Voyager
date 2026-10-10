@@ -3,8 +3,6 @@ package net.elytrarace.voyager.platform.cup;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.api.race.MedalTier;
-import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.convert.Vectors;
@@ -31,7 +29,6 @@ import net.elytrarace.voyager.race.cup.CupStandings;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.cup.MapFigures;
 import net.elytrarace.voyager.race.run.RaceRun;
-import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.elytrarace.voyager.race.scoring.MapScorer;
 import net.elytrarace.voyager.platform.flight.Racers;
@@ -46,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -126,6 +122,7 @@ public final class CupSession implements RacePhaseListener {
     private final Duration step;
     private final Supplier<Collection<Player>> players;
     private final CupStandings standings = new CupStandings();
+    private final CupAnnouncer announcer;
 
     /**
      * The cup being played: the boot cup until a round starts, then the cup of the catalogue that round pinned.
@@ -194,6 +191,7 @@ public final class CupSession implements RacePhaseListener {
         this.timings = timings;
         this.step = step;
         this.players = players;
+        this.announcer = new CupAnnouncer(players);
     }
 
     /** The cup being played: the one the current round pinned, or the boot cup before the first round. */
@@ -322,7 +320,7 @@ public final class CupSession implements RacePhaseListener {
         if (current.state().cupFinished() && currentMap != null) {
             // mapFinished has already run for the last map by the time cupFinished is set, so every
             // per-map score is in. currentMap is what says this has not been announced yet.
-            announceCupResult();
+            announcer.announceCupResult(cup, standings.cupOrder());
             currentMap = null;
             blocks.follow(null);
         }
@@ -470,7 +468,7 @@ public final class CupSession implements RacePhaseListener {
         for (Player racer : racers) {
             Racers.faceCourse(racer, map);
         }
-        broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), map.name(),
+        announcer.broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), map.name(),
                 map.rings().size(), map.referenceTime()));
         return map;
     }
@@ -490,7 +488,7 @@ public final class CupSession implements RacePhaseListener {
             boolean wasFinished = held.get().finished();
             RaceRun advanced = runs.advance(id, map, clock,
                     Vectors.toDomain(racer.getPosition()), racer.isFlyingWithElytra());
-            report(racer, map, advanced, wasFinished, clock);
+            announcer.report(racer, map, advanced, wasFinished, clock);
             hud.render(racer, HudStates.of(MapFigures.inFlight(advanced, clock, map, preparedMapIndex + 1,
                     cup.mapNames().size())));
             // After the advance, not before it: a racer who passed a ring on this tick is heading for
@@ -527,9 +525,10 @@ public final class CupSession implements RacePhaseListener {
         standings.closeMap(mapIndex, cup.mode());
 
         LOGGER.info("Map {}/{} '{}' finished after {} tick(s), {}",
-                mapIndex + 1, cup.mapNames().size(), mapName, clock.gameTick(), seconds(clock.elapsed()));
+                mapIndex + 1, cup.mapNames().size(), mapName, clock.gameTick(), CupAnnouncer.seconds(clock.elapsed()));
         for (Player racer : players.get()) {
-            announceMapScore(racer, map, mapIndex);
+            announcer.announceMapScore(racer, map, standings.scoreOn(racer.getUuid(), mapIndex),
+                    ringsPassedOf(racer.getUuid()));
         }
     }
 
@@ -548,8 +547,8 @@ public final class CupSession implements RacePhaseListener {
                 current.state().cupFinished() ? "FINISHED" : (current.isRunning() ? "running" : "stopped"),
                 current.state().mapIndex() + 1, cup.mapNames().size(),
                 currentMap == null ? "-" : currentMap.name(),
-                current.state().phase(), seconds(current.state().inPhase()),
-                seconds(current.clock().elapsed()), current.clock().gameTick()));
+                current.state().phase(), CupAnnouncer.seconds(current.state().inPhase()),
+                CupAnnouncer.seconds(current.clock().elapsed()), current.clock().gameTick()));
         for (Player racer : players.get()) {
             text.append("  %s%n".formatted(describeRacer(racer)));
         }
@@ -557,7 +556,7 @@ public final class CupSession implements RacePhaseListener {
             text.append("  cup: %s — %s point(s), %s map(s) finished, best %s%n".formatted(
                     nameOf(standing.playerId()), standing.score().totalPoints(),
                     standing.score().mapsFinished(),
-                    standing.score().bestTime().map(CupSession::seconds).orElse("-")));
+                    standing.score().bestTime().map(CupAnnouncer::seconds).orElse("-")));
         }
         return text.toString();
     }
@@ -609,95 +608,6 @@ public final class CupSession implements RacePhaseListener {
     }
 
     /**
-     * What a racer is told in the tick a ring was passed, or the tick their run ended.
-     *
-     * <p>A ring is a <strong>sound</strong> and a green flash on the counter that is already on
-     * screen, and nothing else — no chat line and no title. On this course a racer crosses a ring
-     * every 1.4 to 2.1 seconds for a minute, so anything per-ring that costs a <em>read</em> is
-     * noise by ring five, and thirty-five chat lines is a wall of text that buries the result that
-     * follows it.
-     */
-    private void report(Player racer, MapDefinition map, RaceRun run, boolean wasFinished, RaceClock clock) {
-        Ring passed = run.justPassed();
-        if (passed != null) {
-            RaceFeedback.ringPassed(racer, passed.index(), map.rings().size());
-        }
-        if (run.finished() && !wasFinished) {
-            racer.sendMessage(Messages.finished(map.name(), clock.elapsed()));
-            LOGGER.info("{} finished '{}' on tick {} ({})",
-                    racer.getUsername(), map.name(), clock.gameTick(), seconds(clock.elapsed()));
-        }
-    }
-
-    /**
-     * A map's result, to one racer: a title they can read now that they have landed, and a chat line
-     * that is still there when the next map starts.
-     *
-     * <p>The title region is off limits for the whole race — it is exactly where the next ring
-     * appears — which is why it is finally worth something here.
-     */
-    private void announceMapScore(Player racer, MapDefinition map, int mapIndex) {
-        MapScore score = standings.scoreOn(racer.getUuid(), mapIndex);
-        if (score == null) {
-            return;
-        }
-        int ringCount = map.rings().size();
-        int ringsPassed = runs.of(racer.getUuid()).map(run -> run.progress().passedCount()).orElse(0);
-        if (score.medal() == MedalTier.DNF) {
-            racer.sendMessage(Messages.mapResultDnf(map.name(), ringsPassed, ringCount, score.total()));
-            RaceFeedback.mapResult(racer, MedalTier.DNF,
-                    Messages.mapResultSubtitleDnf(ringsPassed, ringCount, score.total()));
-            return;
-        }
-        racer.sendMessage(Messages.mapResult(map.name(), score.ringPoints(), score.medalPoints(),
-                score.medal(), score.placementBonus(), score.total()));
-        RaceFeedback.mapResult(racer, score.medal(), Messages.mapResultSubtitle(
-                score.completionTime().orElse(clockLengthOf(map)), score.total()));
-    }
-
-    /**
-     * The cup's final standings: the block everybody sees, and one title each saying where they
-     * came.
-     */
-    private void announceCupResult() {
-        List<CupStanding> order = standings.cupOrder();
-        LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.name(), order.size());
-        broadcast(Messages.cupHeading(cup.name()));
-        int mapCount = cup.mapNames().size();
-        int place = 1;
-        for (CupStanding standing : order) {
-            CupScore score = standing.score();
-            LOGGER.info("  {}. {} — {} point(s), {} map(s) finished, best {}",
-                    place, standing.playerId(), score.totalPoints(), score.mapsFinished(),
-                    score.bestTime().map(CupSession::seconds).orElse("-"));
-            broadcast(Messages.cupRow(place, displayName(standing.playerId()), score.totalPoints(),
-                    score.mapsFinished(), mapCount, score.bestTime()));
-            announceCupPlace(standing.playerId(), place, score.totalPoints());
-            place++;
-        }
-    }
-
-    /** The cup title, to the one racer it names, if they are still online to see it. */
-    private void announceCupPlace(UUID playerId, int place, int points) {
-        for (Player racer : players.get()) {
-            if (racer.getUuid().equals(playerId)) {
-                RaceFeedback.cupResult(racer, Messages.cupSubtitle(place, points));
-                return;
-            }
-        }
-    }
-
-    /**
-     * The time to print for a score that somehow carries no completion time on a non-DNF medal.
-     *
-     * <p>{@code MapScorer} always records one for a finisher, so this is an assertion rather than a
-     * branch anybody takes; the map's reference time is the least misleading thing to fall back on.
-     */
-    private static Duration clockLengthOf(MapDefinition map) {
-        return map.referenceTime();
-    }
-
-    /**
      * One racer's line: where the run stands, whether the client is gliding, where the client says it
      * is, and where the server's own simulation has it. The last pair is the drift, and it is printed
      * rather than asserted because nothing but a real client can produce it.
@@ -731,6 +641,11 @@ public final class CupSession implements RacePhaseListener {
         return cooldown > 0 ? "cooling down %s tick(s)".formatted(cooldown) : "ready";
     }
 
+    /** How many rings {@code playerId} has passed on the current map, or zero when they hold no run. */
+    private int ringsPassedOf(UUID playerId) {
+        return runs.of(playerId).map(run -> run.progress().passedCount()).orElse(0);
+    }
+
     /**
      * A racer's name for the diagnostic {@code /race} prints, which is an operator's surface and
      * wants the raw id when there is nothing better.
@@ -744,29 +659,4 @@ public final class CupSession implements RacePhaseListener {
         return playerId.toString();
     }
 
-    /**
-     * A racer's name for the standings a player reads.
-     *
-     * <p>Somebody who disconnected before the cup ended is {@code (left)}, not 36 characters of
-     * hexadecimal in the middle of a results table. The UUID is still in the log line beside it,
-     * where somebody debugging can use it and nobody else has to read it.
-     */
-    private Component displayName(UUID playerId) {
-        for (Player racer : players.get()) {
-            if (racer.getUuid().equals(playerId)) {
-                return Messages.racerName(racer.getUsername());
-            }
-        }
-        return Messages.departed();
-    }
-
-    private void broadcast(Component message) {
-        for (Player racer : new ArrayList<>(players.get())) {
-            racer.sendMessage(message);
-        }
-    }
-
-    private static String seconds(Duration duration) {
-        return "%.3f s".formatted(duration.toNanos() / 1_000_000_000.0);
-    }
 }
