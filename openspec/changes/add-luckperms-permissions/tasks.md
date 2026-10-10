@@ -39,8 +39,8 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 ## 6. LuckPerms adapter in voyager-platform (Red then Green)
 
-- [ ] 6.1 Red: `LuckPermsPolicyTest` uses a fake `LuckPermsGateway` and asserts: no user for the UUID means deny; node TRUE means allow; node UNDEFINED means deny; node FALSE means deny. Verify: the test fails because the classes do not exist. The test imports no `net.luckperms` type.
-- [ ] 6.2 Green: add `LuckPermsGateway` (interface, in `permission.luckperms`) and `LuckPermsPolicy`. Verify: `6.1` passes.
+- [x] 6.1 Red: `LuckPermsPolicyTest` uses a fake `LuckPermsGateway` and asserts: no user for the UUID means deny; node TRUE means allow; node UNDEFINED means deny; node FALSE means deny. Verify: the test fails because the classes do not exist. The test imports no `net.luckperms` type.
+- [x] 6.2 Green: add `LuckPermsGateway` (interface, in `permission.luckperms`) and `LuckPermsPolicy`. Verify: `6.1` passes.
 - [ ] 6.3 Red then Green: `NetLuckPermsGateway` is the only class in `permission.luckperms` that imports `net.luckperms`. Add it and `LuckPermsBootstrap` (`isPresent()` by `Class.forName` on `me.lucko.luckperms.minestom.loader.MinestomLoader` without initialisation; `start()` as in spike 1.1; a failed start throws `PermissionBackendStartException` in `permission.luckperms.exception`). Test `LuckPermsBootstrapTest` runs with the loader off the test class path and asserts `isPresent()` is false and `start()` is not reached. Verify: the test passes, and `./gradlew :voyager:fitness:test` passes `luckPermsIsConfinedToItsAdapter`.
 
 ## 7. Proxy forwarding and bind settings (Red then Green)
