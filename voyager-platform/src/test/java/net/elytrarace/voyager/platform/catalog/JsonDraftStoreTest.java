@@ -61,6 +61,30 @@ class JsonDraftStoreTest {
     }
 
     @Test
+    void createCopiesTheVoidWorldAndWritesTheSkeleton() throws IOException {
+        folders();
+
+        store().create(DraftFixtures.skeleton(ID));
+
+        assertThat(worlds.resolve("skyfortress").resolve("region").resolve("r.0.0.mca")).exists();
+        assertThat(drafts().resolve("skyfortress.json")).exists();
+    }
+
+    @Test
+    void aDraftWriteThatFailsTakesTheCopiedWorldBackWithIt() throws IOException {
+        folders();
+        DraftStore failing = new JsonDraftStore(data, worlds, (source, target, options) -> {
+            throw new IOException("the disk is full");
+        });
+
+        assertThatThrownBy(() -> failing.create(DraftFixtures.skeleton(ID)))
+                .isInstanceOf(DraftWriteFailedException.class);
+
+        assertThat(worlds.resolve("skyfortress")).doesNotExist();
+        assertThat(drafts().resolve("skyfortress.json")).doesNotExist();
+    }
+
+    @Test
     void createRefusesAnIdThatAlreadyHasAMapsFile() throws IOException {
         folders();
         write(maps().resolve("skyfortress.json"), DraftFixtures.complete(ID));

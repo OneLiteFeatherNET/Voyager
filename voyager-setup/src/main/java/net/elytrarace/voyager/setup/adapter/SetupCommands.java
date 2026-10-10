@@ -14,7 +14,6 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.text.SetupMessages;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.WorldFolders;
-import net.elytrarace.voyager.platform.world.VoidWorldTemplate;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.platform.world.exception.WorldAlreadyExistsException;
 import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
@@ -82,7 +81,6 @@ public final class SetupCommands extends Command {
         }
         try {
             store.create(DraftEditor.skeleton(id));
-            VoidWorldTemplate.copyTo(worlds.resolve(id.value()));
         } catch (DraftAlreadyExistsException | WorldAlreadyExistsException exception) {
             builder.sendMessage(SetupMessages.alreadyExists(id.value()));
             return;

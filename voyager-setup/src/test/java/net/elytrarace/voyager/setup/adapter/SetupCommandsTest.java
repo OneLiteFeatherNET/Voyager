@@ -43,6 +43,10 @@ class SetupCommandsTest {
 
     private Fixture fixture(Env env) throws IOException {
         folders();
+        return wire(env);
+    }
+
+    private Fixture wire(Env env) {
         Instance start = env.createFlatInstance();
         BuilderSessions sessions = new BuilderSessions();
         MapInstances instances = new MapInstances(env.process().instance(), worlds);
@@ -65,6 +69,20 @@ class SetupCommandsTest {
         assertThat(fixture.sessions.find(fixture.builder.getUuid()).map(MapSession::id))
                 .contains(new MapId("skyfortress"));
         assertThat(Wand.isHeldBy(fixture.builder)).isTrue();
+    }
+
+    @Test
+    void aWorldCopyThatFailsLeavesNoDraftBehind(Env env) throws IOException {
+        data = Files.createDirectories(root.resolve("data"));
+        worlds = Files.writeString(root.resolve("worlds"), "a file, not a folder: no world can be created under it");
+        Fixture fixture = wire(env);
+
+        fixture.run("map new skyfortress");
+
+        assertThat(data.resolve("drafts").resolve("skyfortress.json")).doesNotExist();
+        assertThat(data.resolve("maps").resolve("skyfortress.json")).doesNotExist();
+        assertThat(fixture.keys()).contains("voyager.setup.refused");
+        assertThat(fixture.sessions.find(fixture.builder.getUuid())).isEmpty();
     }
 
     @Test
