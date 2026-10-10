@@ -32,7 +32,7 @@ Priority: Must. The check SHALL evaluate the settings (host, port, data path, wo
 - **THEN** the report contains an error with key `VOYAGER_CUP` naming the cup
 
 ### Requirement: The Gradle task runs the check against the run directories
-Priority: Must. The task `:voyager-server:validateCatalog` SHALL run the check with the working directory and the data and worlds paths the run tasks use, and SHALL honour the `-PdataPath` and `-PworldsPath` overrides. It SHALL depend on `prepareRunData`, so the check reads the directory the server reads, and `prepareRunData` SHALL copy with sync semantics (change `fix-run-data-sync`).
+Priority: Must. The task `:voyager:server:validateCatalog` SHALL run the check with the working directory and the data and worlds paths the run tasks use, and SHALL honour the `-PdataPath` and `-PworldsPath` overrides. It SHALL depend on `prepareRunData`, so the check reads the directory the server reads, and `prepareRunData` SHALL copy with sync semantics (change `fix-run-data-sync`).
 
 #### Scenario: the override reaches the check
 - **WHEN** the task runs with `-PworldsPath=/mnt/worlds`

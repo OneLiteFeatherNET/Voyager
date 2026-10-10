@@ -18,7 +18,7 @@ the log lines the cup wrote. The transcript SHALL equal the committed golden fil
 
 #### Scenario: Transcript matches the committed golden file
 - **WHEN** the lobby-and-start scenario runs against the production code
-- **THEN** its transcript equals `voyager-server/src/test/resources/golden/cup-session/lobby-and-start.txt` line for line
+- **THEN** its transcript equals `voyager/server/src/test/resources/golden/cup-session/lobby-and-start.txt` line for line
 
 #### Scenario: A changed message fails the scenario
 - **WHEN** one message string of the cup is changed by one character
