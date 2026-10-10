@@ -574,7 +574,7 @@ public final class CupSession implements RacePhaseListener {
     private String catalogueLine() {
         String line = "catalogue loaded %s%n".formatted(pinned().loadedAt());
         if (catalog.pending().isPresent()) {
-            line += "  a reload waits for the next round%n";
+            line += "  a reload waits for the next round%n".formatted();
         }
         return line;
     }

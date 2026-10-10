@@ -97,6 +97,19 @@ class CupSessionRoundPinTest {
     }
 
     @Test
+    void describeBreaksThePendingReloadLineInsteadOfPrintingAFormatMarker(Env env) {
+        CatalogHolder holder = new CatalogHolder(catalog("tour-one", "ridge"));
+        CupSession session = session(env, holder);
+        session.start(false);
+
+        holder.offer(catalog("tour-two", "dune"));
+
+        assertThat(session.describe())
+                .doesNotContain("%n")
+                .contains("\n  a reload waits for the next round\n");
+    }
+
+    @Test
     void describeSaysNothingIsWaitingWhenNoReloadWasOffered(Env env) {
         CupSession session = session(env, new CatalogHolder(catalog("tour-one", "ridge")));
         session.start(false);
