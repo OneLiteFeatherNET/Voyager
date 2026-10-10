@@ -141,8 +141,10 @@ The guards for the waiting lobby are the ones already in the code and are made e
 `GAME` (`XerusPhaseDriver`), and a racer with no run is skipped before any check. A waiting racer, a racer held by an
 aborted cup, and a player who joined mid-race hold no run and are never considered.
 
-`CupSession` gains one collaborator, the `RunResetter`, built by a new bean in `CupBeans`. The reset is decided in the
-same tick as the pass it follows, so the feedback is in the tick it is detected.
+`CupSession` builds its one `RunResetter` from the run board, the boost tracker and the flight driver it already holds,
+as it builds its announcer and renderers. No bean is added to `CupBeans`, and the cup's constructor and its call sites
+stay as they were. The reset is decided in the same tick as the pass it follows, so the feedback is in the tick it is
+detected.
 
 *Alternative:* a separate `RacePhaseListener` method or a new tick step. Rejected: a reset must observe the same advanced
 run and the same position the ring check used, and a separate step would read a second copy of both.
@@ -223,7 +225,7 @@ voyager-api         Vec3, Ring, MapDefinition (unchanged)
 | `FireworkBoostTracker.cancelBurn(UUID)` | voyager-platform | `platform.flight` | |
 | `RaceFeedback.reset(...)` | voyager-platform | `platform.hud` | The only file that names the reset sound |
 | `Messages.resetTitle`, `Messages.resetSubtitle` | voyager-platform | `platform.text` | Primitives only |
-| `CupBeans` bean for `RunResetter` | voyager-server | `server.inject` | Composition root only |
+| `RunResetter` construction in `CupSession` | voyager-platform | `platform.cup` | No bean; see D6 |
 
 No DI annotation appears outside `voyager-server`. `race.reset` needs a `package-info.java` with `@NotNullByDefault`
 (rule 5, `NullabilityConventionTest`); `race.reset.exception` needs its own `package-info.java`.
