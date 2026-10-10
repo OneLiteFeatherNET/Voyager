@@ -312,6 +312,14 @@ public final class CupSession implements RacePhaseListener {
     }
 
     /**
+     * How much of the first lobby is left, or zero when no cup is running. The start countdown shows it.
+     */
+    public Duration lobbyRemaining() {
+        XerusPhaseDriver current = driver;
+        return current == null || !current.isRunning() ? Duration.ZERO : current.remainingLobby();
+    }
+
+    /**
      * Cancels a countdown that has not yet entered a map: the cup is not started, and the room returns to waiting.
      *
      * <p>Refused in any other situation. Once the last three seconds have begun the first map is already
