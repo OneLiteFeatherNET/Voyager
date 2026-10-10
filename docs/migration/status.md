@@ -142,3 +142,68 @@ server/src/main/java/net/elytrarace/server/
 8. **M5-08: Ghost replay** -- No position recording yet.
 9. **M5-09: Leaderboard** -- Depends on database persistence.
 10. **M5-05: Performance profiling** -- Most useful after all gameplay systems are integrated.
+
+## Alpha cup content (rebuild)
+
+As of: 2026-10-10
+
+The rebuild's first closed-alpha content (GitHub issue #120) is one cup, `alpha_cup` (display name "Alpha Cup", mode
+`RACE`), playing one map, `elytraraceblueandred` (world `ElytraraceBlueAndRed`, 35 rings). The earlier single-map
+`test_cup` is removed from the shipped data, so the server boots without `-Pcup`.
+
+### BOOST rings
+
+Rings 0, 18 and 27 are `BOOST`. They are provisional and are tuned after the playtest. The choice comes from the map's
+geometry, not from taste:
+
+- A segment runs from ring `i` to ring `i+1`, centre to centre. A segment counts as straight only when no guide point lies
+  in its gap, because a guide bends the drawn racing line off the direct run.
+- The straight segments, longest first, are 27 to 28 (96.99 blocks), 0 to 1 (87.42), 18 to 19 (72.95), 22 to 23 (56.80),
+  17 to 18 (51.09), and so on.
+- The largest gap in that ranking is between 72.95 and 56.80 blocks. The three rings above it are 27, 0 and 18.
+- The two longest segments overall (ring 2, 99.24 blocks, and ring 1, 87.62) are excluded, because each has a guide point
+  in its gap.
+- The final ring is never a `BOOST` ring.
+
+The speed multiplier of a `BOOST` ring (1.5) is the code constant `RingEffectRegistry.BOOST_MULTIPLIER`, not a per-map
+value. The map's `boostConfig` (burn 30 ticks, cooldown 40 ticks) is unchanged.
+
+### Dropped from the old data
+
+`maxSpeedBlocksPerTick` (3.2 to 3.6 in the old files) has no field in `BoostConfig`, which carries burn and cooldown
+only. The old map and cup display names have no field in the rebuild's definitions either. The alpha's display name is
+kept in the cup's `notes`.
+
+### Validation
+
+```
+./gradlew :voyager-server:validateCatalog -PworldsPath=<absolute path to the worlds directory>
+```
+
+A checkout without the world can point at a checkout that has it. The check reads `ElytraraceBlueAndRed` under that
+directory, reads every chunk, and exits with code 0 and `config check passed with 0 warning(s)`. The run on 2026-10-10
+loaded 9429 chunks with 0 errors.
+
+### Converted and not shipped
+
+The old tree's three alpha maps are converted-ready but are not shipped, because their worlds are not on the machine and
+their spawns come from each world's `level.dat`:
+
+| Map | Rings | Old cup order |
+|---|---|---|
+| `nether_sprint` | 11 | 2nd |
+| `frozen_cathedral` | 12 | 3rd |
+| `skyward_drift` | 9 | 1st |
+
+A dry run of `tools/map-converter` on the old data converted all three with placeholder spawns, into a scratch directory.
+Nothing from that run is committed. Shipping them is a follow-up change. It needs the worlds under the worlds path and the
+spawn of each from its `level.dat`, and the command is:
+
+```
+./gradlew :tools:map-converter:run --args="--source <repo>/server/src/main/resources --out <scratch> --spawn nether-sprint=<x>,<y>,<z> --spawn frozen-cathedral=<x>,<y>,<z> --spawn skyward-drift=<x>,<y>,<z>"
+```
+
+### Playtest
+
+The two-player playtest of `alpha_cup` is owner work. Its notes (date, players, per-ring result, any ring issue as its own
+follow-up) are appended here when it is done.

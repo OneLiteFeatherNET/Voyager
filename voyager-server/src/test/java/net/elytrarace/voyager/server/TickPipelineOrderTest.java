@@ -37,7 +37,7 @@ class TickPipelineOrderTest {
         Files.createDirectories(worlds);
         ShippedCatalogue.copyMapsInto(data);
         ShippedCatalogue.copyCupsInto(data);
-        ServerSettings settings = new ServerSettings("127.0.0.1", 25571, data, worlds, Optional.of("test_cup"), false);
+        ServerSettings settings = new ServerSettings("127.0.0.1", 25571, data, worlds, Optional.of("alpha_cup"), false);
 
         try (BeanScope scope = VoyagerServer.openGraph(settings)) {
             List<String> names = scope.get(TickPipeline.class).steps().stream().map(TickStep::name).toList();

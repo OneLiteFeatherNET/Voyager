@@ -75,7 +75,7 @@ class FileSchemaTest {
 
     @Test
     void committedCupValidatesAgainstCupSchema() {
-        assertThat(errors(cupSchema(), readCommitted("cups/test_cup.json"))).isEmpty();
+        assertThat(errors(cupSchema(), readCommitted("cups/alpha_cup.json"))).isEmpty();
     }
 
     @Test
@@ -85,13 +85,13 @@ class FileSchemaTest {
 
     @Test
     void committedCupDeclaresSchemaVersionOne() {
-        assertThat(readCommitted("cups/test_cup.json").get("schemaVersion").asInt()).isEqualTo(1);
+        assertThat(readCommitted("cups/alpha_cup.json").get("schemaVersion").asInt()).isEqualTo(1);
     }
 
     @Test
     void everyShippedFileResolvesItsSchemaPathToTheSchemaOfItsKind() {
         assertResolvesTo("maps/elytraraceblueandred.json", "map.schema.json");
-        assertResolvesTo("cups/test_cup.json", "cup.schema.json");
+        assertResolvesTo("cups/alpha_cup.json", "cup.schema.json");
     }
 
     @Test

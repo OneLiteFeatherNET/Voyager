@@ -68,7 +68,7 @@ class VoyagerStartupTest {
         ShippedCatalogue.copyCupsInto(data);
         Files.writeString(data.resolve("maps").resolve("a-broken.json"), "");
         ServerSettings settings = new ServerSettings("127.0.0.1", 25573, data, worlds,
-                Optional.of("test_cup"), false);
+                Optional.of("alpha_cup"), false);
 
         List<ConfigProblem> problems = ConfigCheck.catalogueProblems(settings, env.process().instance());
 

@@ -55,7 +55,7 @@ class VoyagerGraphTest {
 
     @Test
     void resolvesEveryBeanTheCompositionRootProvides(Env env) throws IOException {
-        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
             List<Type> provided = List.of(
                     InstanceManager.class,
                     CatalogHolder.class,
@@ -79,14 +79,14 @@ class VoyagerGraphTest {
     /** The waiting room is built with the minimum the settings name, not with a default of its own. */
     @Test
     void waitingRoomIsBuiltWithTheConfiguredMinimum(Env env) throws IOException {
-        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup"), 3))) {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup"), 3))) {
             assertThat(scope.get(WaitingRoom.class).minimum()).isEqualTo(3);
         }
     }
 
     @Test
     void resolvesTheSettingsItWasGiven(Env env) throws IOException {
-        ServerSettings settings = settings(Optional.of("test_cup"));
+        ServerSettings settings = settings(Optional.of("alpha_cup"));
 
         try (BeanScope scope = VoyagerServer.openGraph(settings)) {
             assertThat(scope.get(ServerSettings.class)).isSameAs(settings);
@@ -95,7 +95,7 @@ class VoyagerGraphTest {
 
     @Test
     void returnsTheSameInstanceOfEachServiceOnEveryLookup(Env env) throws IOException {
-        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
             assertThat(scope.get(CupSession.class)).isSameAs(scope.get(CupSession.class));
             assertThat(scope.get(CatalogHolder.class)).isSameAs(scope.get(CatalogHolder.class));
             assertThat(scope.get(MapInstances.class)).isSameAs(scope.get(MapInstances.class));
@@ -107,7 +107,7 @@ class VoyagerGraphTest {
 
     @Test
     void holdsExactlyOneCatalogHolderAndNoCatalogueBeanThatWouldGoStale(Env env) throws IOException {
-        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
             assertThat(scope.list(CatalogHolder.class)).hasSize(1);
             assertThat(scope.list(CatalogSnapshot.class)).isEmpty();
             assertThat(scope.list(MapCatalog.class)).isEmpty();
@@ -118,10 +118,10 @@ class VoyagerGraphTest {
 
     @Test
     void theHoldersBootCatalogueAnswersTheMapsAndTheCupOfTheSettings(Env env) throws IOException {
-        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
             LoadedCatalog boot = scope.get(CatalogHolder.class).current();
 
-            assertThat(boot.cup().name()).isEqualTo("test_cup");
+            assertThat(boot.cup().name()).isEqualTo("alpha_cup");
             assertThat(boot.snapshot().mapByName("elytraraceblueandred")).isPresent();
             assertThat(boot.snapshot().mapByName("no-such-map")).isEmpty();
         }
@@ -129,8 +129,8 @@ class VoyagerGraphTest {
 
     @Test
     void buildsTheSessionForTheCupTheSettingsName(Env env) throws IOException {
-        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
-            assertThat(scope.get(CupSession.class).cup().name()).isEqualTo("test_cup");
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
+            assertThat(scope.get(CupSession.class).cup().name()).isEqualTo("alpha_cup");
         }
     }
 
@@ -138,7 +138,7 @@ class VoyagerGraphTest {
     void readsTheOnlinePlayersAgainOnEveryCall(Env env) throws IOException {
         Instance instance = env.createFlatInstance();
 
-        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("test_cup")))) {
+        try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
             Supplier<Collection<Player>> players = scope.get(onlinePlayersType());
             assertThat(players.get()).isEmpty();
 

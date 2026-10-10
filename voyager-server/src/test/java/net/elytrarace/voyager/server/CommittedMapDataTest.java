@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CommittedMapDataTest {
 
     private static final Path RESOURCES = Path.of("src", "main", "resources");
+
+    /** The BOOST rings of the shipped course: the three longest straight segments, see the map's notes. */
+    private static final Set<Integer> BOOST_RINGS = Set.of(0, 18, 27);
 
     @Test
     void theCommittedRacecourseLoadsThroughTheRealCatalogue() {
@@ -64,7 +68,9 @@ class CommittedMapDataTest {
             assertThat(ring.radius())
                     .as("radius of ring %s", ring.index())
                     .isCloseTo(Math.sqrt(13), Offset.offset(1e-12));
-            assertThat(ring.type()).isEqualTo(RingType.STANDARD);
+            assertThat(ring.type())
+                    .as("type of ring %s", ring.index())
+                    .isEqualTo(BOOST_RINGS.contains(ring.index()) ? RingType.BOOST : RingType.STANDARD);
         }
     }
 
@@ -120,7 +126,7 @@ class CommittedMapDataTest {
     void theCommittedCupPlaysTheCommittedMap() {
         CatalogSnapshot catalog = CatalogLoader.load(RESOURCES);
 
-        CupDefinition cup = catalog.cupByName("test_cup").orElseThrow();
+        CupDefinition cup = catalog.cupByName("alpha_cup").orElseThrow();
 
         assertThat(cup.mode()).isEqualTo(GameMode.RACE);
         assertThat(cup.mapNames()).containsExactly("elytraraceblueandred");
