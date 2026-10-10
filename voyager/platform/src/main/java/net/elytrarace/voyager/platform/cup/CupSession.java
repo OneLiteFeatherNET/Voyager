@@ -679,13 +679,13 @@ public final class CupSession implements RacePhaseListener {
     public String describe() {
         XerusPhaseDriver current = driver;
         if (current == null) {
-            return "cup '%s' (%s map(s), %s) — armed, waiting for enough racers%n%s"
+            return "cup '%s' (%s map(s), %s) — armed, waiting for enough racers\n%s"
                     .formatted(cup.name(), cup.mapNames().size(), cup.mode(), catalogueLine());
         }
         StringBuilder text = new StringBuilder();
         text.append(catalogueLine());
-        text.append("collision world: %s%n".formatted(blocks.hasWorld() ? "attached" : "none"));
-        text.append("cup '%s' %s — map %s/%s '%s', phase %s after %s, race clock %s (%s tick(s))%n".formatted(
+        text.append("collision world: %s\n".formatted(blocks.hasWorld() ? "attached" : "none"));
+        text.append("cup '%s' %s — map %s/%s '%s', phase %s after %s, race clock %s (%s tick(s))\n".formatted(
                 cup.name(),
                 current.state().cupFinished() ? "FINISHED" : (current.isRunning() ? "running" : "stopped"),
                 current.state().mapIndex() + 1, cup.mapNames().size(),
@@ -693,10 +693,10 @@ public final class CupSession implements RacePhaseListener {
                 current.state().phase(), CupAnnouncer.seconds(current.state().inPhase()),
                 CupAnnouncer.seconds(current.clock().elapsed()), current.clock().gameTick()));
         for (Player racer : players.get()) {
-            text.append("  %s%n".formatted(describeRacer(racer)));
+            text.append("  %s\n".formatted(describeRacer(racer)));
         }
         for (CupStanding standing : round.order()) {
-            text.append("  cup: %s — %s point(s), %s map(s) finished, best %s%n".formatted(
+            text.append("  cup: %s — %s point(s), %s map(s) finished, best %s\n".formatted(
                     nameOf(standing.playerId()), standing.score().totalPoints(),
                     standing.score().mapsFinished(),
                     standing.score().bestTime().map(CupAnnouncer::seconds).orElse("-")));
@@ -709,9 +709,9 @@ public final class CupSession implements RacePhaseListener {
      * waiting for the next round.
      */
     private String catalogueLine() {
-        String line = "catalogue loaded %s%n".formatted(pinned().loadedAt());
+        String line = "catalogue loaded %s\n".formatted(pinned().loadedAt());
         if (catalog.pending().isPresent()) {
-            line += "  a reload waits for the next round%n".formatted();
+            line += "  a reload waits for the next round\n".formatted();
         }
         return line;
     }
