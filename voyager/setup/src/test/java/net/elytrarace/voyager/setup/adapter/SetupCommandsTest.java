@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.setup.adapter;
 
+import static net.elytrarace.voyager.setup.adapter.AllowEveryone.ALLOW_ALL;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
@@ -51,7 +52,7 @@ class SetupCommandsTest {
         BuilderSessions sessions = new BuilderSessions();
         MapInstances instances = new MapInstances(env.process().instance(), worlds);
         env.process().command().register(
-                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances));
+                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances, ALLOW_ALL));
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);

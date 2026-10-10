@@ -1,5 +1,9 @@
 package net.elytrarace.voyager.setup.adapter;
 
+import net.elytrarace.voyager.api.permission.PermissionNode;
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
+import net.elytrarace.voyager.platform.permission.PlayerSubjects;
+import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
 import net.elytrarace.voyager.api.race.Ring;
@@ -33,9 +37,15 @@ import java.util.UUID;
 public final class WandListener {
 
     private final BuilderSessions sessions;
+    private final PermissionPolicy policy;
 
-    public WandListener(BuilderSessions sessions) {
+    /**
+     * @param sessions the open map of each builder
+     * @param policy   answers whether a builder holds {@code voyager.setup.use}; a builder without it changes nothing
+     */
+    public WandListener(BuilderSessions sessions, PermissionPolicy policy) {
         this.sessions = sessions;
+        this.policy = policy;
     }
 
     /**
@@ -73,6 +83,9 @@ public final class WandListener {
     }
 
     private void place(Player builder) {
+        if (!mayBuild(builder)) {
+            return;
+        }
         MapSession session = openSession(builder);
         if (session == null) {
             return;
@@ -98,6 +111,9 @@ public final class WandListener {
     }
 
     private void remove(Player builder) {
+        if (!mayBuild(builder)) {
+            return;
+        }
         MapSession session = openSession(builder);
         if (session == null) {
             return;
@@ -117,6 +133,14 @@ public final class WandListener {
     }
 
     /** The builder's open map, when the builder stands in it; otherwise the builder is told, or left alone. */
+    private boolean mayBuild(Player builder) {
+        if (policy.allows(PlayerSubjects.of(builder), PermissionNode.VOYAGER_SETUP_USE)) {
+            return true;
+        }
+        builder.sendMessage(Messages.commandDenied());
+        return false;
+    }
+
     private MapSession openSession(Player builder) {
         UUID uuid = builder.getUuid();
         MapSession session = sessions.find(uuid).orElse(null);

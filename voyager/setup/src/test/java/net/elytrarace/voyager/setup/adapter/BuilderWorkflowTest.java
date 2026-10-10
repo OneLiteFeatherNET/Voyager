@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.setup.adapter;
 
+import static net.elytrarace.voyager.setup.adapter.AllowEveryone.ALLOW_ALL;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.world.MapInstances;
@@ -43,8 +44,8 @@ class BuilderWorkflowTest {
         Instance start = env.createFlatInstance();
         BuilderSessions sessions = new BuilderSessions();
         env.process().command().register(
-                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds)));
-        new WandListener(sessions).register(env.process().eventHandler());
+                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
+        new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());
         new TerrainGuard(sessions).register(env.process().eventHandler());
         sessions.register(env.process().eventHandler());
         TestConnection connection = env.createConnection();

@@ -2,6 +2,8 @@ package net.elytrarace.voyager.setup.inject;
 
 import io.avaje.inject.BeanScope;
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
+import net.elytrarace.voyager.api.permission.PermissionPolicy;
+import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.setup.SetupServer;
 import net.elytrarace.voyager.setup.adapter.BuilderSessions;
@@ -39,6 +41,32 @@ class SetupGraphTest {
             assertThat(graph.get(SetupCommands.class)).isNotNull();
             assertThat(graph.get(WandListener.class)).isNotNull();
             assertThat(graph.get(TerrainGuard.class)).isNotNull();
+        }
+    }
+
+    /** LuckPerms is absent from this module's test class path, so the graph must choose the level-based fallback. */
+    @Test
+    void resolvesTheLevelFallbackPolicyWhenLuckPermsIsAbsent(Env env) throws IOException {
+        Path data = Files.createDirectories(root.resolve("data"));
+        Path worlds = Files.createDirectories(root.resolve("worlds"));
+
+        try (BeanScope graph = SetupServer.openGraph(new SetupSettings("127.0.0.1", 25566, data, worlds))) {
+            assertThat(graph.get(PermissionPolicy.class)).isInstanceOf(LevelPermissionPolicy.class);
+        }
+    }
+
+    /** The fallback is never silent: the one startup warning names it, read from the log rather than the console. */
+    @Test
+    void warnsOnceAtStartupNamingTheFallbackWhenLuckPermsIsAbsent(Env env) throws IOException {
+        Path data = Files.createDirectories(root.resolve("data"));
+        Path worlds = Files.createDirectories(root.resolve("worlds"));
+
+        try (LogCapture capture = LogCapture.of(SetupBeans.class);
+                BeanScope graph = SetupServer.openGraph(new SetupSettings("127.0.0.1", 25566, data, worlds))) {
+            graph.get(PermissionPolicy.class);
+
+            assertThat(capture.warnings()).singleElement()
+                    .asString().contains("LuckPerms").contains("operator level 4");
         }
     }
 }
