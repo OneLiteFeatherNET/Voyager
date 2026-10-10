@@ -1,0 +1,18 @@
+Cycle detected: Slice catalog -> \
+                Slice world -> \
+                Slice catalog\
+  1. Dependencies of Slice catalog\
+    - Method <net.elytrarace.voyager.platform.catalog.CatalogValidation$HealthSource.healthOf(java.lang.String)> has return type <net.elytrarace.voyager.platform.world.WorldHealth> in (CatalogValidation.java:0)\
+    - Method <net.elytrarace.voyager.platform.catalog.JsonDraftStore.create(net.elytrarace.voyager.api.mapsetup.MapDraft)> calls method <net.elytrarace.voyager.platform.world.VoidWorldTemplate.copyTo(java.nio.file.Path)> in (JsonDraftStore.java:95)\
+    - Method <net.elytrarace.voyager.platform.catalog.CatalogValidation.worldProblems(net.elytrarace.voyager.platform.catalog.CatalogReading, java.nio.file.Path, net.elytrarace.voyager.platform.catalog.CatalogValidation$HealthSource)> calls method <net.elytrarace.voyager.platform.world.WorldFolders$State.ordinal()> in (CatalogValidation.java:98)\
+    - Method <net.elytrarace.voyager.platform.catalog.CatalogValidation.worldProblems(net.elytrarace.voyager.platform.catalog.CatalogReading, java.nio.file.Path, net.elytrarace.voyager.platform.catalog.CatalogValidation$HealthSource)> calls method <net.elytrarace.voyager.platform.world.WorldFolders.check(java.nio.file.Path, java.lang.String)> in (CatalogValidation.java:98)\
+    - Static Initializer <net.elytrarace.voyager.platform.catalog.CatalogValidation$1.<clinit>()> calls method <net.elytrarace.voyager.platform.world.WorldFolders$State.ordinal()> in (CatalogValidation.java:98)\
+    - Static Initializer <net.elytrarace.voyager.platform.catalog.CatalogValidation$1.<clinit>()> calls method <net.elytrarace.voyager.platform.world.WorldFolders$State.values()> in (CatalogValidation.java:98)\
+    - Static Initializer <net.elytrarace.voyager.platform.catalog.CatalogValidation$1.<clinit>()> gets field <net.elytrarace.voyager.platform.world.WorldFolders$State.MISSING> in (CatalogValidation.java:98)\
+    - Static Initializer <net.elytrarace.voyager.platform.catalog.CatalogValidation$1.<clinit>()> gets field <net.elytrarace.voyager.platform.world.WorldFolders$State.NO_REGION_DATA> in (CatalogValidation.java:98)\
+    - Static Initializer <net.elytrarace.voyager.platform.catalog.CatalogValidation$1.<clinit>()> gets field <net.elytrarace.voyager.platform.world.WorldFolders$State.PRESENT> in (CatalogValidation.java:98)\
+    - Method <net.elytrarace.voyager.platform.catalog.JsonDraftStore.create(net.elytrarace.voyager.api.mapsetup.MapDraft)> calls method <net.elytrarace.voyager.platform.world.VoidWorldTemplate.remove(java.nio.file.Path)> in (JsonDraftStore.java:100)\
+    - Method <net.elytrarace.voyager.platform.catalog.CatalogValidation.deepCheck(java.lang.String, net.elytrarace.voyager.platform.catalog.CatalogValidation$HealthSource)> calls method <net.elytrarace.voyager.platform.world.WorldHealth.describe()> in (CatalogValidation.java:119)\
+    - Method <net.elytrarace.voyager.platform.catalog.CatalogValidation.deepCheck(java.lang.String, net.elytrarace.voyager.platform.catalog.CatalogValidation$HealthSource)> calls method <net.elytrarace.voyager.platform.world.WorldHealth.isSound()> in (CatalogValidation.java:119)\
+  2. Dependencies of Slice world\
+    - Class <net.elytrarace.voyager.platform.world.MapInstances> implements interface <net.elytrarace.voyager.platform.catalog.WorldOpener> in (MapInstances.java:0)

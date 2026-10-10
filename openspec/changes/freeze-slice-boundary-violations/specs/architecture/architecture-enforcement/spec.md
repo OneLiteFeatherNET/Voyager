@@ -33,8 +33,13 @@ WHEN a frozen rule finds a violation that its stored baseline does not contain, 
 
 WHILE the environment variable `CI` is `true`, THE SYSTEM SHALL disable the creation of a new violation store and the update of an existing one for the fitness test run, so that a baseline cannot be written during a CI run.
 
-#### Scenario: New frozen rule without a committed store on CI
-- **WHEN** a frozen rule has no entry in the committed store and the test run executes on CI
+#### Scenario: New frozen rule without a committed entry on CI
+- **WHEN** a frozen rule has no entry in the committed `stored.rules` and the test run executes on CI
+- **THEN** the test fails and reports that updating frozen violations is disabled, because the store exists and only its
+  creation is refused; the entry must be committed with its migration item
+
+#### Scenario: Committed store missing on CI
+- **WHEN** the committed store directory has no `stored.rules` and the test run executes on CI
 - **THEN** the test fails and reports that creating a violation store is disabled
 
 #### Scenario: Fixed violation still in the store on CI
@@ -138,8 +143,17 @@ THE SYSTEM SHALL keep a rule that no class in `..server..` depends on `net.elytr
 ### Requirement: Minestom stays out of the setup module
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL forbid `net.minestom..` in every class of `..setup..`, so that Minestom adapter code lives in `voyager-platform` as `architecture/module-rings` requires. The rule SHALL be frozen with the baseline of migration item 26, and SHALL be plain once that item is fixed.
+THE SYSTEM SHALL forbid `net.minestom..` in every class of `net.elytrarace.voyager.setup..` outside the composition root,
+so that Minestom adapter code lives in `voyager-platform` as `architecture/module-rings` requires. The composition root is
+`net.elytrarace.voyager.setup.SetupServer` and the classes of `net.elytrarace.voyager.setup.inject..`, including the
+avaje-generated classes of that package; it wires the Minestom bootstrap and is excluded, as the migration list already
+treats the bootstrap of `VoyagerServer` as wiring. The rule SHALL be frozen with the baseline of migration item 26, which is
+the seven classes of `setup.adapter` (153 violations), and SHALL be plain once that item is fixed.
 
 #### Scenario: Minestom listener in the setup module
-- **WHEN** a class in `net.elytrarace.voyager.setup..` that is not in the baseline imports `net.minestom..`
+- **WHEN** a class in `net.elytrarace.voyager.setup.adapter..` that is not in the baseline imports `net.minestom..`
 - **THEN** the rule fails and names the class; the seven classes of `setup.adapter` that the baseline records do not fail it
+
+#### Scenario: Minestom bootstrap in the composition root
+- **WHEN** `net.elytrarace.voyager.setup.SetupServer` or a class of `net.elytrarace.voyager.setup.inject..` imports `net.minestom..`
+- **THEN** the rule does not fail, because the composition root is outside its scope

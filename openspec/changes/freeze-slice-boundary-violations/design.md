@@ -77,7 +77,11 @@ the test JVM's system properties `archunit.freeze.store.default.allowStoreCreati
 `false` everywhere.
 
 Behaviour on CI, all of it failing the build:
-- a frozen rule with no committed store entry fails with "Creating new violation store is disabled";
+- a frozen rule with no entry in an existing committed `stored.rules` fails with "Updating frozen violations is
+  disabled", because ArchUnit reaches that message when it saves the new violation, and the entry must be committed with its
+  migration item (confirmed on the running build by task 3.2);
+- a committed store with no `stored.rules` at all fails with "Creating new violation store is disabled", the only case
+  that message describes;
 - a violation that was fixed but is still in the committed store makes the update fail with "Updating frozen violations is
   disabled", so the shrunk store must be committed with the fix;
 - a new violation fails the rule, as it does locally.
@@ -120,7 +124,7 @@ mapped to a module. Its check is re-run in task 3.5.
 | R3 | platform infrastructure does not depend on race | `platform.{text,convert,world,tick,render}..` to `race..` | frozen | 11, 13, 15, and 20 (acceptable, frozen as it stands) | Must |
 | R4 | platform slices are free of cycles | `net.elytrarace.voyager.platform.(*)..` | frozen | 27 | Must |
 | R5 | platform mapsetup contracts live in platform mapsetup | classes in `platform..` depending on `api.mapsetup..`, must reside in `platform.mapsetup..` | frozen | 24, 29 | Should |
-| R6 | setup does not use Minestom | `net.elytrarace.voyager.setup..` to `net.minestom..` | frozen | 26 (seven classes of `setup.adapter`) | Must |
+| R6 | setup classes outside the composition root do not use Minestom | `net.elytrarace.voyager.setup..` minus `setup.SetupServer` and `setup.inject..` to `net.minestom..` | frozen | 26 (seven classes of `setup.adapter`, 153 violations) | Must |
 | R7 | race slices are free of cycles | `net.elytrarace.voyager.race.(*)..` | plain (expected to pass) | none expected | Must |
 | R8 | api slices are free of cycles | `net.elytrarace.voyager.api.(*)..` | plain (expected to pass) | none expected | Must |
 
@@ -131,9 +135,7 @@ as infrastructure for that reason.
 The follow-up `extract-cup-slice` empties the stores of R1 and R2 and retargets R2 when it deletes `server.game`. Its design
 records the effect on each frozen rule.
 
-The expected items are read from the migration list and from the imports in the code on `main`. They are not yet confirmed
-by a run. The Red step (task 1.2) confirms them, and the mapping table in D7 is replaced by the confirmed one before the
-baseline is committed.
+The expected items were checked by the Red run (D7, "Red run"). The mapping table in D7 is the confirmed one.
 
 ### D7. Mapping of baseline entries to migration items
 
@@ -159,11 +161,33 @@ Items not covered, each with the reason no dependency rule can express it:
 
 Items 4, 19, 20 (except as frozen by R3), 21 and 22 are resolved or acceptable and need no entry.
 
+**Red run (2026-10-10, `SliceBoundaryRulesTest` with all rules unfrozen).** R1 to R6 fail, R7 and R8 pass. Counts are
+the header counts of the ArchUnit report, and each equals the sum of its per-file lines.
+
+| Rule | Violations | Source files (violations) | Item |
+|---|---|---|---|
+| R1 | 39 | `server.game.CupSession` (24), `CupStandings` (12), `CupStanding` (3) | 1, 2, 3 |
+| R2 | 94 | `server.game.CupSession` (29), `Racers` (19), `Rockets` (23), `LivePlayerSampler` (16), `CurrentMapBlocks` (7) | 6, 7, 8, 9, 28 |
+| R3 | 52 | `platform.world.RaceRuns` (7), `platform.tick.XerusPhaseDriver` (33), `platform.tick.RacePhaseListener` (2), `platform.render.GuideLineRenderer` (6), `platform.text.Messages` (4) | 11, 13, 15, 20 |
+| R4 | 1 cycle | `catalog` to `world` (`CatalogValidation` to `WorldFolders`, `WorldHealth`; `MapInstances` to `WorldOpener`) and `JsonDraftStore` to `VoidWorldTemplate` | 27; the `JsonDraftStore` edge goes with item 24 |
+| R5 | 46 | `catalog.JsonDraftStore` (30), `catalog.writer.MapDraftJsonWriter` (12), `catalog.MapDraftAdapter` (4) | 24, 29 |
+| R6 | 170 raw (153 in scope) | `setup.adapter` (153 across seven classes: `WandListener` 44, `SetupCommands` 50, `RingPreviews` 15, `TerrainGuard` 18, `Wand` 16, `BuilderSessions` 7, `MapSession` 3) and the setup composition root (17: `setup.SetupServer` 10, `setup.inject.SetupBeans` 3, its avaje-generated `SetupBeans$DI` 3, `setup.inject.DInjectModule` 1), which decision B excludes from R6 | 26 for the adapter; the composition root is outside R6 |
+
+**Decision (owner, 2026-10-10): option B.** The setup composition root imports `net.minestom` (`SetupServer` for
+`MinecraftServer` and `ServerFlag`; `SetupBeans` for `MinecraftServer` and `InstanceManager`). No migration item names it,
+and item 26 names only `setup.adapter`. The owner treats the composition root as wiring, as it treats the bootstrap of
+`VoyagerServer`, and excludes it from R6: R6 covers `..setup..` minus `setup.SetupServer` and `setup.inject..`, including
+the avaje-generated classes of that package. The 17 composition-root violations are therefore not in the baseline, and no
+addendum 30 is created. The baseline of R6 is the 153 violations of the seven `setup.adapter` classes, all mapped to item
+26. The spec's premise "the seven classes of `setup.adapter` that the baseline records" is now true.
+
+The Red run is recorded above. The D7 table is final for the baseline; the Red run's own numbers are unchanged.
+
 Addenda, provisional until the owner confirms the numbers:
 - **Item 28 (addendum, provisional):** `server/game/CupSession.java` imports Minestom. It is in the R2 baseline, and the migration
   list names it only for the scoring import and the tick order.
 - **Item 29 (addendum, provisional):** `platform/catalog/adapter/MapDraftAdapter.java` depends on `api.mapsetup`. It is in the R5
-  baseline if the Red run confirms it. Item 28 is closed by `extract-cup-slice`, which moves `CupSession` out of `server.game`.
+  baseline (4 violations, confirmed by the Red run). Item 28 is closed by `extract-cup-slice`, which moves `CupSession` out of `server.game`.
   Item 29 is outside that change's scope.
 
 The Red step (task 1.2) adds any further violation to this table as an addendum. The archived migration list is not
@@ -181,7 +205,7 @@ is not Accepted by this change.
   is the reference for what each line means.
 - **The baseline grows without an item.** → The review requirement. A mechanical count check was considered and left as an
   open question, because it would need a second file to update on every fix.
-- **A description change creates a new baseline key.** → On CI this fails at once, because creation is disabled. The
+- **A description change creates a new baseline key.** → On CI this fails at once, because the new key cannot be saved while updates are disabled. The
   how-to guide tells the developer to keep the description stable or to commit the new entry with its item.
 - **A renamed violating class is a new violation.** → Intended. Moving a class out of the violating package removes the
   violation, and the store shrinks on the next local run.

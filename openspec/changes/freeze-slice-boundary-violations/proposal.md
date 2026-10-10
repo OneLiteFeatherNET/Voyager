@@ -23,7 +23,8 @@ This is a test-only change. It ships under `test(fitness)`: it changes no produc
     - R3 the platform infrastructure packages `text`, `convert`, `world`, `tick` and `render` do not depend on `race` (items 11, 13, 15, and 20, which is acceptable and frozen as it stands);
     - R4 the platform slice packages are free of cycles (item 27);
     - R5 platform classes that depend on `api.mapsetup` live in `platform.mapsetup` (item 24 and addendum item 29, see design);
-    - R6 `voyager-setup` does not depend on Minestom (item 26).
+    - R6 classes of `voyager-setup` outside the composition root do not depend on Minestom (item 26; the composition
+      root `SetupServer` and `setup.inject` are wiring and are excluded, as `VoyagerServer` is).
   - Plain, because they pass today: R7 `race` slices are free of cycles; R8 `api` slices are free of cycles.
 - On CI the fitness test task refuses to create or update a baseline. A new frozen rule without a committed store, and a
   fixed violation whose store entry was not removed, both fail the CI build. No public API or runtime behaviour changes.
