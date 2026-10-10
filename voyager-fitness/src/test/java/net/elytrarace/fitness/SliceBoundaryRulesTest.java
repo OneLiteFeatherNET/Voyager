@@ -35,11 +35,23 @@ class SliceBoundaryRulesTest {
                             + "or net.elytrarace.voyager.race.cup..")
                     .allowEmptyShould(false);
 
+    /**
+     * R2 retargeted: the server's adapter code does not use Minestom. The composition root (server.inject, server.config),
+     * the command adapter (server.command) and the bootstrap class VoyagerServer may use it, and nothing else in the
+     * server module may, because the Minestom adapters moved to voyager-platform.
+     */
     @ArchTest
-    static final ArchRule r2_serverGameDoesNotUseMinestom =
-            noClasses().that().resideInAPackage("net.elytrarace.voyager.server.game..")
+    static final ArchRule r2_serverOutsideTheCompositionRootDoesNotUseMinestom =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.server..")
+                    .and().resideOutsideOfPackages(
+                            "net.elytrarace.voyager.server.inject..",
+                            "net.elytrarace.voyager.server.config..",
+                            "net.elytrarace.voyager.server.command..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.server.VoyagerServer")
                     .should().dependOnClassesThat().resideInAPackage("net.minestom..")
-                    .as("classes in net.elytrarace.voyager.server.game.. do not depend on net.minestom..")
+                    .as("classes in net.elytrarace.voyager.server.. outside the composition root (server.inject, "
+                            + "server.config), the command adapter (server.command) and VoyagerServer do not depend "
+                            + "on net.minestom..")
                     .allowEmptyShould(false);
 
     @ArchTest
