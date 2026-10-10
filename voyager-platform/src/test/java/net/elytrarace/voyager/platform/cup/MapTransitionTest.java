@@ -7,6 +7,7 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.race.flow.RaceClock;
+import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.race.run.RaceRun;
@@ -463,5 +464,25 @@ class MapTransitionTest {
         int chunkZ() {
             return z >> 4;
         }
+    }
+
+    /**
+     * A reset moves a racer within the world they already stand in, and the same chunk wait applies: the chunks
+     * around the target are loaded before the move returns, and the racer lands on the target.
+     */
+    @Test
+    void repositionMovesARacerWithinTheirWorldAndWaitsForTheChunksAroundTheTarget(Env env) throws IOException {
+        writeWorlds(env);
+
+        MapInstances instances = openWorlds(env);
+        Player racer = connectTo(env, instances, RIDGE_START);
+        Pos target = Vectors.toMinestom(RIDGE_FINALE_SPAWN).asPos();
+
+        MapTransition.reposition(racer, target);
+
+        assertThat(racer.getPosition().samePoint(target))
+                .describedAs("the racer is standing on the target, not where they were")
+                .isTrue();
+        assertChunksLoadedAround(instances.forWorld(RIDGE), target, racer.effectiveViewDistance());
     }
 }

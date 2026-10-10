@@ -128,11 +128,23 @@ public final class MapTransition {
      */
     private static void arrive(Player player, Instance target, Pos spawn) {
         if (player.getInstance() == target) {
-            awaitChunksAround(target, spawn, player.effectiveViewDistance());
-            player.teleport(spawn, null, RelativeFlags.NONE, true).join();
+            reposition(player, spawn);
             return;
         }
         player.setInstance(target, spawn).join();
+    }
+
+    /**
+     * Moves {@code player} to {@code target} within the world they already stand in, and returns once they
+     * are there: the chunks around the target are loaded first, then a confirmed teleport is sent and
+     * waited for.
+     *
+     * <p>Public because a course reset moves a racer the same way a map start does. The player must already
+     * be in an instance; the target is in that instance too.
+     */
+    public static void reposition(Player player, Pos target) {
+        awaitChunksAround(player.getInstance(), target, player.effectiveViewDistance());
+        player.teleport(target, null, RelativeFlags.NONE, true).join();
     }
 
     /**

@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.util.OptionalInt;
 
 /**
  * What each message is keyed on and what it carries, checked one call at a time.
@@ -298,5 +299,29 @@ class MessagesTest {
 
         assertThat(translatable(cancelled).key()).isEqualTo("voyager.lobby.cancelled");
         assertThat(argumentsOf(cancelled)).containsExactly("1", "2");
+    }
+
+    @Test
+    void theOutOfBoundsResetTitleNamesTheOutOfBoundsReason() {
+        assertThat(translatable(Messages.resetTitle(true)).key()).isEqualTo("voyager.reset.title.outofbounds");
+    }
+
+    @Test
+    void theLandedResetTitleNamesTheLanding() {
+        assertThat(translatable(Messages.resetTitle(false)).key()).isEqualTo("voyager.reset.title.landed");
+    }
+
+    @Test
+    void aRingTargetNamesTheRingByItsOneBasedNumber() {
+        TranslatableComponent target = translatable(Messages.resetSubtitle(OptionalInt.of(3)));
+
+        assertThat(target.key()).isEqualTo("voyager.reset.target.ring");
+        assertThat(PlainTextComponentSerializer.plainText().serialize(target.arguments().getFirst().asComponent())).isEqualTo("3");
+    }
+
+    @Test
+    void aResetToTheStartHasItsOwnTargetKey() {
+        assertThat(translatable(Messages.resetSubtitle(OptionalInt.empty())).key())
+                .isEqualTo("voyager.reset.target.start");
     }
 }

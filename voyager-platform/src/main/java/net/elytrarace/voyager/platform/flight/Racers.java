@@ -2,7 +2,6 @@ package net.elytrarace.voyager.platform.flight;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.convert.VelocityExit;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.minestom.server.entity.EquipmentSlot;
@@ -131,13 +130,23 @@ public abstract class Racers {
      * authored spawn already agreed with.
      */
     public static void launch(Player player, MapDefinition map) {
+        launch(player, map.spawn(), map.rings().getFirst().center());
+    }
+
+    /**
+     * Turns {@code player} toward {@code toward}, starts the glide and launches them from {@code from}.
+     *
+     * <p>Used by a map start, from the spawn toward the first ring, and by a course reset, from the centre of the
+     * ring the racer is sent back to, toward a point one step along that ring's flow normal. The impulse is the
+     * same in both: see {@link #launchVelocity(Vec3, Vec3)}.
+     */
+    public static void launch(Player player, Vec3 from, Vec3 toward) {
         // Equipped again here: a racer who joined during the countdown was not in the faceCourse pass, and a
         // launch without an elytra would glide nothing. Idempotent for everybody else.
         equip(player);
-        Ring first = map.rings().getFirst();
-        player.lookAt(Vectors.toMinestom(first.center()));
+        player.lookAt(Vectors.toMinestom(toward));
         player.setFlyingWithElytra(true);
-        VelocityExit.send(player, launchVelocity(map.spawn(), first));
+        VelocityExit.send(player, launchVelocity(from, toward));
     }
 
     /**
@@ -150,8 +159,8 @@ public abstract class Racers {
     }
 
     /**
-     * The launch impulse: {@link #LAUNCH_FORWARD_PER_TICK} along the horizontal line from the spawn
-     * to the first ring, plus {@link #LAUNCH_UP_PER_TICK} straight up.
+     * The launch impulse: {@link #LAUNCH_FORWARD_PER_TICK} along the horizontal line from {@code from}
+     * to {@code toward}, plus {@link #LAUNCH_UP_PER_TICK} straight up.
      *
      * <p>Horizontal, not straight at the ring: the first ring can be well above or below the spawn,
      * and a launch that aimed the whole impulse at it would fire a racer at the floor on a course
@@ -161,8 +170,8 @@ public abstract class Racers {
      * launch straight up, which is the honest answer for that geometry, rather than a fabricated
      * compass bearing.
      */
-    private static Vec3 launchVelocity(Vec3 spawn, Ring first) {
-        Vec3 toRing = first.center().minus(spawn);
+    private static Vec3 launchVelocity(Vec3 from, Vec3 toward) {
+        Vec3 toRing = toward.minus(from);
         Vec3 horizontal = new Vec3(toRing.x(), 0, toRing.z());
         double length = horizontal.length();
         Vec3 forward = length == 0.0 ? Vec3.ZERO : horizontal.scale(LAUNCH_FORWARD_PER_TICK / length);

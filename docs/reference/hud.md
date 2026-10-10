@@ -111,6 +111,14 @@ Hides the cup-progress boss bar if one is shown and clears the internal referenc
 
 **Returns:** `void`
 
+## Reset feedback
+
+When a course reset sends a racer back, `platform.hud.RaceFeedback.reset` shows one title and plays one sound in the tick the reset is detected. The rules that trigger a reset are in [course-reset.md](course-reset.md).
+
+The title names the reason: `voyager.reset.title.outofbounds` or `voyager.reset.title.landed`. The subtitle names the target: `voyager.reset.target.ring` with the one-based number of the last ring passed, or `voyager.reset.target.start`. The title has no fade-in, as every race title does.
+
+The sound is `block.note_block.bass` at pitch 0.6 and volume 0.8, on the master channel. A ring pass plays a rising bell, so a racer who has been sent back hears the difference without reading.
+
 ## Thread model
 
 `HudComponent` is written only from the tick thread. The Minestom scheduler runs `GameOrchestrator.loadNextMap()` and all ECS `process()` calls on the tick thread, so there is no cross-thread access to synchronise.

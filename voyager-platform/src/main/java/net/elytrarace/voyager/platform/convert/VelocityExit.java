@@ -21,7 +21,7 @@ import org.jetbrains.annotations.ApiStatus;
  *
  * <ol>
  *   <li>the launch that starts a map, which turns a standing racer into a gliding one
- *       ({@code Racers.launch});</li>
+ *       ({@code Racers.launch}), and the relaunch of a racer after a reset, which is the same launch;</li>
  *   <li>a ring {@code BOOST}/{@code SLOW} effect;</li>
  *   <li>an out-of-bounds reset.</li>
  * </ol>

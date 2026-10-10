@@ -181,6 +181,29 @@ public abstract class RaceFeedback {
         };
     }
 
+    /**
+     * The sound a course reset makes: one low note on the countdown's beat, at the bottom of the register.
+     *
+     * <p>It is the opposite of the rising ring bell, so a racer who has just been sent back hears that they
+     * were, without reading the title.
+     */
+    @Contract(pure = true)
+    public static Sound resetSound() {
+        return Sound.sound(COUNTDOWN_BEAT, SOURCE, 0.8f, 0.6f);
+    }
+
+    /**
+     * A racer has been sent back by a reset: the title that names the reason and the target, then the reset
+     * sound, in the tick the reset was detected. The title has no fade-in, as every title here does.
+     */
+    public static void reset(Player racer, Component title, Component subtitle) {
+        racer.showTitle(Title.title(
+                title,
+                subtitle,
+                Title.Times.times(Duration.ZERO, TICK.multipliedBy(40), TICK.multipliedBy(10))));
+        racer.playSound(resetSound());
+    }
+
     /** The cup's result: the longest title in the game, because it is the biggest moment in a session. */
     public static void cupResult(Player racer, Component subtitle) {
         racer.showTitle(Title.title(

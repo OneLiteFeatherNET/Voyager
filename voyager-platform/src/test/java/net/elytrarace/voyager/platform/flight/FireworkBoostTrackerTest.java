@@ -257,4 +257,17 @@ class FireworkBoostTrackerTest {
         assertThat(tracker.cooldownTicksRemaining(ADA)).isZero();
         assertThat(tracker.requestBoost(ADA, SHORT, GLIDING)).isTrue();
     }
+
+    @Test
+    void cancellingABurnEndsItAndKeepsTheCooldownOfTheBoostThatLitIt() {
+        FireworkBoostTracker boosts = new FireworkBoostTracker();
+        boosts.requestBoost(ADA, new BoostConfig(4, 9), true);
+
+        boosts.cancelBurn(ADA);
+
+        assertThat(boosts.burning(ADA)).isFalse();
+        assertThat(boosts.cooldownTicksRemaining(ADA))
+                .describedAs("the cooldown is measured from the burn's start and a reset does not refresh it")
+                .isEqualTo(9);
+    }
 }
