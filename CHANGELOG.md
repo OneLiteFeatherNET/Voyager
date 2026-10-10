@@ -5,6 +5,64 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.13.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.12.0...v1.13.0) (2026-10-10)
+
+
+### Features
+
+* **build:** check maps, cups and worlds together before the server starts ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **content:** ship the alpha cup with one playable map ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** add the waiting room that starts, cancels and aborts a cup ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** give the game a palette, a bundle and a voice ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** load race worlds through Falco ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** move the racers to the next map, with the ground under them ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** publish JSON Schema for map and cup files ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** read the map and cup catalogues off disk ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** reload a catalogue into an applied or rejected outcome ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** reproduce Vanilla's block-collision candidate order ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **race:** count down the medal a racer can still reach ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **race:** decide when a cup may start ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **race:** draw the racing line each course was built with ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **race:** one player's run over one map, as a value ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **race:** send racers back when they leave the world or land ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** accept commands typed into the server console ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** add the LuckPerms policy behind a gateway seam ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** add the stdin stop and the /stop shutdown ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** assemble the rebuild into a server that starts and runs a cup ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** gate the race subcommands by node and wire the boot ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** gate the setup commands and the wand by voyager.setup.use ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** give the racer a firework rocket to boost with ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** pick up changed maps and cups between rounds without a restart ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** read the Velocity secret and the service bind address ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** start the cup through the waiting room, not on first join ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **setup:** add the /map commands and the builder session ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **setup:** boot the setup server from its own composition root ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **setup:** place and remove rings with the wand ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **setup:** store map drafts in the game's layout with an atomic save ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **tools:** convert the old map data once, and commit the result ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+
+
+### Bug Fixes
+
+* **build:** remove maps from the run directory once they leave the catalogue ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** migrate chunks whose status predates 1.20.2 ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **platform:** stop a failed chunk load from freezing the map start ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** disable LuckPerms before the JVM hooks so H2 closes cleanly ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **server:** turn on the flag Minestom gates every translation on ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* **setup:** leave no draft behind when the world copy fails ([4b59026](https://github.com/OneLiteFeatherNET/Voyager/commit/4b590263aa254c620faf832b3900490cff4d969e))
+* vanilla parity at exactly zero — boost placement, movement deadzone, float half-width ([#247](https://github.com/OneLiteFeatherNET/Voyager/issues/247)) ([3bb24cd](https://github.com/OneLiteFeatherNET/Voyager/commit/3bb24cdccb88acde524b8d88410bb6a5f7ec47b3))
+
+
+### Continuous Integration
+
+* build a pull request once, not twice ([#259](https://github.com/OneLiteFeatherNET/Voyager/issues/259)) ([833df33](https://github.com/OneLiteFeatherNET/Voyager/commit/833df33acfeeabe9821cab83906c8ae1d11a1140))
+
+
+### Miscellaneous Chores
+
+* **deps:** update gradle to v9.6.1 ([#244](https://github.com/OneLiteFeatherNET/Voyager/issues/244)) ([57b8ef7](https://github.com/OneLiteFeatherNET/Voyager/commit/57b8ef7f4a1beed6dddfe7fcba7da2562d083e71))
+* relicense under the AGPL-3.0 ([#261](https://github.com/OneLiteFeatherNET/Voyager/issues/261)) ([b8da951](https://github.com/OneLiteFeatherNET/Voyager/commit/b8da95187a96e1e926f3d55c0a80d1abbed79734))
+
 ## [1.12.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.11.10...v1.12.0) (2026-09-11)
 
 
