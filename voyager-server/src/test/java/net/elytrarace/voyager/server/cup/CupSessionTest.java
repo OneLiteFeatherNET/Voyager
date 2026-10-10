@@ -21,7 +21,7 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
-import net.elytrarace.voyager.race.cup.CupStandings;
+import net.elytrarace.voyager.race.cup.CupRound;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.Rockets;
@@ -1050,7 +1050,7 @@ class CupSessionTest {
             return standingsOf().of(racer.getUuid());
         }
 
-        private CupStandings standingsOf() {
+        private CupRound standingsOf() {
             return session.standings();
         }
 

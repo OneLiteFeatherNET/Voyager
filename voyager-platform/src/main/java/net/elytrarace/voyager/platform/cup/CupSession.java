@@ -25,12 +25,10 @@ import net.elytrarace.voyager.platform.world.WorldHealth;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.flow.RacePhase;
 import net.elytrarace.voyager.race.cup.CupStanding;
-import net.elytrarace.voyager.race.cup.CupStandings;
+import net.elytrarace.voyager.race.cup.CupRound;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.cup.MapFigures;
 import net.elytrarace.voyager.race.run.RaceRun;
-import net.elytrarace.voyager.race.scoring.MapScore;
-import net.elytrarace.voyager.race.scoring.MapScorer;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.Rockets;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
@@ -121,7 +119,7 @@ public final class CupSession implements RacePhaseListener {
     private final RaceTimings timings;
     private final Duration step;
     private final Supplier<Collection<Player>> players;
-    private final CupStandings standings = new CupStandings();
+    private final CupRound round = new CupRound();
     private final CupAnnouncer announcer;
 
     /**
@@ -236,7 +234,7 @@ public final class CupSession implements RacePhaseListener {
         // The one place a pending catalogue becomes current, and the round then plays only what it pinned here.
         pinned = catalog.promoteForNewRound();
         cup = pinned.cup();
-        standings.clear();
+        round.reset();
         lastSimulated.clear();
         // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
         // must not still be running when the new first map launches its racers.
@@ -320,7 +318,7 @@ public final class CupSession implements RacePhaseListener {
         if (current.state().cupFinished() && currentMap != null) {
             // mapFinished has already run for the last map by the time cupFinished is set, so every
             // per-map score is in. currentMap is what says this has not been announced yet.
-            announcer.announceCupResult(cup, standings.cupOrder());
+            announcer.announceCupResult(cup, round.order());
             currentMap = null;
             blocks.follow(null);
         }
@@ -346,8 +344,8 @@ public final class CupSession implements RacePhaseListener {
      * a medal tier by reading a sentence is asserting the sentence. Not part of the session's
      * contract — do not widen it.
      */
-    public CupStandings standings() {
-        return standings;
+    public CupRound standings() {
+        return round;
     }
 
     /** Drops everything held for a player who disconnected. */
@@ -513,8 +511,7 @@ public final class CupSession implements RacePhaseListener {
             // timings.race(), not clock.elapsed(): RaceRun.timeOnCourse scores a run that did not
             // finish on the full phase length, and that has to be the length this phase was played
             // with. A finisher's own time comes out of the run and ignores this argument.
-            MapScore score = MapScorer.score(held.get().progress(), map, held.get().timeOnCourse(timings.race()));
-            standings.record(id, mapIndex, score);
+            round.recordMap(mapIndex, id, held.get(), map, timings.race());
             Racers.standDown(racer);
             hud.standDown(racer);
             // The burn and the cooldown end with the map. A rocket still burning when the next map's
@@ -522,12 +519,12 @@ public final class CupSession implements RacePhaseListener {
             // carried across would refuse the first boost of a map for a boost taken on the last.
             boosts.forget(id);
         }
-        standings.closeMap(mapIndex, cup.mode());
+        round.closeMap(mapIndex, cup.mode());
 
         LOGGER.info("Map {}/{} '{}' finished after {} tick(s), {}",
                 mapIndex + 1, cup.mapNames().size(), mapName, clock.gameTick(), CupAnnouncer.seconds(clock.elapsed()));
         for (Player racer : players.get()) {
-            announcer.announceMapScore(racer, map, standings.scoreOn(racer.getUuid(), mapIndex),
+            announcer.announceMapScore(racer, map, round.scoreOn(racer.getUuid(), mapIndex),
                     ringsPassedOf(racer.getUuid()));
         }
     }
@@ -552,7 +549,7 @@ public final class CupSession implements RacePhaseListener {
         for (Player racer : players.get()) {
             text.append("  %s%n".formatted(describeRacer(racer)));
         }
-        for (CupStanding standing : standings.cupOrder()) {
+        for (CupStanding standing : round.order()) {
             text.append("  cup: %s — %s point(s), %s map(s) finished, best %s%n".formatted(
                     nameOf(standing.playerId()), standing.score().totalPoints(),
                     standing.score().mapsFinished(),
