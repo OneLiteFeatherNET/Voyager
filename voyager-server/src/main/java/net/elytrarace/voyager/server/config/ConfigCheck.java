@@ -7,7 +7,6 @@ import net.elytrarace.voyager.platform.catalog.CatalogLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
 import net.elytrarace.voyager.platform.catalog.CupResolution;
-import net.elytrarace.voyager.race.cup.exception.UnresolvedCupException;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
 
@@ -110,17 +109,19 @@ public final class ConfigCheck {
      * @return one problem when the selection cannot be resolved; empty otherwise
      */
     static List<ConfigProblem> cupSelectionProblems(ServerSettings settings) {
+        Optional<String> refusal;
         try {
-            CupResolution.resolve(CatalogLoader.read(settings.dataPath()), settings.cupName());
-            return List.of();
-        } catch (UnresolvedCupException exception) {
-            String source = settings.cupName().isPresent()
-                    ? CUP_SOURCE
-                    : settings.dataPath().resolve("cups").toAbsolutePath().toString();
-            return List.of(error(ServerSettings.CUP_PROPERTY, source, exception.getMessage()));
+            refusal = CupResolution.refusalOf(CatalogLoader.read(settings.dataPath()), settings.cupName());
         } catch (RuntimeException exception) {
             return List.of();
         }
+        if (refusal.isEmpty()) {
+            return List.of();
+        }
+        String source = settings.cupName().isPresent()
+                ? CUP_SOURCE
+                : settings.dataPath().resolve("cups").toAbsolutePath().toString();
+        return List.of(error(ServerSettings.CUP_PROPERTY, source, refusal.get()));
     }
 
     /**

@@ -230,6 +230,30 @@ class CupResolutionTest {
     }
 
     /** Returns {@code filename\njson}, which {@link #catalogOf} splits back apart. */
+    @Test
+    void refusalOfIsEmptyForASelectionThatResolves() {
+        CatalogReading cups = catalogOf(cup("autumn.json", "winter_series", "map-a"));
+
+        assertThat(CupResolution.refusalOf(cups, Optional.of("winter_series"))).isEmpty();
+    }
+
+    @Test
+    void refusalOfGivesTheMessageOfAnUnresolvedCup() {
+        CatalogReading cups = catalogOf(cup("autumn.json", "winter_series", "map-a"));
+
+        assertThat(CupResolution.refusalOf(cups, Optional.of("summer_series")))
+                .hasValueSatisfying(message -> assertThat(message).contains("no cup named 'summer_series'"));
+    }
+
+    @Test
+    void refusalOfRethrowsAFailureThatIsNotAnUnresolvedCup() {
+        CatalogReading cups = catalogOf(broken("only.json"));
+
+        assertThatThrownBy(() -> CupResolution.refusalOf(cups, Optional.empty()))
+                .isInstanceOf(RuntimeException.class)
+                .isNotInstanceOf(UnresolvedCupException.class);
+    }
+
     private static String cup(String filename, String name, String... mapNames) {
         String maps = java.util.Arrays.stream(mapNames)
                 .map("\"%s\""::formatted)
