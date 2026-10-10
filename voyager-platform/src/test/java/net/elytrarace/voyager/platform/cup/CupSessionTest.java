@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
@@ -21,6 +21,9 @@ import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.cup.CupStandings;
 import net.elytrarace.voyager.race.scoring.MapScore;
+import net.elytrarace.voyager.platform.flight.Racers;
+import net.elytrarace.voyager.platform.flight.Rockets;
+import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.ServerFlag;
 import net.minestom.server.component.DataComponents;

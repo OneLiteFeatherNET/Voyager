@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.platform.world;
 
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * this is the intended use rather than a reach past an interface; it is recorded here because an
  * internal type is a type that can move under us.
  */
-final class CurrentMapBlocks implements Block.Getter {
+public final class CurrentMapBlocks implements Block.Getter {
 
     private @Nullable ChunkCache cache;
 
@@ -45,7 +45,7 @@ final class CurrentMapBlocks implements Block.Getter {
      * before the first one. A fresh cache per world, because the cached chunk belongs to the world it
      * came from.
      */
-    void follow(@Nullable Instance instance) {
+    public void follow(@Nullable Instance instance) {
         this.cache = instance == null ? null : new ChunkCache(instance, null, null);
     }
 
@@ -54,7 +54,7 @@ final class CurrentMapBlocks implements Block.Getter {
      * "the simulation is reading nothing" and "the simulation is reading an empty stretch of sky"
      * produce identical output otherwise — and the first is a wiring fault.
      */
-    boolean hasWorld() {
+    public boolean hasWorld() {
         return cache != null;
     }
 

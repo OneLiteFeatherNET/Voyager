@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.platform.flight;
 
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.minestom.server.component.DataComponents;

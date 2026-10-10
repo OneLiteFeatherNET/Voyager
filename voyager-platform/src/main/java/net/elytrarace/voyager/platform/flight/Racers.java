@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.platform.flight;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.MapDefinition;
@@ -56,10 +56,10 @@ import org.jetbrains.annotations.ApiStatus;
 public abstract class Racers {
 
     /** Horizontal launch speed, in blocks per tick, along the line from the spawn to the first ring. */
-    static final double LAUNCH_FORWARD_PER_TICK = 0.8;
+    public static final double LAUNCH_FORWARD_PER_TICK = 0.8;
 
     /** Upward launch speed, in blocks per tick — enough air under the racer for a glide to take. */
-    static final double LAUNCH_UP_PER_TICK = 1.2;
+    public static final double LAUNCH_UP_PER_TICK = 1.2;
 
     /**
      * How many rockets a racer carries. The committed course climbs from y = -62 to y = 319, so a

@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.platform.world;
 
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;

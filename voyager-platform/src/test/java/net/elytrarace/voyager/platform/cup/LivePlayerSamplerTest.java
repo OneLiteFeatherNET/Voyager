@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;

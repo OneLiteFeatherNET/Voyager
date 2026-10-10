@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.physics.FlightInput;
@@ -63,7 +63,7 @@ import java.util.function.Supplier;
  * {@code /race}. The day the simulation becomes the authority on anything — collision damage, an
  * out-of-bounds reset — this is the paragraph to come back to.
  */
-final class LivePlayerSampler implements FlightSampler {
+public final class LivePlayerSampler implements FlightSampler {
 
     /** Vanilla's {@code minecraft:generic.gravity} default for a player, used only as a fallback. */
     private static final double VANILLA_PLAYER_GRAVITY = 0.08;
@@ -71,7 +71,7 @@ final class LivePlayerSampler implements FlightSampler {
     private final Supplier<Collection<Player>> players;
     private final FireworkBoostTracker boosts;
 
-    LivePlayerSampler(Supplier<Collection<Player>> players, FireworkBoostTracker boosts) {
+    public LivePlayerSampler(Supplier<Collection<Player>> players, FireworkBoostTracker boosts) {
         this.players = players;
         this.boosts = boosts;
     }
