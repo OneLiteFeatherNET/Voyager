@@ -78,12 +78,24 @@ import java.util.Optional;
  * @param justPassed the ring passed on the tick that produced this run, or {@code null} if that tick
  *     passed none. It describes that one tick and not the run as a whole, which is why a driver must
  *     read it from the run {@link #advance} returned rather than from one it stored earlier.
+ * @param gliding whether the player was gliding on the tick that produced this run. A landing is the
+ *     transition from gliding to standing on the ground, so the next tick needs this, not the one
+ *     before it; {@code false} for a run that has played no tick
  */
 public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integer> passedOnGameTick,
-        Optional<RaceClock> finishedAt, @Nullable Ring justPassed) {
+        Optional<RaceClock> finishedAt, @Nullable Ring justPassed, boolean gliding) {
 
     /** The first movement tick of a {@code GAME} phase is tick one; see {@link RaceClock}. */
     private static final int FIRST_GAME_TICK = 1;
+
+    /**
+     * A run from a tick that did not record whether the player was gliding: the flag is {@code false},
+     * which is what a run that has played no tick says.
+     */
+    public RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integer> passedOnGameTick,
+            Optional<RaceClock> finishedAt, @Nullable Ring justPassed) {
+        this(progress, previous, passedOnGameTick, finishedAt, justPassed, false);
+    }
 
     public RaceRun {
         passedOnGameTick = List.copyOf(passedOnGameTick);
@@ -110,7 +122,7 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
 
     /** A run that has not yet played a movement tick: no progress, no position, nothing passed. */
     public static RaceRun atStart() {
-        return new RaceRun(RingProgress.atStart(), null, List.of(), Optional.empty(), null);
+        return new RaceRun(RingProgress.atStart(), null, List.of(), Optional.empty(), null, false);
     }
 
     /**
@@ -127,7 +139,7 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
         ProgressUpdate update = ProgressTracker.advance(progress, map.rings(), previous, position, gliding);
         Ring passed = update.passed();
         if (passed == null) {
-            return new RaceRun(progress, position, passedOnGameTick, finishedAt, null);
+            return new RaceRun(progress, position, passedOnGameTick, finishedAt, null, gliding);
         }
 
         List<Integer> ticks = new ArrayList<>(passedOnGameTick);
@@ -135,7 +147,7 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
         Optional<RaceClock> finished = update.progress().passedCount() == map.rings().size()
                 ? Optional.of(clock)
                 : finishedAt;
-        return new RaceRun(update.progress(), position, ticks, finished, passed);
+        return new RaceRun(update.progress(), position, ticks, finished, passed, gliding);
     }
 
     /** Whether every ring of the map has been passed. */

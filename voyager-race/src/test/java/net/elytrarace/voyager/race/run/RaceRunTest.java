@@ -357,4 +357,49 @@ class RaceRunTest {
     private static Vec3 positionAt(int gameTick) {
         return new Vec3(LANE_X, LANE_Y, SPAWN_Z + BLOCKS_PER_TICK * gameTick);
     }
+
+    @Test
+    void aRunThatHasNotYetPlayedATickIsNotGliding() {
+        assertThat(RaceRun.atStart().gliding()).isFalse();
+    }
+
+    @Test
+    void theFiveArgumentConstructorRecordsNotGliding() {
+        RaceRun run = new RaceRun(RingProgress.atStart(), SPAWN, List.of(), Optional.empty(), null);
+
+        assertThat(run.gliding()).isFalse();
+    }
+
+    @Test
+    void advanceRecordsTheGlidingFlagOfTheTickItPlayed() {
+        RaceClock clock = RaceClock.startingAt(TICK).advanced();
+
+        RaceRun run = RaceRun.atStart().advance(COURSE, clock, positionAt(1), true);
+
+        assertThat(run.gliding()).isTrue();
+    }
+
+    @Test
+    void advanceRecordsNotGlidingWhenThePlayerIsNotGliding() {
+        RaceClock clock = RaceClock.startingAt(TICK).advanced();
+
+        RaceRun run = RaceRun.atStart().advance(COURSE, clock, positionAt(1), false);
+
+        assertThat(run.gliding()).isFalse();
+    }
+
+    @Test
+    void advanceRecordsTheGlidingFlagOnATickThatPassesARing() {
+        RaceRun run = RaceRun.atStart();
+        RaceClock clock = RaceClock.startingAt(TICK);
+        for (int tick = 1; tick <= 5; tick++) {
+            clock = clock.advanced();
+            run = run.advance(COURSE, clock, positionAt(tick), true);
+        }
+
+        assertThat(run.justPassed())
+                .describedAs("ring 0 is crossed on game tick 5 by the lane fixture")
+                .isEqualTo(COURSE.rings().getFirst());
+        assertThat(run.gliding()).isTrue();
+    }
 }
