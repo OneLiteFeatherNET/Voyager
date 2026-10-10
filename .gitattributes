@@ -1,1 +1,4 @@
 * !text !filter !merge !diff
+# Golden transcripts are compared byte for byte. Windows autocrlf turned them CRLF on checkout (the attribute is
+# unspecified under "!text" above), so the golden files opt out of end-of-line conversion.
+voyager/server/src/test/resources/golden/** -text
