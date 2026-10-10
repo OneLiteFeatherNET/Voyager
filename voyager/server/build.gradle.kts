@@ -67,6 +67,13 @@ tasks.test {
     // goldens to suit a different locale; a change to what the transcripts record is a behaviour change.
     systemProperty("user.language", "de")
     systemProperty("user.country", "DE")
+
+    // Print the full failure of every failed test in the build log, message included. Gradle's default output shows
+    // only the exception class and line, so a golden mismatch on a CI runner is otherwise unreadable there.
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 // The working directory every run task uses, and the two directories the server resolves inside it.
