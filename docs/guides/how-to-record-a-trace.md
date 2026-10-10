@@ -2,7 +2,7 @@
 
 This guide explains how to record an E2a flight-profile fixture: a scripted elytra glide flown on
 a real Paper server, sampled tick by tick, and written to a JSON file which is then committed to
-`voyager-physics/src/test/resources/traces/` — the fixtures' one home, next to the tests that
+`voyager/physics/src/test/resources/traces/` — the fixtures' one home, next to the tests that
 replay them. `voyager-physics`'s `VanillaParityTest` replays every one of them as a one-step
 residual check against the ported `ElytraSimulator` — recorded state at tick `k`, one tick
 computed, held against tick `k + 1` — at a bound of **exactly zero**.
@@ -21,7 +21,7 @@ repository's `CLAUDE.md`. Download it from PaperMC's Fill API
 (`eula.txt` containing `eula=true`) before the server will start.
 
 **A Minecraft version bump invalidates every fixture in
-`voyager-physics/src/test/resources/traces/`.** The
+`voyager/physics/src/test/resources/traces/`.** The
 recorded numbers are Vanilla `26.2`'s output; if Mojang changes the elytra formula, a constant, or
 even an unrelated tick-order detail that this recorder happens to depend on, every existing trace
 now describes a version of the game that no longer exists on the server that would replay it

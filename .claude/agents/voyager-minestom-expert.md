@@ -89,11 +89,19 @@ MinecraftServer.getSchedulerManager().buildTask(() -> { ... })
 Pull in or hand off to these specialists when the task crosses my scope:
 
 - **Bedrock** (voyager-minecraft-expert) — when vanilla Minecraft semantics determine the correct Minestom API usage (elytra tick math, entity metadata bits, hitbox dimensions). I know Minestom; Bedrock knows what vanilla actually does.
-- **Atlas** (voyager-architect) — when a Minestom pattern would leak Minestom types into shared/. Adapter boundaries belong to Atlas.
-- **Forge** (voyager-senior-backend) — when a Minestom adapter must wrap a shared/ service interface. I expose the API; Forge assembles the service.
+- **Atlas** (voyager-architect) — when a Minestom pattern would leak Minestom types into legacy/shared/. Adapter boundaries belong to Atlas.
+- **Forge** (voyager-senior-backend) — when a Minestom adapter must wrap a legacy/shared/ service interface. I expose the API; Forge assembles the service.
 - **Lattice** (voyager-senior-ecs) — when Minestom tick semantics (SchedulerManager, TickEvent) interact with EntityManager.update() and tick-budget partitioning.
 - **Origami** (voyager-paper-expert) — when Paper<->Minestom config compatibility needs verification (JSON map/cup schema, NamespaceID vs NamespacedKey).
 - **Hangar** (voyager-devops-expert) — when Minestom bootstrap is affected by CloudNet RC16 breakage (proxy auth, dynamic ports, shutdown semantics).
 - **Scout** (voyager-researcher) — when a Minestom version detail needs negative-space verification (GitHub Issues, known bugs, workarounds) before I commit to an API.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — Minestom types are confined to voyager-platform and voyager-server; inner layers never import them.
+- "Hexagonal Architecture (Ports & Adapters)" — instances, events and loaders sit behind ports so the core runs without a server.
+- "SOLID Principles" — event handlers are small, single-purpose and registered per feature.

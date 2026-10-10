@@ -41,7 +41,7 @@ breakdown before work starts — used only where that breakdown is itself a tick
 | E3 | `voyager-race`: state machine, rings, scoring | Full race playable without a server | E1, E2 |
 | E4 | `voyager-platform` + `voyager-server` | First flyable build | E1, E2, E3 |
 | E5 | `voyager-persistence` | Records and profiles survive restart | E1, E4 (persistence is bolted onto a working server) |
-| E6 | `voyager-setup` on Minestom | A map is configurable without Paper | E1, E4; blocked on FAWE research (E6.0) |
+| E6 | `voyager-setup` on Minestom | A map is configurable without Paper | E1, E4; E6.0 closed 2026-10-10 (research 005 and 007; owner approval 2026-10-09) |
 | E7 | Cut-over | Old tree removed; Java 25 everywhere | E4 reached **and** trace suite green (cut-over gate) — see note below |
 
 **Cut-over gate, stated precisely (per spec, "Delivery plan"):** the gate for starting E7
@@ -66,7 +66,7 @@ deliverable.
 **Acceptance Criteria**
 - [ ] `settings.gradle.kts` declares all eight modules with the programmatic version
       catalog (no `gradle/libs.versions.toml`); `./gradlew build` succeeds for the new
-      tree alongside the existing tree without touching `server`, `plugins/*`, `shared/*`
+      tree alongside the existing tree without touching `server`, `legacy/plugins/*`, `legacy/shared/*`
 - [ ] `buildSrc` contains exactly three convention plugins (`voyager.java-conventions`,
       `voyager.library-conventions`, `voyager.application-conventions`); Java toolchain and
       `--release 25` are declared once, not per-module
@@ -268,7 +268,7 @@ Renovate are untouched").
 **Acceptance Criteria**
 - [ ] `./gradlew build` job builds all eight new modules plus the existing tree in one CI
       run; a failure in either fails the workflow
-- [ ] `./gradlew :voyager-fitness:test` runs in CI as its own step (fast fail on
+- [ ] `./gradlew :voyager:fitness:test` runs in CI as its own step (fast fail on
       architecture violations, separate from the full build)
 - [ ] Release Please config requires no changes (verified by a dry run) — new modules
       don't need independent versioning yet
@@ -323,7 +323,7 @@ against those traces.
 - Step decomposition: steps 2–10 as `@FunctionalInterface` units in an enum-defined order,
   optional snapshot after each step, for diagnosable trace mismatches ("drag step diverges
   at tick 412" instead of bisecting by hand)
-- Fixtures live in `voyager-physics/src/test/resources/traces/`, each with Minecraft
+- Fixtures live in `voyager/physics/src/test/resources/traces/`, each with Minecraft
   version + initial state metadata
 - Flight profiles required: steady glide; climb into stall; dive and pull-out; single
   firework boost; chained firework boosts; pitch at ±90°; glancing wall collision; landing
@@ -380,7 +380,7 @@ server, producing fixtures in the format `voyager-physics` tests will consume.
 - [ ] Recorder captures, per tick: movement packet, rotation packet, relevant world block
       slice, firework ignition/detonation events
 - [ ] Output format includes metadata (Minecraft version, initial state) as specified for
-      `voyager-physics/src/test/resources/traces/`
+      `voyager/physics/src/test/resources/traces/`
 - [ ] Recorder is independently runnable (documented command) without any Voyager server
       code — it is a standalone tool against a Vanilla server, not a plugin
 - [ ] Recorded output for the steady-glide profile from E2.1 is re-captured with the
@@ -439,7 +439,7 @@ flight profiles.
 - [ ] Fixtures exist for: steady glide; climb into stall; dive and pull-out; single
       firework boost; chained firework boosts; pitch at ±90°; glancing wall collision;
       landing — eight fixture files/directories under
-      `voyager-physics/src/test/resources/traces/`
+      `voyager/physics/src/test/resources/traces/`
 - [ ] Each fixture is reviewed for plausibility (does the raw capture look like the named
       profile, e.g. the stall profile actually shows a velocity collapse) before being
       committed as a ground truth
@@ -616,7 +616,7 @@ transition rules, Thrust (voyager-game-developer)
 
 **Description**
 Hand-write segment-plane intersection against the ring disc, once, replacing the two
-disagreeing implementations in the current tree (`plugins/game` via commons-geometry,
+disagreeing implementations in the current tree (`legacy/plugins/game` via commons-geometry,
 `server` hand-written).
 
 **Acceptance Criteria**
@@ -1542,21 +1542,23 @@ FAWE's functionality the setup workflow actually uses) will work without Paper/F
 Minestom setup server.
 
 **Acceptance Criteria**
-- [ ] Current FAWE usage in `plugins/setup` is inventoried: exact operations used (not
+- [x] Current FAWE usage in `legacy/plugins/setup` is inventoried: exact operations used (not
       "FAWE" as a whole), so the replacement scope is bounded by actual need, not by
-      FAWE's full feature set
-- [ ] At least two candidate approaches are evaluated with concrete pro/contra (examples
+      FAWE's full feature set. Evidence: `docs/research/007-fawe-usage-inventory.md` (2026-10-10)
+- [x] At least two candidate approaches are evaluated with concrete pro/contra (examples
       to investigate, not prescribed: a Minestom-native region-edit tool if one exists;
       hand-rolled block-region operations sufficient for the actual inventory above; a
       hybrid where heavy editing still happens on a throwaway Paper+FAWE instance and only
-      the result is imported into the Minestom setup flow)
-- [ ] A recommendation is presented to the project owner via `AskUserQuestion` with
+      the result is imported into the Minestom setup flow). Evidence: `docs/research/005-simpler-map-and-cup-setup.md`
+      sections 4.1 and 7.2; options A to D in `docs/decisions/0018-pose-placement-authoring-model-for-setup.md`
+- [x] A recommendation is presented to the project owner via `AskUserQuestion` with
       trade-offs, per the Decision Framework — this research ticket does not conclude with
-      a unilateral choice
-- [ ] Finding is written into `docs/research/` (Lumen's domain) documenting methodology
-      and rationale, not just the conclusion
-- [ ] **E6 epic and E6.1+ sub-tickets are not scheduled for implementation until this
-      ticket's recommendation is approved by the project owner**
+      a unilateral choice. Evidence: owner approval of 2026-10-09, `docs/research/005-simpler-map-and-cup-setup.md` section 7.4
+- [x] Finding is written into `docs/research/` (Lumen's domain) documenting methodology
+      and rationale, not just the conclusion. Evidence: research 005 and 007
+- [x] **E6 epic and E6.1+ sub-tickets are not scheduled for implementation until this
+      ticket's recommendation is approved by the project owner**. Approved 2026-10-09; E6.1 is
+      done in `introduce-voyager-setup`
 
 **Technical Details:** Risk register: "FAWE has no Minestom equivalent" — Impact: "Blocks
 E6". Resolution: "Own research epic before E6 planning." This ticket is that epic.
@@ -1607,7 +1609,7 @@ approach is chosen
 ### E6.3 — Conversation-API verification on Minestom
 
 **Description**
-Confirm `shared/conversation-api`'s platform-agnostic design (already Bukkit-free per
+Confirm `legacy/shared/conversation-api`'s platform-agnostic design (already Bukkit-free per
 `CLAUDE.md`) works unmodified for the Minestom setup wizard, or port it into the new
 module tree if it needs a new home.
 
@@ -1654,7 +1656,7 @@ documentation transition (fresh ADR series, archived old ADRs, replaced migratio
 doc).
 
 **Acceptance Criteria**
-- [ ] `server/`, `plugins/game/`, `plugins/setup/`, and all four `shared/*` modules are
+- [ ] `legacy/server/`, `legacy/plugins/game/`, `legacy/plugins/setup/`, and all four `legacy/shared/*` modules are
       removed from `settings.gradle.kts` and deleted from the repository
 - [ ] The ~34 tests exclusively covering dead code (`GameLoopSystemTest`,
       `GameSessionTest`, `CupFlowServiceTest`, `CupScoringTest`, and siblings) are removed
@@ -1662,7 +1664,7 @@ doc).
 - [ ] `./gradlew build` succeeds with only the eight new modules in the tree; Java 25
       `--release` applies everywhere (no Java 21 `--release` block remains anywhere in the
       build)
-- [ ] Old `shared/database` Flyway `V1`–`V4` migrations are deleted (not archived in the
+- [ ] Old `legacy/shared/database` Flyway `V1`–`V4` migrations are deleted (not archived in the
       active migration path) — `voyager-persistence`'s `V1__baseline.sql` is the only
       active migration history going forward
 - [ ] A fresh ADR series starts at `docs/decisions/0001-...`; the existing ADRs
@@ -1688,8 +1690,8 @@ strictly require E5 or E6 to be complete.
 ### E7.1 — Remove old module tree
 
 **Description**
-Delete `server/`, `plugins/game/`, `plugins/setup/`, `shared/common`,
-`shared/conversation-api`, `shared/database`, `shared/spline` and their entries in
+Delete `legacy/server/`, `legacy/plugins/game/`, `legacy/plugins/setup/`, `legacy/shared/common`,
+`legacy/shared/conversation-api`, `legacy/shared/database`, `legacy/shared/spline` and their entries in
 `settings.gradle.kts`.
 
 **Acceptance Criteria**
@@ -1747,12 +1749,12 @@ state.
 ### E7.4 — Delete old Flyway migrations
 
 **Description**
-Delete the `shared/database` `V1`–`V4` migration scripts as part of the module removal
+Delete the `legacy/shared/database` `V1`–`V4` migration scripts as part of the module removal
 (called out separately because it's easy to accidentally leave migration history behind
 even after the module itself is deleted).
 
 **Acceptance Criteria**
-- [ ] No `V1`–`V4` files from the old `shared/database` remain anywhere in the repository
+- [ ] No `V1`–`V4` files from the old `legacy/shared/database` remain anywhere in the repository
 - [ ] `voyager-persistence`'s `V1__baseline.sql` is confirmed as the sole active migration
       history (no accidental version collision)
 

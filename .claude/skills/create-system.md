@@ -15,7 +15,7 @@ Create a new ECS System following project conventions.
 ## Steps
 
 1. Create the system file at:
-   `server/src/main/java/net/elytrarace/server/ecs/system/{Name}System.java`
+   `legacy/server/src/main/java/net/elytrarace/server/ecs/system/{Name}System.java`
 
 2. Follow this template:
 ```java
@@ -42,7 +42,7 @@ public final class {Name}System implements System {
 ```
 
 3. Create matching test at:
-   `server/src/test/java/net/elytrarace/server/ecs/system/{Name}SystemTest.java`
+   `legacy/server/src/test/java/net/elytrarace/server/ecs/system/{Name}SystemTest.java`
 
 4. Run `/build` to verify
 

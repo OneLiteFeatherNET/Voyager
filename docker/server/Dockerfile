@@ -1,10 +1,10 @@
 FROM eclipse-temurin:25.0.4_7-jdk AS build
 WORKDIR /build
 COPY . .
-RUN ./gradlew :server:shadowJar --no-daemon
+RUN ./gradlew :legacy:server:shadowJar --no-daemon
 
 FROM eclipse-temurin:25.0.4_7-jre-alpine
 WORKDIR /app
-COPY --from=build /build/server/build/libs/*-all.jar app.jar
+COPY --from=build /build/legacy/server/build/libs/*-all.jar app.jar
 EXPOSE 25565
 ENTRYPOINT ["java", "-XX:+UseZGC", "-XX:+ZGenerational", "-Xms256M", "-Xmx512M", "-jar", "app.jar"]

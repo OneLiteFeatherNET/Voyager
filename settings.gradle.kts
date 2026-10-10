@@ -43,6 +43,14 @@ dependencyResolutionManagement {
             library("geometry", "org.apache.commons", "commons-geometry-euclidean").versionRef("commons-geometry-euclidean")
             library("archunit.junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
+            // JSON Schema 2020-12 validator, test scope only (voyager-platform): it checks the committed map and
+            // cup files and the test fixtures against schema/*.schema.json. It is never on a main classpath, so
+            // the loader stays the only runtime check. Pinned to 3.0.7, released 2026-08-20. 3.0.8 was released
+            // 2026-09-30, inside the two-week cooling window before 2026-10-09, so it is not used yet.
+            // Approved by the owner on 2026-10-09 (openspec change simplify-map-data-format, design decision 5).
+            version("json-schema-validator", "3.0.7")
+            library("json.schema.validator", "com.networknt", "json-schema-validator").versionRef("json-schema-validator")
+
             version("junit", "6.1.1")
             version("assertj", "3.27.7")
             library("junit.bom", "org.junit", "junit-bom").versionRef("junit")
@@ -53,6 +61,28 @@ dependencyResolutionManagement {
             version("log4j2", "2.25.5")
             library("log4j2.core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j2")
             library("log4j2.slf4j2", "org.apache.logging.log4j", "log4j-slf4j2-impl").versionRef("log4j2")
+
+            // Compile-time DI for the composition root only (voyager-server). The processor generates the
+            // wiring; no other module may depend on any of these or on jakarta.inject.
+            version("avaje-inject", "12.7")
+            library("avaje.inject.runtime", "io.avaje", "avaje-inject").versionRef("avaje-inject")
+            library("avaje.inject.processor", "io.avaje", "avaje-inject-generator").versionRef("avaje-inject")
+            library("avaje.inject.test", "io.avaje", "avaje-inject-test").versionRef("avaje-inject")
+            library("jakarta.inject", "jakarta.inject", "jakarta.inject-api").version("2.0.1")
+
+            // LuckPerms, the optional permission backend behind the PermissionPolicy port (ADR-0024). The API is compileOnly
+            // in voyager-platform. The Minestom loader is compileOnly there too, because LuckPermsBootstrap starts it, and
+            // runtimeOnly in the two composition roots only, never on a test class path. The loader is a snapshot, so the
+            // Sonatype snapshot repository is declared for net.luckperms only (see build.gradle.kts). Any bump needs owner approval.
+            version("luckperms-api", "5.5")
+            version("luckperms-minestom-loader", "5.6-SNAPSHOT")
+            library("luckperms.api", "net.luckperms", "api").versionRef("luckperms-api")
+            library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms-minestom-loader")
+
+            // Guava and failureaccess: the LuckPerms loader needs them on the runtime class path and Minestom does not bring
+            // them (spike 1.1, design.md risk R3). Pinned to the version Cygnus uses.
+            version("guava", "33.7.2-jre")
+            library("guava", "com.google.guava", "guava").versionRef("guava")
 
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
             bundle("flyway", listOf("flyway.core", "flyway.mysql"))
@@ -65,19 +95,23 @@ dependencyResolutionManagement {
     }
 }
 
-include("shared:conversation-api")
-include("shared:database")
-include("shared:common")
-include("shared:spline")
-include("plugins:game")
-include("plugins:setup")
-include("server")
+include("legacy:shared:conversation-api")
+include("legacy:shared:database")
+include("legacy:shared:common")
+include("legacy:shared:spline")
+include("legacy:plugins:game")
+include("legacy:plugins:setup")
+include("legacy:server")
 
 // Greenfield rebuild — see docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md
-include("voyager-api")
-include("voyager-physics")
-include("voyager-race")
-include("voyager-fitness")
+include("voyager:api")
+include("voyager:physics")
+include("voyager:race")
+include("voyager:platform")
+include("voyager:server")
+include("voyager:setup")
+include("voyager:fitness")
 
 // Tooling that is not part of the rebuild's module graph.
 include("tools:trace-recorder")
+include("tools:map-converter")

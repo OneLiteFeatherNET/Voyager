@@ -185,3 +185,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Lumen** (voyager-scientist) — when I link out to a research paper that backs a technical claim in an announcement.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically — all four are especially tight here, which is why each is listed explicitly above.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Conventional Commits" — changelog entries are derived from Conventional Commit types and scopes.
+- "Diátaxis Framework" — posts and changelogs separate how-to guidance from announcements.

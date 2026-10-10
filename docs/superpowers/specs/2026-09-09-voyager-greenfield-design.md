@@ -21,7 +21,7 @@ rebuild is under production pressure, and the cut-over schedule is therefore dri
 readiness rather than by an outage risk.
 
 This document specifies a greenfield rebuild: a new module tree inside the existing
-repository, replacing `server`, `plugins/game`, `plugins/setup` and all four `shared/*`
+repository, replacing `server`, `legacy/plugins/game`, `legacy/plugins/setup` and all four `legacy/shared/*`
 modules.
 
 ## Decisions
@@ -39,9 +39,11 @@ These were decided with the project owner before this document was written.
 | D7 | Target Minecraft 26.2 now, follow to 26.3 later | Minestom `2026.08.28-26.2` is released; 26.3 has no Minestom build yet |
 | D8 | Domain-oriented module cut (eight modules) | Makes the physics core independently testable and confines Minestom to one module |
 | D9 | Existing ADRs are not binding for the new stack | They describe the old design; several are accepted but never implemented |
-| D10 | `io.airlift:guice:10` for dependency injection, annotations confined to the composition roots | Upstream Guice runs on Java 25 but is unmaintained; the fork drops ASM and `Unsafe` entirely |
+| D10 | `io.avaje:avaje-inject` 12.7 for dependency injection (compile-time, no reflection), JSR-330 annotations confined to the composition roots | Wiring errors fail the build instead of boot; no reflection on the tick path; the container is actively released. Supersedes the earlier container choice; see ADR-0016 |
 | D11 | No legacy data import; the rebuild starts with an empty database | Greenfield means greenfield — player history from the 2023 build is not carried over |
 | D12 | `CLAUDE.md` is superseded by this specification | It describes a tree that no longer matches reality; the design rules live here now |
+| D13 | Permission port in `voyager-api`, LuckPerms as an optional adapter in `voyager-platform`, and a fail-closed level-based fallback (ADR-0024) | Command code asks one question and never names a backend; a jar without the loader fails closed, so a lost loader never widens access on a public network |
+| D14 | Velocity modern forwarding with the secret from `VOYAGER_VELOCITY_SECRET` or `voyager.velocity.secret`; a blank secret refuses to start (ADR-0025) | A proxied player keeps the real UUID that LuckPerms keys on, and a misconfigured secret cannot silently turn signature checking off |
 
 ### Non-goals
 
@@ -133,6 +135,14 @@ voyager-fitness      -> all                            (test-only, ArchUnit)
 `voyager-api` contains no implementation. `voyager-physics` depends only on `api` and is
 free of Minestom, of the game, and of the database.
 
+**Rings and slices (refinement, 2026-10-10).** The rings and the vertical slices that organise these modules are
+recorded in [ADR-0017](../../decisions/0017-clean-architecture-with-vertical-slices.md) and explained in
+[docs/explanation/architecture.md](../../explanation/architecture.md). They refine decision D8: the eight-module cut
+is unchanged, and slices are packages inside the modules. They refine decision D10: DI annotations appear only in
+the composition roots (`voyager-server`, `voyager-setup`), and no platform class carries one. The record does not
+change "ECS at the tick layer only" below; the rebuild's tick is an explicit ordered list (see Dependency
+injection).
+
 ### Package root
 
 Every module of the rebuild places its packages under `net.elytrarace.voyager..` — `voyager-api`
@@ -140,8 +150,8 @@ at `net.elytrarace.voyager.api`, `voyager-platform` at `net.elytrarace.voyager.p
 on. The base package stays `net.elytrarace`.
 
 The sub-root is not cosmetic. The tree being replaced already owns `net.elytrarace.api`
-(`shared/conversation-api`, `shared/database`), `net.elytrarace.server` (`server/`) and
-`net.elytrarace.setup` (`plugins/setup`). A rule written as `resideInAPackage("net.elytrarace.api..")`
+(`legacy/shared/conversation-api`, `legacy/shared/database`), `net.elytrarace.server` (`legacy/server/`) and
+`net.elytrarace.setup` (`legacy/plugins/setup`). A rule written as `resideInAPackage("net.elytrarace.api..")`
 would silently span both trees the moment they share a classpath, and the old side violates several
 of these rules. Scoping the rebuild to its own sub-root keeps every fitness rule meaning what it
 says until E7 deletes the old tree.
@@ -159,8 +169,8 @@ that cannot be constructed cannot be sent.
 ### voyager-fitness
 
 ArchUnit today lives in the `server` test source set and therefore imports only what
-`server` depends on — `shared/common` and `shared/database`. `shared/conversation-api`,
-`shared/spline`, `plugins/game` and `plugins/setup` are never scanned, so the isolation
+`server` depends on — `legacy/shared/common` and `legacy/shared/database`. `legacy/shared/conversation-api`,
+`legacy/shared/spline`, `legacy/plugins/game` and `legacy/plugins/setup` are never scanned, so the isolation
 rules `CLAUDE.md` documents for them have no effect.
 
 A dedicated test-only module depending on every other module is the only construction
@@ -191,39 +201,35 @@ The version catalog stays programmatic in `settings.gradle.kts`, per project con
 
 ### Dependency injection
 
-`io.airlift:guice:10`, pinned exactly. Package names are unchanged (`com.google.inject.*`); the fork
-is a coordinate move, not an API change.
+`io.avaje:avaje-inject:12.7` with `io.avaje:avaje-inject-generator:12.7` as annotation processor, pinned exactly.
+The container generates its wiring at compile time and uses no reflection. Dependency annotations are the
+standard `jakarta.inject` (JSR-330) set, plus the avaje annotations `@Factory`, `@Bean` and `BeanScope`. Decision
+record: [ADR-0016](../../decisions/0016-replace-guice-with-avaje-inject.md).
 
-Upstream `com.google.inject:guice:7.0.0` was evaluated and rejected — but not for the reason usually
-given. It **does** run on Java 25: the `Unsupported class file major version 69` that ASM raises is
-caught inside `LineNumbers` and logged once as a warning, so only source locations in error messages
-degrade. The same holds for JDK 26 and `Unsafe`: `UnsafeClassDefiner` catches the failure and falls
-back to `ChildClassDefiner`, costing the fast hidden-class definer rather than the process. The
-rejection is a maintenance judgement: no release since 2023-05-12, two open Java-25 issues whose
-every comment is from a non-maintainer, and a master branch still pinning ASM 9.5.
+**DI annotations do not appear outside the composition roots.** Domain classes in `voyager-api`,
+`voyager-physics`, `voyager-race`, `voyager-platform` and `voyager-persistence` have ordinary constructors and no
+`@Inject`, no `@Singleton`, no `jakarta.inject` or `io.avaje.inject` import at all. Wiring happens in
+`@Factory` classes with `@Bean` methods that live in `voyager-server` and, once it exists, `voyager-setup`. A
+`@Bean` method calls a class's constructor directly, so cross-module classes need no annotation. This keeps
+every domain class constructible with `new` in a test, and a decision to drop the container later touches two
+modules rather than eight.
 
-The fork removes both failure modes at the root — line numbers come from the JDK's own
-`java.lang.classfile` API, and there is no `HiddenClassDefiner` because there is no bytecode
-generation. It is exercised in production by Trino on JDK 25. The cost is that **AOP is removed**;
-`bindInterceptor` throws. Voyager does not intercept — ECS systems are registered explicitly — so
-this is a non-cost here, and a fitness rule keeps it that way.
+Eager construction replaces the former `Stage.PRODUCTION` requirement: every singleton the root declares is
+constructed when `BeanScope` is built, so a wiring mistake fails at boot rather than lazily initialising
+something inside the tick loop. A missing or ambiguous bean fails `compileJava`.
 
-**DI annotations do not appear outside the composition roots.** Domain classes in `voyager-physics`,
-`voyager-race` and `voyager-persistence` have ordinary constructors and no `@Inject`, no
-`@Singleton`, no `jakarta.inject` import at all. Wiring happens in explicit `@Provides` methods in
-Guice modules that live in `voyager-server` and `voyager-setup`. This keeps every domain class
-constructible with `new` in a test, keeps the container swappable, and means a decision to drop DI
-later touches two modules rather than eight.
+The ECS system pipeline is not a container collection. It is one `@Bean` method in the composition root that returns
+an explicit, unmodifiable ordered `List`. Injected `List<T>` does not guarantee order, and system order in a
+fixed-step simulation is a correctness property, not a detail.
 
-`Stage.PRODUCTION` is mandatory: eager singletons and upfront error checking mean a wiring mistake
-fails at boot rather than lazily initialising something inside the tick loop.
+Fitness rules: `voyager-api`, `voyager-physics`, `voyager-race` and `voyager-platform` reference neither
+`jakarta.inject..` nor `io.avaje.inject..`; outside the composition roots (`voyager-server`, and `voyager-setup`
+once it exists) no module does.
 
-`Multibinder` is **not** used for the ECS system pipeline. Its iteration order is documented as
-consistent only within a single module, and system order in a fixed-step simulation is a correctness
-property, not a detail. The pipeline is bound as an explicit ordered `List`.
-
-Fitness rules: no class outside the composition roots may reference `com.google.inject..` or
-`jakarta.inject..`; no code may call `bindInterceptor`; `voyager-api` references neither.
+*Historical note.* The first version of this section chose `io.airlift:guice:10`, a Trino-maintained fork of Guice
+that runs on Java 25 and drops ASM and `Unsafe`, because upstream `com.google.inject:guice` had no release since 2023-05-12.
+Guice resolves the graph at runtime through reflection, so a wiring mistake surfaced at boot. The rebuild
+replaced it with avaje-inject, which fails the build instead; see ADR-0016.
 
 ### Java 25 usage
 
@@ -293,7 +299,7 @@ slice, and firework events. This is sufficient because the client's position seq
 exactly the quantity the plausibility check later measures against — the test targets the
 reality that matters in production. A client mod would cost several times more.
 
-Fixtures live in `voyager-physics/src/test/resources/traces/`, each with metadata for
+Fixtures live in `voyager/physics/src/test/resources/traces/`, each with metadata for
 Minecraft version and initial state.
 
 Acceptance thresholds, **measured** against all nine recorded profiles in E2b Task 7
@@ -366,13 +372,13 @@ was impossible without one.
 
 Segment-plane intersection against the ring disc, hand-written, tested, **once**. Ten
 lines of vector arithmetic do not justify a dependency. The current tree has it twice —
-`plugins/game` via commons-geometry, `server` hand-written — and the two disagree at the
+`legacy/plugins/game` via commons-geometry, `server` hand-written — and the two disagree at the
 edges.
 
 ### One format, one model, one loader
 
 `voyager-api` defines map, cup, ring and boost configuration. `voyager-race` loads them.
-Today `BoostConfig` (server) and `BoostConfigDTO` (`shared/common`) carry the same three
+Today `BoostConfig` (server) and `BoostConfigDTO` (`legacy/shared/common`) carry the same three
 fields, boxed in one and primitive in the other, and the DTO's javadoc links backwards to
 a server class.
 
@@ -453,7 +459,7 @@ Hibernate ORM 7 with HikariCP over MariaDB, schema owned by Flyway. The module d
 `voyager-api` and nothing else. It contains no race types, no Minestom types, and it exports no
 Hibernate types.
 
-The current tree does not have this boundary. `shared/database` compiles against `shared:common`
+The current tree does not have this boundary. `legacy/shared/database` compiles against `shared:common`
 and its `GameResultEntity` imports `net.elytrarace.common.game.mode.GameMode` directly, so the
 persistence module knows the game. Its repositories return `CompletableFuture` from
 `ForkJoinPool.commonPool()` (no executor is passed to `supplyAsync`), timestamps are written with
@@ -713,9 +719,9 @@ acceptance criterion that cannot drift: **no `Using filesort`, no `Using tempora
 therefore no history worth preserving. It stays a single script until the first real environment runs
 it; from then on it is append-only and applied scripts are never edited.
 
-The existing `V1`–`V4` under `shared/database` are **not carried forward**. They describe different
+The existing `V1`–`V4` under `legacy/shared/database` are **not carried forward**. They describe different
 table names, mixed-case columns, a records design this specification removes, and in `V3` a repair of
-a Hibernate-7 UUID mapping mistake the new schema does not make. They stay with `shared/database` and
+a Hibernate-7 UUID mapping mistake the new schema does not make. They stay with `legacy/shared/database` and
 are deleted at E7.
 
 | Flyway setting | Value | Why |
@@ -775,7 +781,7 @@ naming currently covers Gson deserializers only. This module extends it to row-t
 
 ### Defects in the current layer that this section fixes
 
-Lost update on map records; `shared/database` importing `shared/common` game types in violation of a
+Lost update on map records; `legacy/shared/database` importing `legacy/shared/common` game types in violation of a
 documented rule that no ArchUnit test enforces; blocking JDBC on `ForkJoinPool.commonPool()`;
 `hbm2ddl.auto` defaulting to `update` against ADR-0011; `baselineOnMigrate=true` silently skipping
 `V1`; server-local timestamps with no timezone forced on the JDBC session; and a dangling
@@ -951,6 +957,11 @@ resolution fails on a transitive dependency with no visible relationship to Clou
 artifact at all. It reads two system properties and one stdin stream; that is the entire contract,
 expressible in plain JDK types. Bundling CloudNet's driver or bridge classes produces duplicates
 across classloaders, not a working service.
+
+**The stdin contract has one command.** The line `stop` on standard input runs the clean shutdown and exits with status 0.
+The shutdown runs on a platform thread, not on the reader's thread, because stopping closes the reader's input. Every other
+line goes to the console command dispatcher, and `end` is not a command: it gets the reply `Unknown command: end`.
+A player stops the server with `/stop` only when the player holds `voyager.command.stop`.
 
 If Voyager later needs to *call* CloudNet — routing a player to a lobby task after a cup, resolving
 permissions across the network, reading service snapshots — that is a separate ninth module,
@@ -1223,6 +1234,11 @@ disappears — both sides read and write the same format with the same library.
 redesigned. This requires its own research epic before E6 is planned and is deliberately
 not resolved in this document.
 
+**Authoring model (2026-10-09).** The first slice of the setup server places disc rings from
+the builder's pose and stores drafts in the game's own map format. Its decision record is
+[ADR-0018](../../decisions/0018-pose-placement-authoring-model-for-setup.md); research 005 and
+the spike record 006 are its inputs. The stored geometry stays the disc of `Ring`.
+
 ## Testing strategy
 
 | Layer | Approach |
@@ -1256,8 +1272,8 @@ that must surface in weeks, not after a cup system exists.
 follow the cut. The rebuild does not need to catch up with the current Java tree before
 replacing it.
 
-**Removed at cut-over:** `server/`, `plugins/game/`, `plugins/setup/`, all four
-`shared/*` modules, and with them roughly 34 tests that exclusively cover dead code
+**Removed at cut-over:** `legacy/server/`, `legacy/plugins/game/`, `legacy/plugins/setup/`, all four
+`legacy/shared/*` modules, and with them roughly 34 tests that exclusively cover dead code
 (`GameLoopSystemTest`, `GameSessionTest`, `CupFlowServiceTest`, `CupScoringTest`).
 
 ## Documentation
@@ -1285,7 +1301,7 @@ CI, Release Please and Renovate are untouched.
 | Minecraft 26.3 ships during the rebuild | Possible double migration | Minestom is confined to `voyager-platform`; re-check `releases.atom` at E4 |
 | Vanilla 26.2 recording setup is more work than estimated | E2 slips, and E2 gates everything | Prototype the recorder before committing to E2 scope |
 | Server-side recording lacks the client's internal velocity | Some divergence classes invisible | Accepted: position sequence is what production measures too |
-| `io.airlift:guice` is a single-vendor fork aligned to Trino's needs | Abandonment would force a DI migration | Annotations confined to two composition roots, so a swap touches two modules; pin the exact version and re-check before a JDK 26 migration |
+| avaje-inject generator or API changes across major versions break the composition root at upgrade | Build fails until the `@Factory`/`@Bean` code is adapted | Annotations confined to two composition roots, so a swap touches two modules; pin the exact version and re-check the generator before a JDK 26 migration |
 
 ## Evidence
 
@@ -1300,16 +1316,16 @@ no provider or registry, no `@ApiStatus.Internal`.
 `CupScoring` are never instantiated outside their own tests. `GameLoopSystem` says so in
 its own javadoc. The gameplay exists twice.
 
-**Triplicated spline logic:** `shared/spline/SplineGenerator` (whose javadoc claims to be
-the only place that knows the algorithm), `shared/common/utils/SplineAPI`, and
-`SplineVisualizationSystem`. `server` does not even depend on `:shared:spline`.
+**Triplicated spline logic:** `legacy/shared/spline/SplineGenerator` (whose javadoc claims to be
+the only place that knows the algorithm), `legacy/shared/common/utils/SplineAPI`, and
+`SplineVisualizationSystem`. `server` does not even depend on `:legacy:shared:spline`.
 
-**Duplicated `Simple*` pattern** inside `plugins/game`: `CupSystem`/`SimpleCupSystem`,
+**Duplicated `Simple*` pattern** inside `legacy/plugins/game`: `CupSystem`/`SimpleCupSystem`,
 `GameStateSystem`/`SimpleGameStateSystem`, `SplineSystem`/`SimpleSplineSystem`,
 `WorldComponent`/`SimpleWorldComponent`, and more.
 
 **Ineffective architecture tests:** ArchUnit scans only the `server` test classpath.
-Rules documented for `shared/conversation-api`, `shared/spline` and both plugins never
+Rules documented for `legacy/shared/conversation-api`, `legacy/shared/spline` and both plugins never
 run. `allowEmptyShould(true)` lets several rules pass vacuously. A `DependencyInjectionTest`
 was lost when the former `fitness` module was dropped from `settings.gradle.kts`.
 

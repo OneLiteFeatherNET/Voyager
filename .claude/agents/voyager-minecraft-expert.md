@@ -99,3 +99,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Lumen** (voyager-scientist) — when a decompiled-source finding deserves preservation in docs/research/ with proper IEEE references.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Hexagonal Architecture (Ports & Adapters)" — protocol and vanilla behaviour are described as ports; the Minestom implementation is an adapter.
+- "Clean Architecture" — vanilla formulas are documented as domain rules, independent of the server platform.

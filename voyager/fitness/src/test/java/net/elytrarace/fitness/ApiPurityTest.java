@@ -1,0 +1,379 @@
+package net.elytrarace.fitness;
+
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaCall;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.properties.HasName;
+import com.tngtech.archunit.core.domain.properties.HasOwner;
+import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchRule;
+
+import net.minestom.server.coordinate.Vec;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
+/**
+ * voyager-api is the module every other module depends on, so anything it drags in is dragged in
+ * everywhere. These rules are the reason the dependency direction in the module graph holds.
+ */
+@AnalyzeClasses(packages = "net.elytrarace.voyager", importOptions = ImportOption.DoNotIncludeTests.class)
+class ApiPurityTest {
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnMinestomOrItsWorldLoader =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.minestom..", "net.onelitefeather.falco..")
+                    .because("Minestom types and the Falco world loader that reads region files for "
+                            + "it are both platform detail and belong to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnPaper =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
+                    .because("Paper is dropped entirely by the rebuild")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnPersistenceTechnology =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
+                    .because("ports live in the api module, ORM technology does not")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnADiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition roots")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule apiDoesNotPerformFileIo =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("java.nio.file..")
+                    .because("voyager-api declares configuration types and never loads them")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnMinestomOrItsWorldLoader =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.minestom..", "net.onelitefeather.falco..")
+                    .because("Minestom types and the Falco world loader that reads region files for "
+                            + "it are both platform detail and belong to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnPaper =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
+                    .because("Paper is dropped entirely by the rebuild")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnPersistenceTechnology =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
+                    .because("the physics module simulates flight, ORM technology does not belong here")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnADiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition roots")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotPerformFileIo =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("java.nio.file..")
+                    .because("the physics module has no configuration of any kind and never loads files")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnRaceOrPlatform =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform..")
+                    .because("physics is a pure simulation core that race and platform depend on, not vice versa")
+                    .allowEmptyShould(false);
+
+    // voyager-race is the module whose defining property is that a whole race runs without a server,
+    // and until these three rules landed nothing enforced it: race appeared in this file only as a
+    // forbidden target of physics, never as a subject. Xerus is named explicitly because the spec
+    // names it ("Xerus is Minestom-bound and therefore may not appear in voyager-race") and because
+    // E4 is the stage that first puts it on a neighbouring module's classpath, which is exactly when
+    // an unenforced prohibition turns into an argument.
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnMinestomXerusOrItsWorldLoader =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("net.minestom..", "net.theevilreaper.xerus..",
+                            "net.onelitefeather.falco..")
+                    .because("a whole race has to play out in JUnit; Minestom, the Minestom-bound "
+                            + "Xerus phase system and the Falco world loader that reads a racetrack "
+                            + "off disk are all platform detail and belong to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnPaper =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
+                    .because("Paper is dropped entirely by the rebuild")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnPersistenceTechnology =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
+                    .because("the race domain scores a run; storing one is voyager-persistence's job")
+                    .allowEmptyShould(false);
+
+    // E4 puts voyager-platform and voyager-server on this module's classpath for the first time.
+    // They are the two modules where a stray import does the most damage, because they are the only
+    // ones with a platform to reach for — so they land with purity rules already in place, not added
+    // after the fact in the final review the way voyager-race's were in E3. The existing rules above
+    // already forbid Minestom for voyager-api and voyager-physics, and forbid Minestom-and-Xerus for
+    // voyager-race, and physicsDoesNotDependOnRaceOrPlatform already forbids voyager-platform for
+    // voyager-physics — the six rules below close the remaining gaps: Xerus for voyager-api and
+    // voyager-physics, voyager-platform for voyager-api and voyager-race, voyager-server for
+    // voyager-platform, and the DI container for every module except voyager-server.
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnXerus =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.theevilreaper.xerus..")
+                    .because("Xerus is Minestom-bound and belongs to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnPlatform =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.platform..")
+                    .because("voyager-api is the module every other module depends on; a dependency "
+                            + "back on voyager-platform would put a platform type into every module's graph")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule physicsDoesNotDependOnXerus =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.theevilreaper.xerus..")
+                    .because("Xerus is Minestom-bound and belongs to voyager-platform alone")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnPlatform =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.platform..")
+                    .because("a whole race has to play out in JUnit; voyager-platform depends on "
+                            + "voyager-race, not the other way around")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule platformDoesNotDependOnServer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.server..")
+                    .because("voyager-server is the composition root that depends on voyager-platform, "
+                            + "not the other way around")
+                    .allowEmptyShould(false);
+
+    // Minestom's Shape interface does not expose the boxes a shape is made of; only the ShapeImpl
+    // record does, so reading them needs a cast to an implementation type. That cast is confined to
+    // BlockShapes so a Minestom upgrade that changes the runtime type breaks in one place — a
+    // constraint the brief for this stage states in prose, which is the kind of statement that
+    // quietly stops being true. Now it cannot: a second class reaching for ShapeImpl turns this red.
+    @ArchTest
+    static final ArchRule onlyBlockShapesReachesForMinestomsShapeImplementation =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.platform.collision.BlockShapes")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("net.minestom.server.collision.ShapeImpl")
+                    .because("the one cast past Minestom's Shape interface lives in BlockShapes alone")
+                    .allowEmptyShould(false);
+
+    // Task 2 left this as a finding for whoever wired the first tick loop: the design's single
+    // velocity exit was stated in prose only. "One place to look when a velocity turns up that
+    // should not have" is worth nothing if a second place can be added without the build noticing,
+    // and E4's tick driver is where the temptation first appears — it is the first code that holds a
+    // per-tick velocity for a live player. Matched by call target name and owner package rather than
+    // by the declared type at the call site: setVelocity is inherited from Entity, so a caller
+    // holding an Entity or a LivingEntity emits a different owner and would walk past a rule pinned
+    // to Player.
+    private static final DescribedPredicate<JavaCall<?>> SET_VELOCITY_ON_A_MINESTOM_TYPE =
+            JavaCall.Predicates.target(HasName.Predicates.name("setVelocity"))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.resideInAPackage("net.minestom.."))))
+                    .as("call setVelocity on a Minestom type");
+
+    @ArchTest
+    static final ArchRule onlyVelocityExitSendsAVelocityToMinestom =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.platform.convert.VelocityExit")
+                    .should().callMethodWhere(SET_VELOCITY_ON_A_MINESTOM_TYPE)
+                    .because("normal elytra flight is client-authoritative and the server simulates "
+                            + "silently alongside it; a velocity reaches Minestom only for the launch "
+                            + "that starts a map, a ring BOOST/SLOW effect and an out-of-bounds reset, "
+                            + "and all three go through "
+                            + "net.elytrarace.voyager.platform.convert.VelocityExit. The firework "
+                            + "boost is not among them: it spawns a real rocket entity and lets the "
+                            + "client apply Vanilla's own impulse")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule onlyVectorsBuildsAMinestomVectorFromDomainCoordinates =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.platform.convert.Vectors")
+                    .should().callConstructor(Vec.class, double.class, double.class, double.class)
+                    .because("the Vec3 <-> Minestom boundary is one class, so a value that crossed it "
+                            + "without the finiteness re-assertion — or with a unit conversion the "
+                            + "coordinate path must not carry — has exactly one place to have come from")
+                    .allowEmptyShould(false);
+
+    // E4 puts the first JSON parser in the rebuild on a classpath, in voyager-platform's catalogue.
+    // The design's claim is that every module modelling a race is handed a catalog rather than a
+    // file — which is what lets a whole race play out in JUnit against definitions built in code —
+    // and until this rule landed, that claim rested on nobody having reached for Gson yet.
+    //
+    // Written as "everything outside voyager-platform" rather than one rule per module, for the same
+    // reason onlyServerDependsOnDiContainer below is: a future rebuild module is then covered by
+    // construction instead of needing its own purity rule remembered on top of it. It names all four
+    // guarded modules in its description so FitnessCoverageTest's second assertion can see them, and
+    // it was made red once per guarded module before being left green.
+    @ArchTest
+    static final ArchRule onlyPlatformDependsOnGson =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.google.gson..")
+                    .as("no classes in net.elytrarace.voyager.api.., net.elytrarace.voyager.physics.., "
+                            + "net.elytrarace.voyager.race.. or net.elytrarace.voyager.server.. should "
+                            + "depend on Gson")
+                    .because("the map and cup catalogue is the only thing in the rebuild that parses "
+                            + "JSON, and it lives in voyager-platform; every other module is handed a "
+                            + "MapCatalog or a CupCatalog rather than a file, which is what lets a "
+                            + "whole race play out in JUnit")
+                    .allowEmptyShould(false);
+
+    // Task 13 put a translated, coloured player-facing layer on a build whose entire vocabulary was
+    // five uncoloured Component.text strings scattered through a tick loop. Nothing would stop it
+    // rotting back: a Component.text("Ring 12/35") added to a hot path compiles, works, looks fine
+    // in a screenshot, and can never be translated, recoloured or found by somebody asking where the
+    // game says a thing. So the boundary is a rule rather than a paragraph.
+    //
+    // Matched by call target name and owner, because Component.text is a static interface method
+    // with a dozen overloads and a rule pinned to one signature would be walked past by the next
+    // one. Component.empty() is deliberately NOT matched: it is the absence of a string, which is
+    // how the action bar is cleared and how a title says "no subtitle", and neither is something to
+    // translate.
+    //
+    // ONE EXCEPTION, and it is named rather than pattern-matched so that a second one has to be
+    // argued for: RaceCommand's status output. /race prints an operator diagnostic — coordinates,
+    // tick counts, a gliding flag, the drift between the client's position and the server's
+    // simulation — assembled by CupSession.describe() as one block of plain text. It has no
+    // audience but somebody debugging, and forty translation keys for a dump of numbers would make
+    // it harder to read and impossible to extend without editing a bundle.
+    private static final DescribedPredicate<JavaCall<?>> BUILD_A_TEXT_COMPONENT_FROM_A_STRING =
+            JavaCall.Predicates.target(HasName.Predicates.name("text"))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.assignableTo("net.kyori.adventure.text.Component"))))
+                    .as("build a text component out of a literal");
+
+    @ArchTest
+    static final ArchRule onlyTheTextPackageBuildsAUserFacingString =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.platform.text..")
+                    .and().doNotHaveFullyQualifiedName(
+                            "net.elytrarace.voyager.server.command.RaceCommand")
+                    .should().callMethodWhere(BUILD_A_TEXT_COMPONENT_FROM_A_STRING)
+                    .as("no classes in net.elytrarace.voyager.api.., net.elytrarace.voyager.physics.., "
+                            + "net.elytrarace.voyager.race.., net.elytrarace.voyager.platform.. or "
+                            + "net.elytrarace.voyager.server.. outside the text package should build "
+                            + "a Component.text")
+                    .because("every user-facing string is a translation key resolved through "
+                            + "net.elytrarace.voyager.platform.text.Messages, so that it can be "
+                            + "translated, coloured from one palette and found in one file; the one "
+                            + "exception is /race's operator diagnostic, which is a dump of numbers "
+                            + "with no audience but somebody debugging")
+                    .allowEmptyShould(false);
+
+    // Written as "everything outside voyager-server" rather than one rule per module, so a future
+    // rebuild module is covered by construction instead of needing its own DI-purity rule remembered
+    // on top. The race and platform rules below are still written out per module, because those two
+    // are the modules that must never grow a composition root of their own (design decision 1).
+    @ArchTest
+    static final ArchRule raceDoesNotDependOnADiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition root in voyager-server")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule platformDoesNotDependOnADiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition root in voyager-server")
+                    .allowEmptyShould(false);
+
+    // voyager-setup is the second composition root (ADR-0018, design decision 1). Its rules are written
+    // against net.elytrarace.voyager.setup, so that FitnessCoverageTest can see the module is constrained.
+    // The DI container is allowed in setup only in its inject package and in SetupServer, the one main.
+    @ArchTest
+    static final ArchRule onlyServerAndSetupDependOnDiContainer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.server..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.setup.inject..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.setup.SetupServer")
+                    .should().dependOnClassesThat().resideInAnyPackage("io.avaje.inject..", "jakarta.inject..")
+                    .because("DI annotations are confined to the composition roots: voyager-server, and "
+                            + "net.elytrarace.voyager.setup in its inject package and SetupServer")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule setupDomainOnlyDependsOnApiAndJdk =
+            classes().that().resideInAPackage("net.elytrarace.voyager.setup.mapsetup..")
+                    .should().onlyDependOnClassesThat().resideInAnyPackage(
+                            "net.elytrarace.voyager.api..", "net.elytrarace.voyager.setup.mapsetup..",
+                            "java..", "org.jetbrains..")
+                    .because("the pure map-authoring logic of net.elytrarace.voyager.setup depends on the API "
+                            + "and the JDK only: no Minestom, no Gson, no DI container, no platform")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule setupDoesNotDependOnServer =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.setup..")
+                    .should().dependOnClassesThat().resideInAnyPackage("net.elytrarace.voyager.server..")
+                    .because("the setup server of net.elytrarace.voyager.setup does not share code with the game "
+                            + "server; both are composition roots over api and platform")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule serverAndPlatformAndApiDoNotDependOnSetup =
+            noClasses().that().resideInAnyPackage("net.elytrarace.voyager.api..", "net.elytrarace.voyager.physics..",
+                            "net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAPackage("net.elytrarace.voyager.setup..")
+                    .because("voyager-setup is a composition root at the top of the graph; nothing below it may "
+                            + "depend on net.elytrarace.voyager.setup")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule setupDoesNotDependOnBukkit =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.setup..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.bukkit..")
+                    .because("Paper is dropped entirely by the rebuild; the setup server is a Minestom application "
+                            + "in net.elytrarace.voyager.setup")
+                    .allowEmptyShould(false);
+
+    // Guice is no longer on the build (design decision 6 of switch-di-to-avaje-inject); this keeps it
+    // from coming back under either of its artifact package names.
+    @ArchTest
+    static final ArchRule noClassDependsOnGuice =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .should().dependOnClassesThat().resideInAnyPackage("com.google.inject..", "io.airlift..")
+                    .because("the rebuild wires its composition root with avaje-inject, and Guice is gone")
+                    .allowEmptyShould(false);
+}

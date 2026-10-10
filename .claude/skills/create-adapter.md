@@ -20,8 +20,8 @@ Before starting, collect:
 
 | Adapter kind | Package | Directory |
 |---|---|---|
-| Regular domain adapter | `net.elytrarace.common.adapter` | `shared/common/src/main/java/net/elytrarace/common/adapter/` |
-| Component adapter | `net.elytrarace.common.adapter.component` | `shared/common/src/main/java/net/elytrarace/common/adapter/component/` |
+| Regular domain adapter | `net.elytrarace.common.adapter` | `legacy/shared/common/src/main/java/net/elytrarace/common/adapter/` |
+| Component adapter | `net.elytrarace.common.adapter.component` | `legacy/shared/common/src/main/java/net/elytrarace/common/adapter/component/` |
 
 The class name must follow the pattern `{TypeName}Adapter` (e.g., `RingAdapter`, `TitleComponentAdapter`).
 
@@ -90,8 +90,8 @@ import net.elytrarace.common.annotation.NotNullByDefault;
 ### 5. Write the JUnit 5 test
 
 Create the test at:
-- Regular: `shared/common/src/test/java/net/elytrarace/common/adapter/{TypeName}AdapterTest.java`
-- Component: `shared/common/src/test/java/net/elytrarace/common/adapter/component/{TypeName}AdapterTest.java`
+- Regular: `legacy/shared/common/src/test/java/net/elytrarace/common/adapter/{TypeName}AdapterTest.java`
+- Component: `legacy/shared/common/src/test/java/net/elytrarace/common/adapter/component/{TypeName}AdapterTest.java`
 
 Minimum test coverage:
 

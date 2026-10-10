@@ -18,7 +18,7 @@ files that are then copied into the game server template.
 
 - CloudNet v4 RC16 or newer installed and running
 - MariaDB 11.8 accessible from the node(s) that run the ElytraRace task
-- Game server JAR built: `./gradlew :server:shadowJar`
+- Game server JAR built: `./gradlew :legacy:server:shadowJar`
 
 ## Step 1 — Create the CloudNet task
 
@@ -69,7 +69,7 @@ CloudNet loads `ElytraRace/default/` as the working directory of each started se
 
 ```
 local/templates/ElytraRace/default/
-  app.jar          # Shadow JAR renamed from server/build/libs/Voyager-<version>.jar
+  app.jar          # Shadow JAR renamed from legacy/server/build/libs/Voyager-<version>.jar
   worlds/          # Anvil world directories, one per map
     my-race-map/
       level.dat
@@ -79,7 +79,7 @@ local/templates/ElytraRace/default/
 Copy the JAR:
 
 ```bash
-cp server/build/libs/Voyager-*.jar \
+cp legacy/server/build/libs/Voyager-*.jar \
   local/templates/ElytraRace/default/app.jar
 ```
 

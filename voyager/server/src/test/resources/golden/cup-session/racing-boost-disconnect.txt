@@ -1,0 +1,1784 @@
+## start
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,000 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+  Ada actionbar ""
+  Ben actionbar ""
+logs
+  INFO Cup 'grand_tour' started: 2 map(s), mode RACE, lobby PT3.5S, race PT1S, results PT0.2S between maps and PT0.2S after the last
+## tick 1
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,050 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 2
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,100 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 3
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,150 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 4
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,200 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 5
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,250 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 6
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,300 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 7
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,350 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 8
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,400 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 9
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' running — map 1/2 '-', phase LOBBY after 0,450 s, race clock 0,000 s (0 tick(s))
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 10
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,500 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+  Ada chat {"translate":"voyager.map.banner","with":["1","2","ridge-run","1","0:00"]}
+  Ada title-times 0 15 5
+  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
+  Ada title {"translate":"voyager.countdown.digit","with":["3"]}
+  Ben chat {"translate":"voyager.map.banner","with":["1","2","ridge-run","1","0:00"]}
+  Ben title-times 0 15 5
+  Ben subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
+  Ben title {"translate":"voyager.countdown.digit","with":["3"]}
+logs
+## tick 11
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,550 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 12
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,600 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 13
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,650 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 14
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,700 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 15
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,750 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 16
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,800 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 17
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,850 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 18
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,900 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 19
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 0,950 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 20
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,000 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 21
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,050 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 22
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,100 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 23
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,150 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 24
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,200 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 25
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,250 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 26
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,300 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 27
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,350 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 28
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,400 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 29
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,450 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 30
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,500 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+  Ada title-times 0 15 5
+  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
+  Ada title {"translate":"voyager.countdown.digit","with":["2"]}
+  Ben title-times 0 15 5
+  Ben subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
+  Ben title {"translate":"voyager.countdown.digit","with":["2"]}
+logs
+## tick 31
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,550 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 32
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,600 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 33
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,650 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 34
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,700 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 35
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,750 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 36
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,800 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 37
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,850 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 38
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,900 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 39
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 1,950 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 40
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,000 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 41
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,050 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 42
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,100 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 43
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,150 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 44
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,200 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 45
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,250 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 46
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,300 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 47
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,350 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 48
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,400 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 49
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,450 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 50
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,500 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+  Ada title-times 0 15 5
+  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
+  Ada title {"translate":"voyager.countdown.digit","with":["1"]}
+  Ben title-times 0 15 5
+  Ben subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
+  Ben title {"translate":"voyager.countdown.digit","with":["1"]}
+logs
+## tick 51
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,550 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 52
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,600 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 53
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,650 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 54
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,700 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 55
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,750 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 56
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,800 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 57
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,850 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 58
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,900 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 59
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 2,950 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 60
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,000 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 61
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,050 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 62
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,100 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 63
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,150 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 64
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,200 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 65
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,250 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 66
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,300 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 67
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,350 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 68
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,400 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 69
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase LOBBY after 3,450 s, race clock 0,000 s (0 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+logs
+## tick 70
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,000 s, race clock 0,050 s (1 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+    Ben: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
+messages
+  Ada title-times 0 10 5
+  Ada subtitle ""
+  Ada title {"translate":"voyager.countdown.go"}
+  Ben title-times 0 10 5
+  Ben subtitle ""
+  Ben title {"translate":"voyager.countdown.go"}
+logs
+  INFO Map 1/2 'ridge-run' started on world 'ridge_arena' with 2 racer(s) — world 'ridge_arena': 360 chunk(s) skipped for want of data
+## tick 71
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,050 s, race clock 0,100 s (2 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=66.05604802055359, z=6.2207200069427495] v=Vec3[x=0.0, y=1.0560480205535887, z=0.7207200069427492]
+    Ben: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=66.05604802055359, z=6.2207200069427495] v=Vec3[x=0.0, y=1.0560480205535887, z=0.7207200069427492]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.1",{"color":"white","text":"0"},"1","      "]}
+  Ben actionbar {"translate":"voyager.hud.flight","with":["0:00.1",{"color":"white","text":"0"},"1","      "]}
+logs
+## tick 72
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,100 s, race clock 0,150 s (3 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.07137510045716, z=6.934232820689393] v=Vec3[x=0.0, y=1.0153270799035647, z=0.7135128137466433]
+    Ben: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.07137510045716, z=6.934232820689393] v=Vec3[x=0.0, y=1.0153270799035647, z=0.7135128137466433]
+messages
+logs
+## tick 73
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,150 s, race clock 0,200 s (4 tick(s))
+    Ada: ring 0, gliding=true, boost burning 3 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.04679565774701, z=7.640610513103158] v=Vec3[x=0.0, y=0.48771027864492544, z=1.2031888462068827]
+    Ben: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.04679565774701, z=7.640610513103158] v=Vec3[x=0.0, y=0.9754205572898509, z=0.7063776924137654]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.2",{"color":"white","text":"0"},"1","      "]}
+  Ben actionbar {"translate":"voyager.hud.flight","with":["0:00.2",{"color":"white","text":"0"},"1","      "]}
+logs
+## tick 74
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,200 s, race clock 0,250 s (5 tick(s))
+    Ada: ring 0, gliding=true, boost burning 2 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.5051517397399, z=8.831767482322475] v=Vec3[x=0.0, y=0.22917804099644626, z=1.4455784846096584]
+    Ben: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.98310782211426, z=8.339924435329328] v=Vec3[x=0.0, y=0.9363121643672548, z=0.6993139222261703]
+messages
+logs
+## tick 75
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,250 s, race clock 0,300 s (6 tick(s))
+    Ada: ring 0, gliding=true, boost burning 1 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.71014622390618, z=10.262890195872147] v=Vec3[x=0.0, y=0.10249724208313592, z=1.5655613567748363]
+    Ben: ring 1 (complete), gliding=true, boost ready, client Pos[x=3.5, y=73.0, z=25.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=69.88109376067145, z=9.032245225002415] v=Vec3[x=0.0, y=0.8979859385571772, z=0.6923207896730859]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"white","text":"0"},"1","      "]}
+  Ben chat {"translate":"voyager.race.finished","with":["ridge-run","0:00.3"]}
+  Ben actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"#5BFF8F","text":"1"},"1","      "]}
+logs
+  INFO Ben finished 'ridge-run' on tick 6 (0,300 s)
+## tick 76
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,300 s, race clock 0,350 s (7 tick(s))
+    Ada: ring 0, gliding=true, boost cooling down 5 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.79099352272117, z=11.812795954009593] v=Vec3[x=0.0, y=0.04042364940749161, z=1.6249528790687222]
+    Ben: ring 1 (complete), gliding=true, boost ready, client Pos[x=3.5, y=73.0, z=25.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=70.74151999720374, z=9.717642813381255] v=Vec3[x=0.0, y=0.8604262365322864, z=0.6853975883788406]
+messages
+logs
+## tick 77
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,350 s, race clock 0,400 s (8 tick(s))
+    Ada: ring 0, gliding=true, boost cooling down 4 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.81100869953006, z=13.421499319784386] v=Vec3[x=0.0, y=0.020015176808891973, z=1.6087033657747933]
+    Ben: ring 1 (complete), gliding=true, boost ready, client Pos[x=3.5, y=73.0, z=25.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=71.56513772503524, z=10.396186432412769] v=Vec3[x=0.0, y=0.823617727831499, z=0.678543619031513]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.4",{"color":"white","text":"0"},"1","      "]}
+  Ben actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"#5BFF8F","text":"1"},"1","      "]}
+logs
+## tick 78
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,400 s, race clock 0,450 s (9 tick(s))
+    Ada: ring 0, gliding=true, boost cooling down 3 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.81102357280307, z=15.014115667243223] v=Vec3[x=0.0, y=1.4873273003608125E-5, z=1.5926163474588362]
+    Ben: ring 1 (complete), gliding=true, boost ready, client Pos[x=3.5, y=73.0, z=25.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=72.35268311363791, z=11.067944621725063] v=Vec3[x=0.0, y=0.7875453886026608, z=0.671758189312294]
+messages
+logs
+## tick 79
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,450 s, race clock 0,500 s (10 tick(s))
+    Ada: ring 0, gliding=true, boost cooling down 2 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.79338357245975, z=16.59258786643301] v=Vec3[x=0.0, y=-0.017640000343322755, z=1.578472199189787]
+    Ben: ring 1 (complete), gliding=true, boost ready, client Pos[x=3.5, y=73.0, z=25.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=73.10487760910829, z=11.73298523555062] v=Vec3[x=0.0, y=0.752194495470374, z=0.6650406138255565]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.5",{"color":"white","text":"0"},"1","      "]}
+  Ben actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"#5BFF8F","text":"1"},"1","      "]}
+logs
+## tick 80
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,500 s, race clock 0,550 s (11 tick(s))
+    Ada: ring 0, gliding=true, boost cooling down 1 tick(s), client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.7601850915108, z=18.158629082747282] v=Vec3[x=0.0, y=-0.03319848094894409, z=1.5660412163142698]
+    Ben: ring 1 (complete), gliding=true, boost ready, client Pos[x=3.5, y=73.0, z=25.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=73.82242822863475, z=12.391375449580243] v=Vec3[x=0.0, y=0.7175506195264681, z=0.6583902140296224]
+messages
+logs
+## tick 81
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,550 s, race clock 0,600 s (12 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.71326403040062, z=19.713749886531552] v=Vec3[x=0.0, y=-0.046921061110181135, z=1.5551208037842716]
+    Ben: ring 1 (complete), gliding=true, boost ready, client Pos[x=3.5, y=73.0, z=25.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=74.50602784907541, z=13.043181767748468] v=Vec3[x=0.0, y=0.683599620440661, z=0.6518063181682245]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.6",{"color":"white","text":"0"},"1","      "]}
+  Ben actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"#5BFF8F","text":"1"},"1","      "]}
+logs
+## tick 82
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,600 s, race clock 0,650 s (13 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.65423965335266, z=21.259282163711124] v=Vec3[x=0.0, y=-0.059024377047955906, z=1.5455322771795725]
+messages
+logs
+## tick 83
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,650 s, race clock 0,700 s (14 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.58454015143982, z=22.796400204921046] v=Vec3[x=0.0, y=-0.06969950191284045, z=1.5371180412099212]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.7",{"color":"white","text":"0"},"1","      "]}
+logs
+## tick 84
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,700 s, race clock 0,750 s (15 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.5054251892129, z=24.32613930607539] v=Vec3[x=0.0, y=-0.07911496222691929, z=1.5297391011543457]
+messages
+logs
+## tick 85
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,750 s, race clock 0,800 s (16 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.41800579082734, z=25.849412174026412] v=Vec3[x=0.0, y=-0.08741939838556391, z=1.5232728679510206]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.8",{"color":"white","text":"0"},"1","      "]}
+logs
+## tick 86
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,800 s, race clock 0,850 s (17 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.32326187960729, z=27.367023396313336] v=Vec3[x=0.0, y=-0.09474391122004355, z=1.5176112222869251]
+messages
+logs
+## tick 87
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,850 s, race clock 0,900 s (18 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.2220577479415, z=28.87968220343865] v=Vec3[x=0.0, y=-0.1012041316657882, z=1.5126588071253158]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.9",{"color":"white","text":"0"},"1","      "]}
+logs
+## tick 88
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,900 s, race clock 0,950 s (19 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.11515570173168, z=30.388013725154003] v=Vec3[x=0.0, y=-0.10690204620983201, z=1.5083315217153532]
+messages
+logs
+## tick 89
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase GAME after 0,950 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=68.00322809479619, z=31.89256891846299] v=Vec3[x=0.0, y=-0.11192760693548982, z=1.504555193308987]
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:01.0",{"color":"white","text":"0"},"1","      "]}
+logs
+## tick 90
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase END after 0,000 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar ""
+  Ada chat {"translate":"voyager.result.map.dnf","with":["ridge-run","0","1","10"]}
+  Ada title-times 5 60 10
+  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","1","10"]}
+  Ada title {"translate":"voyager.medal.dnf"}
+logs
+  INFO Map 1/2 'ridge-run' finished after 20 tick(s), 1,000 s
+## tick 91
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase END after 0,050 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 92
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase END after 0,100 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 93
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 1/2 'ridge-run', phase END after 0,150 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 94
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,000 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 95
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,050 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 96
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,100 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 97
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,150 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 98
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,200 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 99
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,250 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 100
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,300 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 101
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,350 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 102
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,400 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 103
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'ridge-run', phase LOBBY after 0,450 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 104
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,500 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada chat {"translate":"voyager.map.banner","with":["2","2","dune-run","2","0:00"]}
+  Ada title-times 0 15 5
+  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["dune-run","2","0:00"]}
+  Ada title {"translate":"voyager.countdown.digit","with":["3"]}
+logs
+## tick 105
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,550 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 106
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,600 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 107
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,650 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 108
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,700 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 109
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,750 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 110
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,800 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 111
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,850 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 112
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,900 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 113
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 0,950 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 114
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,000 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 115
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,050 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 116
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,100 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 117
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,150 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 118
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,200 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 119
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,250 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 120
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,300 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 121
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,350 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 122
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,400 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 123
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,450 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 124
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,500 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada title-times 0 15 5
+  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["dune-run","2","0:00"]}
+  Ada title {"translate":"voyager.countdown.digit","with":["2"]}
+logs
+## tick 125
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,550 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 126
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,600 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 127
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,650 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 128
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,700 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 129
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,750 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 130
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,800 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 131
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,850 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 132
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,900 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 133
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 1,950 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 134
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,000 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 135
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,050 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 136
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,100 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 137
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,150 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 138
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,200 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 139
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,250 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 140
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,300 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 141
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,350 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 142
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,400 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 143
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,450 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 144
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,500 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada title-times 0 15 5
+  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["dune-run","2","0:00"]}
+  Ada title {"translate":"voyager.countdown.digit","with":["1"]}
+logs
+## tick 145
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,550 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 146
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,600 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 147
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,650 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 148
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,700 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 149
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,750 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 150
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,800 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 151
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,850 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 152
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,900 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 153
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 2,950 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 154
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,000 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 155
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,050 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 156
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,100 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 157
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,150 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 158
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,200 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 159
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,250 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 160
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,300 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 161
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,350 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 162
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,400 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 163
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase LOBBY after 3,450 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 164
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,000 s, race clock 0,050 s (1 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=67.8868679432144, z=33.393833324078635] v=Vec3[x=0.0, y=-0.1163601515817895, z=1.5012644056156401]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada title-times 0 10 5
+  Ada subtitle ""
+  Ada title {"translate":"voyager.countdown.go"}
+logs
+  INFO Map 2/2 'dune-run' started on world 'dune_arena' with 1 racer(s) — world 'dune_arena': 360 chunk(s) skipped for want of data
+## tick 165
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,050 s, race clock 0,100 s (2 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=72.05604802055359, z=-87.77927999305724] v=Vec3[x=0.0, y=1.0560480205535887, z=0.7207200069427492]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.1",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 166
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,100 s, race clock 0,150 s (3 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=73.07137510045716, z=-87.0657671793106] v=Vec3[x=0.0, y=1.0153270799035647, z=0.7135128137466433]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 167
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,150 s, race clock 0,200 s (4 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=74.04679565774701, z=-86.35938948689683] v=Vec3[x=0.0, y=0.9754205572898509, z=0.7063776924137654]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.2",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 168
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,200 s, race clock 0,250 s (5 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=74.98310782211426, z=-85.66007556467066] v=Vec3[x=0.0, y=0.9363121643672548, z=0.6993139222261703]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 169
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,250 s, race clock 0,300 s (6 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=75.88109376067145, z=-84.96775477499757] v=Vec3[x=0.0, y=0.8979859385571772, z=0.6923207896730859]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 170
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,300 s, race clock 0,350 s (7 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=76.74151999720374, z=-84.28235718661874] v=Vec3[x=0.0, y=0.8604262365322864, z=0.6853975883788406]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 171
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,350 s, race clock 0,400 s (8 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=77.56513772503524, z=-83.60381356758722] v=Vec3[x=0.0, y=0.823617727831499, z=0.678543619031513]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.4",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 172
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,400 s, race clock 0,450 s (9 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=78.35268311363791, z=-82.93205537827492] v=Vec3[x=0.0, y=0.7875453886026608, z=0.671758189312294]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 173
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,450 s, race clock 0,500 s (10 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=79.10487760910829, z=-82.26701476444937] v=Vec3[x=0.0, y=0.752194495470374, z=0.6650406138255565]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.5",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 174
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,500 s, race clock 0,550 s (11 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=79.82242822863475, z=-81.60862455041975] v=Vec3[x=0.0, y=0.7175506195264681, z=0.6583902140296224]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 175
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,550 s, race clock 0,600 s (12 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=80.50602784907541, z=-80.95681823225152] v=Vec3[x=0.0, y=0.683599620440661, z=0.6518063181682245]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.6",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 176
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,600 s, race clock 0,650 s (13 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=81.15635548976441, z=-80.31152997104887] v=Vec3[x=0.0, y=0.6503276406890061, z=0.6452882612026517]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 177
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,650 s, race clock 0,700 s (14 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=81.77407658966219, z=-79.6726945863043] v=Vec3[x=0.0, y=0.6177210998977716, z=0.6388353847445736]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.7",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 178
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,700 s, race clock 0,750 s (15 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=82.35984327896263, z=-79.04024754931477] v=Vec3[x=0.0, y=0.5857666893004414, z=0.6324470369895369]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 179
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,750 s, race clock 0,800 s (16 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=82.9142946452682, z=-78.41412497666364] v=Vec3[x=0.0, y=0.5544513663055758, z=0.6261225726511265]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.8",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 180
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,800 s, race clock 0,850 s (17 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=83.43805699444151, z=-77.79426362376786] v=Vec3[x=0.0, y=0.5237623491733151, z=0.6198613528957854]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 181
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,850 s, race clock 0,900 s (18 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=83.93174410623986, z=-77.18060087848957] v=Vec3[x=0.0, y=0.49368711179835306, z=0.613662745278286]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.9",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 182
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,900 s, race clock 0,950 s (19 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=84.39595748483711, z=-76.57307475481173] v=Vec3[x=0.0, y=0.46421337859725065, z=0.6075261236778472]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 183
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase GAME after 0,950 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=84.83128660433512, z=-75.97162388657684] v=Vec3[x=0.0, y=0.4353291194980034, z=0.6014508682348894]
+    cup: Ada — 10 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar {"translate":"voyager.hud.flight","with":["0:01.0",{"color":"white","text":"0"},"2","      "]}
+logs
+## tick 184
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase END after 0,000 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=85.23830914936494, z=-75.37618752128841] v=Vec3[x=0.0, y=0.4070225450298176, z=0.5954363652884229]
+    cup: Ada — 20 point(s), 0 map(s) finished, best -
+messages
+  Ada actionbar ""
+  Ada chat {"translate":"voyager.result.map.dnf","with":["dune-run","0","2","10"]}
+  Ada title-times 5 60 10
+  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2","10"]}
+  Ada title {"translate":"voyager.medal.dnf"}
+logs
+  INFO Map 2/2 'dune-run' finished after 20 tick(s), 1,000 s
+## tick 185
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase END after 0,050 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=85.23830914936494, z=-75.37618752128841] v=Vec3[x=0.0, y=0.4070225450298176, z=0.5954363652884229]
+    cup: Ada — 20 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 186
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase END after 0,100 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=85.23830914936494, z=-75.37618752128841] v=Vec3[x=0.0, y=0.4070225450298176, z=0.5954363652884229]
+    cup: Ada — 20 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 187
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: attached
+  cup 'grand_tour' running — map 2/2 'dune-run', phase END after 0,150 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=85.23830914936494, z=-75.37618752128841] v=Vec3[x=0.0, y=0.4070225450298176, z=0.5954363652884229]
+    cup: Ada — 20 point(s), 0 map(s) finished, best -
+messages
+logs
+## tick 188
+describe
+  catalogue loaded 1970-01-01T00:00:00Z
+  collision world: none
+  cup 'grand_tour' FINISHED — map 2/2 '-', phase END after 0,000 s, race clock 1,000 s (20 tick(s))
+    Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=-37.5, y=85.23830914936494, z=-75.37618752128841] v=Vec3[x=0.0, y=0.4070225450298176, z=0.5954363652884229]
+    cup: Ada — 20 point(s), 0 map(s) finished, best -
+messages
+  Ada chat {"translate":"voyager.result.cup.heading","with":["grand_tour"]}
+  Ada chat {"translate":"voyager.result.cup.row","with":["1","Ada","20","0","2",{"translate":"voyager.result.cup.notime"}]}
+  Ada title-times 10 80 20
+  Ada subtitle {"translate":"voyager.result.cup.subtitle","with":["1","20"]}
+  Ada title {"translate":"voyager.result.cup.title"}
+logs
+  INFO Cup 'grand_tour' finished with 1 classified racer(s)
+  INFO   1. 1a382809-b7c0-3f68-ae12-dd15677c5497 — 20 point(s), 0 map(s) finished, best -

@@ -23,8 +23,8 @@ der Kotlin-Stand produktiv läuft. Der Cut-over-Zeitplan wird daher von Reife ge
 von einem Ausfallrisiko.
 
 Dieses Dokument spezifiziert einen **Greenfield-Rebuild**: einen neuen, achtteiligen
-Modulbaum im selben Repository, der `server`, `plugins/game`, `plugins/setup` und alle vier
-`shared/*`-Module vollständig ersetzt. Beide Modulbäume koexistieren während der
+Modulbaum im selben Repository, der `server`, `legacy/plugins/game`, `legacy/plugins/setup` und alle vier
+`legacy/shared/*`-Module vollständig ersetzt. Beide Modulbäume koexistieren während der
 Rebuild-Phase; `main` bleibt durchgehend baubar (Entscheidung D2).
 
 ## 2. Ziele & Nicht-Ziele
@@ -137,5 +137,5 @@ sind keine Gate-Bedingung.
 - [ ] Ein Spieler beendet ein Rennen, der Server startet neu, Rekord und Profil sind danach lesbar
 - [ ] Stufe-6-Folgetickets (E6.1 und später) werden erst zur Umsetzung freigegeben, nachdem die Empfehlung aus E6.0 vom Projektinhaber genehmigt wurde
 - [ ] Eine Karte ist auf dem Minestom-Setup-Server ohne jede Paper-Abhängigkeit erstellbar, editierbar und speicherbar
-- [ ] `server/`, `plugins/game/`, `plugins/setup/` und alle vier `shared/*`-Module sind entfernt; `./gradlew build` läuft ausschließlich mit den acht neuen Modulen, `--release 25` durchgängig
+- [ ] `legacy/server/`, `legacy/plugins/game/`, `legacy/plugins/setup/` und alle vier `legacy/shared/*`-Module sind entfernt; `./gradlew build` läuft ausschließlich mit den acht neuen Modulen, `--release 25` durchgängig
 - [ ] Das Cut-over-Gate (Stufe 4 + grüne Trace-Suite aus Stufe 2) wurde bei der Umsetzung nicht stillschweigend zu "wenn alles fertig ist" abgeschwächt

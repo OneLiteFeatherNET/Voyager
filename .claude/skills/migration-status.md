@@ -11,18 +11,18 @@ Show the current state of the Paper-to-Minestom migration.
 
 1. Count files and tests:
 ```bash
-find server/src/main -name "*.java" | wc -l
-find server/src/test -name "*.java" | wc -l
+find legacy/server/src/main -name "*.java" | wc -l
+find legacy/server/src/test -name "*.java" | wc -l
 ```
 
-2. Check for remaining Bukkit imports in shared/:
+2. Check for remaining Bukkit imports in legacy/shared/:
 ```bash
-grep -rc "org.bukkit" shared/ --include="*.java" | grep -v ":0"
+grep -rc "org.bukkit" legacy/shared/ --include="*.java" | grep -v ":0"
 ```
 
 3. Count test results:
 ```bash
-./gradlew :server:test --no-daemon 2>&1 | grep -cE "PASSED|FAILED"
+./gradlew :legacy:server:test --no-daemon 2>&1 | grep -cE "PASSED|FAILED"
 ```
 
 4. Show git log summary:
@@ -36,5 +36,5 @@ git log --oneline feat/minestom-migration-planning ^develop | wc -l
 - Commits on branch
 - Source files / Test files count
 - Tests passing / failing
-- Remaining Bukkit imports in shared/
+- Remaining Bukkit imports in legacy/shared/
 - Open items from migration plan

@@ -78,3 +78,11 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Quench** (voyager-senior-testing) — when a perf regression needs a JMH guard test in CI.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — keep the tick hot path free of adapter and I/O calls; measure at the boundary.
+- "SOLID Principles" — split tuning changes so each benchmark isolates one cause.
+- "Testing Pyramid" — benchmarks sit at the top; unit tests guard correctness below them.

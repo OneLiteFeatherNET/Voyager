@@ -40,7 +40,7 @@ description: Short description shown in skill list.
 - `/build` — Build + analyze errors
 - `/test` — Run tests + summarize results
 - `/migrate-class` — Migrate a class from Paper to Minestom
-- `/check-imports` — Verify shared/ has no Bukkit/Minestom imports
+- `/check-imports` — Verify legacy/shared/ has no Bukkit/Minestom imports
 - `/create-component` — Scaffold a new ECS component
 - `/create-system` — Scaffold a new ECS system
 - `/migration-status` — Show current Paper->Minestom progress
@@ -59,7 +59,14 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Loom** (voyager-agent-architect) — when a requested capability is better expressed as a new agent than as a slash-command skill. We split by artifact type.
 - **Hangar** (voyager-devops-expert) — when a skill wraps build/deploy/CI workflows (./gradlew, Docker, CloudNet commands).
 - **Quench** (voyager-senior-testing) — when a skill runs tests or validates coverage; idempotency and proper failure output matter.
-- **Atlas** (voyager-architect) — when a skill enforces architectural invariants (shared/ import check, module-boundary validation).
+- **Atlas** (voyager-architect) — when a skill enforces architectural invariants (legacy/shared/ import check, module-boundary validation).
 - **Scribe** (voyager-tech-writer) — when the new skill must be reflected in CLAUDE.md's agent-workflow section.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Diátaxis Framework" — each skill is a how-to, reference or tutorial with a single purpose.
+- "Conventional Commits" — skills that touch commits follow the repository's Conventional Commits rules.

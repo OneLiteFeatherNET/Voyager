@@ -1,0 +1,55 @@
+schema: spec-driven
+
+# Project context: constraints an agent cannot infer from the code.
+# Terms in quotes are Semantic Anchors (https://llm-coding.github.io/Semantic-Anchors/);
+# use them as written so every agent reads the same concept into them.
+context: |
+  Voyager is a Minecraft elytra racing minigame. Goal: finish a playable game on the
+  greenfield rebuild (voyager-* modules, Java 25, Minestom 2026.08.28-26.2) using best practice.
+  The design authority is docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md;
+  the old tree (server, legacy/plugins/*, legacy/shared/*) gets no new features.
+
+  Architecture:
+  - "Vertical Slice Architecture (VSA)": organize by feature (race, ring, cup, map setup, ...),
+    each slice owning its use case end to end, rather than by technical layer.
+  - "Clean Architecture" (Robert C. Martin) inside and across slices: dependencies point inward,
+    domain and use cases know nothing of Minestom, persistence or DI; platform code is an adapter.
+  - "SOLID Principles", the ten ManisGame design rules in CLAUDE.md, and the java-style skill.
+  - Dependency injection: avaje-inject (compile-time, no reflection) is the target, replacing
+    io.airlift:guice from decision D10 once the change recording that switch is archived.
+    DI annotations stay confined to the composition roots.
+  - Architecture rules are enforced in voyager-fitness (ArchUnit, allowEmptyShould(false)).
+
+  Testing: "Red/Green TDD"; every test follows F.I.R.S.T. (Fast, Independent, Repeatable,
+  Self-validating, Timely): no sleeps, inject java.time.Clock, no shared static state,
+  drive Minestom ticks explicitly. JUnit 6 + AssertJ. "Testing Pyramid".
+
+  Documentation: "MADR" for decisions, "Diátaxis Framework" for docs/, English.
+
+  Delivery: "Conventional Commits"; PRs are squash-merged, so the PR title is the commit.
+
+rules:
+  proposal:
+    - 'Name the Conventional Commits type and scope the change ships under, e.g. feat(race).'
+    - A change that mixes types is two changes; split it.
+    - Name the vertical slice(s) the change touches and state what is out of scope.
+    - If the change alters a decision in the greenfield design spec, say which one (e.g. D10).
+  specs:
+    - Write requirements as "EARS-Requirements"; prioritize with "MoSCoW".
+  design:
+    - Show the dependency direction ("Clean Architecture") and which module each new type lives in.
+    - Architecture decisions get a MADR ADR; list it here.
+    - State which voyager-fitness rule covers each new boundary, or add one.
+  tasks:
+    - Write the failing test before the production code for every behaviour ("Red/Green TDD").
+    - Include a task for documentation in docs/ when user-visible behaviour or a decision changes.
+    - The last task opens the pull request under the proposal's Conventional Commits title.
+
+operations:
+  apply:
+    guidance:
+      - Commit per Conventional Commits type; never mix types in one commit.
+      - Run ./gradlew build (both trees) before marking the change done.
+  archive:
+    guidance:
+      - 'Archive commit message is "docs(openspec): archive <change-name>" unless shipped with the implementation.'

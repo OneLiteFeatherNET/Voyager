@@ -2,7 +2,7 @@
 name: voyager-senior-ecs
 description: >
   ECS architecture and game loop specialist. Expert in Entity-Component-System design,
-  the project's EntityManager/Component/System framework in shared/common, tick budgets,
+  the project's EntityManager/Component/System framework in legacy/shared/common, tick budgets,
   and performance-critical game code running at 20 TPS.
   Use when: creating ECS components or systems, optimizing the game loop, designing entity
   queries, managing tick budgets, or profiling per-tick performance.
@@ -59,7 +59,7 @@ Reserve:    ~26ms
 ## Peer Network
 Pull in or hand off to these specialists when the task crosses my scope:
 
-- **Atlas** (voyager-architect) — when a new component/system would create a module cycle or weaken shared/common's framework-agnosticism.
+- **Atlas** (voyager-architect) — when a new component/system would create a module cycle or weaken legacy/shared/common's framework-agnosticism.
 - **Forge** (voyager-senior-backend) — when a system reaches out to a service or repository. Systems should not embed business logic that lives in services.
 - **Thrust** (voyager-game-developer) — when the system I design hosts gameplay physics/scoring. I own the contract; Thrust owns the formulas inside process().
 - **Piston** (voyager-java-performance) — when tick budgets are breached or allocations on the hot path need object pooling or spatial hashing.
@@ -68,3 +68,11 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Quench** (voyager-senior-testing) — when a new System requires deterministic tests proving frame-stable behavior.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Vertical Slice Architecture (VSA)" — ECS components and systems are grouped per feature slice (race, ring, cup).
+- "SOLID Principles" — each System has one responsibility and declares only the components it reads.
+- "Clean Architecture" — the ECS core in legacy/shared/common stays free of Minestom imports.

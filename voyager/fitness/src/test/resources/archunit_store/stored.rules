@@ -1,0 +1,6 @@
+#
+#Sat Oct 10 11:49:48 CEST 2026
+classes\ in\ net.elytrarace.voyager.platform..\ that\ depend\ on\ net.elytrarace.voyager.api.mapsetup..\ reside\ in\ net.elytrarace.voyager.platform.mapsetup..=classes-in-net-elytrarace-voyager-platform-that-depend-on-net-elytrarace-voyager-api-mapsetup-reside-in-net-elytrarace-voyager-platform-mapsetup.txt
+classes\ in\ net.elytrarace.voyager.setup..\ outside\ the\ composition\ root\ (net.elytrarace.voyager.setup.SetupServer\ and\ net.elytrarace.voyager.setup.inject..)\ do\ not\ depend\ on\ net.minestom..=classes-in-net-elytrarace-voyager-setup-outside-the-composition-root-net-elytrarace-voyager-setup-setupserver-and-net-elytrarace-voyager-setup-inject-do-not-depend-on-net-minestom.txt
+classes\ in\ the\ platform\ infrastructure\ packages\ net.elytrarace.voyager.platform.text..,\ convert..,\ world..,\ tick..\ and\ render..\ do\ not\ depend\ on\ net.elytrarace.voyager.race..=classes-in-the-platform-infrastructure-packages-net-elytrarace-voyager-platform-text-convert-world-tick-and-render-do-not-depend-on-net-elytrarace-voyager-race.txt
+slices\ matching\ net.elytrarace.voyager.platform.(*)..\ are\ free\ of\ cycles=slices-matching-net-elytrarace-voyager-platform-are-free-of-cycles.txt

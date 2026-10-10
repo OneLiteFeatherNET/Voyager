@@ -1,0 +1,68 @@
+plugins {
+    id("java")
+    id("maven-publish")
+    id("jacoco")
+    alias(libs.plugins.run.paper)
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.plugin.yml)
+}
+dependencies {
+    compileOnly(libs.minecraft.paper)
+    implementation(libs.minecraft.cloud.paper)
+    implementation(project(":legacy:shared:common"))
+    implementation(project(":legacy:shared:conversation-api"))
+    implementation(project(":legacy:shared:spline"))
+    // FAWE
+    implementation(platform(libs.fawe.bom))
+    compileOnly(libs.bundles.fawe)
+    // Geometry (for testfly collision detection via PortalCollisionHelper)
+    implementation(libs.geometry)
+    // Test
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.assertj:assertj-core:3.27.7")
+}
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+tasks {
+    compileJava {
+        options.release.set(21)
+        options.encoding = "UTF-8"
+    }
+    jacocoTestReport {
+        dependsOn(project.tasks.test)
+        reports {
+            xml.required.set(true)
+        }
+    }
+    test {
+        finalizedBy(project.tasks.jacocoTestReport)
+        useJUnitPlatform()
+        testLogging {
+            events("passed", "skipped", "failed")
+        }
+    }
+    runServer {
+        minecraftVersion("1.21.8")
+        downloadPlugins {
+            modrinth("fastasyncworldedit", "mHtmqIig")
+            modrinth("voidgen", "2hsK4Z87")
+        }
+    }
+}
+
+paper {
+    main = "net.elytrarace.setup.ElytraRace"
+    name = "ElytraRace-Setup"
+    version = rootProject.version.toString()
+    apiVersion = "1.21"
+    authors = listOf("TheMeinerLP")
+    serverDependencies {
+        register("FastAsyncWorldEdit")
+        register("VoidGen")
+    }
+}
+

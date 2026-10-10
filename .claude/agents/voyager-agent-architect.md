@@ -81,8 +81,15 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Compass** (voyager-product-manager) — when a new agent or improvement requires user approval before I create files; Compass owns the decision framing.
 - **Anvil** (voyager-skill-creator) — when the right answer is a slash-command skill, not a new agent. We split by artifact type.
 - **Scout** (voyager-researcher) — when a new agent's domain knowledge must be verified via Context7/WebSearch before I embed facts in its prompt.
-- **Atlas** (voyager-architect) — when a proposed agent overlaps architectural authority (module boundaries, shared/ isolation) and naming/scope needs a sanity check.
+- **Atlas** (voyager-architect) — when a proposed agent overlaps architectural authority (module boundaries, legacy/shared/ isolation) and naming/scope needs a sanity check.
 - **Scribe** (voyager-tech-writer) — when agent creation triggers a CLAUDE.md update or agent-team documentation change.
 - **Pulse** (voyager-game-psychologist) — when an agent's scope touches gameplay feel, to avoid the new agent bypassing Pulse's review gate.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "Clean Architecture" — agent definitions state their role and boundaries; keep each agent's scope pointing inward to the shared rules it cites.
+- "SOLID Principles" — one responsibility per agent; split overlapping roles rather than widening one.

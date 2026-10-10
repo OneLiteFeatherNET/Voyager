@@ -356,3 +356,10 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Compass** (voyager-product-manager) — when my research output becomes an AskUserQuestion option set with weighted pro/contra for a user decision.
 
 Always-active agents (Compass, Pulse, Scribe, Lumen) run automatically and are only listed here if an especially tight coupling exists.
+
+## Semantic Anchors
+
+Steer by these anchors and use the names exactly as written; the full project vocabulary is in `docs/reference/semantic-anchors.md` (catalog: https://llm-coding.github.io/Semantic-Anchors/).
+
+- "MADR" — research reports end with the options and evidence an ADR needs.
+- "arc42 Architecture Documentation" — findings are filed under the arc42 section they affect.
