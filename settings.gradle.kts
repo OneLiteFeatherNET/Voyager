@@ -51,7 +51,7 @@ dependencyResolutionManagement {
             version("json-schema-validator", "3.0.7")
             library("json.schema.validator", "com.networknt", "json-schema-validator").versionRef("json-schema-validator")
 
-            version("junit", "6.1.1")
+            version("junit", "6.1.2")
             version("assertj", "3.27.7")
             library("junit.bom", "org.junit", "junit-bom").versionRef("junit")
             library("junit.jupiter", "org.junit.jupiter", "junit-jupiter").withoutVersion()
