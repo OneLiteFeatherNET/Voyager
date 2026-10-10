@@ -22,7 +22,7 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
-import net.elytrarace.voyager.server.game.CatalogReloadService;
+import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.minestom.server.command.ConsoleSender;
 import net.minestom.server.coordinate.Pos;

@@ -15,7 +15,6 @@ import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.command.ReloadPermission;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
-import net.elytrarace.voyager.server.game.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
@@ -71,10 +70,10 @@ import java.util.function.Supplier;
  *
  * <p>Seven of {@code voyager-race}'s entry points carry {@code @ApiStatus.Internal} —
  * {@code RaceCore}, {@code RingPass}, {@code RaceStateMachine}, {@code ProgressTracker},
- * {@code CupScorer}, {@code MapScorer}, {@code PlacementBonus} — and this module calls three of them
- * directly ({@code MapScorer}, {@code CupScorer}, {@code PlacementBonus}, all from
- * {@code net.elytrarace.voyager.server.game}). <strong>The annotation stays where it is and this
- * module ignores it deliberately.</strong>
+ * {@code CupScorer}, {@code MapScorer}, {@code PlacementBonus} — and until the cup moved out of this
+ * module it called three of them directly ({@code MapScorer}, {@code CupScorer}, {@code
+ * PlacementBonus}; the cup's scoring now lives in {@code race.cup}). <strong>The annotation stays
+ * where it is, and the rule below is why.</strong>
  *
  * <p>Two reasons, and the second is the one that settles it.
  *
@@ -193,8 +192,7 @@ public final class VoyagerServer {
         }
 
         registerEvents(session, settings, catalog, instances);
-        MinecraftServer.getCommandManager().register(
-                new RaceCommand(session, settings.devMode(), graph.get(CatalogReloadService.class)));
+        MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         LOGGER.info("/race reload is registered: the console and operators at level {} may run it",
                 ReloadPermission.REQUIRED_LEVEL);
         if (settings.devMode()) {

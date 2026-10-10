@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.server;
 
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;

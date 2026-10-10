@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.server.game;
+package net.elytrarace.voyager.server;
 
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.ReloadOutcome;

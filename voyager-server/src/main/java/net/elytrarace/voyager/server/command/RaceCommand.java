@@ -1,7 +1,7 @@
 package net.elytrarace.voyager.server.command;
 
 import net.elytrarace.voyager.platform.text.Messages;
-import net.elytrarace.voyager.server.game.CatalogReloadService;
+import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.command.CommandSender;
