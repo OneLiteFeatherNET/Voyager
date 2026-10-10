@@ -67,6 +67,26 @@ public final class WaitingRoom {
         this.spawn = spawn;
     }
 
+    /** How many racers a cup needs to start. */
+    public int minimum() {
+        return minimum;
+    }
+
+    /**
+     * One line for {@code /race}: how many racers are online, the minimum, and where the room stands.
+     *
+     * @return the line, without a trailing newline
+     */
+    public String describe() {
+        return "room: %s of %s racer(s) online, %s".formatted(
+                players.get().size(), minimum, switch (session.situation(StartGate.COMMIT_WINDOW)) {
+                    case WAITING -> "waiting";
+                    case COUNTDOWN -> "counting down";
+                    case COMMITTED -> "committed to the start";
+                    case RUNNING -> "racing";
+                });
+    }
+
     /**
      * A racer has joined and been prepared. A racer who joins a cup that is racing is told so, and waits for the next
      * map. A racer who joins while the countdown runs is part of the start and is told nothing.

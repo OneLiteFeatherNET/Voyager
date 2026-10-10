@@ -302,6 +302,14 @@ class WaitingRoomTest {
         assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.COUNTDOWN);
     }
 
+    @Test
+    void describeNamesTheOnlineRacersTheMinimumAndTheSituation(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.join();
+
+        assertThat(fixture.room.describe()).isEqualTo("room: 1 of 2 racer(s) online, waiting");
+    }
+
     // ------------------------------------------------------------------------------------------
     // The fixture
     // ------------------------------------------------------------------------------------------
