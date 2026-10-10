@@ -118,6 +118,21 @@ public final class RaceRuns {
     }
 
     /**
+     * Replaces the run {@code playerId} holds with {@code run}, the run a reset planned.
+     *
+     * <p>Package-private for the same reason as {@link #startFresh(UUID)}: {@link RunResetter} is the only
+     * caller, and a reset may only replace a run that is already held.
+     *
+     * @throws UnstartedRunException if {@code playerId} holds no run on this map
+     */
+    void resetTo(UUID playerId, RaceRun run) {
+        if (!byPlayer.containsKey(playerId)) {
+            throw new UnstartedRunException(playerId);
+        }
+        byPlayer.put(playerId, run);
+    }
+
+    /**
      * Drops every run, because the map they were over is no longer being played.
      *
      * <p>Package-private on purpose: see the class javadoc. {@link MapTransition} calls this before

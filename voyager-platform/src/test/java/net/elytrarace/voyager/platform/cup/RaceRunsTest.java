@@ -18,6 +18,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import net.elytrarace.voyager.race.progress.RingProgress;
+import java.util.Optional;
 
 /**
  * {@link RaceRuns} against its own surface, with no server involved — nothing here needs one.
@@ -290,5 +292,25 @@ class RaceRunsTest {
 
     private static Vec3 positionAt(int gameTick) {
         return new Vec3(LANE_X, LANE_Y, SPAWN_Z + BLOCKS_PER_TICK * gameTick);
+    }
+
+    @Test
+    void resetToReplacesTheRunHeldForAPlayer() {
+        RaceRuns runs = new RaceRuns();
+        runs.startFresh(FLYER);
+        RaceRun reset = new RaceRun(RingProgress.atStart(), new Vec3(1, 2, 3), List.of(), Optional.empty(), null,
+                true);
+
+        runs.resetTo(FLYER, reset);
+
+        assertThat(runs.of(FLYER)).contains(reset);
+    }
+
+    @Test
+    void resetToForAPlayerWhoHoldsNoRunThrowsUnstartedRun() {
+        RaceRuns runs = new RaceRuns();
+
+        assertThatThrownBy(() -> runs.resetTo(FLYER, RaceRun.atStart()))
+                .isInstanceOf(UnstartedRunException.class);
     }
 }

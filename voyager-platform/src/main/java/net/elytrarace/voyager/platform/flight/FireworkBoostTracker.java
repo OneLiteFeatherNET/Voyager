@@ -119,6 +119,19 @@ public final class FireworkBoostTracker {
         burnByPlayer.remove(playerId);
     }
 
+    /**
+     * Ends the burn running for {@code playerId}, if one is, and leaves its cooldown running.
+     *
+     * <p>Used by a course reset. {@link #forget(UUID)} is the wrong tool there: it drops the cooldown too, and
+     * a racer who could refresh a rocket by landing would boost again sooner than the map allows.
+     */
+    public void cancelBurn(UUID playerId) {
+        Burn held = burnByPlayer.get(playerId);
+        if (held != null) {
+            held.burnTicks = 0;
+        }
+    }
+
     /** Drops everything held for everybody — a cup restarting owes nobody the last one's cooldown. */
     public void clear() {
         burnByPlayer.clear();

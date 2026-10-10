@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Contract;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * Every sentence the game says to a player, as a translation key with its arguments bound.
@@ -46,6 +47,10 @@ public abstract class Messages {
     private static final String LOBBY_WAITING = "voyager.lobby.waiting";
     private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
+    private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
+    private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
+    private static final String RESET_TARGET_RING = "voyager.reset.target.ring";
+    private static final String RESET_TARGET_START = "voyager.reset.target.start";
     private static final long MILLIS_PER_SECOND = 1_000L;
     private static final String MAP_RESULT_MEDAL = "voyager.result.map.medal";
     private static final String MAP_RESULT_DNF = "voyager.result.map.dnf";
@@ -363,5 +368,25 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component reloadDenied() {
         return Component.translatable(COMMAND_RELOAD_DENIED);
+    }
+
+    /**
+     * The title a racer is shown when a course reset sends them back: why it happened.
+     *
+     * @param outOfBounds {@code true} for a racer who left the vertical bounds, {@code false} for a landing
+     */
+    public static Component resetTitle(boolean outOfBounds) {
+        return Component.translatable(outOfBounds ? RESET_TITLE_OUT_OF_BOUNDS : RESET_TITLE_LANDED);
+    }
+
+    /**
+     * The line under a reset title: where the racer is being sent back to.
+     *
+     * @param ringNumber the one-based number of the last ring passed, or empty for a reset to the start
+     */
+    public static Component resetSubtitle(OptionalInt ringNumber) {
+        return ringNumber.isPresent()
+                ? Component.translatable(RESET_TARGET_RING, Component.text(ringNumber.getAsInt()))
+                : Component.translatable(RESET_TARGET_START);
     }
 }
