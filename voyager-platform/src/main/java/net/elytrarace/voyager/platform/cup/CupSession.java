@@ -203,9 +203,9 @@ public final class CupSession implements RacePhaseListener {
 
     /**
      * The catalogue the current round pinned, or the holder's current one before the first round.
-     * Package-private: the tests assert the pin, the game asks {@link #cup()}.
+     * Exists for the cup's tests, which live in the server module: they assert the pin, the game asks {@link #cup()}.
      */
-    LoadedCatalog pinned() {
+    public LoadedCatalog pinned() {
         LoadedCatalog held = pinned;
         return held != null ? held : catalog.current();
     }
@@ -299,14 +299,21 @@ public final class CupSession implements RacePhaseListener {
         blocks.follow(null);
     }
 
-    /** Advances the whole session by one server tick. */
-    public void tick() {
+    /**
+     * The flight step of a tick: samples every online player and advances the server's own flight simulation, and
+     * keeps what it produced for {@link #describe()}. The composition root runs it first in the tick order.
+     */
+    public void sampleFlight() {
         for (FlightTick simulated : flight.tick()) {
             lastSimulated.put(simulated.playerId(), simulated);
         }
-        // After the sample the line above took, never before it — FireworkBoostTracker's javadoc has
-        // the reason, and it is an off-by-one nothing downstream can see.
-        boosts.advance();
+    }
+
+    /**
+     * The phase step of a tick: advances the cup, and announces the cup's result on the tick the cup finishes. The
+     * composition root runs it last in the tick order, after the boost step.
+     */
+    public void advancePhase() {
         XerusPhaseDriver current = driver;
         if (current == null) {
             return;
@@ -324,24 +331,24 @@ public final class CupSession implements RacePhaseListener {
     /**
      * The last tick the server's own flight simulation produced for {@code playerId}, if any.
      *
-     * <p>Package-private, and it exists for {@code CupSessionTest}: the simulation is silent by
+     * <p>Exists for the cup's tests, which live in the server module: the simulation is silent by
      * design — nothing in a race reads it, it only shadows the client — so the only other trace of it
      * is the line {@link #describe()} renders, and asserting a velocity by parsing a sentence is
      * asserting the sentence. Not part of the session's contract.
      */
-    Optional<FlightTick> lastSimulated(UUID playerId) {
+    public Optional<FlightTick> lastSimulated(UUID playerId) {
         return Optional.ofNullable(lastSimulated.get(playerId));
     }
 
     /**
      * The board this cup is accumulating into.
      *
-     * <p>Package-private, and it exists for {@code CupSessionTest}: the scores are otherwise visible
+     * <p>Exists for the cup's tests, which live in the server module: the scores are otherwise visible
      * only as the text {@link #describe()} renders and the chat lines a racer is sent, and asserting
      * a medal tier by reading a sentence is asserting the sentence. Not part of the session's
      * contract — do not widen it.
      */
-    CupStandings standings() {
+    public CupStandings standings() {
         return standings;
     }
 

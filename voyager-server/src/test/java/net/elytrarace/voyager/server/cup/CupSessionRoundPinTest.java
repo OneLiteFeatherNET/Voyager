@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.platform.cup;
+package net.elytrarace.voyager.server.cup;
 
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
@@ -11,6 +11,7 @@ import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
@@ -120,8 +121,8 @@ class CupSessionRoundPinTest {
     private CupSession session(Env env, CatalogHolder holder) {
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
         RaceRuns runs = new RaceRuns();
-        return CupWiring.session(holder, instances, new MapTransition(instances, runs), runs, new FlightTracker(),
-                TIMINGS, STEP, List::of);
+        return CupWiring.assemble(holder, instances, new MapTransition(instances, runs), runs, new FlightTracker(),
+                TIMINGS, STEP, List::of).session();
     }
 
     private static LoadedCatalog catalog(String cupName, String mapName) {

@@ -11,6 +11,7 @@ import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
@@ -20,6 +21,7 @@ import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
 import net.elytrarace.voyager.platform.world.RaceRuns;
+import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
@@ -274,6 +276,7 @@ class CupSessionGoldenMasterTest {
         private final Map<String, TestConnection> connections = new LinkedHashMap<>();
         final CupTranscript transcript = new CupTranscript();
         final CupSession session;
+        private final TickPipeline pipeline;
 
         private Harness(Env env, MapInstances worlds) {
             this.env = env;
@@ -286,6 +289,7 @@ class CupSessionGoldenMasterTest {
                     new MinestomCollisionSpace(blocks));
             this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, TIMINGS, STEP,
                     () -> field);
+            this.pipeline = new CupBeans().tickPipeline(session, boosts);
         }
 
         static Harness open(Env env, Path tempDir) throws IOException {
@@ -334,7 +338,7 @@ class CupSessionGoldenMasterTest {
             ticks++;
             transcript.begin();
             before.run();
-            session.tick();
+            pipeline.run();
             env.tick();
             transcript.end("tick " + ticks, session.describe());
         }

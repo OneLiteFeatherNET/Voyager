@@ -1,4 +1,4 @@
-package net.elytrarace.voyager.platform.cup;
+package net.elytrarace.voyager.server.cup;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
@@ -12,6 +12,8 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTick;
@@ -959,17 +961,19 @@ class CupSessionTest {
         private final MapInstances worlds;
         private final RaceRuns runs;
         private final CupSession session;
+        private final TickPipeline pipeline;
         private final Player racer;
         private final TestConnection connection;
         private final List<Player> field;
         private final Env env;
         private int ticksPlayed;
 
-        private Fixture(MapInstances worlds, RaceRuns runs, CupSession session, Player racer,
-                TestConnection connection, List<Player> field, Env env) {
+        private Fixture(MapInstances worlds, RaceRuns runs, CupSession session, TickPipeline pipeline,
+                Player racer, TestConnection connection, List<Player> field, Env env) {
             this.worlds = worlds;
             this.runs = runs;
             this.session = session;
+            this.pipeline = pipeline;
             this.racer = racer;
             this.connection = connection;
             this.field = field;
@@ -1002,7 +1006,7 @@ class CupSessionTest {
          */
         void runUntil(IntPredicate stop) {
             for (int tick = 1; tick <= 400; tick++) {
-                session.tick();
+                pipeline.run();
                 ticksPlayed++;
                 if (stop.test(tick)) {
                     return;
@@ -1018,7 +1022,7 @@ class CupSessionTest {
         int countBoostedTicks(int budget) {
             int boosted = 0;
             for (int tick = 0; tick < budget; tick++) {
-                session.tick();
+                pipeline.run();
                 ticksPlayed++;
                 Optional<FlightTick> simulated = session.lastSimulated(racer.getUuid());
                 if (simulated.isPresent() && simulated.get().input().fireworkBoostActive()) {
@@ -1082,10 +1086,10 @@ class CupSessionTest {
         // Mutable, because a player joining while a cup is already running is a case worth testing
         // and a fixed field could not produce one.
         List<Player> field = new ArrayList<>(List.of(racer));
-        CupSession session = CupWiring.session(holder(), instances, transition, runs, new FlightTracker(),
+        CupWiring.Cup cup = CupWiring.assemble(holder(), instances, transition, runs, new FlightTracker(),
                 TIMINGS, STEP, () -> field);
-        session.start(false);
-        return new Fixture(instances, runs, session, racer, connection, field, env);
+        cup.session().start(false);
+        return new Fixture(instances, runs, cup.session(), cup.pipeline(), racer, connection, field, env);
     }
 
     private static List<Entity> rocketsAround(Player racer) {

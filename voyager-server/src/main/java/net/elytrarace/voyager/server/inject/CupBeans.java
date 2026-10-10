@@ -9,6 +9,8 @@ import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.cup.TickPipeline;
+import net.elytrarace.voyager.platform.cup.TickStep;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
@@ -20,6 +22,7 @@ import net.minestom.server.entity.Player;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -62,6 +65,21 @@ public final class CupBeans {
      * {@link MinecraftServer#TICK_MS} is what the server actually ticks at, so the phase driver's idea of
      * how much time a tick stands for and the server's cannot drift apart.
      */
+    /**
+     * The cup's per-tick order, declared once, here. A tick samples the flight first, so that anything later in the
+     * tick reads this tick's answer; it counts the boosts down after that sample, so a burn of N ticks drives N of
+     * them; and it advances the phase last, so a phase that ends announces its result on the same tick.
+     *
+     * <p>Public so that the cup's tests run the same order, rather than a copy of it.
+     */
+    @Bean
+    public TickPipeline tickPipeline(CupSession session, FireworkBoostTracker boosts) {
+        return TickPipeline.of(List.of(
+                new TickStep("flight sample", session::sampleFlight),
+                new TickStep("boost burn", boosts::advance),
+                new TickStep("phase advance", session::advancePhase)));
+    }
+
     @Bean
     CupSession cupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition, RaceRuns runs,
             FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts, RaceTimings timings,
