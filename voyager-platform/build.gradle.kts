@@ -85,6 +85,28 @@ tasks.test {
     // the same flag server/build.gradle.kts sets for its own Minestom-backed tests.
     systemProperty("minestom.inside-test", "true")
     exclude("**/VelocityExitCustomTpsTest.class")
+    // Integration tests read real worlds through Falco; they run in integrationTest, never here.
+    useJUnitPlatform { excludeTags("integration") }
+}
+
+// The shipped world is untracked (run/ is git-ignored), so the location is the root project's run directory
+// unless -PvoyagerItWorld points elsewhere. The IT skips with a message when the folder is absent.
+val integrationWorld: String = providers.gradleProperty("voyagerItWorld")
+    .getOrElse(rootProject.file("run/run/worlds/ElytraraceBlueAndRed").absolutePath)
+
+val integrationTest = tasks.register<Test>("integrationTest") {
+    description = "Runs the @Tag(\"integration\") tests: real worlds read through Falco. Skips with a message " +
+            "when the shipped world is not on the checkout."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform { includeTags("integration") }
+    systemProperty("minestom.inside-test", "true")
+    systemProperty("voyager.it.world", integrationWorld)
+}
+
+tasks.check {
+    dependsOn(integrationTest)
 }
 
 val tpsFlagTest = tasks.register<Test>("tpsFlagTest") {
