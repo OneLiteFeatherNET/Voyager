@@ -27,6 +27,7 @@ import net.elytrarace.voyager.race.flow.RacePhase;
 import net.elytrarace.voyager.race.cup.CupStanding;
 import net.elytrarace.voyager.race.cup.CupRound;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.cup.MapFigures;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.platform.flight.Racers;
@@ -166,6 +167,12 @@ public final class CupSession implements RacePhaseListener {
     private boolean skipRequested;
 
     /**
+     * Whether a map of the current cup has begun its {@code GAME} phase. The first lobby of a cup is the start
+     * countdown only while this is false; a practice retry lobby on the same map is not, because a race has run.
+     */
+    private boolean gameStarted;
+
+    /**
      * Builds a session from the collaborators the composition root wires. The flight driver samples the players
      * through the boost tracker and reads blocks through the block source, so those three belong together; the
      * composition root builds them as one graph.
@@ -241,6 +248,7 @@ public final class CupSession implements RacePhaseListener {
         boosts.clear();
         currentMap = null;
         preparedMapIndex = NO_MAP;
+        gameStarted = false;
         countdown.reset();
         for (Player racer : players.get()) {
             hud.standDown(racer);
@@ -276,6 +284,96 @@ public final class CupSession implements RacePhaseListener {
         }
         skipRequested = true;
         return true;
+    }
+
+    /**
+     * Where the cup stands for the start gate, given the commit window the gate uses.
+     *
+     * <p>{@code WAITING} when no cup runs, including a cup that has finished. Otherwise {@code COUNTDOWN} or
+     * {@code COMMITTED} while the cup is in its first lobby on its first map and no race has begun, split at
+     * {@code commitWindow} of lobby left; and {@code RUNNING} at every other point.
+     *
+     * @param commitWindow how much of the first lobby is committed; {@link StartGate#COMMIT_WINDOW} in production
+     */
+    public StartGate.Situation situation(Duration commitWindow) {
+        XerusPhaseDriver current = driver;
+        if (current == null || !current.isRunning()) {
+            return StartGate.Situation.WAITING;
+        }
+        boolean firstLobby = current.state().phase() == RacePhase.LOBBY
+                && current.state().mapIndex() == 0
+                && !gameStarted;
+        if (!firstLobby) {
+            return StartGate.Situation.RUNNING;
+        }
+        return current.remainingLobby().compareTo(commitWindow) > 0
+                ? StartGate.Situation.COUNTDOWN
+                : StartGate.Situation.COMMITTED;
+    }
+
+    /**
+     * Cancels a countdown that has not yet entered a map: the cup is not started, and the room returns to waiting.
+     *
+     * <p>Refused in any other situation. Once the last three seconds have begun the first map is already
+     * prepared, and a cancel would leave racers standing in a world with no cup behind it.
+     *
+     * @throws IllegalStateException if the cup is not in {@link StartGate.Situation#COUNTDOWN}
+     */
+    public void disarm() {
+        StartGate.Situation now = situation(StartGate.COMMIT_WINDOW);
+        if (now != StartGate.Situation.COUNTDOWN) {
+            throw new IllegalStateException(
+                    "only a countdown that has not entered a map can be disarmed, the cup is %s".formatted(now));
+        }
+        driver.finish();
+        driver = null;
+        forgetLobby();
+        for (Player racer : players.get()) {
+            hud.standDown(racer);
+        }
+    }
+
+    /**
+     * Stops a cup that has lost every racer, without a result, and returns the room to waiting.
+     *
+     * <p>Every run is forgotten, every racer is stood down and handed back their waiting loadout. Unlike
+     * {@link #stop()} this is the normal end of a cup with nobody left to race it, so nothing is kept for
+     * {@code /race} to inspect. The next {@link #start(boolean)} pins the catalogue again.
+     *
+     * @throws IllegalStateException if the cup is not committed or running
+     */
+    public void abort() {
+        StartGate.Situation now = situation(StartGate.COMMIT_WINDOW);
+        if (now != StartGate.Situation.COMMITTED && now != StartGate.Situation.RUNNING) {
+            throw new IllegalStateException("only a committed or running cup can be aborted, the cup is %s".formatted(now));
+        }
+        XerusPhaseDriver current = driver;
+        if (current != null && current.isRunning()) {
+            current.finish();
+        }
+        driver = null;
+        forgetLobby();
+        for (Player racer : players.get()) {
+            UUID id = racer.getUuid();
+            runs.forget(id);
+            flight.forget(id);
+            boosts.forget(id);
+            hud.standDown(racer);
+            Racers.standDown(racer);
+            Racers.hold(racer);
+        }
+        round.reset();
+    }
+
+    /** Drops everything a started or armed cup holds for its current lobby, so that {@link #describe()} reads not started. */
+    private void forgetLobby() {
+        currentMap = null;
+        preparedMapIndex = NO_MAP;
+        gameStarted = false;
+        countdown.reset();
+        lastSimulated.clear();
+        forgetPendingSkip();
+        blocks.follow(null);
     }
 
     /**
@@ -416,6 +514,7 @@ public final class CupSession implements RacePhaseListener {
     @Override
     public void mapStarted(int mapIndex, String mapName) {
         MapDefinition map = enterMap(mapIndex, mapName);
+        gameStarted = true;
 
         // The transition runs again here even when the countdown already made it, and that is
         // deliberate: a player who connected during those three seconds holds no run, and a launch
@@ -533,7 +632,7 @@ public final class CupSession implements RacePhaseListener {
     public String describe() {
         XerusPhaseDriver current = driver;
         if (current == null) {
-            return "cup '%s' (%s map(s), %s) — armed, waiting for the first player to join%n%s"
+            return "cup '%s' (%s map(s), %s) — armed, waiting for enough racers%n%s"
                     .formatted(cup.name(), cup.mapNames().size(), cup.mode(), catalogueLine());
         }
         StringBuilder text = new StringBuilder();

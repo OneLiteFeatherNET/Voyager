@@ -130,6 +130,14 @@ public final class XerusPhaseDriver extends TickedPhase {
     }
 
     /**
+     * How much of the lobby is left after the tick {@link #state()} describes. The start gate asks this to tell a
+     * countdown from a committed start.
+     */
+    public Duration remainingLobby() {
+        return remainingLobby(state);
+    }
+
+    /**
      * How much lobby is left after the tick {@code state} describes.
      *
      * <p>{@code inPhase} is the lobby time this tick has taken the phase <em>to</em>, because the
