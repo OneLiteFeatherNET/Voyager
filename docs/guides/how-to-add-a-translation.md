@@ -30,9 +30,9 @@ Each module has its own properties file:
 
 | Module | File |
 |---|---|
-| `server` | `server/src/main/resources/elytrarace_en_US.properties` |
-| `plugins/setup` | `plugins/setup/src/main/resources/elytrarace.properties` |
-| `plugins/game` | `plugins/game/src/main/resources/elytrarace.properties` |
+| `server` | `legacy/server/src/main/resources/elytrarace_en_US.properties` |
+| `legacy/plugins/setup` | `legacy/plugins/setup/src/main/resources/elytrarace.properties` |
+| `legacy/plugins/game` | `legacy/plugins/game/src/main/resources/elytrarace.properties` |
 
 Add a new line:
 

@@ -15,7 +15,7 @@ As of: 2026-03-29
 ## Server Module Structure
 
 ```
-server/src/main/java/net/elytrarace/server/
+legacy/server/src/main/java/net/elytrarace/server/
 ├── VoyagerServer.java                  # Entry point (main()), server bootstrap
 ├── cup/
 │   ├── CupDefinition.java             # Record: Cup with list of MapDefinitions
@@ -88,7 +88,7 @@ server/src/main/java/net/elytrarace/server/
 - [x] M2-02: Conversation API Bukkit-free (all shared modules without Bukkit imports)
 - [x] M2-03: Minestom adapter implemented
 - [x] M2-04: Unit tests for conversation API
-- [ ] M2-05: Paper dependency removed from shared/conversation-api -- **Verification pending**
+- [ ] M2-05: Paper dependency removed from legacy/shared/conversation-api -- **Verification pending**
 
 ### M3: Core Game -- Almost complete (5/7)
 
@@ -132,8 +132,8 @@ server/src/main/java/net/elytrarace/server/
 
 ### Medium Priority
 
-4. **M2-05: Verification** -- Check if `paper-api` dependency was actually removed from `shared/conversation-api/build.gradle.kts`.
-5. **M5-04: Dockerfile** -- Shadow JAR (`server/build/libs/*.jar`) exists, but a multi-stage Dockerfile and docker-compose integration are missing.
+4. **M2-05: Verification** -- Check if `paper-api` dependency was actually removed from `legacy/shared/conversation-api/build.gradle.kts`.
+5. **M5-04: Dockerfile** -- Shadow JAR (`legacy/server/build/libs/*.jar`) exists, but a multi-stage Dockerfile and docker-compose integration are missing.
 6. **M5-01: CloudNet v4** -- No integration yet. Required for production deployment.
 
 ### Low Priority (Nice-to-Have / Post-MVP)
@@ -177,7 +177,7 @@ kept in the cup's `notes`.
 ### Validation
 
 ```
-./gradlew :voyager-server:validateCatalog -PworldsPath=<absolute path to the worlds directory>
+./gradlew :voyager:server:validateCatalog -PworldsPath=<absolute path to the worlds directory>
 ```
 
 A checkout without the world can point at a checkout that has it. The check reads `ElytraraceBlueAndRed` under that

@@ -20,7 +20,7 @@ class ConverterOptionsTest {
     void readsEveryOptionAndKeepsThemApart() {
         ConverterOptions options = ConverterOptions.parse(List.of(
                 "--source", "run/run/data",
-                "--out", "voyager-server/src/main/resources",
+                "--out", "voyager/server/src/main/resources",
                 "--spawn", "ElytraraceBlueAndRed=109,-62,54",
                 "--spawn", "nether-sprint=-8,71,3",
                 "--reference-time-seconds", "46.7",
@@ -30,7 +30,7 @@ class ConverterOptionsTest {
                 "--particle-spacing", "2.5"));
 
         assertThat(options.source()).isEqualTo(Path.of("run/run/data"));
-        assertThat(options.out()).isEqualTo(Path.of("voyager-server/src/main/resources"));
+        assertThat(options.out()).isEqualTo(Path.of("voyager/server/src/main/resources"));
         assertThat(options.spawnFor("ElytraraceBlueAndRed")).isEqualTo(new Vec3(109, -62, 54));
         // Negative coordinates in a second, differently named map: a parser that kept one spawn for
         // all maps, or dropped the sign, cannot pass both of these.

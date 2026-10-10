@@ -39,7 +39,7 @@ Also read `GamePhaseFactory` before registering:
 
 ### 2. Create the phase file
 
-Path: `server/src/main/java/net/elytrarace/server/phase/Minestom{Name}Phase.java`
+Path: `legacy/server/src/main/java/net/elytrarace/server/phase/Minestom{Name}Phase.java`
 
 **TimedPhase template** (countdown that auto-finishes):
 
@@ -177,7 +177,7 @@ Update the `@param` Javadoc of the factory method to document any new callback p
 
 ### 4. Write JUnit 5 tests
 
-Path: `server/src/test/java/net/elytrarace/server/phase/Minestom{Name}PhaseTest.java`
+Path: `legacy/server/src/test/java/net/elytrarace/server/phase/Minestom{Name}PhaseTest.java`
 
 Minimum test coverage:
 
@@ -235,7 +235,7 @@ Run `/build` and confirm there are no compilation errors or test failures.
 
 ## Output
 
-- `server/src/main/java/net/elytrarace/server/phase/Minestom{Name}Phase.java`
-- Updated `server/src/main/java/net/elytrarace/server/phase/GamePhaseFactory.java`
-- `server/src/test/java/net/elytrarace/server/phase/Minestom{Name}PhaseTest.java`
-- Updated `server/src/test/java/net/elytrarace/server/phase/GamePhaseFactoryTest.java`
+- `legacy/server/src/main/java/net/elytrarace/server/phase/Minestom{Name}Phase.java`
+- Updated `legacy/server/src/main/java/net/elytrarace/server/phase/GamePhaseFactory.java`
+- `legacy/server/src/test/java/net/elytrarace/server/phase/Minestom{Name}PhaseTest.java`
+- Updated `legacy/server/src/test/java/net/elytrarace/server/phase/GamePhaseFactoryTest.java`

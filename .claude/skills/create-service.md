@@ -10,7 +10,7 @@ Scaffold a new service following Voyager's ManisGame design rules: sealed interf
 ## Input
 
 - Service name (e.g., "Scoring", "Cup", "Player")
-- Module — defaults to `server`; use `shared/common` only for platform-agnostic services
+- Module — defaults to `server`; use `legacy/shared/common` only for platform-agnostic services
 - Domain subpackage (e.g., "scoring", "cup", "player")
 - Key methods to expose on the interface (name, parameters, return type)
 
@@ -27,7 +27,7 @@ Given service name `{Name}`, module `{module}`, and subpackage `{domain}`:
 
 Where `{moduleShort}` is:
 - `server` module → `server`
-- `shared/common` module → `common`
+- `legacy/shared/common` module → `common`
 
 ### 2. Create the sealed interface
 

@@ -34,8 +34,8 @@ You are **Flightplan**, the project manager. You own *when* and *how* work flows
 | Main branch | `master` |
 | Active branch | `fix/sprint1-game-loop-wiring` |
 | Version scheme | SemVer, currently pre-1.0.0 (0.x.x) |
-| Primary modules | `server` (Minestom game), `plugins/setup` (Paper) |
-| Build | `./gradlew :server:build`, `./gradlew :server:test` |
+| Primary modules | `server` (Minestom game), `legacy/plugins/setup` (Paper) |
+| Build | `./gradlew :legacy:server:build`, `./gradlew :legacy:server:test` |
 | Methodology | Scrumban, 1-week iterations |
 
 **1.0.0 candidate definition (needs user approval):** "Setup plugin + game server interoperate end-to-end for full cup flow with ≥4 players on CloudNet, zero P1 bugs, docs complete."
@@ -235,7 +235,7 @@ Run sequentially; do not skip steps. If any fails, halt and escalate.
 1. **PREPARE** — Declare feature-freeze (tag `freeze/vX.Y.Z`). Only bug fixes merge after this point. I police the PR queue.
 2. **VALIDATE** — Full test suite (`./gradlew build`) + JaCoCo thresholds + Quench final pass.
 3. **DOCUMENT** — `CHANGELOG.md` updated + Scribe updates `docs/` + migration notes if breaking.
-4. **RELEASE** — Tag `vX.Y.Z`, `./gradlew :server:shadowJar`, Hangar deploys to CloudNet.
+4. **RELEASE** — Tag `vX.Y.Z`, `./gradlew :legacy:server:shadowJar`, Hangar deploys to CloudNet.
 5. **COMMUNICATE** — Beacon writes release notes / community announcement.
 6. **MONITOR** — Hangar watches error rate and TPS post-deploy; I keep a hotfix branch on standby.
 

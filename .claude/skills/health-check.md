@@ -24,34 +24,34 @@ Record: BUILD SUCCESS or BUILD FAILED. If FAILED, capture the error lines (lines
 JAVA_HOME=/home/themeinerlp/.sdkman/candidates/java/25.0.1-open PATH="/home/themeinerlp/.sdkman/candidates/java/25.0.1-open/bin:$PATH" ./gradlew test --no-daemon 2>&1 | grep -E "PASSED|FAILED|ERROR|tests|ArchUnit"
 ```
 
-Record: total passed, total failed, total errors. ArchUnit tests live in `server/src/test/java/net/elytrarace/arch/` and run as part of the normal test task.
+Record: total passed, total failed, total errors. ArchUnit tests live in `legacy/server/src/test/java/net/elytrarace/arch/` and run as part of the normal test task.
 
-### 3. Import Isolation — shared/ (must be zero)
+### 3. Import Isolation — legacy/shared/ (must be zero)
 
 Check that shared modules contain no platform-specific imports:
 
 ```bash
-grep -rc "org.bukkit" shared/ --include="*.java" | grep -v ":0"
-grep -rc "io.papermc" shared/ --include="*.java" | grep -v ":0"
-grep -rc "net.minestom" shared/ --include="*.java" | grep -v ":0"
+grep -rc "org.bukkit" legacy/shared/ --include="*.java" | grep -v ":0"
+grep -rc "io.papermc" legacy/shared/ --include="*.java" | grep -v ":0"
+grep -rc "net.minestom" legacy/shared/ --include="*.java" | grep -v ":0"
 ```
 
 Any output line is a violation. No output means clean.
 
-### 4. Import Isolation — server/ (must be zero)
+### 4. Import Isolation — legacy/server/ (must be zero)
 
 Check that the server module contains no Bukkit/Paper imports:
 
 ```bash
-grep -rc "org.bukkit" server/ --include="*.java" | grep -v ":0"
-grep -rc "io.papermc" server/ --include="*.java" | grep -v ":0"
+grep -rc "org.bukkit" legacy/server/ --include="*.java" | grep -v ":0"
+grep -rc "io.papermc" legacy/server/ --include="*.java" | grep -v ":0"
 ```
 
-Also verify that server/ does not import plugin packages:
+Also verify that legacy/server/ does not import plugin packages:
 
 ```bash
-grep -rc "net.elytrarace.game" server/ --include="*.java" | grep -v ":0"
-grep -rc "net.elytrarace.setup" server/ --include="*.java" | grep -v ":0"
+grep -rc "net.elytrarace.game" legacy/server/ --include="*.java" | grep -v ":0"
+grep -rc "net.elytrarace.setup" legacy/server/ --include="*.java" | grep -v ":0"
 ```
 
 ### 5. Migration Status Summary
@@ -61,8 +61,8 @@ Read `docs/migration/status.md` and extract the milestone table. Count open item
 Also collect source file counts:
 
 ```bash
-find server/src/main -name "*.java" | wc -l
-find server/src/test -name "*.java" | wc -l
+find legacy/server/src/main -name "*.java" | wc -l
+find legacy/server/src/test -name "*.java" | wc -l
 ```
 
 ## Output
@@ -79,12 +79,12 @@ Tests:            X passed / Y failed / Z errors
                   (list failing test names if any)
 
 Import isolation:
-  shared/ Bukkit: OK | VIOLATIONS (list files)
-  shared/ Paper:  OK | VIOLATIONS (list files)
-  shared/ Minestom: OK | VIOLATIONS (list files)
-  server/ Bukkit: OK | VIOLATIONS (list files)
-  server/ Paper:  OK | VIOLATIONS (list files)
-  server/ plugin imports: OK | VIOLATIONS (list files)
+  legacy/shared/ Bukkit: OK | VIOLATIONS (list files)
+  legacy/shared/ Paper:  OK | VIOLATIONS (list files)
+  legacy/shared/ Minestom: OK | VIOLATIONS (list files)
+  legacy/server/ Bukkit: OK | VIOLATIONS (list files)
+  legacy/server/ Paper:  OK | VIOLATIONS (list files)
+  legacy/server/ plugin imports: OK | VIOLATIONS (list files)
 
 Migration:
   M1 Foundation:      Complete  (6/6)

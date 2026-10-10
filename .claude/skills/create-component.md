@@ -14,7 +14,7 @@ Create a new ECS Component following project conventions.
 ## Steps
 
 1. Create the component file at:
-   `server/src/main/java/net/elytrarace/server/ecs/component/{Name}Component.java`
+   `legacy/server/src/main/java/net/elytrarace/server/ecs/component/{Name}Component.java`
 
 2. Follow this template:
 ```java
@@ -30,7 +30,7 @@ public class {Name}Component implements Component {
 ```
 
 3. Create matching test at:
-   `server/src/test/java/net/elytrarace/server/ecs/component/{Name}ComponentTest.java`
+   `legacy/server/src/test/java/net/elytrarace/server/ecs/component/{Name}ComponentTest.java`
 
 4. Test initial state, setters, and edge cases with JUnit 5 + AssertJ
 

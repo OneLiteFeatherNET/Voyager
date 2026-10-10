@@ -7,10 +7,10 @@ name, reports every problem in one pass, and exits. It starts no game server and
 
 | Command | Effect |
 |---|---|
-| `./gradlew :voyager-server:validateCatalog` | Runs the check against the run directories. |
-| `./gradlew :voyager-server:validateCatalog -PdataPath=<dir> -PworldsPath=<dir> -Pcup=<name>` | Runs the check against other directories. |
-| `./gradlew :voyager-server:runServerDev` | Runs the check first, then starts the server. |
-| `./gradlew :voyager-server:runServerDev -PskipCatalogCheck` | Starts the server without the check, and prints one warning line. |
+| `./gradlew :voyager:server:validateCatalog` | Runs the check against the run directories. |
+| `./gradlew :voyager:server:validateCatalog -PdataPath=<dir> -PworldsPath=<dir> -Pcup=<name>` | Runs the check against other directories. |
+| `./gradlew :voyager:server:runServerDev` | Runs the check first, then starts the server. |
+| `./gradlew :voyager:server:runServerDev -PskipCatalogCheck` | Starts the server without the check, and prints one warning line. |
 
 The same check runs without Gradle as `java -Dvoyager.config.check=true -jar <server jar>`, with
 `-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH`, `-DVOYAGER_CUP` and `-DVOYAGER_MIN_PLAYERS` as needed.

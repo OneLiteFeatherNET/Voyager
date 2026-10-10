@@ -37,9 +37,9 @@ Choose the correct file for the module where the string is displayed:
 
 | Module | Properties file |
 |---|---|
-| `server` (game/Minestom) | `server/src/main/resources/elytrarace_en_US.properties` |
-| `plugins/setup` | `plugins/setup/src/main/resources/elytrarace.properties` |
-| `plugins/game` (legacy) | `plugins/game/src/main/resources/elytrarace.properties` |
+| `server` (game/Minestom) | `legacy/server/src/main/resources/elytrarace_en_US.properties` |
+| `legacy/plugins/setup` | `legacy/plugins/setup/src/main/resources/elytrarace.properties` |
+| `legacy/plugins/game` (legacy) | `legacy/plugins/game/src/main/resources/elytrarace.properties` |
 
 Append a new line at the end of the appropriate file. Use the `voyager.` key prefix and `<arg:N>` for every placeholder:
 
@@ -54,7 +54,7 @@ voyager.game.ring.collected=<green>Ring collected! Points: <arg:0>
 voyager.game.ring.collected=<green><arg:0> collected a ring! Points: <arg:1>
 ```
 
-Existing keys in `server/src/main/resources/elytrarace_en_US.properties` serve as a style reference:
+Existing keys in `legacy/server/src/main/resources/elytrarace_en_US.properties` serve as a style reference:
 
 ```properties
 phase.lobby.player.join=<lang:plugin.prefix> <green><arg:0> <white>joined the game (<arg:1>/<arg:2>)

@@ -81,7 +81,7 @@ Pull in or hand off to these specialists when the task crosses my scope:
 - **Compass** (voyager-product-manager) — when a new agent or improvement requires user approval before I create files; Compass owns the decision framing.
 - **Anvil** (voyager-skill-creator) — when the right answer is a slash-command skill, not a new agent. We split by artifact type.
 - **Scout** (voyager-researcher) — when a new agent's domain knowledge must be verified via Context7/WebSearch before I embed facts in its prompt.
-- **Atlas** (voyager-architect) — when a proposed agent overlaps architectural authority (module boundaries, shared/ isolation) and naming/scope needs a sanity check.
+- **Atlas** (voyager-architect) — when a proposed agent overlaps architectural authority (module boundaries, legacy/shared/ isolation) and naming/scope needs a sanity check.
 - **Scribe** (voyager-tech-writer) — when agent creation triggers a CLAUDE.md update or agent-team documentation change.
 - **Pulse** (voyager-game-psychologist) — when an agent's scope touches gameplay feel, to avoid the new agent bypassing Pulse's review gate.
 

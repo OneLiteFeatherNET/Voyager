@@ -192,7 +192,7 @@ Each rule is either enforced by a rule that fails the build, or named as a gap w
 | Domain values and exceptions | `DesignRuleTest`: `apiTypesAreRecordsInterfacesOrEnums`, `exceptionsAreUncheckedAndDomainNamed`, `exceptionsLiveInAnExceptionSubpackage`, `race_domain_exceptions_are_runtime_exceptions` |
 | Package-level `@NotNullByDefault` | `NullabilityConventionTest` |
 | No vacuous pass; every module covered | `FitnessCoverageTest` |
-| Known slice-boundary violations are frozen, and a new one fails the build | `SliceBoundaryRulesTest`: rules R3 to R6 are frozen against the committed store in `voyager-fitness/src/test/resources/archunit_store/`; on CI the store cannot be created or updated. A closed item cannot return: `ClosedViolationsAreGoneTest` |
+| Known slice-boundary violations are frozen, and a new one fails the build | `SliceBoundaryRulesTest`: rules R3 to R6 are frozen against the committed store in `voyager/fitness/src/test/resources/archunit_store/`; on CI the store cannot be created or updated. A closed item cannot return: `ClosedViolationsAreGoneTest` |
 | Slice cycles are forbidden, in `race`, `api` and `platform` | `SliceBoundaryRulesTest`: `r7_raceSlicesAreFreeOfCycles` and `r8_apiSlicesAreFreeOfCycles` are plain; `r4_platformSlicesAreFreeOfCycles` is frozen (item 27) |
 | The server holds no scoring or cup import, and no Minestom outside its composition root | `r1_serverDoesNotDependOnRaceScoringOrCup` (plain); `r2_serverOutsideTheCompositionRootDoesNotUseMinestom` (plain) |
 | The race command is built only by the composition root | `CompositionRootRulesTest`: `raceCommandIsConstructedOnlyByTheCompositionRoot` (plain) |

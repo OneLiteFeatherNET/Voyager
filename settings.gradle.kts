@@ -81,22 +81,22 @@ dependencyResolutionManagement {
     }
 }
 
-include("shared:conversation-api")
-include("shared:database")
-include("shared:common")
-include("shared:spline")
-include("plugins:game")
-include("plugins:setup")
-include("server")
+include("legacy:shared:conversation-api")
+include("legacy:shared:database")
+include("legacy:shared:common")
+include("legacy:shared:spline")
+include("legacy:plugins:game")
+include("legacy:plugins:setup")
+include("legacy:server")
 
 // Greenfield rebuild — see docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md
-include("voyager-api")
-include("voyager-physics")
-include("voyager-race")
-include("voyager-platform")
-include("voyager-server")
-include("voyager-setup")
-include("voyager-fitness")
+include("voyager:api")
+include("voyager:physics")
+include("voyager:race")
+include("voyager:platform")
+include("voyager:server")
+include("voyager:setup")
+include("voyager:fitness")
 
 // Tooling that is not part of the rebuild's module graph.
 include("tools:trace-recorder")

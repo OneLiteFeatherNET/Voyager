@@ -21,7 +21,7 @@ rebuild is under production pressure, and the cut-over schedule is therefore dri
 readiness rather than by an outage risk.
 
 This document specifies a greenfield rebuild: a new module tree inside the existing
-repository, replacing `server`, `plugins/game`, `plugins/setup` and all four `shared/*`
+repository, replacing `server`, `legacy/plugins/game`, `legacy/plugins/setup` and all four `legacy/shared/*`
 modules.
 
 ## Decisions
@@ -148,8 +148,8 @@ at `net.elytrarace.voyager.api`, `voyager-platform` at `net.elytrarace.voyager.p
 on. The base package stays `net.elytrarace`.
 
 The sub-root is not cosmetic. The tree being replaced already owns `net.elytrarace.api`
-(`shared/conversation-api`, `shared/database`), `net.elytrarace.server` (`server/`) and
-`net.elytrarace.setup` (`plugins/setup`). A rule written as `resideInAPackage("net.elytrarace.api..")`
+(`legacy/shared/conversation-api`, `legacy/shared/database`), `net.elytrarace.server` (`legacy/server/`) and
+`net.elytrarace.setup` (`legacy/plugins/setup`). A rule written as `resideInAPackage("net.elytrarace.api..")`
 would silently span both trees the moment they share a classpath, and the old side violates several
 of these rules. Scoping the rebuild to its own sub-root keeps every fitness rule meaning what it
 says until E7 deletes the old tree.
@@ -167,8 +167,8 @@ that cannot be constructed cannot be sent.
 ### voyager-fitness
 
 ArchUnit today lives in the `server` test source set and therefore imports only what
-`server` depends on — `shared/common` and `shared/database`. `shared/conversation-api`,
-`shared/spline`, `plugins/game` and `plugins/setup` are never scanned, so the isolation
+`server` depends on — `legacy/shared/common` and `legacy/shared/database`. `legacy/shared/conversation-api`,
+`legacy/shared/spline`, `legacy/plugins/game` and `legacy/plugins/setup` are never scanned, so the isolation
 rules `CLAUDE.md` documents for them have no effect.
 
 A dedicated test-only module depending on every other module is the only construction
@@ -297,7 +297,7 @@ slice, and firework events. This is sufficient because the client's position seq
 exactly the quantity the plausibility check later measures against — the test targets the
 reality that matters in production. A client mod would cost several times more.
 
-Fixtures live in `voyager-physics/src/test/resources/traces/`, each with metadata for
+Fixtures live in `voyager/physics/src/test/resources/traces/`, each with metadata for
 Minecraft version and initial state.
 
 Acceptance thresholds, **measured** against all nine recorded profiles in E2b Task 7
@@ -370,13 +370,13 @@ was impossible without one.
 
 Segment-plane intersection against the ring disc, hand-written, tested, **once**. Ten
 lines of vector arithmetic do not justify a dependency. The current tree has it twice —
-`plugins/game` via commons-geometry, `server` hand-written — and the two disagree at the
+`legacy/plugins/game` via commons-geometry, `server` hand-written — and the two disagree at the
 edges.
 
 ### One format, one model, one loader
 
 `voyager-api` defines map, cup, ring and boost configuration. `voyager-race` loads them.
-Today `BoostConfig` (server) and `BoostConfigDTO` (`shared/common`) carry the same three
+Today `BoostConfig` (server) and `BoostConfigDTO` (`legacy/shared/common`) carry the same three
 fields, boxed in one and primitive in the other, and the DTO's javadoc links backwards to
 a server class.
 
@@ -457,7 +457,7 @@ Hibernate ORM 7 with HikariCP over MariaDB, schema owned by Flyway. The module d
 `voyager-api` and nothing else. It contains no race types, no Minestom types, and it exports no
 Hibernate types.
 
-The current tree does not have this boundary. `shared/database` compiles against `shared:common`
+The current tree does not have this boundary. `legacy/shared/database` compiles against `shared:common`
 and its `GameResultEntity` imports `net.elytrarace.common.game.mode.GameMode` directly, so the
 persistence module knows the game. Its repositories return `CompletableFuture` from
 `ForkJoinPool.commonPool()` (no executor is passed to `supplyAsync`), timestamps are written with
@@ -717,9 +717,9 @@ acceptance criterion that cannot drift: **no `Using filesort`, no `Using tempora
 therefore no history worth preserving. It stays a single script until the first real environment runs
 it; from then on it is append-only and applied scripts are never edited.
 
-The existing `V1`–`V4` under `shared/database` are **not carried forward**. They describe different
+The existing `V1`–`V4` under `legacy/shared/database` are **not carried forward**. They describe different
 table names, mixed-case columns, a records design this specification removes, and in `V3` a repair of
-a Hibernate-7 UUID mapping mistake the new schema does not make. They stay with `shared/database` and
+a Hibernate-7 UUID mapping mistake the new schema does not make. They stay with `legacy/shared/database` and
 are deleted at E7.
 
 | Flyway setting | Value | Why |
@@ -779,7 +779,7 @@ naming currently covers Gson deserializers only. This module extends it to row-t
 
 ### Defects in the current layer that this section fixes
 
-Lost update on map records; `shared/database` importing `shared/common` game types in violation of a
+Lost update on map records; `legacy/shared/database` importing `legacy/shared/common` game types in violation of a
 documented rule that no ArchUnit test enforces; blocking JDBC on `ForkJoinPool.commonPool()`;
 `hbm2ddl.auto` defaulting to `update` against ADR-0011; `baselineOnMigrate=true` silently skipping
 `V1`; server-local timestamps with no timezone forced on the JDBC session; and a dangling
@@ -1265,8 +1265,8 @@ that must surface in weeks, not after a cup system exists.
 follow the cut. The rebuild does not need to catch up with the current Java tree before
 replacing it.
 
-**Removed at cut-over:** `server/`, `plugins/game/`, `plugins/setup/`, all four
-`shared/*` modules, and with them roughly 34 tests that exclusively cover dead code
+**Removed at cut-over:** `legacy/server/`, `legacy/plugins/game/`, `legacy/plugins/setup/`, all four
+`legacy/shared/*` modules, and with them roughly 34 tests that exclusively cover dead code
 (`GameLoopSystemTest`, `GameSessionTest`, `CupFlowServiceTest`, `CupScoringTest`).
 
 ## Documentation
@@ -1309,16 +1309,16 @@ no provider or registry, no `@ApiStatus.Internal`.
 `CupScoring` are never instantiated outside their own tests. `GameLoopSystem` says so in
 its own javadoc. The gameplay exists twice.
 
-**Triplicated spline logic:** `shared/spline/SplineGenerator` (whose javadoc claims to be
-the only place that knows the algorithm), `shared/common/utils/SplineAPI`, and
-`SplineVisualizationSystem`. `server` does not even depend on `:shared:spline`.
+**Triplicated spline logic:** `legacy/shared/spline/SplineGenerator` (whose javadoc claims to be
+the only place that knows the algorithm), `legacy/shared/common/utils/SplineAPI`, and
+`SplineVisualizationSystem`. `server` does not even depend on `:legacy:shared:spline`.
 
-**Duplicated `Simple*` pattern** inside `plugins/game`: `CupSystem`/`SimpleCupSystem`,
+**Duplicated `Simple*` pattern** inside `legacy/plugins/game`: `CupSystem`/`SimpleCupSystem`,
 `GameStateSystem`/`SimpleGameStateSystem`, `SplineSystem`/`SimpleSplineSystem`,
 `WorldComponent`/`SimpleWorldComponent`, and more.
 
 **Ineffective architecture tests:** ArchUnit scans only the `server` test classpath.
-Rules documented for `shared/conversation-api`, `shared/spline` and both plugins never
+Rules documented for `legacy/shared/conversation-api`, `legacy/shared/spline` and both plugins never
 run. `allowEmptyShould(true)` lets several rules pass vacuously. A `DependencyInjectionTest`
 was lost when the former `fitness` module was dropped from `settings.gradle.kts`.
 

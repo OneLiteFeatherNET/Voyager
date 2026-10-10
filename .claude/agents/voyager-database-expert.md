@@ -70,7 +70,7 @@ PlayerEntity, CupEntity, MapEntity, RingEntity, GameSessionEntity, PlayerScoreEn
 ## Peer Network
 Pull in or hand off to these specialists when the task crosses my scope:
 
-- **Forge** (voyager-senior-backend) — when the repository interface sits in shared/database but the calling service lives in server/ or plugins/. I own entities and queries; Forge assembles services on top.
+- **Forge** (voyager-senior-backend) — when the repository interface sits in legacy/shared/database but the calling service lives in legacy/server/ or legacy/plugins/. I own entities and queries; Forge assembles services on top.
 - **Atlas** (voyager-architect) — when a schema decision shapes bounded contexts or introduces a new aggregate root that affects module boundaries.
 - **Hangar** (voyager-devops-expert) — when HikariCP pool tuning, MariaDB Docker pinning, or migration execution must be wired into CloudNet templates and CI.
 - **Quench** (voyager-senior-testing) — when schema changes need Testcontainers integration tests and repository coverage.

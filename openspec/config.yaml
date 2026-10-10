@@ -7,7 +7,7 @@ context: |
   Voyager is a Minecraft elytra racing minigame. Goal: finish a playable game on the
   greenfield rebuild (voyager-* modules, Java 25, Minestom 2026.08.28-26.2) using best practice.
   The design authority is docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md;
-  the old tree (server, plugins/*, shared/*) gets no new features.
+  the old tree (server, legacy/plugins/*, legacy/shared/*) gets no new features.
 
   Architecture:
   - "Vertical Slice Architecture (VSA)": organize by feature (race, ring, cup, map setup, ...),

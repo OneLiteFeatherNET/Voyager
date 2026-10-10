@@ -89,8 +89,8 @@ MinecraftServer.getSchedulerManager().buildTask(() -> { ... })
 Pull in or hand off to these specialists when the task crosses my scope:
 
 - **Bedrock** (voyager-minecraft-expert) — when vanilla Minecraft semantics determine the correct Minestom API usage (elytra tick math, entity metadata bits, hitbox dimensions). I know Minestom; Bedrock knows what vanilla actually does.
-- **Atlas** (voyager-architect) — when a Minestom pattern would leak Minestom types into shared/. Adapter boundaries belong to Atlas.
-- **Forge** (voyager-senior-backend) — when a Minestom adapter must wrap a shared/ service interface. I expose the API; Forge assembles the service.
+- **Atlas** (voyager-architect) — when a Minestom pattern would leak Minestom types into legacy/shared/. Adapter boundaries belong to Atlas.
+- **Forge** (voyager-senior-backend) — when a Minestom adapter must wrap a legacy/shared/ service interface. I expose the API; Forge assembles the service.
 - **Lattice** (voyager-senior-ecs) — when Minestom tick semantics (SchedulerManager, TickEvent) interact with EntityManager.update() and tick-budget partitioning.
 - **Origami** (voyager-paper-expert) — when Paper<->Minestom config compatibility needs verification (JSON map/cup schema, NamespaceID vs NamespacedKey).
 - **Hangar** (voyager-devops-expert) — when Minestom bootstrap is affected by CloudNet RC16 breakage (proxy auth, dynamic ports, shutdown semantics).

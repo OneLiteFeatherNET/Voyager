@@ -9,7 +9,7 @@ dependencies {
     // normal, a positive radius and reference time — is checked while the data is being converted
     // rather than the first time a server tries to read it. The tool depends on the rebuild's api
     // module; nothing in the rebuild depends on the tool.
-    implementation(project(":voyager-api"))
+    implementation(project(":voyager:api"))
 
     // Pinned inline, same reasoning as tools/trace-recorder/build.gradle.kts: a catalog alias for a
     // coordinate that other modules also resolve gives Renovate two pins to reconcile.
