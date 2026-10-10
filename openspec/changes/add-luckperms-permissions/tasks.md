@@ -33,9 +33,9 @@ Spike code lives on a scratch branch and is deleted before group 2. Nothing from
 
 ## 5. Fallback policy and player mapping in voyager-platform (Red then Green)
 
-- [ ] 5.1 Red: `LevelPermissionPolicyTest` asserts: the console is allowed every node; a player at level 4 is allowed every node; a player at level 3 and a player at level 0 are denied every node. Verify: the test fails because the class does not exist.
-- [ ] 5.2 Green: add `LevelPermissionPolicy` in `net.elytrarace.voyager.platform.permission`. Verify: `5.1` passes.
-- [ ] 5.3 Red then Green: `PlayerSubjectsTest` uses Minestom's test environment (fresh `Env` per test, explicit ticks) and asserts that `PlayerSubjects.of(player)` carries the player's UUID and `getPermissionLevel()`. Verify: the test passes on the Green step and the test environment reports no leaked connection.
+- [x] 5.1 Red: `LevelPermissionPolicyTest` asserts: the console is allowed every node; a player at level 4 is allowed every node; a player at level 3 and a player at level 0 are denied every node. Verify: the test fails because the class does not exist.
+- [x] 5.2 Green: add `LevelPermissionPolicy` in `net.elytrarace.voyager.platform.permission`. Verify: `5.1` passes.
+- [x] 5.3 Red then Green: `PlayerSubjectsTest` uses Minestom's test environment (fresh `Env` per test, explicit ticks) and asserts that `PlayerSubjects.of(player)` carries the player's UUID and `getPermissionLevel()`. Verify: the test passes on the Green step and the test environment reports no leaked connection.
 
 ## 6. LuckPerms adapter in voyager-platform (Red then Green)
 
