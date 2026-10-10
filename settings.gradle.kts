@@ -48,7 +48,7 @@ dependencyResolutionManagement {
             // the loader stays the only runtime check. Pinned to 3.0.7, released 2026-08-20. 3.0.8 was released
             // 2026-09-30, inside the two-week cooling window before 2026-10-09, so it is not used yet.
             // Approved by the owner on 2026-10-09 (openspec change simplify-map-data-format, design decision 5).
-            version("json-schema-validator", "3.0.7")
+            version("json-schema-validator", "3.0.8")
             library("json.schema.validator", "com.networknt", "json-schema-validator").versionRef("json-schema-validator")
 
             version("junit", "6.1.1")
