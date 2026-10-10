@@ -3,8 +3,8 @@
 This page explains how the rebuild (`voyager-*` modules) is organised and why. It is an explanation, not a how-to:
 it tells you where code belongs and what the rules protect. The decision record is
 [ADR-0017](../decisions/0017-clean-architecture-with-vertical-slices.md). The normative statements are the
-requirements of the OpenSpec change `openspec/changes/define-clean-architecture-with-vertical-slices/specs/`, which
-the archive step moves. The migration list of code that does not follow the rules yet is in that change's
+requirements of the archived OpenSpec change
+`openspec/changes/archive/2026-10-10-define-clean-architecture-with-vertical-slices/specs/`. The migration list of code that does not follow the rules yet is in that change's
 `design.md`, and this page links to it rather than copying it.
 
 The rebuild uses two organising principles at once:
@@ -188,12 +188,22 @@ Each rule is either enforced by a rule that fails the build, or named as a gap w
 | Domain values and exceptions | `DesignRuleTest`: `apiTypesAreRecordsInterfacesOrEnums`, `exceptionsAreUncheckedAndDomainNamed`, `exceptionsLiveInAnExceptionSubpackage`, `race_domain_exceptions_are_runtime_exceptions` |
 | Package-level `@NotNullByDefault` | `NullabilityConventionTest` |
 | No vacuous pass; every module covered | `FitnessCoverageTest` |
+| Known slice-boundary violations are frozen, and a new one fails the build | `SliceBoundaryRulesTest`: rules R1 to R6 are frozen against the committed store in `voyager-fitness/src/test/resources/archunit_store/`; on CI the store cannot be created or updated |
+| Slice cycles are forbidden, in `race`, `api` and `platform` | `SliceBoundaryRulesTest`: `r7_raceSlicesAreFreeOfCycles` and `r8_apiSlicesAreFreeOfCycles` are plain; `r4_platformSlicesAreFreeOfCycles` is frozen (item 27) |
+| The server holds no scoring import, and its game package holds no Minestom | `r1_serverDoesNotDependOnRaceScoring` (frozen, items 1 to 3); `r2_serverGameDoesNotUseMinestom` (frozen, items 6 to 9 and 28) |
+| Platform infrastructure does not depend on race | `r3_platformInfrastructureDoesNotDependOnRace` (frozen, items 11, 13, 15 and 20) |
+| Mapsetup contracts live in the mapsetup slice | `r5_mapsetupContractsLiveInPlatformMapsetup` (frozen, items 24 and 29) |
+| Setup adapter code holds no Minestom; the composition root is excluded | `r6_setupAdapterDoesNotUseMinestom` (frozen, item 26) |
 
 **Proposed for `add-architecture-slice-rules`** (`test(fitness)`, each with `allowEmptyShould(false)`): a layered rule
-for the four rings; slice cycle rules for `race`, `platform` (including its infrastructure packages), and `api`; a
-generated rule that forbids access to each slice's `internal` package; DI placement rules that name the composition
-roots; a rule against mutable static fields and clock reads in the inner rings; and, after the server's cup logic moves,
-a rule that `server` imports no `race.scoring`. A rule enters the suite only after the violations it would flag are fixed.
+for the four rings; a generated rule that forbids access to each slice's `internal` package; DI placement rules that name
+the composition roots; and a rule against mutable static fields and clock reads in the inner rings.
+
+A rule enters the suite in one of two ways. It is plain when it passes on `main`. It is frozen when its known violations
+are recorded in a committed baseline, so that only a new violation fails the build. The baseline is refreshed as
+[the how-to guide](../guides/how-to-refresh-the-architecture-baseline.md) describes, and the choice is recorded in
+[ADR-0020](../decisions/0020-freeze-architecture-violations-as-baseline.md). A rule is never excluded from the build, or
+narrowed, only to make it pass.
 
 ## Migration status
 
@@ -210,6 +220,12 @@ resolved, and three are acceptable as they stand. The open items fall into four 
 
 A fifth follow-up, `regroup-setup-adapters`, would move the Minestom adapter code of `voyager-setup` into the platform.
 It needs the owner's approval before it starts.
+
+Nine open items are not expressible as dependency rules, and no rule guards them: items 5, 10, 12, 14, 16, 17, 18, 23 and
+25. They are tracked here and in the migration list only, and a regression in them is caught by review. Every other open
+item that a dependency rule can express is recorded in the baseline with its item number. The mapping, and the provisional
+addenda 28 (`CupSession` imports Minestom) and 29 (`MapDraftAdapter` depends on `api.mapsetup`), are in the design of
+`freeze-slice-boundary-violations`, section D7.
 
 Each follow-up updates the slice table in this page and in `design.md` in the same pull request.
 
