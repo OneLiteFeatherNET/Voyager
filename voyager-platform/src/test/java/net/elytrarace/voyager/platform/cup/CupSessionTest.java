@@ -1082,7 +1082,7 @@ class CupSessionTest {
         // Mutable, because a player joining while a cup is already running is a case worth testing
         // and a fixed field could not produce one.
         List<Player> field = new ArrayList<>(List.of(racer));
-        CupSession session = CupSession.create(holder(), instances, transition, runs, new FlightTracker(),
+        CupSession session = CupWiring.session(holder(), instances, transition, runs, new FlightTracker(),
                 TIMINGS, STEP, () -> field);
         session.start(false);
         return new Fixture(instances, runs, session, racer, connection, field, env);

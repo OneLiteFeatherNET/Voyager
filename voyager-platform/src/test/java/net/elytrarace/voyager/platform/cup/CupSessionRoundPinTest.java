@@ -120,7 +120,7 @@ class CupSessionRoundPinTest {
     private CupSession session(Env env, CatalogHolder holder) {
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
         RaceRuns runs = new RaceRuns();
-        return CupSession.create(holder, instances, new MapTransition(instances, runs), runs, new FlightTracker(),
+        return CupWiring.session(holder, instances, new MapTransition(instances, runs), runs, new FlightTracker(),
                 TIMINGS, STEP, List::of);
     }
 

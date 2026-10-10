@@ -7,10 +7,8 @@ import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
-import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
-import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.hud.HudState;
 import net.elytrarace.voyager.platform.hud.HudStates;
 import net.elytrarace.voyager.platform.hud.RaceFeedback;
@@ -172,9 +170,19 @@ public final class CupSession implements RacePhaseListener {
 
     private boolean skipRequested;
 
-    private CupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition,
-            RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts,
-            RaceTimings timings, Duration step, Supplier<Collection<Player>> players) {
+    /**
+     * Builds a session from the collaborators the composition root wires. The flight driver samples the players
+     * through the boost tracker and reads blocks through the block source, so those three belong together; the
+     * composition root builds them as one graph.
+     *
+     * @param catalog the holder whose current catalogue each {@link #start} pins
+     * @param step the wall-clock duration one {@link #tick()} stands for; 50 ms on a 20 TPS server.
+     *     It has to match the interval this is actually ticked at or every phase length and every
+     *     recorded race time is scaled by the difference.
+     */
+    public CupSession(CatalogHolder catalog, MapInstances instances,
+            MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
+            FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players) {
         this.catalog = catalog;
         this.cup = catalog.current().cup();
         this.instances = instances;
@@ -186,31 +194,6 @@ public final class CupSession implements RacePhaseListener {
         this.timings = timings;
         this.step = step;
         this.players = players;
-    }
-
-    /**
-     * Builds a session and the three objects only it has a use for: the block source the flight
-     * simulation reads through, the tracker the burn is counted by, and the sampler that observes
-     * live players.
-     *
-     * <p>A factory rather than a public constructor because two of those three are package-private. They are
-     * implementation detail of how a cup is played, not of how one is wired, and keeping them out of
-     * the signature keeps the composition root from having to know they exist.
-     *
-     * @param catalog the holder whose current catalogue each {@link #start} pins
-     * @param step the wall-clock duration one {@link #tick()} stands for; 50 ms on a 20 TPS server.
-     *     It has to match the interval this is actually ticked at or every phase length and every
-     *     recorded race time is scaled by the difference.
-     */
-    public static CupSession create(CatalogHolder catalog, MapInstances instances,
-            MapTransition transition, RaceRuns runs, FlightTracker tracker, RaceTimings timings,
-            Duration step, Supplier<Collection<Player>> players) {
-        CurrentMapBlocks blocks = new CurrentMapBlocks();
-        FireworkBoostTracker boosts = new FireworkBoostTracker();
-        FlightTickDriver flight = new FlightTickDriver(
-                new LivePlayerSampler(players, boosts), tracker, new MinestomCollisionSpace(blocks));
-        return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                step, players);
     }
 
     /** The cup being played: the one the current round pinned, or the boot cup before the first round. */

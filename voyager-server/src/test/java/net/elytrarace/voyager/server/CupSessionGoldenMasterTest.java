@@ -11,6 +11,11 @@ import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
+import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
+import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
+import net.elytrarace.voyager.platform.tick.FlightTickDriver;
+import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.MapTransition;
@@ -274,8 +279,13 @@ class CupSessionGoldenMasterTest {
             this.env = env;
             this.worlds = worlds;
             MapTransition transition = new MapTransition(worlds, runs);
-            this.session = CupSession.create(holder, worlds, transition, runs, new FlightTracker(), TIMINGS,
-                    STEP, () -> field);
+            CurrentMapBlocks blocks = new CurrentMapBlocks();
+            FireworkBoostTracker boosts = new FireworkBoostTracker();
+            FlightTickDriver flight = new FlightTickDriver(
+                    new LivePlayerSampler(() -> field, boosts), new FlightTracker(),
+                    new MinestomCollisionSpace(blocks));
+            this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, TIMINGS, STEP,
+                    () -> field);
         }
 
         static Harness open(Env env, Path tempDir) throws IOException {
