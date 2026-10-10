@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.cup.exception.MapArrivalException;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.race.run.RaceRun;
@@ -29,15 +30,19 @@ import net.minestom.testing.TestConnection;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -372,6 +377,37 @@ class MapTransitionTest {
         assertThat(racer.getPosition()).isEqualTo(spawnOf(RIDGE_START));
     }
 
+    /**
+     * A chunk that cannot be read must end the arrival with an exception, not a frozen server. Minestom's
+     * {@code Player#setInstance} waits on a latch that only counts down when every chunk future completes
+     * normally, so a failed chunk left it blocked on the tick thread for good. The region file is truncated
+     * to its header after the world is written, so the spawn chunk's data lies past the end of the file: the
+     * same shape a torn write leaves behind.
+     *
+     * <p>The timeout is a hang guard, not a wait: the test completes in milliseconds when the arrival fails.
+     */
+    @Test
+    @Timeout(value = 5, unit = TimeUnit.SECONDS)
+    void aChunkThatFailsToLoadOnArrivalThrowsInsteadOfFreezingTheTick(Env env) throws IOException {
+        writeWorlds(env);
+        truncateRegionFile(DUNE, "r.-1.0.mca", 8192);
+
+        MapInstances instances = openWorlds(env);
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
+        Player racer = connectTo(env, instances, RIDGE_START);
+
+        assertThatThrownBy(() -> transition.advanceTo(DUNE_RUN, List.of(racer)))
+                .describedAs("the arrival fails and names the world it was trying to enter")
+                .isInstanceOf(MapArrivalException.class)
+                .hasMessageContaining(DUNE);
+
+        assertThat(racer.getInstance())
+                .describedAs("a racer whose arrival failed stays where they were")
+                .isSameAs(instances.forWorld(RIDGE));
+        assertThat(racer.getPosition()).isEqualTo(spawnOf(RIDGE_START));
+    }
+
     // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
@@ -441,6 +477,11 @@ class MapTransitionTest {
             instanceManager.unregisterInstance(instance);
             writer.close();
         }
+    }
+
+    private void truncateRegionFile(String world, String regionFile, int bytes) throws IOException {
+        Path file = worldsRoot().resolve(world).resolve("dimensions/minecraft/overworld/region").resolve(regionFile);
+        Files.write(file, Arrays.copyOf(Files.readAllBytes(file), bytes));
     }
 
     private static PlacedBlock floorUnder(Vec3 spawn, Block block) {

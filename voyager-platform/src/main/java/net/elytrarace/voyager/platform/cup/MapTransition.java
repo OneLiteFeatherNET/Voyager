@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.cup.exception.MapArrivalException;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * Moves every racer onto the next map: into its world, onto its spawn, with a fresh run.
@@ -116,7 +118,7 @@ public final class MapTransition {
         runs.clearAll();
 
         for (Player player : players) {
-            arrive(player, target, spawn);
+            arrive(player, map, target, spawn);
             runs.startFresh(player.getUuid());
         }
     }
@@ -126,18 +128,32 @@ public final class MapTransition {
      * "already in this world" is "the same object", and Minestom's own {@code setInstance} guard
      * compares the same way.
      */
-    private static void arrive(Player player, Instance target, Pos spawn) {
+    private static void arrive(Player player, MapDefinition map, Instance target, Pos spawn) {
         if (player.getInstance() == target) {
             reposition(player, spawn);
             return;
+        }
+        // Minestom's setInstance waits on a latch that only a fully successful chunk load releases, so
+        // a failed chunk here would block the tick thread for good. Loading the chunks first means
+        // setInstance finds them all present and spawns the racer synchronously, and a failure surfaces
+        // as an exception instead. The range is the one setInstance itself uses: its view distance is
+        // the player's setting capped by the target instance's, which is not the view distance the
+        // player has in their current instance.
+        int viewDistance = Math.min(player.getSettings().viewDistance(), target.viewDistance()) + 1;
+        try {
+            awaitChunksAround(target, spawn, viewDistance);
+        } catch (CompletionException exception) {
+            throw new MapArrivalException(map.world(), spawn, exception.getCause());
         }
         player.setInstance(target, spawn).join();
     }
 
     /**
-     * Moves {@code player} to {@code target} within the world they already stand in, and returns once they
-     * are there: the chunks around the target are loaded first, then a confirmed teleport is sent and
-     * waited for.
+     * Moves {@code player} to {@code target} within the world they already stand in. The chunks around the
+     * target are loaded first, then the teleport is sent and the wait for its chunks completes.
+     *
+     * <p>Returning means the teleport has been <em>sent</em>, not confirmed: the call does not wait for the
+     * client to echo the teleport id back. Until it does, the server discards that client's movement packets.
      *
      * <p>Public because a course reset moves a racer the same way a map start does. The player must already
      * be in an instance; the target is in that instance too.
@@ -156,7 +172,7 @@ public final class MapTransition {
         List<CompletableFuture<Chunk>> pending = new ArrayList<>();
         ChunkRange.chunksInRange(spawn, viewDistance, (chunkX, chunkZ) -> {
             CompletableFuture<Chunk> chunk = instance.loadOptionalChunk(chunkX, chunkZ);
-            if (!chunk.isDone()) {
+            if (!chunk.isDone() || chunk.isCompletedExceptionally()) {
                 pending.add(chunk);
             }
         });
