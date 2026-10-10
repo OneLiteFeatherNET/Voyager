@@ -75,29 +75,49 @@ public abstract class Racers {
     }
 
     /**
-     * The loadout, applied once when a player spawns.
+     * The loadout of a waiting racer, applied once when a player spawns.
      *
      * <p>{@code ADVENTURE} so nobody edits the racetrack, invulnerable so a crash into a wall at
      * elytra speed ends the run rather than the player — collision damage and an out-of-bounds reset
      * are E5's, and until they exist a dead racer is a racer whose run silently stops being advanced.
+     *
+     * <p>No elytra and no rockets: a waiting racer cannot fly off the spawn. {@link #equip} gives them
+     * when a map begins.
      */
     public static void prepare(Player player) {
         player.setGameMode(GameMode.ADVENTURE);
         player.setInvulnerable(true);
         player.getInventory().clear();
+    }
+
+    /**
+     * Gives the racer the elytra and the rockets of a map, in place of the nothing {@link #prepare} left them.
+     */
+    public static void equip(Player player) {
         player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
         player.getInventory().setItemStack(0, Rockets.item(ROCKETS));
     }
 
     /**
-     * Turns {@code player} toward the map's first ring without touching their flight.
+     * Takes the elytra and the rockets away again, for a racer who is waiting: on joining while no cup runs, when
+     * a cup is aborted, and when a cup finishes.
+     */
+    public static void hold(Player player) {
+        player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.AIR);
+        player.getInventory().setItemStack(0, ItemStack.AIR);
+    }
+
+    /**
+     * Turns {@code player} toward the map's first ring without touching their flight, and gives them their equipment.
      *
      * <p>Called when a map's start countdown begins, so the racer spends those three seconds looking
      * at the course they are about to fly rather than at whatever direction the teleport left them
      * in — {@code MapDefinition.spawn()} is a {@link Vec3} with no yaw, so that direction is north
-     * whichever way the course runs.
+     * whichever way the course runs. The elytra is given here, not at the launch, so the racer sees it
+     * in hand during the count.
      */
     public static void faceCourse(Player player, MapDefinition map) {
+        equip(player);
         player.lookAt(Vectors.toMinestom(map.rings().getFirst().center()));
     }
 
@@ -111,6 +131,9 @@ public abstract class Racers {
      * authored spawn already agreed with.
      */
     public static void launch(Player player, MapDefinition map) {
+        // Equipped again here: a racer who joined during the countdown was not in the faceCourse pass, and a
+        // launch without an elytra would glide nothing. Idempotent for everybody else.
+        equip(player);
         Ring first = map.rings().getFirst();
         player.lookAt(Vectors.toMinestom(first.center()));
         player.setFlyingWithElytra(true);
