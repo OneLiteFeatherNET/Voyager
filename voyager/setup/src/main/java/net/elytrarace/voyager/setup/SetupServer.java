@@ -4,10 +4,12 @@ import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
 import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
 import net.elytrarace.voyager.platform.lifecycle.StopCommand;
+import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
+import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import io.avaje.inject.BeanScope;
 
@@ -119,7 +121,8 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
-        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+        // As in VoyagerServer: the extension bootstrap initialises Minestom, and at start loads extensions/ and binds the port.
+        ExtensionBootstrap bootstrap = auth == null ? ExtensionBootstrap.init() : ExtensionBootstrap.init(auth);
         // LuckPerms starts before the port binds, and a failed start refuses to listen (ADR-0024).
         if (LuckPermsBootstrap.isPresent()) {
             try {
@@ -138,6 +141,9 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
+        // Every builder is created with the permission pointer, through the one policy bean (ADR-0026). Installed before the
+        // port binds, as in VoyagerServer.
+        MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         MinecraftServer.getCommandManager().register(graph.get(SetupCommands.class));
         graph.get(WandListener.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(TerrainGuard.class).register(MinecraftServer.getGlobalEventHandler());
@@ -156,7 +162,7 @@ public final class SetupServer {
                 line -> MinecraftServer.getCommandManager().getConsoleSender().sendMessage(line));
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
-        server.start(settings.host(), settings.port());
+        bootstrap.start(settings.host(), settings.port());
         console.start();
     }
 

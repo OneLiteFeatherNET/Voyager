@@ -15,7 +15,7 @@ THE SYSTEM SHALL build `voyager-setup` as a fat jar with the manifest attribute 
 `net.elytrarace.voyager.setup.SetupServer`, with its service files merged, as `voyager-server` already does.
 
 #### Scenario: Setup jar starts
-- **WHEN** the fat jar is run with `java -jar` from a service directory, with `VOYAGER_DATA_PATH=catalog` and `VOYAGER_WORLDS_PATH=worlds`
+- **WHEN** the node starts the fat jar as `-cp` with its manifest `Main-Class` (Decision 8 of design.md) from a service directory, with `VOYAGER_DATA_PATH=catalog` and `VOYAGER_WORLDS_PATH=worlds`
 - **THEN** the setup server starts and reads its catalogue and worlds from those paths
 
 ### Requirement: No fat jar contains a CloudNet class

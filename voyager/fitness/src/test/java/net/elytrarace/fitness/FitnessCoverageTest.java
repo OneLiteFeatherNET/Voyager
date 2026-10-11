@@ -45,7 +45,8 @@ class FitnessCoverageTest {
             ":voyager:race", "net.elytrarace.voyager.race",
             ":voyager:platform", "net.elytrarace.voyager.platform",
             ":voyager:server", "net.elytrarace.voyager.server",
-            ":voyager:setup", "net.elytrarace.voyager.setup");
+            ":voyager:setup", "net.elytrarace.voyager.setup",
+            ":voyager:cloudnet-bridge", "net.elytrarace.voyager.cloudnet.bridge");
 
     private static final String FITNESS_PACKAGE = "net.elytrarace.fitness";
 

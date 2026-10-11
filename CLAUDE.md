@@ -24,6 +24,7 @@ The rebuild's modules live under `voyager/`. The artifact name (`voyager-*`) is 
 | `voyager-platform` | `:voyager:platform` | Minestom and Falco adapters, catalogue reader. |
 | `voyager-server` | `:voyager:server` | Game server composition root. |
 | `voyager-setup` | `:voyager:setup` | Setup server composition root. |
+| `voyager-cloudnet-bridge` | `:voyager:cloudnet-bridge` | CloudNet bridge extension (Minestom extension, loaded from the node's `extensions/`). The only module that names `eu.cloudnetservice..`. Never bundled. ADR-0026. |
 | `voyager-fitness` | `:voyager:fitness` | Test-only. ArchUnit over every rebuild module. |
 
 `voyager-persistence` arrives in a later stage. See the spec's delivery plan.
@@ -37,7 +38,9 @@ rebuild reaches a flyable build with a green Vanilla trace suite.
 ## Key Decisions
 
 - **Java**: 25 for every `voyager-*` module. Vanilla itself requires Java 25 since Minecraft 26.1.
-- **Target**: Minecraft 26.2, Minestom `2026.08.28-26.2`. Mojang moved to calendar versioning in
+- **CloudNet**: 4.0.0-RC17, the release the owner's network runs (decided 2026-10-11; ADR-0026, design.md Decision 6). `voyager-cloudnet-bridge` is a Minestom extension loaded from the node's `extensions/`
+  folder, compiled against CloudNet `compileOnly`, and never bundled into a fat jar (`verifyNoCloudNetInFatJars`).
+- **Target**: Minecraft 26.2, Minestom `2026.09.12-26.2` (the rebuild's pin in `voyager/platform/build.gradle.kts`). Mojang moved to calendar versioning in
   2026; there is no 1.22, it became 26.1. `settings.gradle.kts` still pins the old tree to Minestom
   `2026.04.13-1.21.11` — that version applies only to `legacy/server`/`legacy/plugins/*`, not to the rebuild.
 - **Dependency injection**: avaje-inject 12.7 (compile-time, no reflection) with jakarta.inject; DI annotations only in the composition roots (voyager-server, later voyager-setup) — see ADR-0016.

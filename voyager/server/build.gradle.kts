@@ -9,6 +9,11 @@ dependencies {
     implementation(project(":voyager:race"))
     implementation(project(":voyager:platform"))
 
+    // The Minestom extension bootstrap, the OneLiteFeather fork Cygnus pins (ADR-0026). The root starts it itself, because
+    // the fork's init must replace MinecraftServer.init before anything else touches Minestom.
+    implementation(platform(libs.minestom.extensions.bom))
+    implementation(libs.minestom.extensions)
+
     // avaje-inject generates the composition root's wiring at compile time (no reflection). The
     // processor runs in this module only; the runtime finds the generated modules through
     // ServiceLoader. jakarta.inject is the JSR-330 annotation set the wiring reads. Nothing outside
@@ -162,8 +167,10 @@ fun JavaExec.voyagerJvmDefaults() {
     // configuration check reports it, with the absolute path, before the server starts.
     // Automatic component translation is switched on by VoyagerServer.main, not by this task.
 
-    providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
-    providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
+    // The developer layout, passed explicitly because the server's own defaults are the service layout (catalog and worlds,
+    // ServerSettings). The paths are relative to workingDir, so run/data resolves to run/run/data (see above).
+    systemProperty("VOYAGER_DATA_PATH", providers.gradleProperty("dataPath").getOrElse("run/data"))
+    systemProperty("VOYAGER_WORLDS_PATH", providers.gradleProperty("worldsPath").getOrElse("run/worlds"))
     providers.gradleProperty("cup").orNull?.let { systemProperty("VOYAGER_CUP", it) }
     providers.gradleProperty("minPlayers").orNull?.let { systemProperty("VOYAGER_MIN_PLAYERS", it) }
     standardInput = System.`in`

@@ -84,6 +84,24 @@ dependencyResolutionManagement {
             version("guava", "33.7.2-jre")
             library("guava", "com.google.guava", "guava").versionRef("guava")
 
+            // CloudNet 4.0.0-RC17, the release the owner's network runs (ADR-0026). It was RC16 until 2026-10-11, the release Cygnus
+            // builds against; the extension's API calls are identical in both (javap, design.md Decision 6). Only
+            // :voyager:cloudnet-bridge compiles against it. It is never bundled: the node provides the driver, and the bridge arrives
+            // as a Minestom extension from extensions/. The bom pins the rest.
+            version("cloudnet", "4.0.0-RC17")
+            library("cloudnet.bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
+            library("cloudnet.bridge.api", "eu.cloudnetservice.cloudnet", "bridge-api").withoutVersion()
+            library("cloudnet.bridge.impl", "eu.cloudnetservice.cloudnet", "bridge-impl").withoutVersion()
+            library("cloudnet.driver.api", "eu.cloudnetservice.cloudnet", "driver-api").withoutVersion()
+
+            // The OneLiteFeather fork of the Minestom extension loader, the release Cygnus pins. Minestom 26.2 has no extension
+            // system of its own (greenfield design). The fork's ExtensionBootstrap is init(Auth) and start(host, port), see ADR-0026.
+            // The processor generates extension.json from @ExtensionInfo at compile time; its annotation has source retention.
+            version("minestom-extensions", "2.2.0")
+            library("minestom.extensions.bom", "net.onelitefeather", "minestom-extensions-bom").versionRef("minestom-extensions")
+            library("minestom.extensions", "net.onelitefeather", "minestom-extensions").withoutVersion()
+            library("minestom.extensions.processor", "net.onelitefeather", "minestom-extensions-processor").withoutVersion()
+
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
             bundle("flyway", listOf("flyway.core", "flyway.mysql"))
             bundle("fawe", listOf("fawe.core", "fawe.bukkit"))
@@ -111,6 +129,7 @@ include("voyager:platform")
 include("voyager:server")
 include("voyager:setup")
 include("voyager:fitness")
+include("voyager:cloudnet-bridge")
 
 // Tooling that is not part of the rebuild's module graph.
 include("tools:trace-recorder")

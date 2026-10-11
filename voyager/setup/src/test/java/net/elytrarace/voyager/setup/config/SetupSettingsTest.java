@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SetupSettingsTest {
 
     @Test
-    void theDefaultDirectoriesAreTheSetupServersOwnUnderTheProjectRoot() {
+    void theDefaultDirectoriesAreTheServiceTemplateLayout() {
         SetupSettings settings = SetupSettings.fromProperties(new String[0], name -> null);
 
-        assertThat(settings.dataPath()).isEqualTo(Path.of("run-setup/data"));
-        assertThat(settings.worldsPath()).isEqualTo(Path.of("run-setup/worlds"));
+        assertThat(settings.dataPath()).isEqualTo(Path.of("catalog"));
+        assertThat(settings.worldsPath()).isEqualTo(Path.of("worlds"));
         assertThat(settings.host()).isEqualTo("0.0.0.0");
         assertThat(settings.port()).isEqualTo(25566);
     }

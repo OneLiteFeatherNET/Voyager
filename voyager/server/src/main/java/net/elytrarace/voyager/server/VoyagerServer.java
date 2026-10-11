@@ -15,6 +15,7 @@ import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
 import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
 import net.elytrarace.voyager.platform.lifecycle.StopCommand;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
+import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
@@ -25,6 +26,7 @@ import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.ServerFlag;
@@ -181,7 +183,9 @@ public final class VoyagerServer {
             System.exit(1);
             return;
         }
-        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+        // The extension bootstrap initialises Minestom as MinecraftServer.init did, and at start it loads extensions/ and binds
+        // the port (ADR-0026). A root without extensions/ runs as before, with no bridge.
+        ExtensionBootstrap bootstrap = auth == null ? ExtensionBootstrap.init() : ExtensionBootstrap.init(auth);
 
         // LuckPerms is started only when its loader is on the class path, and before the port binds. A start that
         // throws refuses to listen; it never falls back to the level-based policy (ADR-0024).
@@ -231,6 +235,9 @@ public final class VoyagerServer {
             return;
         }
 
+        // Every player is created with the permission pointer, through the one policy bean (ADR-0026, the CloudNet bridge
+        // reads it). Installed before the port binds, so no connection can arrive as a plain Minestom player.
+        MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         registerEvents(session, waitingRoom, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         LOGGER.info("/race reload is registered: gated by {}", PermissionNode.VOYAGER_COMMAND_RACE_RELOAD.value());
@@ -254,7 +261,7 @@ public final class VoyagerServer {
         registerShutdownTask(graph, instances, catalog, console);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
-        server.start(settings.host(), settings.port());
+        bootstrap.start(settings.host(), settings.port());
         console.start();
         LOGGER.info("Voyager started. {}", session.describe().trim());
     }
