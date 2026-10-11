@@ -15,7 +15,18 @@ dependencies {
     testImplementation(libs.archunit.junit5)
 }
 
+// The server and setup jars are read from the test classpath, and shadowJar is their only artifact (their plain jar is
+// disabled). Compiling and testing this module therefore builds those shadow jars first, so no other task rewrites a
+// jar while the tests read it.
+val rebuildShadowJars = listOf(":voyager:server:shadowJar", ":voyager:setup:shadowJar")
+
+tasks.compileTestJava {
+    dependsOn(rebuildShadowJars)
+}
+
 tasks.test {
+    dependsOn(rebuildShadowJars)
+
     // The frozen baseline lives under src/test/resources/archunit_store and archunit.properties names it relative to the
     // working directory. Pinning that directory to the module makes the path a visible setting, not a Gradle default.
     workingDir = projectDir

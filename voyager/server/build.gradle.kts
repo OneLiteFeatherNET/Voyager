@@ -131,6 +131,14 @@ tasks.shadowJar {
     }
 }
 
+// Only the shadow jar is produced. shadowJar keeps the archive name of the plain jar (archiveClassifier ""), so both
+// tasks wrote build/libs/<name>-<version>.jar. Test classpaths that consume the project (voyager-fitness) then read a
+// file that another task was rewriting in the same build, and the architecture tests failed to discover or saw no
+// classes. The release uploads that single jar.
+tasks.jar {
+    enabled = false
+}
+
 // The JVM flags are the ones the tree being replaced's run tasks use, with one deliberate change:
 // the heap. Those tasks cap at 512M, which predates any measurement; ElytraraceBlueAndRed is a
 // finite 9429-chunk world and a whole cup flies across all of it, so the cap is raised and the
