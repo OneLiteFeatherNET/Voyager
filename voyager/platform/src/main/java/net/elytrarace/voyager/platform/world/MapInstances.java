@@ -5,7 +5,6 @@ import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.platform.world.exception.UnreadableRegionException;
 import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.world.DimensionType;
 import net.onelitefeather.falco.anvil.AnvilDiagnostics;
@@ -19,7 +18,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -72,8 +73,16 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
     private static final Pattern REGION_FILE = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
     private static final int CHUNKS_PER_REGION = 32;
 
+    /**
+     * How long an unregister waits for a chunk load that is still in flight before it goes ahead anyway. A chunk
+     * load takes milliseconds, so a load still running after this is hung rather than slow, and a shutdown must
+     * not hang with it.
+     */
+    private static final Duration CHUNK_LOAD_WAIT = Duration.ofSeconds(10);
+
     private final InstanceManager instanceManager;
     private final Path worldsRoot;
+    private final Duration chunkLoadWait;
     private final Map<String, LoadedWorld> loaded = new ConcurrentHashMap<>();
 
     /**
@@ -83,8 +92,18 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
      *                        {@code dimensions/}, not to {@code region/} itself
      */
     public MapInstances(InstanceManager instanceManager, Path worldsRoot) {
+        this(instanceManager, worldsRoot, CHUNK_LOAD_WAIT);
+    }
+
+    /**
+     * @param chunkLoadWait the longest an unregister waits for a chunk load still in flight; a test passes a bound
+     *                      it can reach without waiting
+     */
+    @VisibleForTesting
+    MapInstances(InstanceManager instanceManager, Path worldsRoot, Duration chunkLoadWait) {
         this.instanceManager = instanceManager;
         this.worldsRoot = worldsRoot;
+        this.chunkLoadWait = chunkLoadWait;
     }
 
     /**
@@ -241,6 +260,7 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
         if (entry == null) {
             return;
         }
+        awaitChunkLoads(world, entry);
         RuntimeException failure = null;
         try {
             instanceManager.unregisterInstance(entry.instance());
@@ -281,6 +301,7 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
         for (Map.Entry<String, LoadedWorld> cached : loaded.entrySet()) {
             String world = cached.getKey();
             LoadedWorld entry = cached.getValue();
+            awaitChunkLoads(world, entry);
 
             // Both steps keep going past a failure, for the same reason: a shutdown that stops at
             // the first world leaves every loader after it holding its region files open, and the
@@ -305,6 +326,21 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
 
         if (failure != null) {
             throw failure;
+        }
+    }
+
+    /**
+     * Waits, for a bounded time, for the chunk loads a world has in flight, before the world is unregistered.
+     *
+     * <p>Minestom caches a loaded chunk on its own thread without the instance's monitor, so an unregister that
+     * runs under a load iterates a map that load is still writing. Past the bound the unregister goes ahead and
+     * the world is logged as having gone with loads still running, rather than hanging a shutdown on a load that
+     * will not finish.
+     */
+    private void awaitChunkLoads(String world, LoadedWorld entry) {
+        if (!entry.loads().awaitQuiet(chunkLoadWait)) {
+            LOGGER.warn("world '{}' is unregistering with chunk loads still in flight after {}; they may fail",
+                    world, chunkLoadWait);
         }
     }
 
@@ -420,11 +456,13 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
             throw failure;
         }
 
-        InstanceContainer instance = instanceManager.createInstanceContainer(DimensionType.OVERWORLD);
+        InFlightChunkLoads loads = new InFlightChunkLoads();
+        TrackingInstance instance = new TrackingInstance(UUID.randomUUID(), DimensionType.OVERWORLD, loads);
+        instanceManager.registerInstance(instance);
         instance.setChunkLoader(loader);
         instance.enableAutoChunkLoad(true);
         return new LoadedWorld(instance, loader, diagnostics, new AtomicBoolean(),
-                regionFingerprint(loader.regionDirectory()));
+                regionFingerprint(loader.regionDirectory()), loads);
     }
 
     private static FalcoAnvilLoader buildLoader(Path worldRoot) {
@@ -468,6 +506,6 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
     }
 
     private record LoadedWorld(Instance instance, FalcoAnvilLoader loader, AnvilDiagnostics diagnostics,
-                               AtomicBoolean unknownBlocksReported, String fingerprint) {
+                               AtomicBoolean unknownBlocksReported, String fingerprint, InFlightChunkLoads loads) {
     }
 }
