@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     id("java")
 }
@@ -44,4 +46,33 @@ subprojects {
 // project in the build. The version now lives above, so pass it down explicitly.
 allprojects {
     version = rootProject.version
+}
+
+// No shipped fat jar may carry a CloudNet class. The bridge loads from its own extension class loader beside the node's
+// CloudNet; a copy inside a root's jar would be a second, unmanaged CloudNet (ADR-0026). Checked by entry name, so the
+// check does not depend on how a jar was assembled. Runs under check, so it is part of ./gradlew build.
+val fatJarProjects = listOf(":voyager:server", ":voyager:setup")
+val verifyNoCloudNetInFatJars by tasks.registering {
+    group = "verification"
+    description = "Fails when a fat jar of voyager-server or voyager-setup holds an eu/cloudnetservice entry."
+    fatJarProjects.forEach { dependsOn("$it:shadowJar") }
+    doLast {
+        val offenders = fatJarProjects.flatMap { path ->
+            val jar = project(path).tasks.getByName("shadowJar").outputs.files.singleFile
+            ZipFile(jar).use { zip ->
+                zip.entries().asSequence()
+                    .map { it.name }
+                    .filter { it.startsWith("eu/cloudnetservice/") }
+                    .map { "${jar.name}: $it" }
+                    .toList()
+            }
+        }
+        if (offenders.isNotEmpty()) {
+            throw GradleException("CloudNet classes found in fat jars, which must never contain them:\n" + offenders.joinToString("\n"))
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(verifyNoCloudNetInFatJars)
 }
