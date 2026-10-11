@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Every problem in the catalogue and in the worlds it references, in one sorted list.
@@ -23,6 +24,9 @@ import java.util.Optional;
  * {@link CatalogLoader#read}, which already collects every problem as data. This class adds the
  * world half: each map's world folder, then its health through the {@link HealthSource}. A map whose
  * folder is missing or empty is not handed to the health source, because there is nothing to read.
+ *
+ * <p>The structural half always covers the whole catalogue. The world half covers the maps a caller
+ * selects: a boot checks only the cup it plays, so the worlds of other cups are never opened.
  *
  * <p>A dangling map entry is reported per entry, for every cup that parsed, whether or not some other
  * file is malformed: the source is the cup file and the key is the map entry it names. The check runs on
@@ -37,9 +41,10 @@ public final class CatalogValidation {
     /**
      * Reads a world's health, reading its chunks first if the caller needs that.
      *
-     * <p>The check's real source reads every chunk the world's region files cover and then reports the
-     * counters; a test supplies a fake. An exception thrown here is reported against the world and does
-     * not stop the other worlds from being checked.
+     * <p>The check's real source is {@code MapInstances::checkWorld}, which reads every chunk the world's
+     * region files cover, reports the counters and closes the world again; a test supplies a fake. An
+     * exception thrown here is reported against the world and does not stop the other worlds from being
+     * checked.
      */
     @FunctionalInterface
     public interface HealthSource {
@@ -59,13 +64,31 @@ public final class CatalogValidation {
      * @return every problem, sorted by source then key; empty when nothing is wrong
      */
     public static List<ConfigProblem> validate(Path dataDirectory, Path worldsRoot, HealthSource health) {
+        return validate(dataDirectory, worldsRoot, map -> true, health);
+    }
+
+    /**
+     * Checks the whole catalogue, but the worlds only of the maps {@code checkWorld} accepts.
+     *
+     * <p>A map that is not accepted has its world neither inspected nor handed to the health source, so
+     * a world that is absent or unreadable for it is not reported. Its JSON, its schema and the cup entries
+     * that name it are still checked, because they cost nothing to read.
+     *
+     * @param dataDirectory the directory holding {@code cups/} and {@code maps/}
+     * @param worldsRoot    the directory the world directories sit in
+     * @param checkWorld    selects the maps whose worlds are checked
+     * @param health        reads a world's health; called only for a selected world whose folder holds region data
+     * @return every problem, sorted by source then key; empty when nothing is wrong
+     */
+    public static List<ConfigProblem> validate(Path dataDirectory, Path worldsRoot, Predicate<MapDefinition> checkWorld,
+            HealthSource health) {
         CatalogReading reading = CatalogLoader.read(dataDirectory);
         List<ConfigProblem> problems = new ArrayList<>();
         for (CatalogProblem problem : reading.problems()) {
             problems.add(problemOf(problem));
         }
         problems.addAll(unresolvedCupEntries(reading));
-        problems.addAll(worldProblems(reading, worldsRoot, health));
+        problems.addAll(worldProblems(scopedTo(reading, checkWorld), worldsRoot, health));
 
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
@@ -84,6 +107,21 @@ public final class CatalogValidation {
             }
         }
         return entries;
+    }
+
+    /**
+     * The same reading with only the maps {@code checkWorld} accepts. The world checks walk the snapshot's maps,
+     * so this is how the selection reaches them without changing their signature.
+     */
+    private static CatalogReading scopedTo(CatalogReading reading, Predicate<MapDefinition> checkWorld) {
+        Map<String, MapDefinition> selected = new HashMap<>();
+        reading.snapshot().maps().forEach((name, map) -> {
+            if (checkWorld.test(map)) {
+                selected.put(name, map);
+            }
+        });
+        return new CatalogReading(new CatalogSnapshot(selected, reading.snapshot().cups()), reading.problems(),
+                reading.cupFiles(), reading.mapFilesByName(), reading.cupFilesByName());
     }
 
     private static List<ConfigProblem> worldProblems(CatalogReading reading, Path worldsRoot, HealthSource health) {

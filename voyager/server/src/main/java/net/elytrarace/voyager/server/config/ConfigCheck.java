@@ -3,6 +3,7 @@ package net.elytrarace.voyager.server.config;
 import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.api.config.ConfigProblem.Severity;
 import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * The configuration check: every problem with the settings, the catalogue and the worlds, collected
@@ -129,25 +131,42 @@ public final class ConfigCheck {
     }
 
     /**
-     * Every problem in the catalogue, the cup selection and the worlds, sorted.
+     * Every problem in the catalogue, the cup selection and the worlds of every map, sorted. This is the
+     * whole-catalogue check the validate-and-exit run uses.
      *
      * <p>The worlds are opened through {@code instances}, which must belong to an initialised Minestom
-     * server; nothing here starts that server or binds a socket. Every world opened for the check is
-     * closed again before this returns.
+     * server; nothing here starts that server or binds a socket. Each world is read and closed before the
+     * next one is opened, so the check holds one world at a time.
      *
      * @param settings  settings whose directories exist
      * @param instances the instance manager of the initialised Minestom server
      * @return every problem; empty when the catalogue and every world it names are sound
      */
     public static List<ConfigProblem> catalogueProblems(ServerSettings settings, InstanceManager instances) {
+        return problems(settings, instances, map -> true);
+    }
+
+    /**
+     * Every problem a boot with these settings would see: the catalogue, the cup selection, and the worlds of
+     * the maps of the played cup only. Without a played cup no world is opened, because the cup selection error
+     * already refuses the boot.
+     */
+    private static List<ConfigProblem> playedCupProblems(ServerSettings settings, InstanceManager instances,
+            Optional<CupDefinition> played) {
+        Predicate<MapDefinition> playedMap = played
+                .<Predicate<MapDefinition>>map(cup -> map -> cup.mapNames().contains(map.name()))
+                .orElse(map -> false);
+        return problems(settings, instances, playedMap);
+    }
+
+    private static List<ConfigProblem> problems(ServerSettings settings, InstanceManager instances,
+            Predicate<MapDefinition> checkWorld) {
         Objects.requireNonNull(instances, "the instance manager must come from an initialised server");
         List<ConfigProblem> problems = new ArrayList<>(cupSelectionProblems(settings));
         MapInstances worlds = new MapInstances(instances, settings.worldsPath());
         try {
-            problems.addAll(CatalogValidation.validate(settings.dataPath(), settings.worldsPath(), world -> {
-                worlds.readEveryChunk(world);
-                return worlds.healthOf(world);
-            }));
+            problems.addAll(CatalogValidation.validate(settings.dataPath(), settings.worldsPath(), checkWorld,
+                    worlds::checkWorld));
         } finally {
             worlds.close();
         }
@@ -156,9 +175,10 @@ public final class ConfigCheck {
     }
 
     /**
-     * The problems a normal boot refuses with: every problem of the maps, the worlds, the cup selection and
-     * the played cup, and none of a cup that is not played. The unplayed cups' problems are not dropped; the
-     * composition root logs them as one warning, from {@link CupResolution#skippedCups}.
+     * The problems a normal boot refuses with: every problem of the catalogue and the cup selection, the worlds
+     * of the played cup's maps only, and none of a cup that is not played. The worlds of the other cups are not
+     * opened at all. The unplayed cups' problems are not dropped; the composition root logs them as one
+     * warning, from {@link CupResolution#skippedCups}.
      *
      * <p>When no cup can be picked, nothing is set aside: every error refuses, and the ambiguity is one of
      * them. A malformed unplayed cup file therefore still refuses a directory with two cup files and no name,
@@ -169,10 +189,10 @@ public final class ConfigCheck {
      * @return the errors that refuse boot, sorted; empty when boot may proceed
      */
     public static List<ConfigProblem> bootRefusals(ServerSettings settings, InstanceManager instances) {
-        List<ConfigProblem> errors = catalogueProblems(settings, instances).stream()
+        Optional<CupDefinition> played = playedCup(settings);
+        List<ConfigProblem> errors = playedCupProblems(settings, instances, played).stream()
                 .filter(problem -> problem.severity() == Severity.ERROR)
                 .toList();
-        Optional<CupDefinition> played = playedCup(settings);
         if (played.isEmpty()) {
             return errors;
         }
