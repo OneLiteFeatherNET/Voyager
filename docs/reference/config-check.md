@@ -1,7 +1,12 @@
 # Configuration check
 
-The configuration check validates the settings, the map and cup catalogue, and every world the maps
+The configuration check validates the settings, the map and cup catalogue, and the worlds the maps
 name, reports every problem in one pass, and exits. It starts no game server and binds no socket.
+
+The validate-and-exit run checks the worlds of every map. A normal boot checks the worlds of the
+played cup's maps only: the cup named by `VOYAGER_CUP`, or the only cup when none is named. The worlds
+of other cups are never opened at boot, so a broken world that belongs to a cup the server does not
+play does not stop it. The catalogue-wide checks (JSON, schema, references) still cover every cup.
 
 ## Commands
 
@@ -52,10 +57,14 @@ Standard output carries the report. A normal boot logs the same lines at error l
   and a normal boot refuses with it.
 - The catalogue: every map and cup file parses, names are unique, and every map a cup plays exists.
 - Each map's world: the folder exists under the worlds directory and holds region data in the
-  `region/` or `dimensions/` layout.
+  `region/` or `dimensions/` layout. A boot does this for the played cup's maps only.
 - Each world's health: every chunk the region files cover is read, and the world must be sound. A
   world with refused chunks, with no chunk read, or with unknown blocks is an error. A world that
   cannot be read is an error naming the reason. The other worlds are still checked.
+
+Each world is read and closed before the next one is opened. The read unloads each region's chunks as
+it passes them, so the check holds one world, and at most one region's chunks of it, in memory at a
+time. Nothing is saved.
 
 A cup entry that names an unknown map is reported only when every map and cup file parses. A malformed
 file hides that check, as it does in boot.
@@ -72,5 +81,5 @@ JVM flags the run tasks use. Each figure is the median of three runs of `java -j
 | Deep step alone, from Falco's open to close on the shipped world | 1.78 s |
 
 The start-up figure covers the JVM start, Minestom's registry initialisation and the catalogue read.
-The deep step grows with the number of region files. A normal boot pays the full check time on every
-start.
+The deep step grows with the number of region files. A normal boot pays the check time for the played
+cup's worlds only, on every start.

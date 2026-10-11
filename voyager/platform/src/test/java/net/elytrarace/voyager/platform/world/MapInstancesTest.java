@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -261,6 +262,65 @@ class MapInstancesTest {
             assertThat(health.chunksLoaded()).isEqualTo(3L);
             assertThat(health.isSound()).isTrue();
         }
+    }
+
+    /**
+     * The walk releases what it reads: once readEveryChunk has passed a region, none of that region's chunks
+     * stays resident. Keeping them all would hold a whole world in the heap for the length of the check, and the
+     * boot check reads every world of the cup it plays. The counters survive the release; the health still reads.
+     */
+    @Test
+    void readEveryChunkLeavesNoChunkResidentAfterTheWalk(Env env) throws IOException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+
+        try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
+            Instance instance = instances.forWorld(TRACK);
+
+            instances.readEveryChunk(TRACK);
+
+            assertThat(instance.getChunks()).isEmpty();
+            assertThat(instances.healthOf(TRACK).chunksLoaded()).isEqualTo(3L);
+        }
+    }
+
+    /**
+     * checkWorld is the step the boot check runs per world: it reads, reports, and closes the world before it
+     * returns, so nothing of that world is registered or open afterwards.
+     */
+    @Test
+    void checkWorldReportsTheHealthAndClosesTheWorldBeforeItReturns(Env env) throws IOException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+        InstanceManager manager = env.process().instance();
+
+        try (MapInstances instances = new MapInstances(manager, worldsRoot())) {
+            WorldHealth health = instances.checkWorld(TRACK);
+
+            assertThat(health.isSound()).isTrue();
+            assertThat(health.chunksLoaded()).isEqualTo(3L);
+            assertThat(instances.isOpen(TRACK)).isFalse();
+            assertThat(manager.getInstances()).isEmpty();
+        }
+    }
+
+    /**
+     * Checking two worlds one after the other: the second is started with the first already closed, so the
+     * check never holds more than one world at a time. The size is read before each call, as the check starts.
+     */
+    @Test
+    void checkingWorldsInTurnStartsEachWithNoWorldStillOpen(Env env) throws IOException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+        writeWorld(env, OTHER_TRACK, OTHER_TRACK_BLOCKS);
+        InstanceManager manager = env.process().instance();
+        List<Integer> registeredAtStart = new ArrayList<>();
+
+        try (MapInstances instances = new MapInstances(manager, worldsRoot())) {
+            for (String world : List.of(TRACK, OTHER_TRACK)) {
+                registeredAtStart.add(manager.getInstances().size());
+                instances.checkWorld(world);
+            }
+        }
+
+        assertThat(registeredAtStart).containsExactly(0, 0);
     }
 
     @Test

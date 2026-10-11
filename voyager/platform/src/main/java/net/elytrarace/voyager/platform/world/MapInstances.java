@@ -3,6 +3,7 @@ package net.elytrarace.voyager.platform.world;
 import net.elytrarace.voyager.platform.catalog.WorldOpener;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.platform.world.exception.UnreadableRegionException;
+import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -129,6 +130,11 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
      * Reads every chunk the world's region files cover, so {@link #healthOf(String)} reports what the
      * world really holds rather than what happened to be asked for.
      *
+     * <p>Each region is released as soon as it has been read: its chunks are unloaded before the walk moves
+     * on, so the walk holds one region's chunks at a time rather than the whole world's. The loader's
+     * counters are unaffected by the release, and nothing is saved; see {@link #close()}. A world of tens of
+     * thousands of chunks kept whole would be the heap's largest single cost during the configuration check.
+     *
      * <p>A chunk with no data behind it is counted as skipped, not as an error, so the walk over a
      * sparse region file costs little more than the chunks that exist. Used by the configuration check
      * only; the race server loads chunks as players reach them.
@@ -159,10 +165,46 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
                     }
                 } catch (CompletionException exception) {
                     throw new UnreadableRegionException(world, file, exception.getCause() == null ? exception : exception.getCause());
+                } finally {
+                    releaseRegion(entry.instance(), firstChunkX, firstChunkZ);
                 }
             }
         } catch (IOException exception) {
             throw new UncheckedIOException("cannot list the region directory %s".formatted(regionDirectory), exception);
+        }
+    }
+
+    /**
+     * Checks one world the way the configuration check needs it: reads every chunk, reports the health, and
+     * closes the world before it returns. Nothing of the world is open or registered afterwards, so a check
+     * over several worlds holds one at a time.
+     *
+     * @param world the world directory's name
+     * @return the world's health after the full read
+     * @throws UnknownWorldException if no region data sits behind the name
+     * @throws UnreadableRegionException if a chunk in a region file cannot be read; the message names the file
+     */
+    public WorldHealth checkWorld(String world) {
+        try {
+            readEveryChunk(world);
+            return healthOf(world);
+        } finally {
+            discard(world);
+        }
+    }
+
+    /**
+     * Unloads the chunks of one region that the walk loaded. Only the chunks that are present are unloaded:
+     * Minestom's {@code unloadChunk(int, int)} refuses an absent one, and most of a sparse region is absent.
+     */
+    private static void releaseRegion(Instance instance, int firstChunkX, int firstChunkZ) {
+        for (int chunkX = firstChunkX; chunkX < firstChunkX + CHUNKS_PER_REGION; chunkX++) {
+            for (int chunkZ = firstChunkZ; chunkZ < firstChunkZ + CHUNKS_PER_REGION; chunkZ++) {
+                Chunk chunk = instance.getChunk(chunkX, chunkZ);
+                if (chunk != null) {
+                    instance.unloadChunk(chunk);
+                }
+            }
         }
     }
 

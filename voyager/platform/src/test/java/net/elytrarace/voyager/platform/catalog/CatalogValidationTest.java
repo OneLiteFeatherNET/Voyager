@@ -221,6 +221,28 @@ class CatalogValidationTest {
                 assertThat(problem.message()).contains("no chunk was read at all"));
     }
 
+    /**
+     * A scoped check asks for the health of the worlds of the maps it is scoped to and no others. The other
+     * cup's world has no region data at all, which an unscoped check would report; the scoped check reports
+     * nothing and never asks about that world. Structural problems would still be reported in full.
+     */
+    @Test
+    void aScopedCheckAsksForTheHealthOfOnlyTheMapsItIsScopedTo() throws IOException {
+        map(data().resolve("maps"), "played.json", "played", "ElytracePlayed");
+        map(data().resolve("maps"), "other.json", "other", "ElytraraceOther");
+        cup(data().resolve("cups"), "a.json", "alpha", "RACE", "played");
+        cup(data().resolve("cups"), "b.json", "beta", "RACE", "other");
+        worldWithRegionData("ElytracePlayed");
+        Files.createDirectories(worlds());
+        CountingHealth health = new CountingHealth();
+
+        List<ConfigProblem> problems = CatalogValidation.validate(data(), worlds(),
+                map -> map.name().equals("played"), health);
+
+        assertThat(problems).isEmpty();
+        assertThat(health.asked).containsExactly("ElytracePlayed");
+    }
+
     @Test
     void aFailingWorldDoesNotHideTheNextOne() throws IOException {
         map(data().resolve("maps"), "a.json", "a", "WorldA");
