@@ -72,8 +72,7 @@ tasks.register<JavaExec>("runSetupDev") {
     mainClass.set("net.elytrarace.voyager.setup.SetupServer")
     workingDir = rootProject.projectDir
     jvmArgs("-XX:+UseZGC", "-XX:+UseCompactObjectHeaders", "-Xms256M", "-Xmx1G")
-    // Automatic component translation is a JVM flag: ServerFlag reads it once, as voyager-server's run tasks note.
-    systemProperty("minestom.automatic-component-translation", "true")
+    // Automatic component translation is switched on by SetupServer.main, not by this task.
     providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
     providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
     doFirst {
@@ -109,8 +108,8 @@ tasks.register<Test>("spike") {
 }
 
 // Production-like fat jar, as voyager-server builds one: a CloudNet service starts it with `java -jar`.
-// Run it with the automatic-translation flag as a JVM argument (ServerFlag reads it once, see runSetupDev above):
-//   java -Dminestom.automatic-component-translation=true -jar voyager-setup-<version>.jar 0.0.0.0 25566
+// No JVM flag is needed: SetupServer.main enables automatic component translation itself.
+//   java -jar voyager-setup-<version>.jar 0.0.0.0 25566
 tasks.shadowJar {
     archiveClassifier.set("")
     // Keeps every META-INF/services file, including avaje's generated wiring, merged rather than overwritten.
