@@ -40,8 +40,10 @@ voyager-api  <-  voyager-platform  <-  voyager-server, voyager-setup     (compos
 voyager-api  <-  voyager-cloudnet-bridge                                  (extension, loaded by CloudNet's classloader)
 ```
 
-- `voyager-cloudnet-bridge` depends on `voyager-api` (the PermissionPolicy port) and on Minestom and Adventure as `compileOnly`.
-  It depends on `eu.cloudnetservice` (driver-api, bridge-api, bridge-impl) as `compileOnly` and on nothing else of Voyager.
+- `voyager-cloudnet-bridge` depends on Minestom, Adventure and `eu.cloudnetservice` (driver-api, bridge-api, bridge-impl) as
+  `compileOnly`, and on nothing else of Voyager. It does not call the PermissionPolicy port: the pointer that it reads is
+  resolved through the port by `VoyagerPlayer` in `voyager-platform` (Decision 2). This is how Cygnus's `bridge` module works too,
+  which reads `PermissionChecker.POINTER` and never names its LuckPerms backend (align commit, `docs(openspec)`).
 - No composition root and no platform class depends on the bridge module. The roots reach it only at runtime, through the
   `extensions/` folder. This keeps the shadow jars free of CloudNet classes by construction, not only by a check.
 - `voyager-platform` holds `VoyagerPlayer`, the pointer-carrying `Player` subclass, and `VoyagerPlayerProvider`. Both use
@@ -49,8 +51,8 @@ voyager-api  <-  voyager-cloudnet-bridge                                  (exten
 
 | Type | Module and package | Notes |
 |---|---|---|
-| `CloudNetPermissionChecker` | `voyager-cloudnet-bridge`, `net.elytrarace.voyager.cloudnet.bridge` | CloudNet-free logic: maps a player and a permission name to the policy; unit-tested with a fake policy |
-| `VoyagerCloudNetExtension` (`@ExtensionInfo`, `dependencies = "CloudNet_Bridge"`) | same | the only class that calls CloudNet's `ServiceRegistry` |
+| `CloudNetPermissionChecker` | `voyager-cloudnet-bridge`, `net.elytrarace.voyager.cloudnet.bridge` | CloudNet-free logic: reads `PermissionChecker.POINTER` from a Adventure `Pointered` and answers with its `test(node)`, false when the pointer is absent; unit-tested with a fake `Pointered` |
+| `VoyagerCloudNetExtension` (`@ExtensionInfo`, `dependencies = "CloudNet_Bridge"`) | same | the only class that calls CloudNet's `ServiceRegistry`; `ExtensionInfo` has source retention, so its test reads the generated `extension.json` |
 | `VoyagerPlayer` and `VoyagerPlayerProvider` | `voyager-platform`, `net.elytrarace.voyager.platform.player` | `pointers()` carries `PermissionChecker.POINTER` backed by the policy |
 
 ### 2. The permission exchange: POINTER on the player, a string form on the port
@@ -63,16 +65,22 @@ player that class (`ConnectionManager.setPlayerProvider`, which Minestom 26.2 ex
 for example `cloudnet.bridge.maintenance`. The `PermissionNode` enum of `add-luckperms-permissions` is closed, so the port
 cannot answer those names. Answering them from LuckPerms directly would break the confinement rule. This change therefore
 adds a second method to `PermissionPolicy`: `boolean allows(PermissionSubject subject, String node)`, which the enum method
-delegates to. `add-luckperms-permissions` is amended in the same working tree to add this method (its design Decision 1, its
-spec requirement "Gated actions ask one permission port", and its task 4.2). Voyager's own commands keep the enum overload.
+delegates to. Checked on `main` at apply time (2026-10-11): `add-luckperms-permissions` is archived and already has this method
+(`voyager/api/.../permission/PermissionPolicy.java`), so no amendment is needed in this change. Voyager's own commands keep the enum overload.
 
 ### 3. Extension bootstrap (the `minestom-extensions` fork)
 
 Minestom 26.2 has no extension system; the greenfield design says so and gives the fix: the fork `net.onelitefeather:minestom-extensions`
-(Cygnus pins 2.2.0) with `ExtensionBootstrap.bootstrap()` and `bootstrap.start(bindHost, bindPort)`. The fork resolves dependencies through Maven
-Resolver, which pulls `com.github.Minestom:DependencyGetter` from JitPack, so the organisation proxy
-`https://repo.onelitefeather.dev/onelitefeather-proxy` must be declared in `settings.gradle.kts` alongside the other repositories.
-The bootstrap replaces the direct `server.start(host, port)` call in both roots, and runs after the graph is wired and before the port binds.
+(Cygnus pins 2.2.0). **Corrected at apply time, against the 2.2.0 jar (align commit):** the fork has no `ExtensionBootstrap.bootstrap()`.
+Its API is `ExtensionBootstrap.init()` or `init(Auth)`, which calls `MinecraftServer.init(auth)` itself, and then
+`bootstrap.start(host, port)`, which binds. Cygnus's `CygnusLoader` uses exactly this pair, and `init` must be the call that the
+roots already make to `MinecraftServer.init(auth)`, because Velocity forwarding is fixed there. So the bootstrap replaces two calls in
+each root: `MinecraftServer.init(auth)` becomes `ExtensionBootstrap.init(auth)` at the same place (after the settings and the
+LuckPerms start, before the graph, because the graph needs the registries), and `server.start(host, port)` becomes
+`bootstrap.start(host, port)` at the end. "After the graph is wired" still holds for the bind.
+The fork resolves dependencies through Maven Resolver, which pulls `com.github.Minestom:DependencyGetter` from JitPack, so the
+organisation proxy `https://repo.onelitefeather.dev/onelitefeather-proxy` must be declared. Voyager declares its repositories in the
+root `build.gradle.kts` (`subprojects { repositories { ... } }`), not in `settings.gradle.kts`, so the proxy goes there.
 
 Why the bootstrap must not be skipped: the CloudNet_Bridge extension does not load unless the bootstrap runs, and nothing reports that cause
 (greenfield design, "Extensions must be bootstrapped explicitly").
@@ -113,6 +121,13 @@ The owner's decision: the version is whatever Cygnus runs on the same network, w
 `cloudnet-driver-api` = `driver-api`). This change uses the same coordinates, and the same `minestom-extensions` 2.2.0 that
 Cygnus pins. Cygnus's bridge (`bridge/`, `CygnusBridgePermissionExtension`) is the pattern.
 
+Spike 1.4 (run 2026-10-11, `javap` on the Maven Central jars of 4.0.0-RC16 and 4.0.0-RC17): the calls the extension makes are the same
+in both releases. `MinestomPermissionChecker` is `boolean hasPermission(Player, String)` in both, `ServiceRegistry.registerProvider(Class,
+String, S)` returns `ServiceRegistryRegistration<S>` in both, and that interface has `markAsDefaultService()` in both. So the RC16 compile
+target serves the RC17 node for this extension. The RC17 node runs a locally patched CloudNet-Bridge for Minestom (owner, 2026-10-10). The
+HOTFIX-README is not at either path given (`/home/cloud/cloudnet`, `~/cloudnet`), so that patch is not read here, and spike 1.1 on the node
+is the test of it.
+
 Evidence recorded, read from the CloudNet repository's GitHub releases on 2026-10-10:
 - `4.0.0-RC16`, published 2026-01-11: the only Minecraft version named is 1.21.11. Its notes also say the CloudNet-Bridge "does not
   enable any proxy authentication anymore", which the Minestom implementation must do. That is the Velocity forwarding of
@@ -129,13 +144,31 @@ The owner confirmed that this stays one change, as `switch-di-to-avaje-inject` d
 the bridge and the deployment specs, `build(setup)` for the setup shadow jar, and `docs(cloudnet)` for the guide, ADR-0026 and CLAUDE.md.
 The squash title is the `feat` line. The owner also confirmed the catalogue layout of Decision 5.
 
+### 8. Launch and stop, as the node runs them (aligned with Cygnus's removed deployment doc)
+
+Cygnus's `docs/cloudnet-deployment.md` (removed in `c216431f`) describes how the node starts a service, and this change follows it:
+
+```
+java … -javaagent:<wrapper.jar> -Dservice.bind.host=<host> -Dservice.bind.port=<port>
+       -cp <wrapper.jar>:<app.jar>  <Main-Class from the app manifest>
+```
+
+- The application jar is launched through `-cp` plus its manifest `Main-Class`, not `-jar`, so the wrapper and the application share one
+  class loader. This is why no CloudNet artifact may be bundled into a fat jar.
+- The node writes `end` and then `stop` to stdin. `end` is not a registered command and is ignored, and `stop` ends the service
+  cleanly through `ServiceShutdown` (`add-luckperms-permissions`).
+- The guide names the Voyager properties and env variables the code reads, not Cygnus's: `-Dminestom-velocity-secret` becomes the
+  `VOYAGER_VELOCITY_SECRET` environment variable or `-Dvoyager.velocity.secret` (`ProxyForwardingSettings`).
+- Standalone runs need none of this: `service.bind.host` and `service.bind.port` default to the server's own defaults, and no
+  `extensions/` folder means no bridge.
+
 ### Fitness rules (voyager-fitness)
 
 | Boundary | Rule | Where |
 |---|---|---|
 | `eu.cloudnetservice..` referenced only from the bridge package | `cloudNetIsConfinedToBridge` | new `CloudNetBoundaryTest` |
 | roots and platform never reference CloudNet or the bridge | `rootsAndPlatformDoNotDependOnCloudNet` | `CloudNetBoundaryTest` |
-| the bridge depends only on `voyager-api` (and JDK, Minestom, Adventure) | `bridgeDependsOnlyOnApi` | `CloudNetBoundaryTest` |
+| the bridge depends only on JDK, Minestom, Adventure, CloudNet and its own package; no `voyager` package (the pointer is resolved in the platform) | `bridgeDependsOnlyOnJdkAndLibraries` | `CloudNetBoundaryTest` |
 | the bridge module is covered by `FitnessCoverageTest` | a `PACKAGE_PREFIX_BY_PROJECT` entry `:voyager:cloudnet-bridge` -> `net.elytrarace.voyager.cloudnet.bridge` | `FitnessCoverageTest` |
 | fat jars contain no CloudNet class | Gradle check `verifyNoCloudNetInFatJars` (not ArchUnit, because it reads jars) | `voyager/setup/build.gradle.kts`, `voyager/server/build.gradle.kts` |
 
@@ -148,7 +181,8 @@ The squash title is the `feat` line. The owner also confirmed the catalogue layo
   combination is known to work for Cygnus. Cygnus's Minestom build is the version its `aonyx-bom` pins. The cached `aonyx-bom` 0.8.7
   pulls `mycelium-bom` 1.8.5, which pins Minestom `2026.08.28-26.2`, the same build Voyager uses. Cygnus HEAD pins `aonyx-bom` 0.8.8,
   which could not be read here (401 from the repository), so its Minestom build is inferred, not read. Whether the combination works
-  with Voyager's `2026.08.28-26.2` is therefore not verified until spike 1.2 boots the server through the bootstrap. Renovate must not
+  with Voyager's rebuild pin `2026.09.12-26.2` (`voyager/platform/build.gradle.kts`; the first draft of this design said `2026.08.28-26.2`)
+  is therefore not verified until spike 1.2 boots the server through the bootstrap. Renovate must not
   raise the fork without a boot test.
 - **R3 Player subclass changes creation.** Replacing the player provider affects every player. Mitigation: `VoyagerPlayerTest` in the
   Minestom test environment, and acceptance 10.2 on the node.
