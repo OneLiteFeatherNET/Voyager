@@ -235,7 +235,7 @@ read at `/mnt/projects/oss/onelitefeather/Cygnus` (read-only). Secret values are
 | Gameplay values (players, timings, teams, page hints, resource pack URL and checksum, Sentry DSN) | `config.properties` in the working directory, optional, every key defaulted in code (`GameConfigReader.java`) | none; `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS` system properties for optional tuning | no file in this change. Where config defaults come from is Owner decision 2 |
 | Telemetry service name and exporter | Environment: `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, plus the OpenTelemetry agent attached with `-javaagent` (`docs/telemetry.md`); nothing in the JAR | no OpenTelemetry in Voyager | not applicable. If Voyager adds telemetry, it follows Cygnus: the agent from the node, and `OTEL_SERVICE_NAME=ElytraRace` from the environment |
 | LuckPerms storage, server context, messaging | Not in the repository. The `data/config.yml` of the service is placed by hand on the node. The repository reads nothing for it | the loader creates `data/config.yml` with `storage-method: h2` and `server: global` on first start (checked in the smoke run, 2026-10-11); H2 under `data/` | Decided 2026-10-11, owner decision 1, "like Cygnus": a `data/config.yml` placed by hand in the service template, with the network's storage (MariaDB, Redis) and the context `server: elytrarace`. No repository code, no credentials in the repository or a JAR. The how-to is in the guide, "LuckPerms" |
-| JVM flag `minestom.automatic-component-translation=true` | Not examined in Cygnus's sources for this note | required: both roots refuse to start without it (`VoyagerServer.main`, `SetupServer.main`), and the Gradle run tasks pass it | Decision 10 |
+| JVM flag `minestom.automatic-component-translation=true` | Not examined in Cygnus's sources for this note | not needed since #299 (setup) and #295 (game server): both roots set the flag in code before Minestom loads, and their start guards stay as checks; the Gradle tasks no longer pass it | Decision 10 |
 | Application file, Main-Class launch | `-cp <wrapper>:<app>` with the manifest `Main-Class` (Decision 8) | same | same; the node names the application file |
 
 **Decision 9 (Voyager, in this change, implemented unless the owner says otherwise):** a production service reads its catalogue
@@ -268,7 +268,8 @@ does for Cygnus), a file (as `config.properties`), or avaje-config (option C abo
 
 **Decision 10 (partly done 2026-10-11):** the translation flag is read once, when `ServerFlag` loads, so it can only be set before
 Minestom's classes initialise. Status: the setup server sets it in code, first thing in `SetupServer.main`, as #299 (`fix(setup)`) landed
-on `main`. The game server still needs the JVM flag until #295 (`fix(server)`) lands. The text below is the original question. A launcher class as the Main-Class could call `System.setProperty` and then start the root. If the
+on `main`. The game server's #295 (`fix(server)`) landed on `main` as `e16565c`, so both roots now set the flag in code and neither needs a
+JVM flag. The text below is the original question. A launcher class as the Main-Class could call `System.setProperty` and then start the root. If the
 spike shows that works on 26.2 with the fork, the flag becomes unnecessary. If not, the node's task sets it as a JVM option, and
 it is documented as the one flag an operator sets.
 
