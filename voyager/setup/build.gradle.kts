@@ -33,7 +33,7 @@ dependencies {
 
     // Pinned to the rebuild's Minestom version, as voyager-platform pins it: the test environment and
     // the Minestom this module compiles against must never be two different versions.
-    testImplementation("net.minestom:testing:2026.08.28-26.2")
+    testImplementation("net.minestom:testing:2026.09.12-26.2")
     testImplementation(libs.log4j2.core)
 }
 
