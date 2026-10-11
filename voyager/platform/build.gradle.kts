@@ -10,7 +10,7 @@ plugins {
 // rather than alias names, so two aliases for net.minestom:minestom would give it two incompatible
 // pins to reconcile, and a Gradle version conflict resolves to the higher one — silently compiling
 // the tree being replaced against 26.2.
-val minestomRebuildVersion = "2026.08.28-26.2"
+val minestomRebuildVersion = "2026.09.12-26.2"
 
 // Falco pins Minestom through mycelium-bom 1.8.5, which points at the same 2026.08.28-26.2 this
 // module pins directly above — so the loader and the server it loads into cannot drift onto two
