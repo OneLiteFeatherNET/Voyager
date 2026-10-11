@@ -44,4 +44,25 @@ class SetupServerTest {
 
         assertThat(SetupServer.directoryProblems(settings)).isEmpty();
     }
+
+    @Test
+    void aFreshRootWithoutTheDataAndWorldsDirectoriesIsAcceptedAfterTheyAreCreated() throws Exception {
+        SetupSettings settings = new SetupSettings("0.0.0.0", 25566, root.resolve("data"), root.resolve("worlds"));
+
+        SetupServer.createMissingDirectories(settings);
+
+        assertThat(Files.isDirectory(root.resolve("data"))).as("the data directory").isTrue();
+        assertThat(Files.isDirectory(root.resolve("worlds"))).as("the worlds directory").isTrue();
+        assertThat(SetupServer.directoryProblems(settings)).isEmpty();
+    }
+
+    @Test
+    void creatingMissingDirectoriesReportsExactlyTheOnesItCreated() throws Exception {
+        Files.createDirectories(root.resolve("data"));
+        SetupSettings settings = new SetupSettings("0.0.0.0", 25566, root.resolve("data"), root.resolve("worlds"));
+
+        assertThat(SetupServer.createMissingDirectories(settings))
+                .as("the data directory existed, so only the worlds directory is created")
+                .containsExactly(root.resolve("worlds"));
+    }
 }
