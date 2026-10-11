@@ -968,9 +968,11 @@ permissions across the network, reading service snapshots — that is a separate
 `voyager-cloudnet-bridge`, packaged as its own extension jar and published unshaded. It is the only
 module permitted to reference `eu.cloudnetservice..`, every such dependency in it is `compileOnly`,
 and its `extension.json` declares `"dependencies": ["CloudNet_Bridge"]` so it loads after the bridge
-and shares its classloader hierarchy. The application and the extension exchange only JDK types
-declared in `voyager-api`. This module is **not** part of E4 and is deliberately deferred; it is
-specified here so the `compileOnly` boundary is decided before someone reaches for it in a hurry.
+and shares its classloader hierarchy. The application and the extension exchange only the permission
+pointer that every player carries, which is Adventure's type; the extension names no Voyager type.
+**Status (2026-10-11):** the owner brought this module forward. It is in progress under the change
+`add-cloudnet-deployment` and ADR-0026, and it is no longer deferred. It is still outside E4's scope
+and is built as the ninth module, and the `compileOnly` boundary is enforced by `CloudNetBoundaryTest`.
 
 **Template cut**, following the lifecycle boundary from the first table:
 

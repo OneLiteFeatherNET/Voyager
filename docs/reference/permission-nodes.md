@@ -55,7 +55,15 @@ its port. It does not fall back to the level-based policy in that case.
 LuckPerms keeps its files under `data/` in the server's working directory. This is fixed, not configurable. The default
 storage is H2, in `data/luckperms-h2-v2.mv.db`.
 
+## CloudNet checks
+
+CloudNet's permission questions, including the maintenance bypass `cloudnet.bridge.maintenance`, are answered from the same
+policy as the commands. The CloudNet bridge extension reads the permission pointer that every player carries, and the pointer
+answers through the same port, so a grant in LuckPerms works for both. Any node name is answered this way, not only the
+nodes listed above. See [Deploy on CloudNet](../guides/how-to-deploy-on-cloudnet.md).
+
 ## Related
 
 - [Grant permissions](../guides/how-to-grant-permissions.md)
 - [Run behind a proxy](../guides/how-to-run-behind-a-proxy.md)
+- [Deploy on CloudNet](../guides/how-to-deploy-on-cloudnet.md)
