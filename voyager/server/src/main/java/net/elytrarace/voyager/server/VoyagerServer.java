@@ -15,6 +15,7 @@ import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
 import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
 import net.elytrarace.voyager.platform.lifecycle.StopCommand;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
+import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
@@ -231,6 +232,9 @@ public final class VoyagerServer {
             return;
         }
 
+        // Every player is created with the permission pointer, through the one policy bean (ADR-0026, the CloudNet bridge
+        // reads it). Installed before the port binds, so no connection can arrive as a plain Minestom player.
+        MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         registerEvents(session, waitingRoom, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         LOGGER.info("/race reload is registered: gated by {}", PermissionNode.VOYAGER_COMMAND_RACE_RELOAD.value());

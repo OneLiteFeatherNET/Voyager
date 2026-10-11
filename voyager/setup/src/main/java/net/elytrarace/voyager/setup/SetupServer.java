@@ -4,6 +4,7 @@ import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
 import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
 import net.elytrarace.voyager.platform.lifecycle.StopCommand;
+import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
@@ -138,6 +139,9 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
+        // Every builder is created with the permission pointer, through the one policy bean (ADR-0026). Installed before the
+        // port binds, as in VoyagerServer.
+        MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         MinecraftServer.getCommandManager().register(graph.get(SetupCommands.class));
         graph.get(WandListener.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(TerrainGuard.class).register(MinecraftServer.getGlobalEventHandler());
