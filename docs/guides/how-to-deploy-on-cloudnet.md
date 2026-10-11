@@ -58,10 +58,10 @@ A blank secret refuses the start: the server does not fall back to offline mode 
 
 ## The JVM translation flag
 
-The setup server sets `minestom.automatic-component-translation` itself, first thing in `main` (#299), so the setup service needs no
-JVM flag. The game server still needs `-Dminestom.automatic-component-translation=true` as a JVM option until its fix (#295) is on
-`main`. Without it the game server refuses to start, because every message would reach the player as a raw translation key. When #295
-lands, remove this flag from the game service's task options.
+Neither server needs a JVM flag for translation. Both set `minestom.automatic-component-translation` themselves, first thing in `main`
+(#299 for the setup server, #295 for the game server), so the task's JVM options need no such flag. Do not add
+`-Dminestom.automatic-component-translation` to a task: the code sets it, and the start guard still refuses a start in which the
+ordering was broken.
 
 ## LuckPerms
 
@@ -91,7 +91,7 @@ java -jar voyager-setup-<version>.jar
 ```
 
 The setup server listens on `0.0.0.0:25566` by default. Write `stop` and a newline to its standard input to stop it. The process exits
-with status 0. The game server needs `-Dminestom.automatic-component-translation=true` for now (see above).
+with status 0.
 
 ## Check a CloudNet deployment
 
