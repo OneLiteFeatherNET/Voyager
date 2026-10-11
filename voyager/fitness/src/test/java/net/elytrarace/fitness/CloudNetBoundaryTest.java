@@ -5,6 +5,7 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
@@ -32,5 +33,19 @@ class CloudNetBoundaryTest {
                     .should().dependOnClassesThat().resideInAnyPackage(CLOUDNET, "net.elytrarace.voyager.cloudnet..")
                     .because("the composition roots and the platform are shipped in fat jars, and a CloudNet class in one of "
                             + "them would load a second CloudNet beside the node's")
+                    .allowEmptyShould(false);
+
+    /**
+     * The bridge is loaded beside the node's CloudNet and knows nothing of Voyager: it reads the pointer that a player
+     * carries, and every Voyager type it could name would be a second copy in the extension's class loader. Its
+     * dependencies are the JDK, Minestom, Adventure, CloudNet and the annotations, and its own package.
+     */
+    @ArchTest
+    static final ArchRule bridgeDependsOnlyOnJdkAndLibraries =
+            classes().that().resideInAPackage(BRIDGE)
+                    .should().onlyDependOnClassesThat().resideInAnyPackage(
+                            "java..", "net.minestom..", "net.kyori..", CLOUDNET, "org.jetbrains..", BRIDGE)
+                    .because("voyager-cloudnet-bridge loads in CloudNet's extension class loader and must not name a Voyager "
+                            + "type; it answers through the pointer that the platform installs on each player")
                     .allowEmptyShould(false);
 }

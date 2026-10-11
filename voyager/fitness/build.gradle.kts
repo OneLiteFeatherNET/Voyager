@@ -12,6 +12,7 @@ dependencies {
     testImplementation(project(":voyager:platform"))
     testImplementation(project(":voyager:server"))
     testImplementation(project(":voyager:setup"))
+    testImplementation(project(":voyager:cloudnet-bridge"))
     testImplementation(libs.archunit.junit5)
 }
 

@@ -128,6 +128,7 @@ include("voyager:platform")
 include("voyager:server")
 include("voyager:setup")
 include("voyager:fitness")
+include("voyager:cloudnet-bridge")
 
 // Tooling that is not part of the rebuild's module graph.
 include("tools:trace-recorder")
