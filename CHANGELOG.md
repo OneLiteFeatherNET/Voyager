@@ -5,6 +5,61 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.14.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.13.0...v1.14.0) (2026-10-11)
+
+
+### Features
+
+* **cloudnet:** add the CloudNet bridge and service deployment ([#300](https://github.com/OneLiteFeatherNET/Voyager/issues/300)) ([02a1503](https://github.com/OneLiteFeatherNET/Voyager/commit/02a15033b455409b5df96a06eedc36013e91a66b))
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.google.guava:guava to v33.7.0-jre ([#252](https://github.com/OneLiteFeatherNET/Voyager/issues/252)) ([1fb1909](https://github.com/OneLiteFeatherNET/Voyager/commit/1fb19097ebc1d812dcb3ca142590e0e0d80892e6))
+* **deps:** update dependency com.networknt:json-schema-validator to v3.0.8 ([#272](https://github.com/OneLiteFeatherNET/Voyager/issues/272)) ([cb66f47](https://github.com/OneLiteFeatherNET/Voyager/commit/cb66f472818d5f1353834b2bef8cedcef247e0da))
+* **deps:** update dependency com.tngtech.archunit:archunit-junit5 to v1.5.1 ([#262](https://github.com/OneLiteFeatherNET/Voyager/issues/262)) ([a4fde4b](https://github.com/OneLiteFeatherNET/Voyager/commit/a4fde4b7d0ffa3f1461303df4fe465655224f59e))
+* **deps:** update dependency net.kyori:adventure-text-minimessage to v4.23.0 ([#241](https://github.com/OneLiteFeatherNET/Voyager/issues/241)) ([37eee8f](https://github.com/OneLiteFeatherNET/Voyager/commit/37eee8f187254d67a9baa4b3021cdea4c7729d51))
+* **deps:** update dependency org.apache.commons:commons-lang3 to v3.19.0 ([#242](https://github.com/OneLiteFeatherNET/Voyager/issues/242)) ([9f15185](https://github.com/OneLiteFeatherNET/Voyager/commit/9f151856ff32b1ca4bc43111ef173fbb7992332a))
+* **deps:** update dependency org.incendo:cloud-paper to v2.0.1 ([#263](https://github.com/OneLiteFeatherNET/Voyager/issues/263)) ([563a6aa](https://github.com/OneLiteFeatherNET/Voyager/commit/563a6aa89953bbc3fa6ca7cdb04e17cbb22ce08a))
+* **deps:** update dependency org.junit:junit-bom to v6.1.2 ([#239](https://github.com/OneLiteFeatherNET/Voyager/issues/239)) ([9217ff7](https://github.com/OneLiteFeatherNET/Voyager/commit/9217ff7fa1556acacbdaa926bd80b0aa743c1e74))
+* **deps:** update dependency org.mockito:mockito-bom to v5.24.0 ([#264](https://github.com/OneLiteFeatherNET/Voyager/issues/264)) ([e8e4323](https://github.com/OneLiteFeatherNET/Voyager/commit/e8e43231a298ae6bcf52a50044a401c400fd4f1f))
+* **deps:** update dependency org.slf4j:slf4j-api to v2.0.19 ([#249](https://github.com/OneLiteFeatherNET/Voyager/issues/249)) ([59ab3df](https://github.com/OneLiteFeatherNET/Voyager/commit/59ab3dfe39aadff0474e66201fbea4926cf84929))
+* **deps:** update flyway to v12.10.0 ([#245](https://github.com/OneLiteFeatherNET/Voyager/issues/245)) ([6031daf](https://github.com/OneLiteFeatherNET/Voyager/commit/6031daf62bd611289407888345703d5ce16600ad))
+* **deps:** update hibernate to v7.3.11.final ([#250](https://github.com/OneLiteFeatherNET/Voyager/issues/250)) ([8c69cb7](https://github.com/OneLiteFeatherNET/Voyager/commit/8c69cb73ed817d44a5cc3f95be875ebbe74f1cdc))
+* **deps:** update log4j2 to v2.26.0 ([#251](https://github.com/OneLiteFeatherNET/Voyager/issues/251)) ([4f8591f](https://github.com/OneLiteFeatherNET/Voyager/commit/4f8591fb28328c8547d4dee9d2b77e0cc8ffb498))
+* **deps:** update minestom to 2026.09.12-26.2 ([#286](https://github.com/OneLiteFeatherNET/Voyager/issues/286)) ([cf6b899](https://github.com/OneLiteFeatherNET/Voyager/commit/cf6b8993b3a1fe1a342ad2204f9ae93c3d264dc9))
+* **platform:** let in-flight chunk loads finish before a world is unregistered ([#301](https://github.com/OneLiteFeatherNET/Voyager/issues/301)) ([551a8c6](https://github.com/OneLiteFeatherNET/Voyager/commit/551a8c6d2547d6c6d14361e772a49ccf6910d35a))
+* **server:** check only the played cup's worlds at boot ([#297](https://github.com/OneLiteFeatherNET/Voyager/issues/297)) ([84a5675](https://github.com/OneLiteFeatherNET/Voyager/commit/84a5675945083bc229d20cf904d4a0e322f9d435))
+* **server:** enable automatic component translation without a JVM flag ([#295](https://github.com/OneLiteFeatherNET/Voyager/issues/295)) ([e16565c](https://github.com/OneLiteFeatherNET/Voyager/commit/e16565c96eea03731082909773012ced2b203fb4))
+* **setup:** create missing data and worlds directories on start ([#296](https://github.com/OneLiteFeatherNET/Voyager/issues/296)) ([186638b](https://github.com/OneLiteFeatherNET/Voyager/commit/186638be43d7aa67e5f095ae23b1cc239a09c532))
+* **setup:** enable automatic component translation without a JVM flag ([#299](https://github.com/OneLiteFeatherNET/Voyager/issues/299)) ([9200073](https://github.com/OneLiteFeatherNET/Voyager/commit/9200073884a4829d1cfbd6c4fbbebfcf0e928510))
+
+
+### Build System
+
+* **server:** produce only the shadow jar for the server and setup ([#278](https://github.com/OneLiteFeatherNET/Voyager/issues/278)) ([307b1a6](https://github.com/OneLiteFeatherNET/Voyager/commit/307b1a6169a8f1a39d1489e182b28b26d081f360))
+
+
+### Continuous Integration
+
+* **release:** ship the cloudnet bridge extension jar ([#303](https://github.com/OneLiteFeatherNET/Voyager/issues/303)) ([79dcdc5](https://github.com/OneLiteFeatherNET/Voyager/commit/79dcdc535db24623a5b652714b884eb8581727ac))
+
+
+### Documentation
+
+* **openspec:** scope the boot world check to the played cup ([#298](https://github.com/OneLiteFeatherNET/Voyager/issues/298)) ([f26b832](https://github.com/OneLiteFeatherNET/Voyager/commit/f26b832c07dac7306840aae8225ca2abf58c8c54))
+
+
+### Miscellaneous Chores
+
+* **deps:** update actions/checkout action to v7 ([#255](https://github.com/OneLiteFeatherNET/Voyager/issues/255)) ([2f748d4](https://github.com/OneLiteFeatherNET/Voyager/commit/2f748d4c9565872826fed69ea14977c4f0351220))
+* **deps:** update actions/upload-artifact action to v5 ([#256](https://github.com/OneLiteFeatherNET/Voyager/issues/256)) ([7d8d062](https://github.com/OneLiteFeatherNET/Voyager/commit/7d8d062e3e38e74dfb8f368f12f37e052c5f0327))
+* **deps:** update actions/upload-artifact digest to cf430e0 ([#271](https://github.com/OneLiteFeatherNET/Voyager/issues/271)) ([b239747](https://github.com/OneLiteFeatherNET/Voyager/commit/b23974732ce5e4d244cc830093b4ccb0ec24567a))
+* **deps:** update gradle to v9.7.0 ([#265](https://github.com/OneLiteFeatherNET/Voyager/issues/265)) ([7f906cb](https://github.com/OneLiteFeatherNET/Voyager/commit/7f906cb61348f8d98b9d2f2d2038043a0607b34d))
+* **deps:** update gradle to v9.7.1 ([#290](https://github.com/OneLiteFeatherNET/Voyager/issues/290)) ([d51b129](https://github.com/OneLiteFeatherNET/Voyager/commit/d51b1290b6905c68d64774c84edb385913a86fb8))
+* **deps:** update gradle/actions action to v6 ([#248](https://github.com/OneLiteFeatherNET/Voyager/issues/248)) ([6a76b87](https://github.com/OneLiteFeatherNET/Voyager/commit/6a76b872e4135dd400e85b7b911b656aa67d7a87))
+* **deps:** update onelitefeathernet/workflows action to v2.8.2 ([#254](https://github.com/OneLiteFeatherNET/Voyager/issues/254)) ([1da1e27](https://github.com/OneLiteFeatherNET/Voyager/commit/1da1e274cabf12c281c107c200dbea2dd68b2919))
+
 ## [1.13.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.12.0...v1.13.0) (2026-10-10)
 
 
