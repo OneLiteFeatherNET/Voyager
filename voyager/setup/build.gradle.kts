@@ -18,7 +18,7 @@ dependencies {
 
     // Same reasoning as voyager-server and voyager-platform: Minestom brings slf4j-api at runtime and
     // does not expose it for compilation, so a module that logs declares it compileOnly.
-    compileOnly("org.slf4j:slf4j-api:2.0.18")
+    compileOnly("org.slf4j:slf4j-api:2.0.19")
     runtimeOnly(libs.log4j2.core)
     runtimeOnly(libs.log4j2.slf4j2)
 
