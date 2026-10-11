@@ -78,9 +78,10 @@ roots already make to `MinecraftServer.init(auth)`, because Velocity forwarding 
 each root: `MinecraftServer.init(auth)` becomes `ExtensionBootstrap.init(auth)` at the same place (after the settings and the
 LuckPerms start, before the graph, because the graph needs the registries), and `server.start(host, port)` becomes
 `bootstrap.start(host, port)` at the end. "After the graph is wired" still holds for the bind.
-The fork resolves dependencies through Maven Resolver, which pulls `com.github.Minestom:DependencyGetter` from JitPack, so the
-organisation proxy `https://repo.onelitefeather.dev/onelitefeather-proxy` must be declared. Voyager declares its repositories in the
-root `build.gradle.kts` (`subprojects { repositories { ... } }`), not in `settings.gradle.kts`, so the proxy goes there.
+Checked at apply time (2026-10-11, the fork's 2.2.0 POM): the fork's runtime dependencies are Maven Resolver and slf4j, and its POM
+names no `com.github.Minestom:DependencyGetter`. So no JitPack proxy repository is needed, and none is declared. The fork resolves from
+`https://repo.onelitefeather.dev/releases`, which the root `build.gradle.kts` already lists. Cygnus declares the proxy for its `Canis`
+dependency, which Voyager does not use. This corrects the first draft of this section, which said the proxy was required.
 
 Why the bootstrap must not be skipped: the CloudNet_Bridge extension does not load unless the bootstrap runs, and nothing reports that cause
 (greenfield design, "Extensions must be bootstrapped explicitly").
