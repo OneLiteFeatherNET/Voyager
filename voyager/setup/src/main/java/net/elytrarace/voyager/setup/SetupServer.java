@@ -25,6 +25,7 @@ import net.minestom.server.ServerFlag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -51,6 +52,18 @@ public final class SetupServer {
             settings = SetupSettings.fromEnvironment(args);
         } catch (IllegalArgumentException exception) {
             LOGGER.error("Setup server refused to start: {}", exception.getMessage());
+            System.exit(1);
+            return;
+        }
+        // The authoring server owns its data and worlds directories, so it creates them rather than refusing.
+        // The game server does not do this; it refuses a missing directory (VoyagerServer, ServerSettings).
+        try {
+            for (Path created : createMissingDirectories(settings)) {
+                LOGGER.info("Setup server created the missing directory {}", created.toAbsolutePath());
+            }
+        } catch (IOException exception) {
+            LOGGER.error("Setup server refused to start: could not create a setup directory: {}",
+                    exception.toString());
             System.exit(1);
             return;
         }
@@ -140,6 +153,24 @@ public final class SetupServer {
      *
      * @return one problem per missing directory, naming its absolute path; empty when both exist
      */
+    /**
+     * Creates the data and worlds directories when they are missing. The catalogue tolerates a missing
+     * {@code maps/} and the draft store creates it on the first save, so only the two roots are made here.
+     *
+     * @return the directories this call created, in the order data, worlds; empty when both existed
+     * @throws IOException if a directory cannot be created, for example because a file is in its place
+     */
+    static List<Path> createMissingDirectories(SetupSettings settings) throws IOException {
+        List<Path> created = new ArrayList<>(2);
+        for (Path directory : List.of(settings.dataPath(), settings.worldsPath())) {
+            if (!Files.isDirectory(directory)) {
+                Files.createDirectories(directory);
+                created.add(directory);
+            }
+        }
+        return List.copyOf(created);
+    }
+
     static List<ConfigProblem> directoryProblems(SetupSettings settings) {
         List<ConfigProblem> problems = new ArrayList<>(2);
         if (!Files.isDirectory(settings.dataPath())) {
