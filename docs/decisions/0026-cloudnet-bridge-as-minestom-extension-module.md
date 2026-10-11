@@ -2,10 +2,10 @@
 
 ## Status
 
-Proposed
+Accepted
 
-The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it. The change that
-implements it is `add-cloudnet-deployment`, which does not mark this record Accepted.
+The project owner accepted this record on 2026-10-11. The change that implements it is `add-cloudnet-deployment`. Its
+design.md, Decision 6, records the CloudNet version decision (RC17) that this record depends on.
 
 ## Date
 
@@ -32,7 +32,7 @@ OneLiteFeather fork `net.onelitefeather:minestom-extensions` (2.2.0, the release
 The bridge depends on CloudNet classes. Bundling them would load a second, unmanaged CloudNet beside the node's. The roots must
 not reference CloudNet at all.
 
-The network runs CloudNet 4.0.0-RC16, the release Cygnus builds against. RC16's release notes name Minecraft 1.21.11 as the newest
+The network runs CloudNet 4.0.0-RC17 (decided 2026-10-11; RC16 was the release Cygnus builds against until then). RC16's release notes name Minecraft 1.21.11 as the newest
 supported version, and RC17 (2026-08-09) adds "Support Minecraft 26.X". The owner's live network runs RC17 with a locally patched
 bridge, which this record could not read.
 
@@ -54,16 +54,16 @@ bridge, which this record could not read.
    through it.
 4. **Use CloudNet's default checker and grant the operator level.** Rejected. Operator level 4 gives every player that rank, and
    LuckPerms is the source of truth for grants.
-5. **Upgrade to RC17 now.** Not decided here. RC17 is the documented release for 26.X, but the owner's network already runs RC17
-   with a patch, and RC16 is what Cygnus builds against. The CloudNet API surface the extension uses is identical in both (javap,
-   2026-10-11). The owner decides the version after the node acceptance run.
+5. **Build against RC17, the version the owner's network runs (chosen 2026-10-11, the owner's decision).** RC17 is the documented
+   release for 26.X, and the owner's network already runs RC17. RC16 was the version Cygnus builds against; the CloudNet API surface
+   the extension uses is identical in both (javap, 2026-10-11), so the choice is safe for either node.
 
 ## Decision outcome
 
 Chosen option: **1**.
 
 - The module `voyager/cloudnet-bridge` (`net.elytrarace.voyager.cloudnet.bridge`) depends on Minestom, Adventure and CloudNet
-  4.0.0-RC16 (`bom`, `bridge-api`, `bridge-impl`, `driver-api`) as `compileOnly`, and on nothing else of Voyager. Its
+  4.0.0-RC17 (`bom`, `bridge-api`, `bridge-impl`, `driver-api`) as `compileOnly`, and on nothing else of Voyager. Its
   `CloudNetPermissionChecker` reads the pointer and returns its answer. Its `VoyagerCloudNetExtension` registers that checker
   as the default with `ServiceRegistry`, and it is the only class that calls CloudNet.
 - `voyager-platform` gives every player the pointer (`VoyagerPlayer`, `VoyagerPlayerProvider`), and the pointer answers
@@ -84,7 +84,8 @@ Chosen option: **1**.
 - Good: the bridge compiles against the release Cygnus uses, so the bridge and Cygnus's bridge stay compatible on one node.
 - Bad: a broken `CloudNet_Bridge` stops the service at start, because the fork does not isolate a failing extension. A missing one does not.
 - Bad: the fork's version is a pin that Renovate must not raise without a boot test (design.md, risk R2).
-- Bad: the bridge is verified only on the owner's node (acceptance group 10). The RC16 result on Minecraft 26.2 is open until that run (risk R8).
+- Bad: the bridge is verified only on the owner's node (acceptance group 10). The result on Minecraft 26.2 is open until that run. The
+  version question (risk R8) is resolved by the RC17 decision.
 - Neutral: the bridge depends on Minestom's and Adventure's types, which is the only place a Minestom type crosses a module boundary
   in the rebuild besides the composition roots.
 

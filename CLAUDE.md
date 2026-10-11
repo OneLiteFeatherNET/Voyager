@@ -38,8 +38,7 @@ rebuild reaches a flyable build with a green Vanilla trace suite.
 ## Key Decisions
 
 - **Java**: 25 for every `voyager-*` module. Vanilla itself requires Java 25 since Minecraft 26.1.
-- **CloudNet**: 4.0.0-RC16, the release Cygnus builds against. The node's live version is RC17 with a local patch; ADR-0026
-  records that and the version decision. `voyager-cloudnet-bridge` is a Minestom extension loaded from the node's `extensions/`
+- **CloudNet**: 4.0.0-RC17, the release the owner's network runs (decided 2026-10-11; ADR-0026, design.md Decision 6). `voyager-cloudnet-bridge` is a Minestom extension loaded from the node's `extensions/`
   folder, compiled against CloudNet `compileOnly`, and never bundled into a fat jar (`verifyNoCloudNetInFatJars`).
 - **Target**: Minecraft 26.2, Minestom `2026.09.12-26.2` (the rebuild's pin in `voyager/platform/build.gradle.kts`). Mojang moved to calendar versioning in
   2026; there is no 1.22, it became 26.1. `settings.gradle.kts` still pins the old tree to Minestom
