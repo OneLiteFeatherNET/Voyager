@@ -160,10 +160,7 @@ fun JavaExec.voyagerJvmDefaults() {
     // are the ones VoyagerServer reads, so what Gradle sets and what the server looks for are the
     // same two strings. A missing worlds directory is no longer a warning printed here: the
     // configuration check reports it, with the absolute path, before the server starts.
-    // Minestom gates its whole translation path on this and defaults it to OFF, so without it every
-    // message reaches the client as a raw key like `voyager.map.banner`. ServerFlag reads it once as
-    // a `static final`, so it has to be a JVM argument and not a System.setProperty in main.
-    systemProperty("minestom.automatic-component-translation", "true")
+    // Automatic component translation is switched on by VoyagerServer.main, not by this task.
 
     providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
     providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
