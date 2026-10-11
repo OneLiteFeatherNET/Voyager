@@ -43,10 +43,22 @@ public final class SetupServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SetupServer.class);
     private static final String SOURCE = "setup settings";
 
+    /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
+    static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
+
     private SetupServer() {
     }
 
+    /**
+     * Turns on Minestom's automatic component translation. It has to run before anything touches
+     * {@code ServerFlag}, which is why {@link #main} calls it as its first statement.
+     */
+    static void enableAutomaticComponentTranslation() {
+        System.setProperty(AUTOMATIC_TRANSLATION_PROPERTY, "true");
+    }
+
     public static void main(String[] args) {
+        enableAutomaticComponentTranslation();
         SetupSettings settings;
         try {
             settings = SetupSettings.fromEnvironment(args);
@@ -75,10 +87,10 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
-        // Without the JVM flag every message reaches the builder as a raw key; the run task sets it, and a missing flag is
-        // refused here rather than read as cosmetic (see VoyagerServer.main).
+        // Without the translation flag every message reaches the builder as a raw key. main() sets the property before
+        // any Minestom class loads, so this guard only fires if that ordering was ever broken (see VoyagerServer.main).
         if (!ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION) {
-            LOGGER.error("Setup server refused to start: -Dminestom.automatic-component-translation=true is not set");
+            LOGGER.error("Setup server refused to start: ServerFlag loaded before {} was set", AUTOMATIC_TRANSLATION_PROPERTY);
             System.exit(1);
             return;
         }
