@@ -128,6 +128,14 @@ target serves the RC17 node for this extension. The RC17 node runs a locally pat
 HOTFIX-README is not at either path given (`/home/cloud/cloudnet`, `~/cloudnet`), so that patch is not read here, and spike 1.1 on the node
 is the test of it.
 
+Spike 1.1, partial (2026-10-11): the RC16 `bridge-impl` jar is the `CloudNet_Bridge` extension itself (its `extension.json` names
+`CloudNet_Bridge` 4.0.0-RC16). Placed in `extensions/` beside the Voyager bridge and started on a bare JVM with the setup fat jar on
+Minestom 2026.09.12-26.2, it fails at initialisation with `NoClassDefFoundError: eu/cloudnetservice/ext/platforminject/api/PlatformEntrypoint`.
+That class belongs to the node's wrapper, which is absent on a bare JVM, so the failure is the expected one for this setup and not a
+Minestom 26.2 incompatibility. Two findings follow. The fork does not isolate a failing extension: the boot aborts in
+`ExtensionBootstrap.start` before the Voyager bridge is reached. And a broken `CloudNet_Bridge` stops the service, where a missing one
+is skipped. The node acceptance (group 10) is the real test of the bridge; spike 1.1 is closed as "resolved on the node only".
+
 Evidence recorded, read from the CloudNet repository's GitHub releases on 2026-10-10:
 - `4.0.0-RC16`, published 2026-01-11: the only Minecraft version named is 1.21.11. Its notes also say the CloudNet-Bridge "does not
   enable any proxy authentication anymore", which the Minestom implementation must do. That is the Velocity forwarding of
@@ -204,6 +212,50 @@ java … -javaagent:<wrapper.jar> -Dservice.bind.host=<host> -Dservice.bind.port
 3. Deploy: copy the service root JAR and the bridge extension into the CloudNet template by hand, as Cygnus does, start one game and one setup service, run acceptance 10.
 4. Rollback: stop the services with `stop`, remove the bridge extension from `extensions/`, and redeploy the previous template. The
    service runs without the bridge (R4), so a rollback never leaves a service that cannot start.
+
+## Runtime configuration: how Cygnus gets its values, and what Voyager does (owner requirement, 2026-10-11)
+
+The owner's goal: an ElytraRace service (the live CloudNet task name; Voyager is the code name) needs only its JAR or JARs and
+its world and catalogue data, with no hand-edited file and no `-D` flag beyond what the node sets itself. The Cygnus sources were
+read at `/mnt/projects/oss/onelitefeather/Cygnus` (read-only). Secret values are not recorded here.
+
+| Value | Cygnus: where it comes from | Voyager before this change | Voyager target |
+|---|---|---|---|
+| Bind host and port | `service.bind.host`, `service.bind.port` system properties, set by the node (`common/.../bootstrap/ServiceBootstrap.java`) | same properties (`ServerSettings`, `SetupSettings`) | unchanged: set by the node, nothing in the JAR |
+| Working directory | `service.working.dir` property from the node, default the process's directory (`ServiceBootstrap.java`) | relative paths resolve against the process directory | unchanged |
+| Data and worlds paths | Hard-coded relative paths `game/maps` and `setup/maps` under the working directory (removed doc `c216431f^:docs/cloudnet-deployment.md`) | `VOYAGER_DATA_PATH`, `VOYAGER_WORLDS_PATH` system properties only; defaults `run/data` and `run/worlds` (`ServerSettings.java` 88-90), so every service needs two `-D` flags | production defaults become the template layout, `catalog` and `worlds` under the working directory, as Cygnus fixes its own; the Gradle run tasks keep `run/…` by passing the properties explicitly. Decision 9 |
+| Velocity forwarding secret | `-Dminestom-velocity-secret` system property, from the node's JVM options (`ServiceBootstrap.java` 31, 83) | `VOYAGER_VELOCITY_SECRET` environment variable, or `-Dvoyager.velocity.secret` (`ProxyForwardingSettings.java` 20-23) | unchanged, and the node sets the environment variable in the task's environment; no file holds it |
+| Gameplay values (players, timings, teams, page hints, resource pack URL and checksum, Sentry DSN) | `config.properties` in the working directory, optional, every key defaulted in code (`GameConfigReader.java`) | none; `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS` system properties for optional tuning | no file in this change. Where config defaults come from is Owner decision 2 |
+| Telemetry service name and exporter | Environment: `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, plus the OpenTelemetry agent attached with `-javaagent` (`docs/telemetry.md`); nothing in the JAR | no OpenTelemetry in Voyager | not applicable. If Voyager adds telemetry, it follows Cygnus: the agent from the node, and `OTEL_SERVICE_NAME=ElytraRace` from the environment |
+| LuckPerms storage, server context, messaging | Not in the repository. The `data/config.yml` of the service is placed by hand on the node. The repository reads nothing for it | the loader creates `data/config.yml` with `storage-method: h2` and `server: global` on first start (checked in the smoke run, 2026-10-11); H2 under `data/` | Owner decision 1. The context `server: elytrarace` and the MariaDB and Redis settings are not decided by this change |
+| JVM flag `minestom.automatic-component-translation=true` | Not examined in Cygnus's sources for this note | required: both roots refuse to start without it (`VoyagerServer.main`, `SetupServer.main`), and the Gradle run tasks pass it | Decision 10 |
+| Application file, Main-Class launch | `-cp <wrapper>:<app>` with the manifest `Main-Class` (Decision 8) | same | same; the node names the application file |
+
+**Decision 9 (Voyager, in this change, implemented unless the owner says otherwise):** a production service reads its catalogue
+and worlds from `catalog` and `worlds` under its working directory with no property set. Cygnus does the same with its fixed
+relative paths, so this is the same mechanism. The two `-D` flags remain for overriding and for the Gradle run tasks, which keep
+their `run/` layout by passing the properties explicitly. The defaults in `ServerSettings` and `SetupSettings` change, and the
+test that pins them changes with them. This is a change of behaviour for a bare `java -jar` run, which is the reason it is recorded.
+
+**Owner decision 1 (open, blocks acceptance 10.2 with MariaDB):** how the LuckPerms storage configuration reaches a service.
+The repository holds no such configuration for Cygnus either, so "the Cygnus way" is a file placed by hand on the node. Options:
+- A. Keep the hand-placed `data/config.yml` per service, outside every JAR. It holds the credentials, so it cannot be bundled. This
+  is the current live behaviour. It is not zero-touch, and `data/` is per service, so the MariaDB storage would also need the
+  "per service data" rule of `cloudnet/service-template` changed.
+- B. A non-secret `config.yml` template in the JAR, written into `data/` on first start only when absent, with the MariaDB and
+  Redis credentials read from environment variables that the node sets. This needs substitution code in `voyager-platform`, a
+  spec change, and a check that LuckPerms' own config accepts the values. It is zero-touch for the operator.
+- C. avaje-config, the configuration library on the stats roadmap (`project_stats_persistence_roadmap`). It is the right long-term
+  answer and a new dependency, so it is a separate change.
+Recommendation: B for this change, C later. The owner decides. Until then, the owner's MariaDB and Redis settings stay hand-placed.
+
+**Owner decision 2 (open):** where configuration defaults come from for values that are not paths: the code (as `GameConfigReader`
+does for Cygnus), a file (as `config.properties`), or avaje-config (option C above). Not decided here.
+
+**Decision 10 (open, needs a spike):** the translation flag is read once, when `ServerFlag` loads, so it can only be set before
+Minestom's classes initialise. A launcher class as the Main-Class could call `System.setProperty` and then start the root. If the
+spike shows that works on 26.2 with the fork, the flag becomes unnecessary. If not, the node's task sets it as a JVM option, and
+it is documented as the one flag an operator sets.
 
 ## Open Questions
 

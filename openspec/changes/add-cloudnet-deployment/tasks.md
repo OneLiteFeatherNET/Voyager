@@ -63,6 +63,16 @@ Each commit on the branch must leave `main` green, so a fitness rule that names 
 - [ ] 8.4 Update the CLAUDE.md module table with a row for `voyager-cloudnet-bridge` (`:voyager:cloudnet-bridge`, the CloudNet extension) and the Key Decisions line that names CloudNet 4.0.0-RC16. Verify: `grep -n cloudnet CLAUDE.md` shows both.
 - [ ] 8.5 Add a note to `docs/reference/permission-nodes.md` (created by `add-luckperms-permissions`) that CloudNet's permission checks, including `cloudnet.bridge.maintenance`, are answered from the same port through the bridge. Verify: the note is present and links to the deployment guide.
 
+## 8A. Zero-touch runtime configuration (owner requirement, 2026-10-11; design.md "Runtime configuration")
+
+- [ ] 8A.1 Read Cygnus's mechanisms for every value in design.md's table (done in design.md; the table cites the Cygnus paths). Verify: the table is present and no secret value is recorded.
+- [ ] 8A.2 Red then Green: production defaults of `ServerSettings` and `SetupSettings` become `catalog` and `worlds` under the working directory (Decision 9). The tests that pin the defaults change with them. Verify: a bare run in a directory holding `catalog/` and `worlds/` reads them with no property set.
+- [ ] 8A.3 Keep the Gradle run tasks on the `run/` layout by passing `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH` explicitly in `voyager/server/build.gradle.kts` and `voyager/setup/build.gradle.kts`, with the doubled `run/run` convention documented in the same place. Verify: `./gradlew :voyager:server:validateCatalog` still finds the shipped catalogue.
+- [ ] 8A.4 Velocity secret: confirm that `VOYAGER_VELOCITY_SECRET` from the task environment is enough (no file, no `-D`). Verify: the guide names the environment variable and no file holds the secret.
+- [ ] 8A.5 Spike (translation flag, Decision 10): test whether a launcher that sets `minestom.automatic-component-translation` before any Minestom class loads makes the flag unnecessary on 26.2 with the fork. Record the result in design.md. If it works, implement it as a separate change; if not, keep the flag and document it as the one flag an operator sets. Verify: the result is recorded.
+- [ ] 8A.6 LuckPerms storage (Owner decision 1): owner decides option A, B or C. Until the decision, the MariaDB and Redis settings stay hand-placed and group 10 records that. Verify: the decision is written into design.md before acceptance.
+- [ ] 8A.7 OTel: not applicable to Voyager today (no OpenTelemetry). Verify: the design table says so, and no OTel dependency is added.
+
 ## 9. Build verification
 
 - [ ] 9.1 Run `./gradlew :voyager:fitness:test :voyager:cloudnet-bridge:test :voyager:setup:test :voyager:server:test`. Verify: exit 0 in each.
