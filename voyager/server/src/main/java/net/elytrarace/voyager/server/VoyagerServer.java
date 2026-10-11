@@ -26,6 +26,7 @@ import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.ServerFlag;
@@ -182,7 +183,9 @@ public final class VoyagerServer {
             System.exit(1);
             return;
         }
-        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+        // The extension bootstrap initialises Minestom as MinecraftServer.init did, and at start it loads extensions/ and binds
+        // the port (ADR-0026). A root without extensions/ runs as before, with no bridge.
+        ExtensionBootstrap bootstrap = auth == null ? ExtensionBootstrap.init() : ExtensionBootstrap.init(auth);
 
         // LuckPerms is started only when its loader is on the class path, and before the port binds. A start that
         // throws refuses to listen; it never falls back to the level-based policy (ADR-0024).
@@ -258,7 +261,7 @@ public final class VoyagerServer {
         registerShutdownTask(graph, instances, catalog, console);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
-        server.start(settings.host(), settings.port());
+        bootstrap.start(settings.host(), settings.port());
         console.start();
         LOGGER.info("Voyager started. {}", session.describe().trim());
     }

@@ -9,6 +9,7 @@ import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
+import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import io.avaje.inject.BeanScope;
 
@@ -120,7 +121,8 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
-        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+        // As in VoyagerServer: the extension bootstrap initialises Minestom, and at start loads extensions/ and binds the port.
+        ExtensionBootstrap bootstrap = auth == null ? ExtensionBootstrap.init() : ExtensionBootstrap.init(auth);
         // LuckPerms starts before the port binds, and a failed start refuses to listen (ADR-0024).
         if (LuckPermsBootstrap.isPresent()) {
             try {
@@ -160,7 +162,7 @@ public final class SetupServer {
                 line -> MinecraftServer.getCommandManager().getConsoleSender().sendMessage(line));
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
-        server.start(settings.host(), settings.port());
+        bootstrap.start(settings.host(), settings.port());
         console.start();
     }
 

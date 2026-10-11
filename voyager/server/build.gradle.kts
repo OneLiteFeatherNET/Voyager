@@ -9,6 +9,11 @@ dependencies {
     implementation(project(":voyager:race"))
     implementation(project(":voyager:platform"))
 
+    // The Minestom extension bootstrap, the OneLiteFeather fork Cygnus pins (ADR-0026). The root starts it itself, because
+    // the fork's init must replace MinecraftServer.init before anything else touches Minestom.
+    implementation(platform(libs.minestom.extensions.bom))
+    implementation(libs.minestom.extensions)
+
     // avaje-inject generates the composition root's wiring at compile time (no reflection). The
     // processor runs in this module only; the runtime finds the generated modules through
     // ServiceLoader. jakarta.inject is the JSR-330 annotation set the wiring reads. Nothing outside

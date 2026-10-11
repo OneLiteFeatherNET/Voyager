@@ -9,6 +9,11 @@ dependencies {
     implementation(project(":voyager:api"))
     implementation(project(":voyager:platform"))
 
+    // The Minestom extension bootstrap, the OneLiteFeather fork Cygnus pins (ADR-0026). The root starts it itself, because
+    // the fork's init must replace MinecraftServer.init before anything else touches Minestom.
+    implementation(platform(libs.minestom.extensions.bom))
+    implementation(libs.minestom.extensions)
+
     // avaje-inject generates the wiring for SetupBeans at compile time, as it does for voyager-server.
     // DI annotations stay in net.elytrarace.voyager.setup.inject and in SetupServer, see ApiPurityTest.
     implementation(libs.avaje.inject.runtime)
