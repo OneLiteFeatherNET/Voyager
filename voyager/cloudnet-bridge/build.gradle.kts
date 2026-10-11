@@ -21,7 +21,7 @@ dependencies {
     // version is the same string as voyager/platform/build.gradle.kts.
     compileOnly("net.minestom:minestom:2026.09.12-26.2")
 
-    // CloudNet 4.0.0-RC16, the release Cygnus builds against (see settings.gradle.kts and ADR-0026, risk R8).
+    // CloudNet 4.0.0-RC17, the release the owner's network runs (see settings.gradle.kts and ADR-0026).
     compileOnly(platform(libs.cloudnet.bom))
     compileOnly(libs.cloudnet.bridge.api)
     compileOnly(libs.cloudnet.bridge.impl)

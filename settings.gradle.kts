@@ -84,10 +84,11 @@ dependencyResolutionManagement {
             version("guava", "33.7.2-jre")
             library("guava", "com.google.guava", "guava").versionRef("guava")
 
-            // CloudNet 4.0.0-RC16, the release Cygnus builds against and the owner's network runs (ADR-0026, risk R8 for Minecraft
-            // 26.2). Only :voyager:cloudnet-bridge compiles against it. It is never bundled: the node provides the driver, and the
-            // bridge arrives as a Minestom extension from extensions/. The bom pins the rest, as in Cygnus.
-            version("cloudnet", "4.0.0-RC16")
+            // CloudNet 4.0.0-RC17, the release the owner's network runs (ADR-0026). It was RC16 until 2026-10-11, the release Cygnus
+            // builds against; the extension's API calls are identical in both (javap, design.md Decision 6). Only
+            // :voyager:cloudnet-bridge compiles against it. It is never bundled: the node provides the driver, and the bridge arrives
+            // as a Minestom extension from extensions/. The bom pins the rest.
+            version("cloudnet", "4.0.0-RC17")
             library("cloudnet.bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
             library("cloudnet.bridge.api", "eu.cloudnetservice.cloudnet", "bridge-api").withoutVersion()
             library("cloudnet.bridge.impl", "eu.cloudnetservice.cloudnet", "bridge-impl").withoutVersion()
