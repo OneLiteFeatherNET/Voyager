@@ -115,9 +115,15 @@ must hold per-service state and cannot be a template directory (Cygnus's rule: "
 Path resolution: the server's defaults are relative (`run/data`, `run/worlds`), so the template sets both system properties explicitly
 through the service's JVM options. Whether the node's task definition accepts JVM options is an open question.
 
-### 6. CloudNet version: 4.0.0-RC16, matched to Cygnus (owner decision)
+### 6. CloudNet version: 4.0.0-RC17, the release the owner's network runs (owner decision, 2026-10-11; supersedes the RC16 choice)
 
-The owner's decision: the version is whatever Cygnus runs on the same network, which is `4.0.0-RC16` in Cygnus's version catalog
+**Decided 2026-10-11:** the bridge builds against `4.0.0-RC17`, the version the owner's network runs. The pin is `version("cloudnet", "4.0.0-RC17")`
+in `settings.gradle.kts`, and RC17 resolves from Maven Central (`bridge-api`, `bridge-impl`, `driver-api` and the `bom`, checked by
+`:voyager:cloudnet-bridge:dependencies`). The RC16 choice below is kept as history: it was the version Cygnus builds against, and
+the bridge's API calls are the same in both releases (spike 1.4). Risk R8 is resolved by the owner's decision; the node acceptance (group 10) still
+verifies the bridge on the node.
+
+The earlier choice, which the owner has now superseded: the version is whatever Cygnus runs on the same network, which is `4.0.0-RC16` in Cygnus's version catalog
 (`cloudnet` version, `cloudnet-bom`, `cloudnet-bridge` = `bridge-api`, `cloudnet-bridge-impl` = `bridge-impl`,
 `cloudnet-driver-api` = `driver-api`). This change uses the same coordinates, and the same `minestom-extensions` 2.2.0 that
 Cygnus pins. Cygnus's bridge (`bridge/`, `CygnusBridgePermissionExtension`) is the pattern.
@@ -143,8 +149,8 @@ Evidence recorded, read from the CloudNet repository's GitHub releases on 2026-1
   `add-luckperms-permissions`.
 - `4.0.0-RC17`, published 2026-08-09: "Support Minecraft 26.X (#1866)".
 
-So RC16 is not documented for Minecraft 26.2, and RC17 is. The owner keeps RC16. The gap is recorded as Risk R8 and tested by spike 1.1
-and acceptance group 10. If the bridge fails on 26.2 with RC16, the fallback is RC17 with its bridge API re-checked (spike 1.4), which
+So RC16 is not documented for Minecraft 26.2, and RC17 is. The owner decided on RC17 on 2026-10-11 (above). Before that decision the gap was
+recorded as Risk R8, to be tested by spike 1.1 and acceptance group 10. The earlier fallback text follows, kept for history: if the bridge fails on 26.2 with RC16, the fallback is RC17 with its bridge API re-checked (spike 1.4), which
 is a new decision for the owner, not a silent upgrade.
 
 ### 7. Owner-confirmed (2026-10-10): one change, one commit per type
@@ -203,8 +209,8 @@ java … -javaagent:<wrapper.jar> -Dservice.bind.host=<host> -Dservice.bind.port
   asked for the POINTER pattern, and Cygnus's guide shows the pointer is what CloudNet's checker reads. If the subclass ever conflicts
   with a Minestom update, the bridge can switch to the port directly; that is a new decision, not a silent change.
 - **R7 Writable worlds.** If the setup service writes world data, `worlds/` cannot be a shared template directory. Open question 1.
-- **R8 RC16 not documented for 26.2.** See Decision 6. Mitigation: spike 1.1 and the 26.2 result recorded before acceptance; RC17 is the
-  documented fallback and needs a new owner decision.
+- **R8 RC16 not documented for 26.2. RESOLVED 2026-10-11 by the owner's decision to build against RC17** (Decision 6), which is the release
+  documented for 26.X and the one the owner's network runs. What remains is verification on the node (group 10), not a version question.
 
 ## Migration Plan
 
@@ -228,7 +234,7 @@ read at `/mnt/projects/oss/onelitefeather/Cygnus` (read-only). Secret values are
 | Velocity forwarding secret | `-Dminestom-velocity-secret` system property, from the node's JVM options (`ServiceBootstrap.java` 31, 83) | `VOYAGER_VELOCITY_SECRET` environment variable, or `-Dvoyager.velocity.secret` (`ProxyForwardingSettings.java` 20-23) | unchanged, and the node sets the environment variable in the task's environment; no file holds it |
 | Gameplay values (players, timings, teams, page hints, resource pack URL and checksum, Sentry DSN) | `config.properties` in the working directory, optional, every key defaulted in code (`GameConfigReader.java`) | none; `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS` system properties for optional tuning | no file in this change. Where config defaults come from is Owner decision 2 |
 | Telemetry service name and exporter | Environment: `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, plus the OpenTelemetry agent attached with `-javaagent` (`docs/telemetry.md`); nothing in the JAR | no OpenTelemetry in Voyager | not applicable. If Voyager adds telemetry, it follows Cygnus: the agent from the node, and `OTEL_SERVICE_NAME=ElytraRace` from the environment |
-| LuckPerms storage, server context, messaging | Not in the repository. The `data/config.yml` of the service is placed by hand on the node. The repository reads nothing for it | the loader creates `data/config.yml` with `storage-method: h2` and `server: global` on first start (checked in the smoke run, 2026-10-11); H2 under `data/` | Owner decision 1. The context `server: elytrarace` and the MariaDB and Redis settings are not decided by this change |
+| LuckPerms storage, server context, messaging | Not in the repository. The `data/config.yml` of the service is placed by hand on the node. The repository reads nothing for it | the loader creates `data/config.yml` with `storage-method: h2` and `server: global` on first start (checked in the smoke run, 2026-10-11); H2 under `data/` | Decided 2026-10-11, owner decision 1, "like Cygnus": a `data/config.yml` placed by hand in the service template, with the network's storage (MariaDB, Redis) and the context `server: elytrarace`. No repository code, no credentials in the repository or a JAR. The how-to is in the guide, "LuckPerms" |
 | JVM flag `minestom.automatic-component-translation=true` | Not examined in Cygnus's sources for this note | required: both roots refuse to start without it (`VoyagerServer.main`, `SetupServer.main`), and the Gradle run tasks pass it | Decision 10 |
 | Application file, Main-Class launch | `-cp <wrapper>:<app>` with the manifest `Main-Class` (Decision 8) | same | same; the node names the application file |
 
@@ -237,8 +243,15 @@ and worlds from `catalog` and `worlds` under its working directory with no prope
 relative paths, so this is the same mechanism. The two `-D` flags remain for overriding and for the Gradle run tasks, which keep
 their `run/` layout by passing the properties explicitly. The defaults in `ServerSettings` and `SetupSettings` change, and the
 test that pins them changes with them. This is a change of behaviour for a bare `java -jar` run, which is the reason it is recorded.
+**Callout (owner, 2026-10-11):** a deploy that passes `-DVOYAGER_DATA_PATH` and `-DVOYAGER_WORLDS_PATH` explicitly is unaffected, because
+an explicit property always wins. The live ElytraRace task passes `run/data` and `run/worlds` explicitly, so it keeps working unchanged.
+Only a service started with neither property changes: it now reads `catalog` and `worlds` instead of `run/data` and `run/worlds`.
 
-**Owner decision 1 (open, blocks acceptance 10.2 with MariaDB):** how the LuckPerms storage configuration reaches a service.
+**Owner decision 1 — DECIDED 2026-10-11: "like Cygnus".** The LuckPerms storage configuration is a `data/config.yml` placed by hand in the
+service template, as Cygnus does. The repository holds no code for it, and no credential goes into the repository or the JAR. The
+how-to is in `docs/guides/how-to-deploy-on-cloudnet.md` ("LuckPerms configuration"). Options A to C below are the alternatives the
+owner did not choose; they stay here as the record of what was weighed.
+
 The repository holds no such configuration for Cygnus either, so "the Cygnus way" is a file placed by hand on the node. Options:
 - A. Keep the hand-placed `data/config.yml` per service, outside every JAR. It holds the credentials, so it cannot be bundled. This
   is the current live behaviour. It is not zero-touch, and `data/` is per service, so the MariaDB storage would also need the
@@ -253,8 +266,9 @@ Recommendation: B for this change, C later. The owner decides. Until then, the o
 **Owner decision 2 (open):** where configuration defaults come from for values that are not paths: the code (as `GameConfigReader`
 does for Cygnus), a file (as `config.properties`), or avaje-config (option C above). Not decided here.
 
-**Decision 10 (open, needs a spike):** the translation flag is read once, when `ServerFlag` loads, so it can only be set before
-Minestom's classes initialise. A launcher class as the Main-Class could call `System.setProperty` and then start the root. If the
+**Decision 10 (partly done 2026-10-11):** the translation flag is read once, when `ServerFlag` loads, so it can only be set before
+Minestom's classes initialise. Status: the setup server sets it in code, first thing in `SetupServer.main`, as #299 (`fix(setup)`) landed
+on `main`. The game server still needs the JVM flag until #295 (`fix(server)`) lands. The text below is the original question. A launcher class as the Main-Class could call `System.setProperty` and then start the root. If the
 spike shows that works on 26.2 with the fork, the flag becomes unnecessary. If not, the node's task sets it as a JVM option, and
 it is documented as the one flag an operator sets.
 
