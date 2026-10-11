@@ -257,6 +257,13 @@ Minestom's classes initialise. A launcher class as the Main-Class could call `Sy
 spike shows that works on 26.2 with the fork, the flag becomes unnecessary. If not, the node's task sets it as a JVM option, and
 it is documented as the one flag an operator sets.
 
+**Result of the spike (2026-10-11): it works.** A scratch launcher (outside the repository) sets the property and then invokes
+`SetupServer.main` by reflection. The setup fat jar then starts with no translation flag, listens, logs "Minestom server started
+successfully", and stops on stdin with exit 0. A control run of the same jar without the launcher is refused with "-Dminestom.automatic-component-translation=true is
+not set". So the launcher is the cause. The launcher changes the Main-Class of both roots and touches the composition-root comments,
+so it is a separate change (tasks 8A.5), and this change keeps the flag for the Gradle run tasks. Until that change lands, the node's
+task sets the flag as a JVM option, the one flag an operator sets.
+
 ## Open Questions
 
 These two are for the owner. They do not change the capability specs, which name the contract, but they change the template

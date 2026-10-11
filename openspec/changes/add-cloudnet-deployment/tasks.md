@@ -65,13 +65,15 @@ Each commit on the branch must leave `main` green, so a fitness rule that names 
 
 ## 8A. Zero-touch runtime configuration (owner requirement, 2026-10-11; design.md "Runtime configuration")
 
-- [ ] 8A.1 Read Cygnus's mechanisms for every value in design.md's table (done in design.md; the table cites the Cygnus paths). Verify: the table is present and no secret value is recorded.
-- [ ] 8A.2 Red then Green: production defaults of `ServerSettings` and `SetupSettings` become `catalog` and `worlds` under the working directory (Decision 9). The tests that pin the defaults change with them. Verify: a bare run in a directory holding `catalog/` and `worlds/` reads them with no property set.
-- [ ] 8A.3 Keep the Gradle run tasks on the `run/` layout by passing `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH` explicitly in `voyager/server/build.gradle.kts` and `voyager/setup/build.gradle.kts`, with the doubled `run/run` convention documented in the same place. Verify: `./gradlew :voyager:server:validateCatalog` still finds the shipped catalogue.
+(Status at the end of the apply run: 8A.1, 8A.2, 8A.3, 8A.5 and 8A.7 are done; 8A.4 and 8A.6 are open. Commits `959b8d0` and `5b1fc6e`.)
+
+- [x] 8A.1 Read Cygnus's mechanisms for every value in design.md's table (done in design.md; the table cites the Cygnus paths). Verify: the table is present and no secret value is recorded.
+- [x] 8A.2 Red then Green (`5b1fc6e`): production defaults of `ServerSettings` and `SetupSettings` become `catalog` and `worlds` under the working directory (Decision 9). The tests that pin the defaults change with them. Verify: a bare run in a directory holding `catalog/` and `worlds/` reads them with no property set.
+- [x] 8A.3 (done in `5b1fc6e`; `validateCatalog` itself was not run in this apply pass) Keep the Gradle run tasks on the `run/` layout by passing `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH` explicitly in `voyager/server/build.gradle.kts` and `voyager/setup/build.gradle.kts`, with the doubled `run/run` convention documented in the same place. Verify: `./gradlew :voyager:server:validateCatalog` still finds the shipped catalogue.
 - [ ] 8A.4 Velocity secret: confirm that `VOYAGER_VELOCITY_SECRET` from the task environment is enough (no file, no `-D`). Verify: the guide names the environment variable and no file holds the secret.
-- [ ] 8A.5 Spike (translation flag, Decision 10): test whether a launcher that sets `minestom.automatic-component-translation` before any Minestom class loads makes the flag unnecessary on 26.2 with the fork. Record the result in design.md. If it works, implement it as a separate change; if not, keep the flag and document it as the one flag an operator sets. Verify: the result is recorded.
+- [x] 8A.5 Spike (translation flag, Decision 10): a launcher that sets `minestom.automatic-component-translation` before any Minestom class loads makes the flag unnecessary on 26.2 with the fork. Recorded in design.md, Decision 10, with a control run. Implementing it is a separate change (its own proposal), because it changes both roots' Main-Class.
 - [ ] 8A.6 LuckPerms storage (Owner decision 1): owner decides option A, B or C. Until the decision, the MariaDB and Redis settings stay hand-placed and group 10 records that. Verify: the decision is written into design.md before acceptance.
-- [ ] 8A.7 OTel: not applicable to Voyager today (no OpenTelemetry). Verify: the design table says so, and no OTel dependency is added.
+- [x] 8A.7 OTel: not applicable to Voyager today (no OpenTelemetry). Verify: the design table says so, and no OTel dependency is added.
 
 ## 9. Build verification
 
