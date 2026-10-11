@@ -120,6 +120,14 @@ tasks.shadowJar {
     }
 }
 
+// Only the shadow jar is produced. shadowJar keeps the archive name of the plain jar (archiveClassifier ""), so both
+// tasks wrote build/libs/<name>-<version>.jar. Test classpaths that consume the project (voyager-fitness) then read a
+// file that another task was rewriting in the same build, and the architecture tests failed to discover or saw no
+// classes. The release uploads that single jar.
+tasks.jar {
+    enabled = false
+}
+
 // The artifact keeps the name it had before the module moved under voyager/: the project name is now the
 // last path segment alone, so the base name is pinned rather than left to derive "setup".
 base {
