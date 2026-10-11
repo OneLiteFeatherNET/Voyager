@@ -112,7 +112,19 @@ public final class VoyagerServer {
     private VoyagerServer() {
     }
 
+    /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
+    static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
+
+    /**
+     * Turns on Minestom's automatic component translation. It has to run before anything touches
+     * {@code ServerFlag}, which is why {@link #main} calls it as its first statement.
+     */
+    static void enableAutomaticComponentTranslation() {
+        System.setProperty(AUTOMATIC_TRANSLATION_PROPERTY, "true");
+    }
+
     public static void main(String[] args) {
+        enableAutomaticComponentTranslation();
         // The validate-and-exit run returns before any game-server state is touched. See configCheck.
         if (Boolean.getBoolean(ConfigCheck.CHECK_PROPERTY)) {
             System.exit(configCheck(args, ConfigCheck.systemProperties(), VoyagerServer::initialisedInstances, System.out));
@@ -128,25 +140,16 @@ public final class VoyagerServer {
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
 
-        // Before anything can say anything — and the flag is checked before the bundle is even read,
-        // because without it reading the bundle is pointless.
-        //
-        // Registering the bundle is NOT the whole of the wiring, contrary to what this comment used
-        // to claim. PlayerSocketConnection.writePacketSync gates the entire translation path on
-        // ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which reads the system property
-        // `minestom.automatic-component-translation` and defaults to FALSE. With it off, every
-        // translatable goes to the client untranslated and the player reads `voyager.map.banner`
-        // instead of a sentence — which is exactly what shipped, and what a screenshot found rather
-        // than a test.
-        //
-        // The flag is `static final`, read once when ServerFlag first loads, so System.setProperty
-        // here would be a race against class loading rather than a fix. It belongs in the JVM's own
-        // arguments, and the run tasks set it. Refusing to start is the point: the failure is
-        // otherwise silent, cosmetic-looking and permanent.
+        // Before anything can say anything. PlayerSocketConnection.writePacketSync gates the entire
+        // translation path on ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which is read once, when
+        // ServerFlag first loads. Without it every translatable reaches the client untranslated and the
+        // player reads `voyager.map.banner` instead of a sentence. main() set the property before any
+        // Minestom class loaded, so the JVM argument is not needed. This guard refuses to start if that
+        // ordering was ever broken, because the failure would otherwise be silent and permanent.
         if (!ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION) {
             LOGGER.error("Voyager refused to start: Minestom's automatic component translation is off, "
-                    + "so every message would reach players as a raw translation key. Start the JVM with "
-                    + "-Dminestom.automatic-component-translation=true (the Gradle run tasks do).");
+                    + "so every message would reach players as a raw translation key. ServerFlag loaded "
+                    + "before %s was set.".formatted(AUTOMATIC_TRANSLATION_PROPERTY));
             System.exit(1);
             return;
         }
