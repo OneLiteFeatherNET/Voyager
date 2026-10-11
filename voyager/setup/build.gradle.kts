@@ -78,8 +78,9 @@ tasks.register<JavaExec>("runSetupDev") {
     workingDir = rootProject.projectDir
     jvmArgs("-XX:+UseZGC", "-XX:+UseCompactObjectHeaders", "-Xms256M", "-Xmx1G")
     // Automatic component translation is switched on by SetupServer.main, not by this task.
-    providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
-    providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
+    // The developer layout, passed explicitly because the setup server's own defaults are the service layout (SetupSettings).
+    systemProperty("VOYAGER_DATA_PATH", providers.gradleProperty("dataPath").getOrElse("run-setup/data"))
+    systemProperty("VOYAGER_WORLDS_PATH", providers.gradleProperty("worldsPath").getOrElse("run-setup/worlds"))
     doFirst {
         // The server refuses a missing directory, so a first run creates the two defaults here.
         if (!providers.gradleProperty("dataPath").isPresent) runSetupDataDir.mkdirs()

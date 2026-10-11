@@ -167,8 +167,10 @@ fun JavaExec.voyagerJvmDefaults() {
     // configuration check reports it, with the absolute path, before the server starts.
     // Automatic component translation is switched on by VoyagerServer.main, not by this task.
 
-    providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
-    providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
+    // The developer layout, passed explicitly because the server's own defaults are the service layout (catalog and worlds,
+    // ServerSettings). The paths are relative to workingDir, so run/data resolves to run/run/data (see above).
+    systemProperty("VOYAGER_DATA_PATH", providers.gradleProperty("dataPath").getOrElse("run/data"))
+    systemProperty("VOYAGER_WORLDS_PATH", providers.gradleProperty("worldsPath").getOrElse("run/worlds"))
     providers.gradleProperty("cup").orNull?.let { systemProperty("VOYAGER_CUP", it) }
     providers.gradleProperty("minPlayers").orNull?.let { systemProperty("VOYAGER_MIN_PLAYERS", it) }
     standardInput = System.`in`

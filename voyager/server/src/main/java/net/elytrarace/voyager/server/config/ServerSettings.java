@@ -17,13 +17,14 @@ import java.util.function.Function;
  *
  * <h2>Where the data lives</h2>
  *
- * <p>Two system properties, {@code VOYAGER_DATA_PATH} and {@code VOYAGER_WORLDS_PATH}, defaulting to
- * the relative paths {@code run/data} and {@code run/worlds} — the same two names and the same two
- * defaults the tree being replaced uses. The Gradle run tasks set {@code workingDir} to the
- * repository's {@code run/} directory, so those relative defaults resolve to {@code run/run/data}
- * and {@code run/run/worlds}. <strong>The doubling is not a typo</strong>; it is where the one real
- * world already sits on a developer checkout, and a second convention in the same repository would
- * be worse than an inherited wart.
+ * <p>Two system properties, {@code VOYAGER_DATA_PATH} and {@code VOYAGER_WORLDS_PATH}, default to the
+ * relative paths {@code catalog} and {@code worlds}: the layout of a CloudNet service directory
+ * (openspec change {@code add-cloudnet-deployment}, Decision 9). A service started from its template
+ * therefore needs no property, as Cygnus's fixed relative paths need none. The Gradle run tasks set
+ * {@code workingDir} to the repository's {@code run/} directory and pass {@code run/data} and
+ * {@code run/worlds} explicitly, so a developer checkout resolves to {@code run/run/data} and
+ * {@code run/run/worlds}. <strong>The doubling is not a typo</strong>; it is where the one real world
+ * already sits on a developer checkout.
  *
  * <p>The catalogue is a directory of {@code .json} files, not jar entries:
  * {@code CatalogLoader} takes a {@link Path} and reads a directory, which
@@ -85,9 +86,9 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The port bound when none is given. */
     static final int DEFAULT_PORT = 25565;
     /** The data directory when {@link #DATA_PATH_PROPERTY} is not set. */
-    static final String DEFAULT_DATA_PATH = "run/data";
+    static final String DEFAULT_DATA_PATH = "catalog";
     /** The worlds directory when {@link #WORLDS_PATH_PROPERTY} is not set. */
-    static final String DEFAULT_WORLDS_PATH = "run/worlds";
+    static final String DEFAULT_WORLDS_PATH = "worlds";
 
     /**
      * The lobby, race and results lengths a production run uses: {@link RaceTimings#DEFAULT} — a

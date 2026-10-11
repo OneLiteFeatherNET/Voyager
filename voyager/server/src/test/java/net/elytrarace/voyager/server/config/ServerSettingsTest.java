@@ -183,6 +183,14 @@ class ServerSettingsTest {
     }
 
     @Test
+    void aServiceWithNoPathPropertiesReadsTheTemplateLayout() {
+        // The settings refuse a directory that does not exist, and a relative path cannot be aimed at a @TempDir, so the
+        // defaults themselves are the assertion. Both are read the same way from a source that holds no properties.
+        assertThat(ServerSettings.DEFAULT_DATA_PATH).isEqualTo("catalog");
+        assertThat(ServerSettings.DEFAULT_WORLDS_PATH).isEqualTo("worlds");
+    }
+
+    @Test
     void readsTheDataAndWorldsPathsFromTheirOwnProperties() {
         System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
         System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
