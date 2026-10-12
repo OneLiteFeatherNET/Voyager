@@ -147,9 +147,11 @@ legacy/server/src/main/java/net/elytrarace/server/
 
 As of: 2026-10-10
 
-The rebuild's first closed-alpha content (GitHub issue #120) is one cup, `alpha_cup` (display name "Alpha Cup", mode
-`RACE`), playing one map, `elytraraceblueandred` (world `ElytraraceBlueAndRed`, 35 rings). The earlier single-map
-`test_cup` is removed from the shipped data, so the server boots without `-Pcup`.
+The rebuild's first closed-alpha content (GitHub issue #120) is `alpha_cup` (display name "Alpha Cup", mode `RACE`),
+playing one map, `elytraraceblueandred` (world `ElytraraceBlueAndRed`, 35 rings). The converted legacy cup `legacy_cup`
+(mode `RACE`, maps `palmbeach`, `dragonlobby`, `memoria`, worlds not committed) ships beside it. With two cups shipped,
+the server refuses to boot without a cup name, so name one with `-Pcup=<name>` or `-DVOYAGER_CUP=<name>`. The earlier
+single-map `test_cup` is removed from the shipped data.
 
 ### BOOST rings
 
