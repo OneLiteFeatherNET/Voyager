@@ -11,6 +11,7 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
+import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -72,7 +73,7 @@ class LobbyWiringTest {
         Optional<LobbyTransition> lobby = Optional.of(new LobbyTransition(instances,
                 new LobbyDefinition(LOBBY, LOBBY_SPAWN)));
 
-        VoyagerServer.Arrival arrival = VoyagerServer.joinArrival(lobby, firstMap(), instances);
+        JoinArrival.Arrival arrival = JoinArrival.of(lobby, firstMap(), instances);
 
         assertThat(arrival.instance()).isSameAs(lobby.orElseThrow().instance());
         assertThat(arrival.position()).isEqualTo(Vectors.toMinestom(LOBBY_SPAWN).asPos());
@@ -83,7 +84,7 @@ class LobbyWiringTest {
         writeWorld(env, FIRST, FIRST_SPAWN);
         MapInstances instances = openWorlds(env);
 
-        VoyagerServer.Arrival arrival = VoyagerServer.joinArrival(Optional.empty(), firstMap(), instances);
+        JoinArrival.Arrival arrival = JoinArrival.of(Optional.empty(), firstMap(), instances);
 
         assertThat(arrival.instance()).isSameAs(instances.forWorld(FIRST));
         assertThat(arrival.position()).isEqualTo(Vectors.toMinestom(FIRST_SPAWN).asPos());
