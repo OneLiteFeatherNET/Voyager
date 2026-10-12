@@ -41,9 +41,10 @@ the same address.
 |---|---|
 | Joined, fewer racers online than the minimum | An action bar line: `Waiting for racers: <online> of <needed> online`. The racer stands on the first map's spawn with no elytra and no rockets. |
 | The minimum is met | The first map's lobby starts. The action bar counts it down in whole seconds: `Cup starts in <n> s`. |
-| The last three seconds of the lobby | The digits 3, 2, 1 and `GO` are shown, and the racer is placed on the spawn facing the first ring. |
+| The last three seconds of the lobby | The digits 3, 2, 1 and `GO` are shown, and the racer is placed on the spawn facing the first ring with the elytra and the rockets in hand. |
+| GO | The racer is released, not launched. The subtitle `Jump, then deploy your elytra.` appears with the title. The racer jumps and deploys the elytra; a rocket is refused until the racer is gliding, so the rocket comes after the deployment. |
 | A racer leaves before the last three seconds | The lobby is cancelled and the room returns to waiting. The remaining racers are told `Start cancelled: <online> of <needed> racers online. Waiting for more.` A new countdown starts from its full length once the minimum is met again. |
-| A racer leaves in the last three seconds | The start is committed. The first map launches for the racers still online. |
+| A racer leaves in the last three seconds | The start is committed. The first map starts for the racers still online, and they are released at GO. |
 | A racer joins while a map is racing | The racer is told `A cup is running. You join at the next map.` and enters the next map when it starts. |
 | The last racer leaves a running cup | The cup stops without a result, and the room waits for the minimum again. |
 | A racer is still flying when a map's race time ends | That map is scored as DNF: ring points only. |

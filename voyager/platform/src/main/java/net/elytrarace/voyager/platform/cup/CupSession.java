@@ -249,7 +249,7 @@ public final class CupSession implements RacePhaseListener {
         round.reset();
         lastSimulated.clear();
         // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
-        // must not still be running when the new first map launches its racers.
+        // must not still be running when the new first map releases its racers.
         boosts.clear();
         currentMap = null;
         preparedMapIndex = NO_MAP;
@@ -496,13 +496,13 @@ public final class CupSession implements RacePhaseListener {
      * The start countdown, run out of the tail of the lobby.
      *
      * <p>The map is entered on the first tick that has a digit to show — three seconds before the
-     * launch — so the racer is standing on the spawn, facing the first ring, with the chunks around
+     * GO — so the racer is standing on the spawn, facing the first ring, with the chunks around
      * them already there and the boss bar already naming the target, while the count runs. Before
      * this, a map began by teleporting a player and firing them into the air in the same tick, into a
      * world whose chunks were still arriving.
      *
-     * <p>Nothing here touches the race clock. The {@code GAME} phase still begins with the launch on
-     * its first tick, and the three seconds come out of the lobby, which is time nobody was playing
+     * <p>Nothing here touches the race clock. The {@code GAME} phase still begins with GO on its first
+     * tick, and the three seconds come out of the lobby, which is time nobody was playing
      * in anyway.
      */
     @Override
@@ -530,14 +530,13 @@ public final class CupSession implements RacePhaseListener {
         gameStarted = true;
 
         // The transition runs again here even when the countdown already made it, and that is
-        // deliberate: a player who connected during those three seconds holds no run, and a launch
-        // into a race that is not tracking you is the exact failure this whole start exists to
-        // remove. Nobody has moved and no race tick has been played since, so re-running it lands
+        // deliberate: a player who connected during those three seconds holds no run, and a racer
+        // released into a race that is not tracking them is the exact failure this whole start
+        // exists to remove. Nobody has moved and no race tick has been played since, so re-running it lands
         // every racer on the same spawn with the same fresh run.
         List<Player> racers = List.copyOf(players.get());
         transition.advanceTo(map, racers);
         for (Player racer : racers) {
-            Racers.launch(racer, map);
             RaceFeedback.go(racer);
         }
 
@@ -660,9 +659,9 @@ public final class CupSession implements RacePhaseListener {
             round.recordMap(mapIndex, id, held.get(), map, timings.race());
             Racers.standDown(racer);
             hud.standDown(racer);
-            // The burn and the cooldown end with the map. A rocket still burning when the next map's
-            // launch fires would add an impulse to a launch nothing tuned for one, and a cooldown
-            // carried across would refuse the first boost of a map for a boost taken on the last.
+            // The burn and the cooldown end with the map. A rocket still burning when the next map
+            // starts would carry the racer on past its GO, and a cooldown carried across would refuse
+            // the first boost of a map for a boost taken on the last.
             boosts.forget(id);
         }
         round.closeMap(mapIndex, cup.mode());

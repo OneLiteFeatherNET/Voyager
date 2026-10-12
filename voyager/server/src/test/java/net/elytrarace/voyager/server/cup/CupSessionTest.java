@@ -27,7 +27,6 @@ import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.Rockets;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.kyori.adventure.text.Component;
-import net.minestom.server.ServerFlag;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -70,6 +69,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntPredicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,6 +107,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnvTest
 class CupSessionTest {
 
+    /** The map and the GAME phase of a cup, as {@code CupSession.describe()} names them. */
+    private static final Pattern GAME_PHASE = Pattern.compile("map \\d+/\\d+ '[^']*', phase GAME");
+
     private static final String RIDGE = "ridge_arena";
     private static final String DUNE = "dune_arena";
 
@@ -135,10 +139,7 @@ class CupSessionTest {
     /**
      * One ring, 10 blocks down +z of the spawn and 8 blocks <em>above</em> it, worth 7.
      *
-     * <p>The 8 is load-bearing and not decoration: the launch aims its horizontal impulse along the
-     * ground line to the first ring, and with a ring level with the spawn that vector and the vector
-     * straight at the ring are the same value — a launch that fired the whole impulse at the ring
-     * could not be told from one that did not.
+     * <p>The ring is above the spawn, so a racer who glides toward it has to climb to reach it.
      */
     private static final MapDefinition RIDGE_RUN = new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN,
             List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7)),
@@ -246,12 +247,11 @@ class CupSessionTest {
     }
 
     /**
-     * The problem the launch exists to solve: {@code isFlyingWithElytra()} is what every ring pass is
-     * gated on, and a racer who joins with nothing and never jumps produces a race in which nothing
-     * happens. Asserted on the first tick of the first map, before anything else could have set it.
+     * The GO tick releases the racer and keeps their kit. The elytra and the rockets were given during the
+     * countdown, and the racer takes off with them, as the old game's racers did.
      */
     @Test
-    void putsEveryRacerInTheAirWithAnElytraWhenAMapStarts(Env env) throws IOException {
+    void goKeepsTheElytraAndTheRockets(Env env) throws IOException {
         Fixture fixture = start(env);
 
         fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
@@ -266,25 +266,53 @@ class CupSessionTest {
                 .describedAs("the rocket declares a flight duration")
                 .isNotNull()
                 .satisfies(fireworks -> assertThat(fireworks.flightDuration()).isEqualTo(3));
-        assertThat(fixture.racer.isFlyingWithElytra())
-                .describedAs("the server starts the glide; a racer who has to know the trick never races")
-                .isTrue();
         assertThat(fixture.racer.getPosition().samePoint(spawnOf(RIDGE_RUN))).isTrue();
         assertThat(fixture.runs.of(fixture.racer.getUuid())).isPresent();
+    }
 
-        // The impulse, read back in the blocks-per-second Minestom carries. The ring is 8 above the
-        // spawn, so a launch that aimed the whole impulse at it would tilt both the z and the y
-        // component away from these two values.
-        Vec launch = fixture.racer.getVelocity();
-        assertThat(launch.x()).isZero();
-        assertThat(launch.z()).isEqualTo(Racers.LAUNCH_FORWARD_PER_TICK * ServerFlag.SERVER_TICKS_PER_SECOND);
-        assertThat(launch.y()).isEqualTo(Racers.LAUNCH_UP_PER_TICK * ServerFlag.SERVER_TICKS_PER_SECOND);
+    /**
+     * The GO tick gives no impulse and starts no glide. The velocity is zero and the flag is off, so the flight
+     * begins with the racer's own deployment of the elytra, which is what the tree being replaced did.
+     */
+    @Test
+    void goGivesNoImpulseAndDoesNotGlide(Env env) throws IOException {
+        Fixture fixture = start(env);
+
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+
+        assertThat(fixture.racer.isFlyingWithElytra())
+                .describedAs("nothing starts the glide; the racer deploys the elytra")
+                .isFalse();
+        assertThat(fixture.racer.getVelocity())
+                .describedAs("no impulse leaves the server at GO")
+                .isEqualTo(Vec.ZERO);
+    }
+
+    /**
+     * A racer who deploys the elytra after GO is gliding from the next race tick, and the race tick records it.
+     * Before the deployment the racer is not gliding, which is what the release means.
+     */
+    @Test
+    void aRacerWhoDeploysTheElytraAfterGoIsSeenGlidingByTheRaceTick(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        java.util.UUID id = fixture.racer.getUuid();
+        assertThat(fixture.runs.of(id).orElseThrow().gliding())
+                .describedAs("nothing has deployed the elytra yet")
+                .isFalse();
+
+        fixture.racer.setFlyingWithElytra(true);
+        fixture.runUntil(tick -> tick == 1);
+
+        assertThat(fixture.runs.of(id).orElseThrow().gliding())
+                .describedAs("the race tick sees the racer's own glide")
+                .isTrue();
     }
 
     /**
      * A map ends and the racer stops gliding. Without it a racer sits in the results screen still in
-     * flight, carrying the velocity they finished on, and the next map's launch is applied on top of
-     * whatever that had become — which makes every map after the first start differently.
+     * flight, carrying the velocity they finished on, and the next map would start from whatever that had become
+     * — which makes every map after the first start differently.
      */
     @Test
     void standsTheRacerDownWhenAMapEnds(Env env) throws IOException {
@@ -305,7 +333,7 @@ class CupSessionTest {
     void pointsTheFlightSimulationAtTheWorldBeingRaced(Env env) throws IOException {
         Fixture fixture = start(env);
 
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
 
         assertThat(fixture.session.describe()).contains("collision world: attached");
     }
@@ -394,12 +422,14 @@ class CupSessionTest {
     void seedsTheSimulationWithAVelocityInBlocksPerTickAndNotBlocksPerSecond(Env env) throws IOException {
         Fixture fixture = start(env);
 
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        // The seed is the velocity the racer carries into the flight: 0.8 forward and 1.2 up per tick, which
+        // Minestom carries as 16 and 24 blocks per second. Read as blocks per tick, that is about 1.44; read
+        // unconverted, it would seed about 28.8, and no elytra step brings that under five in three ticks.
+        fixture.racer.setVelocity(new Vec(0, 24, 16));
         fixture.runUntil(tick -> tick >= 4);
 
         FlightTick simulated = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
-        // The launch is 0.8 forward and 1.2 up per tick, so about 1.44 blocks per tick. The same
-        // numbers read as blocks per second would seed about 28.8, and no elytra step brings that
-        // under five in three ticks.
         assertThat(simulated.after().velocity().length())
                 .describedAs("simulated speed in blocks per tick")
                 .isLessThan(5.0);
@@ -413,9 +443,9 @@ class CupSessionTest {
     @Test
     void forgetsWhatItHeldForARacerWhoDisconnects(Env env) throws IOException {
         Fixture fixture = start(env);
-        // Four ticks, not "the first GAME tick": the flight driver samples at the top of a tick and
-        // the launch sets the gliding flag later in the same one, so the map's opening tick is the
-        // one tick on which nothing has been simulated yet.
+        // Four ticks, not "the first GAME tick": the racers deploy their elytra after the GO tick, and the flight
+        // driver samples at the top of a tick, so the map's opening tick is the one tick on which nothing has been
+        // simulated yet.
         fixture.runUntil(tick -> tick >= 4);
         java.util.UUID id = fixture.racer.getUuid();
         assertThat(fixture.runs.of(id)).isPresent();
@@ -491,7 +521,7 @@ class CupSessionTest {
         untouched.release();
 
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         assertThat(fixture.session.requestSkip()).isTrue();
         fixture.session.start(true);
         int beforeRestart = fixture.ticksPlayed;
@@ -535,7 +565,7 @@ class CupSessionTest {
     @Test
     void aBoostReachesTheSimulationOnExactlyTheMapsOwnNumberOfTicks(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
 
         assertThat(fixture.session.requestBoost(fixture.racer))
                 .describedAs("the racer is gliding on map one and has boosted nothing yet")
@@ -553,7 +583,7 @@ class CupSessionTest {
     @Test
     void theSecondMapsOwnBurnLengthIsUsedOnTheSecondMap(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("dune-run")
+        fixture.runUntilRacing(tick -> fixture.session.describe().contains("dune-run")
                 && fixture.session.describe().contains("phase GAME"));
 
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
@@ -574,7 +604,7 @@ class CupSessionTest {
     @Test
     void aBoostSpawnsARocketAttachedToTheRacerInTheWorldBeingRaced(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         assertThat(rocketsAround(fixture.racer)).isEmpty();
 
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
@@ -589,7 +619,7 @@ class CupSessionTest {
     @Test
     void aRefusedBoostSpawnsNoRocket(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
         int afterOne = rocketsAround(fixture.racer).size();
 
@@ -604,7 +634,7 @@ class CupSessionTest {
     @Test
     void aSecondRocketDuringTheCooldownIsRefused(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
         fixture.runUntil(tick -> tick >= 1);
 
@@ -648,7 +678,7 @@ class CupSessionTest {
     @Test
     void aBoostAskedForOnFootIsRefusedAndReachesTheSimulationNotAtAll(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         fixture.racer.setFlyingWithElytra(false);
 
         assertThat(fixture.session.requestBoost(fixture.racer)).isFalse();
@@ -664,7 +694,7 @@ class CupSessionTest {
     @Test
     void forgetsTheBurnOfARacerWhoDisconnectsMidBoost(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
         assertThat(fixture.session.describe()).contains("boost burning");
 
@@ -688,11 +718,11 @@ class CupSessionTest {
     @Test
     void aBurnAndItsCooldownDoNotSurviveTheMapTheyWereLitOn(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
         assertThat(fixture.session.requestSkip()).isTrue();
 
-        fixture.runUntil(tick -> fixture.session.describe().contains("dune-run")
+        fixture.runUntilRacing(tick -> fixture.session.describe().contains("dune-run")
                 && fixture.session.describe().contains("phase GAME"));
 
         assertThat(fixture.session.describe())
@@ -714,11 +744,11 @@ class CupSessionTest {
     @Test
     void restartingTheCupDropsACooldownTakenOnTheRunThatWasAbandoned(Env env) throws IOException {
         Fixture fixture = start(env);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
 
         fixture.session.start(true);
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
 
         assertThat(fixture.session.describe()).contains("boost ready");
         assertThat(fixture.session.requestBoost(fixture.racer)).isTrue();
@@ -742,7 +772,7 @@ class CupSessionTest {
         Fixture fixture = start(env);
         Collector<SystemChatPacket> chat = fixture.connection.trackIncoming(SystemChatPacket.class);
 
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
 
         Component ridgeBanner = Messages.mapBanner(1, 2, RIDGE_RUN.name(), RIDGE_RUN.rings().size(),
                 RIDGE_RUN.referenceTime());
@@ -763,7 +793,7 @@ class CupSessionTest {
         Fixture fixture = start(env);
 
         Player[] latecomer = new Player[1];
-        fixture.runUntil(tick -> {
+        fixture.runUntilRacing(tick -> {
             if (tick == 1) {
                 latecomer[0] = fixture.addLatecomer(RIDGE, RIDGE_RUN);
             }
@@ -867,7 +897,7 @@ class CupSessionTest {
         Collector<SetTitleTimePacket> timings = fixture.connection.trackIncoming(SetTitleTimePacket.class);
         Collector<BossBarPacket> bars = fixture.connection.trackIncoming(BossBarPacket.class);
 
-        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        fixture.runUntilRacing();
 
         assertThat(titles.collect().stream().map(SetTitleTextPacket::title))
                 .describedAs("the last digit and then GO")
@@ -964,7 +994,8 @@ class CupSessionTest {
     private static final Vec3 BELOW_THE_WORLD = RIDGE_SPAWN.plus(new Vec3(0, -165, 0));
 
     /**
-     * A racer who leaves the world before passing any ring goes back to the map's spawn, and is gliding again.
+     * A racer who leaves the world before passing any ring goes back to the map's spawn, placed with the elytra in
+     * hand and not gliding.
      */
     @Test
     void aRacerWhoLeavesTheWorldBeforeAnyRingIsSentBackToTheSpawn(Env env) throws IOException {
@@ -981,7 +1012,9 @@ class CupSessionTest {
         assertThat(fixture.racer.getPosition().samePoint(spawnOf(RIDGE_RUN)))
                 .describedAs("the racer is back on the spawn of the map")
                 .isTrue();
-        assertThat(fixture.racer.isFlyingWithElytra()).describedAs("and gliding again").isTrue();
+        assertThat(fixture.racer.isFlyingWithElytra())
+                .describedAs("placed and not gliding: the racer deploys the elytra again to take off")
+                .isFalse();
         assertThat(fixture.runs.of(fixture.racer.getUuid()))
                 .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isZero());
     }
@@ -1025,7 +1058,9 @@ class CupSessionTest {
         assertThat(fixture.runs.of(fixture.racer.getUuid()))
                 .describedAs("the ring passed before the landing stays passed")
                 .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isEqualTo(1));
-        assertThat(fixture.racer.isFlyingWithElytra()).describedAs("gliding again").isTrue();
+        assertThat(fixture.racer.isFlyingWithElytra())
+                .describedAs("placed and not gliding: the racer deploys the elytra again to take off")
+                .isFalse();
     }
 
     /**
@@ -1108,6 +1143,7 @@ class CupSessionTest {
         private final List<Player> field;
         private final Env env;
         private int ticksPlayed;
+        private String deployedFor;
 
         private Fixture(MapInstances worlds, RaceRuns runs, CupSession session, TickPipeline pipeline,
                 Player racer, TestConnection connection, List<Player> field, Env env) {
@@ -1147,12 +1183,51 @@ class CupSessionTest {
          */
         void runUntil(IntPredicate stop) {
             for (int tick = 1; tick <= 400; tick++) {
-                pipeline.run();
-                ticksPlayed++;
+                tickOnce();
                 if (stop.test(tick)) {
                     return;
                 }
             }
+        }
+
+        /**
+         * Ticks until the first map's GO, and then deploys the racers' elytra, as a player does at GO. For the
+         * tests that race, not for the tests that look at the state the GO tick leaves behind.
+         */
+        void runUntilRacing() {
+            runUntilRacing(tick -> gamePhase() != null);
+        }
+
+        /** As {@link #runUntilRacing()}, until {@code stop} answers true, and the racers have deployed. */
+        void runUntilRacing(IntPredicate stop) {
+            runUntil(stop);
+            deployRacers();
+        }
+
+        /**
+         * One server tick. The server does not start a glide at GO, so the racers deploy their elytra
+         * themselves once per map, on the first tick after its GAME phase begins, as a player does after GO.
+         */
+        private void tickOnce() {
+            String phase = gamePhase();
+            if (phase != null && !phase.equals(deployedFor)) {
+                deployRacers();
+            }
+            pipeline.run();
+            ticksPlayed++;
+        }
+
+        private void deployRacers() {
+            for (Player player : field) {
+                player.setFlyingWithElytra(true);
+            }
+            deployedFor = gamePhase();
+        }
+
+        /** The map and phase the cup is in, when it is in a GAME phase; {@code null} otherwise. */
+        private String gamePhase() {
+            Matcher matcher = GAME_PHASE.matcher(session.describe());
+            return matcher.find() ? matcher.group() : null;
         }
 
         /**
@@ -1163,8 +1238,7 @@ class CupSessionTest {
         int countBoostedTicks(int budget) {
             int boosted = 0;
             for (int tick = 0; tick < budget; tick++) {
-                pipeline.run();
-                ticksPlayed++;
+                tickOnce();
                 Optional<FlightTick> simulated = session.lastSimulated(racer.getUuid());
                 if (simulated.isPresent() && simulated.get().input().fireworkBoostActive()) {
                     boosted++;

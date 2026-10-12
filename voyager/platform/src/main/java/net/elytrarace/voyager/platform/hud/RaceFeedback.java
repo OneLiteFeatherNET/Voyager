@@ -139,11 +139,16 @@ public abstract class RaceFeedback {
         };
     }
 
-    /** The launch. */
+    /**
+     * The GO of a map: the GO title, and in the same tick the subtitle that tells the racer how to take off.
+     *
+     * <p>The subtitle is a copy line, not a rule. The racer jumps and deploys the elytra; nothing here starts
+     * the flight.
+     */
     public static void go(Player racer) {
         racer.showTitle(Title.title(
                 Messages.go(),
-                Component.empty(),
+                Messages.goJump(),
                 Title.Times.times(Duration.ZERO, TICK.multipliedBy(10), TICK.multipliedBy(5))));
         racer.playSound(Sound.sound(LAUNCH, SOURCE, 0.9f, 2.0f));
     }

@@ -1,28 +1,25 @@
 package net.elytrarace.voyager.platform.flight;
 
 import net.elytrarace.voyager.api.math.Vec3;
-import net.elytrarace.voyager.api.race.BoostConfig;
-import net.elytrarace.voyager.api.race.GuideLine;
-import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.api.race.Ring;
-import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.platform.hud.RaceFeedback;
+import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.network.packet.server.play.SetTitleSubTitlePacket;
+import net.minestom.server.network.packet.server.play.SetTitleTextPacket;
+import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.EnvTest;
+import net.minestom.testing.TestConnection;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
 /**
  * The flight equipment of a racer: none while waiting, the elytra and the rockets from the moment a map begins.
@@ -66,50 +63,45 @@ class RacersTest {
         assertThat(racer.getInventory().getItemStack(0).isAir()).isTrue();
     }
 
+    /** A reset places the racer facing the target and ends any glide they were in; it starts none. */
+    @Test
+    void placeEquipsTheRacerAndEndsTheGlideWithoutStartingOne(Env env) {
+        Player racer = waitingRacer(env);
+        Racers.prepare(racer);
+        racer.setFlyingWithElytra(true);
+
+        Racers.place(racer, new Vec3(0, 60, 10));
+
+        assertThat(racer.getEquipment(EquipmentSlot.CHESTPLATE).material()).isEqualTo(Material.ELYTRA);
+        assertThat(racer.isFlyingWithElytra())
+                .describedAs("a reset out of bounds in mid-flight ends the glide; the racer deploys again to fly")
+                .isFalse();
+    }
+
     /**
-     * The impulse is {@code LAUNCH_FORWARD_PER_TICK} (0.8) along the horizontal line to the target and
-     * {@code LAUNCH_UP_PER_TICK} (1.2) straight up, per tick, and Minestom takes blocks per second, so 20
-     * ticks per second scales them to z 16 and y 24.
+     * The GO title and the take-off subtitle arrive in the same tick, so the racer reads "jump, then deploy" at the
+     * moment the count ends. Asserted on the translation key, which is the text a client renders.
      */
     @Test
-    void aLaunchFromAPointSendsTheHorizontalImpulseAlongTheDirectionAndTheUpwardOne(Env env) {
-        Player racer = waitingRacer(env);
-        Racers.prepare(racer);
+    void goShowsTheJumpAndDeployTitle(Env env) {
+        Instance instance = env.createFlatInstance();
+        instance.loadChunk(0, 0).join();
+        TestConnection connection = env.createConnection();
+        Player racer = connection.connect(instance, new Pos(0.5, 60, 0.5));
+        Collector<SetTitleTextPacket> titles = connection.trackIncoming(SetTitleTextPacket.class);
+        Collector<SetTitleSubTitlePacket> subtitles = connection.trackIncoming(SetTitleSubTitlePacket.class);
 
-        Racers.launch(racer, new Vec3(0, 60, 0), new Vec3(0, 60, 10));
+        RaceFeedback.go(racer);
+        env.tick();
 
-        Vec velocity = racer.getVelocity();
-        assertThat(velocity.x()).isCloseTo(0.0, within(1e-6));
-        assertThat(velocity.z()).describedAs("0.8 blocks per tick along +z, in blocks per second")
-                .isCloseTo(16.0, within(1e-6));
-        assertThat(velocity.y()).describedAs("1.2 blocks per tick straight up, in blocks per second")
-                .isCloseTo(24.0, within(1e-6));
-    }
-
-    @Test
-    void aLaunchFromAPointStartsTheGlide(Env env) {
-        Player racer = waitingRacer(env);
-        Racers.prepare(racer);
-
-        Racers.launch(racer, new Vec3(0, 60, 0), new Vec3(0, 60, 10));
-
-        assertThat(racer.isFlyingWithElytra()).isTrue();
-    }
-
-    /** The map start is now a launch from the spawn toward the first ring, and must give the same impulse. */
-    @Test
-    void aMapStartLaunchGivesTheSameImpulseAsALaunchFromTheSpawnTowardTheFirstRing(Env env) {
-        Vec3 spawn = new Vec3(0, 60, 0);
-        Ring first = new Ring(0, new Vec3(3, 64, 12), new Vec3(0, 0, 1), 5.0, 7, RingType.STANDARD);
-        MapDefinition map = new MapDefinition("launch-course", "launch_arena", spawn, List.of(first),
-                Duration.ofSeconds(4), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
-        Player byMap = waitingRacer(env);
-        Player byPoint = waitingRacer(env);
-
-        Racers.launch(byMap, map);
-        Racers.launch(byPoint, spawn, first.center());
-
-        assertThat(byMap.getVelocity()).isEqualTo(byPoint.getVelocity());
+        assertThat(titles.collect())
+                .describedAs("the GO title is sent in the tick of the launch")
+                .hasSize(1);
+        assertThat(subtitles.collect().stream().map(SetTitleSubTitlePacket::subtitle))
+                .describedAs("one subtitle, in the same tick, telling the racer to jump and deploy the elytra")
+                .singleElement()
+                .isInstanceOfSatisfying(TranslatableComponent.class,
+                        text -> assertThat(text.key()).isEqualTo("voyager.race.go.jump"));
     }
 
     private static Player waitingRacer(Env env) {

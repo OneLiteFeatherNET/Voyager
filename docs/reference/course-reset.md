@@ -20,16 +20,16 @@ A reset never happens:
 - to a player who holds no run on the map: a player waiting for a cup, or one who joined mid-race;
 - to a racer whose run has passed every ring of the map, whatever they do afterwards.
 
-Taking off is not a landing. A glide that stops in the air is not a landing. The relaunch after a reset is not a landing either.
+Taking off is not a landing. A glide that stops in the air is not a landing. A racer placed by a reset has not glided since, so they are not a landing either, however they reach the ground.
 
 ## Where the racer goes
 
-| Rings passed on this map | Placed at | Faces and launches toward |
+| Rings passed on this map | Placed at | Faces toward |
 |---|---|---|
 | One or more | The centre of the last ring passed, of any type | One step along that ring's flow normal |
 | None | The map's spawn | The centre of the first ring, as a map start does |
 
-The flow normal is the direction a racer passes through the ring. The racer is launched with the impulse a map start gives: horizontal along the facing and upward. The numbers are the launch constants in `platform.flight.Racers`.
+The flow normal is the direction a racer passes through the ring. The racer is placed facing that point, with the elytra and the rockets in hand, and is not gliding. The reset gives no impulse: the racer takes off by deploying the elytra. The reset zeroes the racer's velocity, so a fall is not carried into the target.
 
 ## What the reset costs
 
