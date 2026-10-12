@@ -93,20 +93,6 @@ THE SYSTEM SHALL NOT reset a racer whose run has passed every ring of the map, w
 - **WHEN** a racer who has passed the final ring lands
 - **THEN** the system does not reset that racer
 
-### Requirement: A reset relaunches the racer with the launch of a map start
-**Priority:** MoSCoW Must
-THE SYSTEM SHALL leave a reset racer gliding, facing the direction the target puts them, and launched with the same
-impulse a map start gives: horizontally along the direction they face, and upward. For a reset to the spawn, the facing
-is the direction of the map's first ring, as at a map start. The arrival of the racer SHALL NOT count as a landing.
-
-#### Scenario: Reset racer is gliding again
-- **WHEN** a racer is reset to a ring
-- **THEN** the racer is gliding, faces that ring's flow normal and is launched along it
-
-#### Scenario: Relaunch is not a landing
-- **WHEN** a reset racer is gliding on the tick after the reset
-- **THEN** the system does not reset that racer
-
 ### Requirement: A reset is announced in the tick it is detected
 **Priority:** MoSCoW Must
 THE SYSTEM SHALL show the reset racer a title that gives the reason and the target, and SHALL play a sound for the reset
@@ -161,3 +147,29 @@ THE SYSTEM SHALL apply this capability to every existing map file without any ch
 #### Scenario: Committed map loads unchanged
 - **WHEN** the committed catalogue is loaded after this change
 - **THEN** every map loads with the same spawn, rings and tuning as before
+
+### Requirement: A reset returns the racer without an impulse
+**MoSCoW:** Must. WHEN a racer is reset, THE SYSTEM SHALL place the racer at the reset target, facing the direction the
+target gives, with the elytra and the rockets in hand; THE SYSTEM SHALL NOT set the racer gliding and SHALL NOT send an
+impulse. The racer takes off by deploying the elytra. For a reset to the spawn, the facing is the direction of the map's
+first ring, as at a map start. The arrival of the racer SHALL NOT count as a landing.
+
+#### Scenario: Reset racer is placed with the equipment
+- **WHEN** a racer is reset to a ring
+- **THEN** the racer is at that ring's centre, faces that ring's flow normal, holds the elytra and the rockets, and is not gliding
+
+#### Scenario: Reset zeroes the racer's velocity
+- **WHEN** a racer is reset
+- **THEN** the racer's velocity is zero on that tick, so a fall is not carried into the target; no other velocity is sent
+
+#### Scenario: Reset racer takes off by themselves
+- **WHEN** a reset racer deploys the elytra
+- **THEN** the racer is gliding from that tick and the reset does not add to their flight
+
+#### Scenario: Arrival is not a landing
+- **WHEN** a reset racer arrives at the target and has not yet deployed the elytra
+- **THEN** the system does not reset that racer
+
+#### Scenario: Reset racer falls without a reset
+- **WHEN** a reset racer who has not deployed the elytra falls to the ground
+- **THEN** the system does not reset that racer, because a landing requires a previous glide
