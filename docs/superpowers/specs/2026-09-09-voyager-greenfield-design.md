@@ -411,9 +411,13 @@ decisions; it translates.
 ### Velocity authority
 
 Nobody sets velocity during normal flight. The client flies; the server simulates
-silently alongside. Velocity is emitted only for external forces: firework boost, ring
-BOOST/SLOW, out-of-bounds reset. This matches Minestom, which deliberately discards the
-physics result for players and leaves the client authoritative.
+silently alongside. Velocity is emitted only for external forces, and there are two
+senders: a zero when a map ends and when a racer is reset (both through the velocity
+exit), and the ring BOOST/SLOW effect once it exists. A firework boost is not a velocity:
+the rocket is a real entity the client boosts with. The take-off is the client's: the
+racer deploys the elytra themselves and no launch impulse is given (ADR-0028). This
+matches Minestom, which deliberately discards the physics result for players and leaves
+the client authoritative.
 
 The velocity exit is a **single class**. `Vec3` cannot hold NaN, and the boundary
 conversion additionally asserts finiteness before anything reaches Minestom.
