@@ -261,6 +261,7 @@ class CupSessionGoldenMasterTest {
             return;
         }
         Path written = tempDir.resolve(scenario + ".received.txt");
+        Files.writeString(Path.of("/tmp/claude-1000/-mnt-projects-oss-onelitefeather-Voyager/1ea74273-57cf-4a93-943d-208e59f8d7ec/scratchpad/" + scenario + ".DIAG2.txt"), received, StandardCharsets.UTF_8);
         Files.writeString(written, received, StandardCharsets.UTF_8);        List<String> want = List.of(expected.split("\n"));
         List<String> got = List.of(received.split("\n"));
         int line = 0;
