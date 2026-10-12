@@ -3,15 +3,21 @@ package net.elytrarace.voyager.server.config;
 import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.api.config.ConfigProblem.Severity;
 import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.LobbyDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
 import net.elytrarace.voyager.platform.catalog.CupResolution;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.platform.world.WorldFolders;
+import net.elytrarace.voyager.platform.world.WorldHealth;
+import net.elytrarace.voyager.server.config.exception.InvalidSettingException;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
 
 import net.minestom.server.instance.InstanceManager;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -87,6 +93,7 @@ public final class ConfigCheck {
         directoryProblem(problems, properties, ServerSettings.WORLDS_PATH_PROPERTY,
                 ServerSettings.DEFAULT_WORLDS_PATH, MissingServerDirectoryException.WORLDS);
         minimumRacersProblem(problems, properties);
+        lobbySettingProblems(problems, properties);
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
@@ -167,6 +174,7 @@ public final class ConfigCheck {
         try {
             problems.addAll(CatalogValidation.validate(settings.dataPath(), settings.worldsPath(), checkWorld,
                     worlds::checkWorld));
+            problems.addAll(lobbyProblems(settings, worlds));
         } finally {
             worlds.close();
         }
@@ -251,6 +259,86 @@ public final class ConfigCheck {
         }
         out.println("config check failed: %d error(s)".formatted(errors));
         return 1;
+    }
+
+    /**
+     * The lobby world, checked the way a map's world is, and the one rule that is about the lobby as a whole: no lobby is a
+     * warning, and a lobby may not be a catalogue map's world. The world is read and closed before this returns, so the
+     * check holds one world open at a time, as {@link MapInstances#checkWorld} does for each map's world.
+     */
+    private static List<ConfigProblem> lobbyProblems(ServerSettings settings, MapInstances worlds) {
+        Optional<LobbyDefinition> lobby = settings.lobby();
+        if (lobby.isEmpty()) {
+            return List.of(new ConfigProblem(ServerSettings.LOBBY_WORLD_PROPERTY,
+                    "system property " + ServerSettings.LOBBY_WORLD_PROPERTY,
+                    "no lobby world is set, so waiting racers stand at the first map's spawn; set %s and %s to give them a lobby (ADR-0029)"
+                            .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, ServerSettings.LOBBY_SPAWN_PROPERTY),
+                    Severity.WARNING));
+        }
+        String world = lobby.get().world();
+        Optional<MapDefinition> played = CatalogLoader.read(settings.dataPath()).snapshot().maps().values().stream()
+                .filter(map -> map.world().equals(world))
+                .findFirst();
+        if (played.isPresent()) {
+            return List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, "system property " + ServerSettings.LOBBY_WORLD_PROPERTY,
+                    "%s names world '%s', which map '%s' plays; a racer waiting in a map's world is inside that map's race"
+                            .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, world, played.get().name())));
+        }
+        String folder = settings.worldsPath().resolve(world).toAbsolutePath().toString();
+        return switch (WorldFolders.check(settings.worldsPath(), world)) {
+            case MISSING -> List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder,
+                    "the lobby world '%s' is not a folder; looked for %s".formatted(world, folder)));
+            case NO_REGION_DATA -> List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder,
+                    "the lobby world '%s' holds no region data; looked for region files in %s and in %s"
+                            .formatted(world, folder + "/region", folder + "/dimensions")));
+            case PRESENT -> lobbyHealthProblems(world, folder, worlds);
+        };
+    }
+
+    private static List<ConfigProblem> lobbyHealthProblems(String world, String folder, MapInstances worlds) {
+        try {
+            WorldHealth health = worlds.checkWorld(world);
+            return health.isSound()
+                    ? List.of()
+                    : List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder, health.describe()));
+        } catch (RuntimeException exception) {
+            String reason = Optional.ofNullable(exception.getMessage()).orElse(exception.getClass().getName());
+            return List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder,
+                    "the lobby world '%s' could not be read: %s".formatted(world, reason)));
+        }
+    }
+
+    /** A lobby setting that cannot be used, keyed under the setting that is at fault. */
+    private static void lobbySettingProblems(List<ConfigProblem> problems, Map<String, String> properties) {
+        try {
+            ServerSettings.parseLobby(blankToNull(properties.get(ServerSettings.LOBBY_WORLD_PROPERTY)),
+                    blankToNull(properties.get(ServerSettings.LOBBY_SPAWN_PROPERTY)));
+        } catch (InvalidSettingException exception) {
+            problems.add(error(exception.setting(), "system property " + exception.setting(), exception.getMessage()));
+        }
+        int maximum;
+        try {
+            maximum = ServerSettings.parseMaximumRacers(blankToNull(properties.get(ServerSettings.MAX_PLAYERS_PROPERTY)));
+        } catch (InvalidSettingException exception) {
+            problems.add(error(ServerSettings.MAX_PLAYERS_PROPERTY,
+                    "system property " + ServerSettings.MAX_PLAYERS_PROPERTY, exception.getMessage()));
+            return;
+        }
+        try {
+            int minimum = ServerSettings.minimumRacersFrom(
+                    blankToNull(properties.get(ServerSettings.MIN_RACERS_PROPERTY)),
+                    Boolean.parseBoolean(properties.get(ServerSettings.DEV_MODE_PROPERTY)));
+            ServerSettings.requireMaximumRacers(maximum, minimum);
+        } catch (InvalidSettingException exception) {
+            problems.add(error(ServerSettings.MAX_PLAYERS_PROPERTY,
+                    "system property " + ServerSettings.MAX_PLAYERS_PROPERTY, exception.getMessage()));
+        } catch (IllegalArgumentException ignored) {
+            // A minimum that is not a number is reported by minimumRacersProblem, once.
+        }
+    }
+
+    private static @Nullable String blankToNull(@Nullable String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static void directoryProblem(List<ConfigProblem> problems, Map<String, String> properties,
