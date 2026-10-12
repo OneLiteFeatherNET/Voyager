@@ -67,8 +67,10 @@ This applies whether a cup is running or not.
 
 ### Requirement: The room shows the count and the countdown on a boss bar
 **MoSCoW:** Must. WHILE a racer is in the lobby world, THE SYSTEM SHALL show that racer a boss bar stating the waiting
-count and the maximum, or the seconds left of the start countdown. THE SYSTEM SHALL update the boss bar when its text or
-its progress changes, and SHALL hide it when the racer leaves the lobby world.
+count and the maximum, or the seconds left of the start countdown. Where no lobby world is configured, THE SYSTEM SHALL
+show the same bar to a waiting racer in the first map until the start is committed. THE SYSTEM SHALL update the boss
+bar when its text or its progress changes, and SHALL hide it when the racer leaves the lobby world, or, without a lobby,
+when the start is committed.
 
 #### Scenario: The boss bar shows the waiting count
 - **WHEN** one racer of a minimum of two is online and waiting
@@ -81,6 +83,11 @@ its progress changes, and SHALL hide it when the racer leaves the lobby world.
 #### Scenario: The boss bar leaves with the racer
 - **WHEN** the first map is entered and a racer moves out of the lobby world
 - **THEN** the lobby boss bar is hidden for that racer, and the race boss bar is the only one shown
+
+#### Scenario: The fallback boss bar shows the count and the countdown in the first map
+- **WHEN** no lobby world is configured and a racer waits at the first map's spawn with one racer of a minimum of two online
+- **THEN** the racer's boss bar reads that one of two racers is online, and when the minimum is met the same bar reads the seconds to the start
+- **AND** the bar is hidden for that racer once the start is committed, so the race boss bar is the only one shown from then on
 
 ### Requirement: A full lobby shortens the start countdown
 **MoSCoW:** Must. IF the online racer count reaches the maximum racer count while the first map's lobby is counting down

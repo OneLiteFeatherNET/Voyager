@@ -106,6 +106,19 @@ spawn, or a spawn without a world, is a typo and not a fallback.
   shortens it again.
 - Dev mode: the dev lobby is 10 s, so `min(10 s, 10 s)` leaves it unchanged.
 
+**Spike result (task 4.1, 2026-10-12).** The phase length can be changed on a running lobby. `XerusPhaseDriver` is a
+`TickedPhase` whose `onStart` is empty: no Xerus timer is scheduled, and the phase is advanced by `onUpdate()` from
+outside. It reads its lobby length from `RaceTimings` on every tick. A new length therefore takes effect on the next
+tick, and the `CupSession` deadline fallback is not needed.
+
+**Where the mechanism lives (port decision, 2026-10-12).** The shortening swaps the driver's `RaceTimings` for one with
+a shorter lobby, and it reads `RaceState.inPhase()` to find the lobby time already run. Both are race types, and the
+frozen slice rule forbids `platform.tick` from depending on `race`. A JDK-typed port could not carry the state machine's
+`RaceState` through the driver, so the port would have had to re-implement the state machine. The driver therefore moves
+from `platform.tick` to `platform.cup`, the package that already owns the race use cases, and the shortening stays in
+it. The frozen store loses the 33 `XerusPhaseDriver` entries it held, and gains none. Nothing else in `platform.tick`
+changes, and `RacePhaseListener` keeps its entries.
+
 ### D6. The maximum racer count is a soft threshold
 
 `VOYAGER_MAX_PLAYERS` defaults to 16 (OQ1) and must be at least the minimum (`ConfigCheck` error otherwise). It sets the
@@ -120,6 +133,9 @@ then the join line can read `17/16`, which is accepted for this change.
 - The boss bar is per racer, as `RaceHud` already is, and is owned by the waiting room (`platform.lobby.LobbyHud`).
 - It is shown while the racer's instance is the lobby instance, so `RaceHud`'s bar takes over when the racer enters the
   first map, with no coordination between the two.
+- Without a lobby world (OQ2 fallback) the same bar is shown to waiting racers in the first map's instance, and it is
+  hidden at the commit, when `RaceHud`'s bar takes over. The room receives that instance from a supplier and reads it
+  only in that case.
 - Its title is a MiniMessage line from `platform.text.Messages`: the waiting count and the maximum while waiting, and the
   seconds left while counting down. Progress is the fraction of the lobby left, and 1 while waiting.
 - It is updated only when the title or the progress changes, not every tick, following the refresh pattern of `RaceHud`.
