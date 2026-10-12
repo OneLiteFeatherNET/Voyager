@@ -41,6 +41,7 @@ public abstract class Messages {
     private static final String COUNTDOWN_DIGIT = "voyager.countdown.digit";
     private static final String COUNTDOWN_SUBTITLE = "voyager.countdown.subtitle";
     private static final String COUNTDOWN_GO = "voyager.countdown.go";
+    private static final String GO_JUMP = "voyager.race.go.jump";
     private static final String MAP_BANNER = "voyager.map.banner";
     private static final String RACE_FINISHED = "voyager.race.finished";
     private static final String JOINED_MID_CUP = "voyager.race.joined.midcup";
@@ -149,6 +150,12 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component go() {
         return Component.translatable(COUNTDOWN_GO);
+    }
+
+    /** The subtitle under GO: how the racer takes off. */
+    @Contract(pure = true)
+    public static Component goJump() {
+        return Component.translatable(GO_JUMP);
     }
 
     /** The line that announces a map, broadcast when its countdown begins. */

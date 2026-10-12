@@ -57,6 +57,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -115,6 +117,9 @@ class CupSessionGoldenMasterTest {
     private static final Duration STEP = Duration.ofMillis(50);
 
     private static final String ADA = "Ada";
+
+    /** The map and the GAME phase of a cup, as {@code CupSession.describe()} names them. */
+    private static final Pattern GAME_PHASE = Pattern.compile("map \\d+/\\d+ '[^']*', phase GAME");
     private static final String BEN = "Ben";
 
     /** Every scenario ends well before this; it guards against a hang, and is not a length anything asserts. */
@@ -272,6 +277,13 @@ class CupSessionGoldenMasterTest {
         private final RaceRuns runs = new RaceRuns();
         private final CatalogHolder holder = new CatalogHolder(bootCatalog());
         private final List<Player> field = new ArrayList<>();
+        private String deployedFor;
+
+        /** The map and the GAME phase of the cup, when it is in one; {@code null} otherwise. */
+        private String gamePhase() {
+            Matcher matcher = GAME_PHASE.matcher(session.describe());
+            return matcher.find() ? matcher.group() : null;
+        }
         private final Map<String, Player> racers = new LinkedHashMap<>();
         private final Map<String, TestConnection> connections = new LinkedHashMap<>();
         final CupTranscript transcript = new CupTranscript();
@@ -333,11 +345,23 @@ class CupSessionGoldenMasterTest {
             transcript.end(label, session.describe());
         }
 
-        /** One server tick, in the order the server runs it: the cup's tick, then Minestom's. */
+        /**
+         * One server tick, in the order the server runs it: the cup's tick, then Minestom's.
+         *
+         * <p>The server does not start a glide at GO. Each racer deploys their elytra on the first tick of the
+         * GAME phase, as a player does after GO, and the transcript shows the deployment on the tick after it.
+         */
         void tick(Runnable before) {
             ticks++;
             transcript.begin();
             before.run();
+            String phase = gamePhase();
+            if (phase != null && !phase.equals(deployedFor)) {
+                for (Player racer : field) {
+                    racer.setFlyingWithElytra(true);
+                }
+                deployedFor = phase;
+            }
             pipeline.run();
             env.tick();
             transcript.end("tick " + ticks, session.describe());
