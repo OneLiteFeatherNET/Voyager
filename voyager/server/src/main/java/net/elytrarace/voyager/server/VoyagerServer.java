@@ -7,7 +7,6 @@ import net.elytrarace.voyager.api.permission.PermissionNode;
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
-import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
@@ -22,6 +21,7 @@ import net.elytrarace.voyager.platform.proxy.VelocityAuth;
 import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
@@ -225,6 +225,11 @@ public final class VoyagerServer {
         CupSession session = graph.get(CupSession.class);
         TickPipeline pipeline = graph.get(TickPipeline.class);
         WaitingRoom waitingRoom = graph.get(WaitingRoom.class);
+        if (settings.lobby().isEmpty()) {
+            LOGGER.warn(("No lobby world is set (%s and %s): waiting racers stand at the first map's spawn. "
+                    + "Set both to give them the lobby world (ADR-0029).")
+                    .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, ServerSettings.LOBBY_SPAWN_PROPERTY));
+        }
 
         try {
             openEveryWorld(catalog.current().rotation(), instances);
@@ -351,13 +356,13 @@ public final class VoyagerServer {
         GlobalEventHandler events = MinecraftServer.getGlobalEventHandler();
 
         events.addListener(AsyncPlayerConfigurationEvent.class, event -> {
-            // Players spawn straight into the first map's world of the current catalogue. There is no lobby
-            // world in the rebuild: there is no lobby map data, and generating a flat one would be a second world
-            // nobody asked for standing between a tester and the thing being tested. The current catalogue, not
-            // the boot one, so a reload that was promoted at a round start is the one a new joiner sees.
-            MapDefinition first = catalog.current().rotation().getFirst();
-            event.setSpawningInstance(instances.forWorld(first.world()));
-            event.getPlayer().setRespawnPoint(Vectors.toMinestom(first.spawn()).asPos());
+            // A joining racer spawns in the lobby world when one is configured, and in the first map's world of the
+            // current catalogue when not. The current catalogue, not the boot one, so a reload that was promoted at a
+            // round start is the one a new joiner sees.
+            JoinArrival.Arrival arrival = JoinArrival.of(waitingRoom.lobby(), catalog.current().rotation().getFirst(),
+                    instances);
+            event.setSpawningInstance(arrival.instance());
+            event.getPlayer().setRespawnPoint(arrival.position());
         });
 
         events.addListener(PlayerSpawnEvent.class, event -> {
@@ -386,6 +391,7 @@ public final class VoyagerServer {
 
         events.addListener(PlayerDisconnectEvent.class, event -> {
             session.forget(event.getPlayer().getUuid());
+            waitingRoom.left(event.getPlayer().getUuid());
             LOGGER.info("{} left", event.getPlayer().getUsername());
         });
 

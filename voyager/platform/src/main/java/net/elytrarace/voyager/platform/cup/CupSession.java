@@ -18,7 +18,6 @@ import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTick;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.tick.RacePhaseListener;
-import net.elytrarace.voyager.platform.tick.XerusPhaseDriver;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.WorldHealth;
 import net.elytrarace.voyager.race.flow.RaceClock;
@@ -322,6 +321,29 @@ public final class CupSession implements RacePhaseListener {
     public Duration lobbyRemaining() {
         XerusPhaseDriver current = driver;
         return current == null || !current.isRunning() ? Duration.ZERO : current.remainingLobby();
+    }
+
+    /** The length the running lobby is played with, which a full server may have shortened. Zero when no cup runs. */
+    public Duration lobbyLength() {
+        XerusPhaseDriver current = driver;
+        return current == null || !current.isRunning() ? Duration.ZERO : current.lobbyLength();
+    }
+
+    /**
+     * Shortens a countdown that is still counting down so that {@code remaining} is left from the next tick, for a full
+     * server (see {@code StartGate.shortenedCountdown}).
+     *
+     * <p>Only the first lobby's countdown, and only before the start is committed. Anywhere else this does nothing: a
+     * committed start is never shortened, and the driver never lengthens a lobby it has already shortened.
+     *
+     * @param remaining how much of the lobby is to be left
+     */
+    public void shortenLobby(Duration remaining) {
+        XerusPhaseDriver current = driver;
+        if (current == null || situation(StartGate.COMMIT_WINDOW) != StartGate.Situation.COUNTDOWN) {
+            return;
+        }
+        current.shortenLobby(remaining);
     }
 
     /**

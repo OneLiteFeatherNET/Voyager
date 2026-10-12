@@ -18,7 +18,9 @@ play does not stop it. The catalogue-wide checks (JSON, schema, references) stil
 | `./gradlew :voyager:server:runServerDev -PskipCatalogCheck` | Starts the server without the check, and prints one warning line. |
 
 The same check runs without Gradle as `java -Dvoyager.config.check=true -jar <server jar>`, with
-`-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH`, `-DVOYAGER_CUP` and `-DVOYAGER_MIN_PLAYERS` as needed.
+`-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH`, `-DVOYAGER_CUP`, `-DVOYAGER_MIN_PLAYERS`, `-DVOYAGER_LOBBY_WORLD`,
+`-DVOYAGER_LOBBY_SPAWN` and `-DVOYAGER_MAX_PLAYERS` as needed. The lobby settings are read from system properties, as the
+minimum is.
 
 A normal boot runs the same check before it builds the object graph, and refuses with the same report.
 `-PskipCatalogCheck` skips only the Gradle dependency. It does not skip the server's own check.
@@ -55,6 +57,17 @@ Standard output carries the report. A normal boot logs the same lines at error l
   defaults to 2, or to 1 under `voyager.dev`, and an explicit value wins in both modes. An unset value
   is no problem. A value that is not a number, or is 0, is an error under the key `VOYAGER_MIN_PLAYERS`,
   and a normal boot refuses with it.
+- The lobby, `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`: both are set or neither is. A world without a
+  spawn, or a spawn without a world, is an error under the key of the setting that is missing. The spawn is
+  three numbers, `x,y,z`, in block coordinates, and anything else is an error that prints the text it read. When
+  neither is set the check reports one warning, under `VOYAGER_LOBBY_WORLD`, and the server boots with waiting
+  racers at the first map's spawn. The lobby world must not be a map's world, and it is checked like a map's world:
+  it must be a folder with region data, and it must be sound. A missing or unreadable lobby is an error that
+  names its folder.
+- The maximum racer count, `VOYAGER_MAX_PLAYERS`: when set, it is a whole number that is not below the minimum.
+  It defaults to 16, in production and under `voyager.dev`. It is soft: it sets the join line and the full-lobby
+  countdown, and it never refuses a racer. A value that is not a number, or one below `VOYAGER_MIN_PLAYERS`, is an
+  error under its key, and the message names both settings when they clash.
 - The catalogue: every map and cup file parses, names are unique, and every map a cup plays exists.
 - Each map's world: the folder exists under the worlds directory and holds region data in the
   `region/` or `dimensions/` layout. A boot does this for the played cup's maps only.
