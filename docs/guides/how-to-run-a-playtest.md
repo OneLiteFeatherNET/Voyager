@@ -43,6 +43,13 @@ For a playtest with two racers on a development machine:
 ./gradlew :voyager:server:runServerDev -PminPlayers=2
 ```
 
+The shipped data holds two cups, `alpha_cup` and `legacy_cup`, so name the one to play. Without a name the server
+refuses to boot as ambiguous:
+
+```bash
+./gradlew :voyager:server:runServerDev -PminPlayers=2 -Pcup=legacy_cup
+```
+
 Dev mode also shortens the lobby to 10 seconds and the results screen to 5 seconds, and it registers `/race start` and
 `/race skip`. For a run that behaves like production, use the packaged server instead:
 
