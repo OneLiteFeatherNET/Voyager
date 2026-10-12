@@ -5,6 +5,13 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.14.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.14.0...v1.14.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **deps:** align with aonyx-bom 0.8.9 for the cloudnet bridge ([#305](https://github.com/OneLiteFeatherNET/Voyager/issues/305)) ([622c540](https://github.com/OneLiteFeatherNET/Voyager/commit/622c540c01590148e6225786b41f2f39828e2725))
+
 ## [1.14.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.13.0...v1.14.0) (2026-10-11)
 
 
