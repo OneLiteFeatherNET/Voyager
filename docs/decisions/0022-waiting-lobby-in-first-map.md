@@ -2,10 +2,13 @@
 
 ## Status
 
-Proposed
+Superseded by ADR-0029
 
-The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it. The change that
-implements it is `add-waiting-lobby`, which does not mark this record Accepted.
+ADR-0029 (dedicated lobby world for waiting racers, 2026-10-12) supersedes this record for where waiting racers stand:
+they stand in a lobby world, and the first map's world is entered only when the cup starts. Without a lobby world the
+placement described here still applies, as the fallback of ADR-0029. The rest of this record, the minimum player count,
+the commit window and the late-joiner rule, is unchanged. ADR-0029 is itself still Proposed until the owner has
+playtested it. The change that implements it is `add-waiting-lobby`.
 
 ## Date
 
