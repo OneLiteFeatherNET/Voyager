@@ -1,6 +1,8 @@
 package net.elytrarace.voyager.platform.permission.luckperms;
 
 import me.lucko.luckperms.common.loader.LoaderBootstrap;
+import me.lucko.luckperms.minestom.app.LuckPermsMinestomHandle;
+import me.lucko.luckperms.minestom.app.LuckPermsMinestomOptions;
 import me.lucko.luckperms.minestom.loader.MinestomLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +30,9 @@ final class MinestomLoaderStart {
     }
 
     static void run() {
-        MinestomLoader loader = MinestomLoader.get();
-        loader.load().start();
+        LuckPermsMinestomHandle loader = MinestomLoader.create(
+                LuckPermsMinestomOptions.builder().registerShutdownHook(false).build());
+        loader.load().enable();
         RUNNING.set(bootstrapOf(loader));
     }
 
@@ -49,7 +52,7 @@ final class MinestomLoaderStart {
      * The loader keeps its bootstrap in a private field and offers no accessor. Reading the field is the only way to
      * disable LuckPerms without its JVM hook, and a LuckPerms release that renames the field fails the start, not the stop.
      */
-    private static LoaderBootstrap bootstrapOf(MinestomLoader loader) {
+    private static LoaderBootstrap bootstrapOf(LuckPermsMinestomHandle loader) {
         try {
             Field field = MinestomLoader.class.getDeclaredField("plugin");
             field.setAccessible(true);
