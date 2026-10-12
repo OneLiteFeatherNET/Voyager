@@ -11,7 +11,7 @@ val hotswapAgent: Configuration by configurations.creating {
 }
 
 dependencies {
-    implementation(platform(libs.aonyx.bom))
+    implementation(platform(libs.aonyx.bom.legacy))
     implementation(libs.minecraft.minestom)
     implementation(libs.aves)
     implementation(libs.xerus)

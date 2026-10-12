@@ -17,9 +17,11 @@ dependencies {
     compileOnly(libs.minestom.extensions)
     compileOnly(libs.minestom.extensions.processor)
 
-    // Pinned to the rebuild's Minestom, inline, as voyager-platform pins it. Two pins of one artifact must agree, so the
-    // version is the same string as voyager/platform/build.gradle.kts.
-    compileOnly("net.minestom:minestom:2026.09.12-26.2")
+    // Minestom comes from the aonyx-bom platform, the same BOM voyager-platform takes: mycelium-bom 1.8.9 manages
+    // net.minestom:minestom at 2026.10.07-26.2. Nothing here pins it, so the bridge cannot drift from the Minestom of the
+    // server it loads into, which is the version CloudNet's bridge is built against as well.
+    compileOnly(platform(libs.aonyx.bom))
+    compileOnly("net.minestom:minestom")
 
     // CloudNet 4.0.0-RC17, the release the owner's network runs (see settings.gradle.kts and ADR-0026).
     compileOnly(platform(libs.cloudnet.bom))
@@ -28,7 +30,8 @@ dependencies {
     compileOnly(libs.cloudnet.driver.api)
 
     // The unit tests use Minestom's and Adventure's types for the pointer, and nothing from CloudNet.
-    testImplementation("net.minestom:minestom:2026.09.12-26.2")
+    testImplementation(platform(libs.aonyx.bom))
+    testImplementation("net.minestom:minestom")
 }
 
 // The extension processor reads the project version, which subprojects do not inherit from the root (as Cygnus does).

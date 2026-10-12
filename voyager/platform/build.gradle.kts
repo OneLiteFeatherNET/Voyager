@@ -3,40 +3,32 @@ plugins {
     `java-library`
 }
 
-// Minestom 26.2, pinned inline, not through the catalog: the catalog's `minestom` alias in
-// settings.gradle.kts is 2026.05.11-1.21.11 and belongs to the tree being replaced (server,
-// plugins/*) — it stays untouched. A second catalog alias for the same artifact was tried for
-// paper-api and reverted (see tools/trace-recorder/build.gradle.kts): Renovate matches coordinates
-// rather than alias names, so two aliases for net.minestom:minestom would give it two incompatible
-// pins to reconcile, and a Gradle version conflict resolves to the higher one — silently compiling
-// the tree being replaced against 26.2.
-val minestomRebuildVersion = "2026.09.12-26.2"
-
-// Falco pins Minestom through mycelium-bom 1.8.5, which points at the same 2026.08.28-26.2 this
-// module pins directly above — so the loader and the server it loads into cannot drift onto two
-// Minestom versions without the build saying so. (Before 3.0.0 they could: Falco was built against
-// 26.1.2 and declared Minestom compileOnly, which made the binding ours to verify by hand.)
-// We still take falco-anvil alone. falco-instance generates worlds and we only read them;
-// falco-light is a lighting engine we have no use for until an acceptance run shows a world
-// rendering dark.
-val falcoVersion = "3.0.0"
+// Minestom and falco-anvil take their versions from the aonyx-bom platform below (api(platform(libs.aonyx.bom))).
+// aonyx-bom 0.8.9 imports mycelium-bom 1.8.9, which manages net.minestom:minestom at 2026.10.07-26.2, and falco-bom 3.0.1,
+// which manages falco-anvil 3.0.1. Pinning them here as well would be a second source of truth that can drift from the BOM.
+// The catalog's `minestom` alias in settings.gradle.kts is 2026.05.11-1.21.11 and belongs to the tree being replaced
+// (server, plugins/*), so it is not used here. Both `api` lines below are versionless on purpose.
+//
+// The one pin left is net.minestom:testing, which no OneLiteFeather BOM manages. It is pinned to the Minestom version
+// the BOM resolves, so the test environment and the api dependency are never on two different Minestom versions.
+val minestomTestingVersion = "2026.10.07-26.2"
 
 dependencies {
     api(project(":voyager:api"))
     api(project(":voyager:physics"))
     api(project(":voyager:race"))
 
-    api("net.minestom:minestom:$minestomRebuildVersion")
+    api("net.minestom:minestom")
 
     // MiniMessage, which Minestom does not ship: it brings adventure-api 5.2.0 (and the bom that
     // pins it) but not the MiniMessage serializer. Pinned to the same 5.2.0 Minestom already
-    // resolves, inline and with the reason at the point of use, exactly as the Minestom pin above
-    // is — a different Adventure version here would put two copies of the same interfaces on one
-    // classpath. `api` because voyager-server's tests deserialize the same strings this module
+    // resolves, inline and with the reason at the point of use — a different Adventure version here
+    // would put two copies of the same interfaces on one classpath. mycelium-bom 1.8.9 manages the
+    // same 5.2.0. `api` because voyager-server's tests deserialize the same strings this module
     // registers, and because the palette's TagResolver is part of this module's surface.
     api("net.kyori:adventure-text-minimessage:5.2.0")
 
-    api("net.onelitefeather:falco-anvil:$falcoVersion")
+    api("net.onelitefeather:falco-anvil")
 
     // Gson, and only here. The catalogue reads the committed map and cup JSON; every module that
     // models a race is handed a catalog rather than a file, so none of them needs a parser — see
@@ -69,7 +61,7 @@ dependencies {
     // Same reasoning as the main artifact above: pinned to the exact rebuild version, not the
     // catalog's `minestom` alias, so the test environment and the api dependency it tests against
     // are never silently on two different Minestom versions.
-    testImplementation("net.minestom:testing:$minestomRebuildVersion")
+    testImplementation("net.minestom:testing:$minestomTestingVersion")
 
     // Test-scope JSON Schema check for map and cup files (see the json-schema-validator pin in
     // settings.gradle.kts). Never on runtimeClasspath: the adapters are the only runtime check.
