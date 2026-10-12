@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.LobbyDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -76,6 +77,9 @@ class WaitingRoomTest {
     private static final Duration STEP = Duration.ofMillis(50);
     private static final BoostConfig BOOST = new BoostConfig(4, 9);
     private static final int MINIMUM = 2;
+    private static final int MAXIMUM = 16;
+    private static final String LOBBY = "waiting_lobby";
+    private static final Vec3 LOBBY_SPAWN = new Vec3(20.5, 65.0, -12.5);
 
     private static final MapDefinition ARENA_RUN = new MapDefinition("arena-run", ARENA, ARENA_SPAWN,
             List.of(new Ring(0, ARENA_SPAWN.plus(new Vec3(0, 8, 10)), new Vec3(0, 0, 1), 6.0, 7, RingType.STANDARD)),
@@ -91,6 +95,10 @@ class WaitingRoomTest {
     /** Lobby 10 s (200 ticks), race 5 s (100 ticks), results 100 ms. */
     private static final RaceTimings TIMINGS = new RaceTimings(
             Duration.ofSeconds(10), Duration.ofSeconds(5), Duration.ofMillis(100), Duration.ofMillis(100));
+
+    /** A twenty second lobby, so a countdown can still have more than the ten seconds a full lobby leaves. */
+    private static final RaceTimings LONG_LOBBY = new RaceTimings(
+            Duration.ofSeconds(20), Duration.ofSeconds(5), Duration.ofMillis(100), Duration.ofMillis(100));
 
     /** How many ticks a whole cup may take before the test gives up, so a hang fails instead of running on. */
     private static final int BUDGET = 2_000;
@@ -311,12 +319,83 @@ class WaitingRoomTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // The lobby world, the join line and the full lobby
+    // ------------------------------------------------------------------------------------------
+
+    /** A join is announced to every racer online, with the count after the join and the maximum. */
+    @Test
+    void aJoinSendsTheJoinLineToEveryRacer(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        TestConnection first = env.createConnection();
+        Collector<SystemChatPacket> chat = first.trackIncoming(SystemChatPacket.class);
+        fixture.join(first);
+
+        Player secondRacer = fixture.join();
+
+        assertThat(chat.collect().stream().map(SystemChatPacket::message).toList())
+                .contains(Messages.playerJoined(secondRacer.getUsername(), 2, MAXIMUM));
+    }
+
+    /** A maximum is soft: a join past it is announced past it, and the racer is not refused. */
+    @Test
+    void aJoinBeyondTheMaximumIsNotRefused(Env env) throws IOException {
+        Fixture fixture = fixture(env, TIMINGS, 2, false);
+        TestConnection first = env.createConnection();
+        Collector<SystemChatPacket> chat = first.trackIncoming(SystemChatPacket.class);
+        fixture.join(first);
+        fixture.join();
+
+        Player third = fixture.join();
+
+        assertThat(online).contains(third);
+        assertThat(chat.collect().stream().map(SystemChatPacket::message).toList())
+                .contains(Messages.playerJoined(third.getUsername(), 3, 2));
+    }
+
+    /** A full lobby with fifteen seconds of its countdown left is shortened to ten seconds from that tick. */
+    @Test
+    void aFullLobbyShortensACountdownWithMoreThanTenSecondsLeft(Env env) throws IOException {
+        Fixture fixture = fixture(env, LONG_LOBBY, 3, false);
+        fixture.join();
+        fixture.join();
+        fixture.ticks(100);
+        assertThat(fixture.session.lobbyRemaining()).isGreaterThan(Duration.ofSeconds(10));
+
+        fixture.join();
+        fixture.tick();
+
+        assertThat(fixture.session.lobbyRemaining()).isEqualTo(Duration.ofSeconds(10));
+    }
+
+    /** A finished cup returns every racer to the lobby world's spawn, not the first map's. */
+    @Test
+    void aFinishedCupReturnsRacersThroughTheLobby(Env env) throws IOException {
+        Fixture fixture = fixture(env, TIMINGS, MAXIMUM, true);
+        Player racer = fixture.join();
+        fixture.join();
+        fixture.playUntilCupFinishes();
+
+        assertThat(racer.getInstance()).isSameAs(fixture.instances.forWorld(LOBBY));
+        assertThat(racer.getPosition().distance(new Pos(LOBBY_SPAWN.x(), LOBBY_SPAWN.y(), LOBBY_SPAWN.z())))
+                .isLessThan(0.01);
+    }
+
+    // ------------------------------------------------------------------------------------------
     // The fixture
     // ------------------------------------------------------------------------------------------
 
     private Fixture fixture(Env env) throws IOException {
+        return fixture(env, TIMINGS, MAXIMUM, false);
+    }
+
+    /**
+     * A room on the first map's world, with the given lobby length and maximum. With {@code withLobby} the room returns
+     * finished racers to a lobby world of its own; without it they go back to the first map's spawn, as before.
+     */
+    private Fixture fixture(Env env, RaceTimings timings, int maximum, boolean withLobby) throws IOException {
         writeWorld(env, ARENA, ARENA_SPAWN);
         writeWorld(env, OTHER, OTHER_SPAWN);
+        writeWorld(env, LOBBY, LOBBY_SPAWN);
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
         this.worlds = instances;
         RaceRuns runs = new RaceRuns();
@@ -329,11 +408,13 @@ class WaitingRoomTest {
         FireworkBoostTracker boosts = new FireworkBoostTracker();
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(() -> online, boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
-        CupSession session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, TIMINGS,
+        CupSession session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, timings,
                 STEP, () -> online);
         TickPipeline pipeline = TickPipeline.of(List.of(new TickStep("phase advance", session::advancePhase)));
-        WaitingRoom room = new WaitingRoom(session, () -> online, MINIMUM,
-                racer -> racer.teleport(new Pos(ARENA_SPAWN.x(), ARENA_SPAWN.y(), ARENA_SPAWN.z())).join());
+        LobbyTransition lobby = withLobby ? new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN)) : null;
+        LobbyHud hud = new LobbyHud();
+        WaitingRoom room = new WaitingRoom(session, () -> online, MINIMUM, maximum, lobby,
+                racer -> racer.teleport(new Pos(ARENA_SPAWN.x(), ARENA_SPAWN.y(), ARENA_SPAWN.z())).join(), hud);
         return new Fixture(session, pipeline, room, runs, instances, env);
     }
 

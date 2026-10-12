@@ -27,6 +27,7 @@ import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.minestom.server.command.ConsoleSender;
@@ -183,7 +184,8 @@ class RaceCommandReloadTest {
                 new MinestomCollisionSpace(blocks));
         CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
                 blocks, boosts, TIMINGS, STEP, List::of);
-        WaitingRoom room = new WaitingRoom(session, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS, racer -> { });
+        WaitingRoom room = new WaitingRoom(session, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
+                ServerSettings.DEFAULT_MAXIMUM_RACERS, null, racer -> { }, new LobbyHud());
         env.process().command().register(new RaceCommand(session, room, devMode, service, policy));
     }
 

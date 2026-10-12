@@ -78,6 +78,9 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is off. */
     public static final int PRODUCTION_MINIMUM_RACERS = 2;
 
+    /** The maximum racer count when {@code VOYAGER_MAX_PLAYERS} is not set, in production and in dev mode (ADR-0029). */
+    public static final int DEFAULT_MAXIMUM_RACERS = 16;
+
     /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is on. */
     public static final int DEV_MINIMUM_RACERS = 1;
 

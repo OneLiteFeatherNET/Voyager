@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
@@ -136,10 +137,11 @@ public final class ServerBeans {
     @Bean
     WaitingRoom waitingRoom(CupSession session, Supplier<Collection<Player>> players, CatalogHolder catalog,
             MapInstances instances, @External ServerSettings settings) {
-        return new WaitingRoom(session, players, settings.minimumRacers(), racer -> {
-            MapDefinition first = catalog.current().rotation().getFirst();
-            racer.setInstance(instances.forWorld(first.world()), Vectors.toMinestom(first.spawn()).asPos());
-        });
+        return new WaitingRoom(session, players, settings.minimumRacers(), ServerSettings.DEFAULT_MAXIMUM_RACERS,
+                null, racer -> {
+                    MapDefinition first = catalog.current().rotation().getFirst();
+                    racer.setInstance(instances.forWorld(first.world()), Vectors.toMinestom(first.spawn()).asPos());
+                }, new LobbyHud());
     }
 
     @Bean
