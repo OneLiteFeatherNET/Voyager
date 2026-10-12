@@ -185,7 +185,9 @@ class RaceCommandReloadTest {
         CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
                 blocks, boosts, TIMINGS, STEP, List::of);
         WaitingRoom room = new WaitingRoom(session, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
-                ServerSettings.DEFAULT_MAXIMUM_RACERS, null, racer -> { }, new LobbyHud());
+                ServerSettings.DEFAULT_MAXIMUM_RACERS, null, racer -> { }, new LobbyHud(), () -> {
+                    throw new AssertionError("the room is never ticked in this test");
+                });
         env.process().command().register(new RaceCommand(session, room, devMode, service, policy));
     }
 

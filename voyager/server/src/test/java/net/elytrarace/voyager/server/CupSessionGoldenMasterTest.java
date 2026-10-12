@@ -352,7 +352,8 @@ class CupSessionGoldenMasterTest {
         /** Puts the room in front of the cup: the lobby world, and a room that starts the cup and returns racers to it. */
         void useLobby(LobbyDefinition definition) {
             lobby = new LobbyTransition(worlds, definition);
-            room = new WaitingRoom(session, () -> field, 1, 16, lobby, racer -> { }, new LobbyHud());
+            room = new WaitingRoom(session, () -> field, 1, 16, lobby, racer -> { }, new LobbyHud(),
+                    () -> worlds.forWorld(RIDGE));
         }
 
         /** Connects a racer on the lobby's spawn, as the join handler does when a lobby is configured. */

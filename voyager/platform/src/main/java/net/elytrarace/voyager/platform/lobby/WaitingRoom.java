@@ -6,6 +6,7 @@ import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
+import net.minestom.server.instance.Instance;
 
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -28,8 +29,8 @@ import java.util.function.Supplier;
  * <h2>Where waiting racers stand</h2>
  *
  * <p>With a lobby world configured ({@link LobbyTransition}) a finished cup returns its racers there. Without one, the
- * first map's spawn is where they stand, as before ADR-0029, and the room has no lobby bar to show: the server says so
- * at boot.
+ * first map's spawn is where they stand, as before ADR-0029. The boss bar is shown there too, until the start is
+ * committed; the server says at boot that no lobby is set.
  *
  * <h2>Two rules the gate does not know about</h2>
  *
@@ -61,6 +62,7 @@ public final class WaitingRoom {
     private final @Nullable LobbyTransition lobby;
     private final WaitingSpawn spawn;
     private final LobbyHud hud;
+    private final Supplier<Instance> firstMapInstance;
     private boolean racersSinceStart;
     private boolean running;
 
@@ -72,11 +74,13 @@ public final class WaitingRoom {
      *     countdown, and it never refuses a racer
      * @param lobby   the lobby world finished racers return to, or {@code null} when none is configured
      * @param spawn   where a racer is placed when a finished cup returns the room to waiting and there is no lobby
-     * @param hud     the lobby boss bar, one per racer
+     * @param hud     the boss bar, one per racer
+     * @param firstMapInstance the instance of the first map of the current catalogue. With no lobby the racers wait in
+     *     it, so the bar is shown there; it is read only in that case
      * @throws IllegalArgumentException if {@code minimum} or {@code maximum} is below one
      */
     public WaitingRoom(CupSession session, Supplier<Collection<Player>> players, int minimum, int maximum,
-            @Nullable LobbyTransition lobby, WaitingSpawn spawn, LobbyHud hud) {
+            @Nullable LobbyTransition lobby, WaitingSpawn spawn, LobbyHud hud, Supplier<Instance> firstMapInstance) {
         if (minimum < 1) {
             throw new IllegalArgumentException("the minimum racer count must be at least 1, was %s".formatted(minimum));
         }
@@ -90,6 +94,7 @@ public final class WaitingRoom {
         this.lobby = lobby;
         this.spawn = spawn;
         this.hud = hud;
+        this.firstMapInstance = firstMapInstance;
     }
 
     /** How many racers a cup needs to start. */
@@ -197,26 +202,32 @@ public final class WaitingRoom {
     }
 
     /**
-     * What each racer in the lobby sees this tick: the waiting count, or the countdown. A racer outside the lobby, or a
-     * racing cup, sees no lobby bar.
+     * What each racer sees this tick on the boss bar: the waiting count, or the countdown, while they stand where the
+     * racers wait. That is the lobby world when one is configured. With no lobby they wait in the first map, and the
+     * bar is shown there until the start is committed: from then on the race's own bar is the only one, as it is with a
+     * lobby once the racer has entered the first map. A racing cup shows no waiting bar.
      */
     private void announce(StartGate.Situation situation, Collection<Player> online, int count) {
-        if (lobby == null) {
-            return;
-        }
-        Component title = switch (situation) {
-            case WAITING -> Messages.lobbyBossBarWaiting(count, minimum);
-            case COUNTDOWN, COMMITTED -> Messages.lobbyBossBarCountdown(session.lobbyRemaining());
-            case RUNNING -> null;
-        };
+        Component title = waitingTitle(situation, count);
+        Instance waitingPlace = lobby != null ? lobby.instance() : firstMapInstance.get();
         float progress = situation == StartGate.Situation.WAITING ? 1.0f : countdownFraction();
         for (Player racer : online) {
             if (title == null) {
                 hud.hide(racer);
             } else {
-                hud.update(racer, lobby.instance(), title, progress);
+                hud.update(racer, waitingPlace, title, progress);
             }
         }
+    }
+
+    /** The line the bar reads in this situation, or {@code null} when no waiting bar is shown. */
+    private @Nullable Component waitingTitle(StartGate.Situation situation, int count) {
+        return switch (situation) {
+            case WAITING -> Messages.lobbyBossBarWaiting(count, minimum);
+            case COUNTDOWN -> Messages.lobbyBossBarCountdown(session.lobbyRemaining());
+            case COMMITTED -> lobby != null ? Messages.lobbyBossBarCountdown(session.lobbyRemaining()) : null;
+            case RUNNING -> null;
+        };
     }
 
     /** The fraction of the running lobby that is left, from zero to one. */

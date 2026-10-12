@@ -27,7 +27,9 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.flow.StartGate.Situation;
+import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
@@ -381,6 +383,48 @@ class WaitingRoomTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // The fallback: no lobby world, so the racers wait in the first map and the bar is shown there
+    // ------------------------------------------------------------------------------------------
+
+    /** With no lobby configured, a waiting racer reads the count on the same boss bar, standing in the first map. */
+    @Test
+    void withoutALobbyTheWaitingCountIsOnTheBossBarInTheFirstMap(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+
+        fixture.tick();
+
+        assertThat(fixture.hud.barOf(racer.getUuid()))
+                .describedAs("the racer stands in the first map, which is where the fallback bar is shown")
+                .isPresent()
+                .get()
+                .satisfies(bar -> assertThat(((TranslatableComponent) bar.name()).key())
+                        .isEqualTo("voyager.lobby.bossbar.waiting"));
+    }
+
+    /**
+     * Without a lobby the countdown is on the bar too, and the bar leaves at the commit: from then on the race's own bar
+     * is the only one a racer sees, as it is when a lobby is configured and the racer has entered the first map.
+     */
+    @Test
+    void withoutALobbyTheCountdownShowsUntilTheStartIsCommitted(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.join();
+        fixture.tick();
+        assertThat(((TranslatableComponent) fixture.hud.barOf(racer.getUuid()).orElseThrow().name()).key())
+                .isEqualTo("voyager.lobby.bossbar.countdown");
+
+        for (int tick = 0; tick < BUDGET && fixture.session.situation(StartGate.COMMIT_WINDOW) != Situation.COMMITTED;
+                tick++) {
+            fixture.tick();
+        }
+
+        assertThat(fixture.session.situation(StartGate.COMMIT_WINDOW)).isEqualTo(Situation.COMMITTED);
+        assertThat(fixture.hud.barOf(racer.getUuid())).isEmpty();
+    }
+
+    // ------------------------------------------------------------------------------------------
     // The fixture
     // ------------------------------------------------------------------------------------------
 
@@ -414,8 +458,9 @@ class WaitingRoomTest {
         LobbyTransition lobby = withLobby ? new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN)) : null;
         LobbyHud hud = new LobbyHud();
         WaitingRoom room = new WaitingRoom(session, () -> online, MINIMUM, maximum, lobby,
-                racer -> racer.teleport(new Pos(ARENA_SPAWN.x(), ARENA_SPAWN.y(), ARENA_SPAWN.z())).join(), hud);
-        return new Fixture(session, pipeline, room, runs, instances, env);
+                racer -> racer.teleport(new Pos(ARENA_SPAWN.x(), ARENA_SPAWN.y(), ARENA_SPAWN.z())).join(), hud,
+                () -> instances.forWorld(ARENA));
+        return new Fixture(session, pipeline, room, hud, runs, instances, env);
     }
 
     /** Writes a world with one floor block under the spawn, through a Falco loader of its own. */
@@ -442,15 +487,17 @@ class WaitingRoomTest {
         private final CupSession session;
         private final TickPipeline pipeline;
         private final WaitingRoom room;
+        private final LobbyHud hud;
         private final RaceRuns runs;
         private final MapInstances instances;
         private final Env env;
 
-        private Fixture(CupSession session, TickPipeline pipeline, WaitingRoom room, RaceRuns runs,
+        private Fixture(CupSession session, TickPipeline pipeline, WaitingRoom room, LobbyHud hud, RaceRuns runs,
                 MapInstances instances, Env env) {
             this.session = session;
             this.pipeline = pipeline;
             this.room = room;
+            this.hud = hud;
             this.runs = runs;
             this.instances = instances;
             this.env = env;

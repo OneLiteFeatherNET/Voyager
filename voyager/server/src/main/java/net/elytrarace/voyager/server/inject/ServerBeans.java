@@ -149,7 +149,7 @@ public final class ServerBeans {
                 racer -> {
                     MapDefinition first = catalog.current().rotation().getFirst();
                     racer.setInstance(instances.forWorld(first.world()), Vectors.toMinestom(first.spawn()).asPos());
-                }, new LobbyHud());
+                }, new LobbyHud(), () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
     }
 
     @Bean
