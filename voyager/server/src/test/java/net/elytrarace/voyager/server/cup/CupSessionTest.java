@@ -246,12 +246,11 @@ class CupSessionTest {
     }
 
     /**
-     * The problem the launch exists to solve: {@code isFlyingWithElytra()} is what every ring pass is
-     * gated on, and a racer who joins with nothing and never jumps produces a race in which nothing
-     * happens. Asserted on the first tick of the first map, before anything else could have set it.
+     * The GO tick releases the racer and keeps their kit. The elytra and the rockets were given during the
+     * countdown, and the racer takes off with them, as the old game's racers did.
      */
     @Test
-    void putsEveryRacerInTheAirWithAnElytraWhenAMapStarts(Env env) throws IOException {
+    void goKeepsTheElytraAndTheRockets(Env env) throws IOException {
         Fixture fixture = start(env);
 
         fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
@@ -266,19 +265,47 @@ class CupSessionTest {
                 .describedAs("the rocket declares a flight duration")
                 .isNotNull()
                 .satisfies(fireworks -> assertThat(fireworks.flightDuration()).isEqualTo(3));
-        assertThat(fixture.racer.isFlyingWithElytra())
-                .describedAs("the server starts the glide; a racer who has to know the trick never races")
-                .isTrue();
         assertThat(fixture.racer.getPosition().samePoint(spawnOf(RIDGE_RUN))).isTrue();
         assertThat(fixture.runs.of(fixture.racer.getUuid())).isPresent();
+    }
 
-        // The impulse, read back in the blocks-per-second Minestom carries. The ring is 8 above the
-        // spawn, so a launch that aimed the whole impulse at it would tilt both the z and the y
-        // component away from these two values.
-        Vec launch = fixture.racer.getVelocity();
-        assertThat(launch.x()).isZero();
-        assertThat(launch.z()).isEqualTo(Racers.LAUNCH_FORWARD_PER_TICK * ServerFlag.SERVER_TICKS_PER_SECOND);
-        assertThat(launch.y()).isEqualTo(Racers.LAUNCH_UP_PER_TICK * ServerFlag.SERVER_TICKS_PER_SECOND);
+    /**
+     * The GO tick gives no impulse and starts no glide. The velocity is zero and the flag is off, so the flight
+     * begins with the racer's own deployment of the elytra, which is what the tree being replaced did.
+     */
+    @Test
+    void goGivesNoImpulseAndDoesNotGlide(Env env) throws IOException {
+        Fixture fixture = start(env);
+
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+
+        assertThat(fixture.racer.isFlyingWithElytra())
+                .describedAs("nothing starts the glide; the racer deploys the elytra")
+                .isFalse();
+        assertThat(fixture.racer.getVelocity())
+                .describedAs("no impulse leaves the server at GO")
+                .isEqualTo(Vec.ZERO);
+    }
+
+    /**
+     * A racer who deploys the elytra after GO is gliding from the next race tick, and the race tick records it.
+     * Before the deployment the racer is not gliding, which is what the release means.
+     */
+    @Test
+    void aRacerWhoDeploysTheElytraAfterGoIsSeenGlidingByTheRaceTick(Env env) throws IOException {
+        Fixture fixture = start(env);
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
+        java.util.UUID id = fixture.racer.getUuid();
+        assertThat(fixture.runs.of(id).orElseThrow().gliding())
+                .describedAs("nothing has deployed the elytra yet")
+                .isFalse();
+
+        fixture.racer.setFlyingWithElytra(true);
+        fixture.runUntil(tick -> tick == 1);
+
+        assertThat(fixture.runs.of(id).orElseThrow().gliding())
+                .describedAs("the race tick sees the racer's own glide")
+                .isTrue();
     }
 
     /**
