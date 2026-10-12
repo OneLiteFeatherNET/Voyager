@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -94,6 +95,11 @@ public final class WaitingRoom {
     /** How many racers a cup needs to start. */
     public int minimum() {
         return minimum;
+    }
+
+    /** The lobby world waiting racers stand in, or empty when none is configured and they stand at the first map. */
+    public Optional<LobbyTransition> lobby() {
+        return Optional.ofNullable(lobby);
     }
 
     /**

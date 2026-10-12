@@ -9,6 +9,7 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
+import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
@@ -131,14 +132,21 @@ public final class ServerBeans {
     }
 
     /**
-     * The waiting room: starts, cancels and aborts the cup from the racers online, with the minimum the settings
-     * name. A finished cup places its racers at the first map's spawn, which is the spawn a new joiner gets.
+     * The waiting room: starts, cancels and aborts the cup from the racers online, with the minimum and the maximum the
+     * settings name. A finished cup returns its racers to the lobby world when one is configured, and otherwise places
+     * them at the first map's spawn, which is the spawn a new joiner gets with no lobby.
+     *
+     * <p>The lobby world is loaded here, while the graph is built, so a lobby folder that is not there stops the boot
+     * before a client can connect.
      */
     @Bean
     WaitingRoom waitingRoom(CupSession session, Supplier<Collection<Player>> players, CatalogHolder catalog,
             MapInstances instances, @External ServerSettings settings) {
-        return new WaitingRoom(session, players, settings.minimumRacers(), ServerSettings.DEFAULT_MAXIMUM_RACERS,
-                null, racer -> {
+        LobbyTransition lobby = settings.lobby()
+                .map(definition -> new LobbyTransition(instances, definition))
+                .orElse(null);
+        return new WaitingRoom(session, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
+                racer -> {
                     MapDefinition first = catalog.current().rotation().getFirst();
                     racer.setInstance(instances.forWorld(first.world()), Vectors.toMinestom(first.spawn()).asPos());
                 }, new LobbyHud());

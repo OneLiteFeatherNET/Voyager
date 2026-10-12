@@ -23,6 +23,7 @@ import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
@@ -36,6 +37,7 @@ import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.item.Material;
 import net.minestom.server.timer.ExecutionType;
@@ -47,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -225,6 +228,11 @@ public final class VoyagerServer {
         CupSession session = graph.get(CupSession.class);
         TickPipeline pipeline = graph.get(TickPipeline.class);
         WaitingRoom waitingRoom = graph.get(WaitingRoom.class);
+        if (settings.lobby().isEmpty()) {
+            LOGGER.warn(("No lobby world is set (%s and %s): waiting racers stand at the first map's spawn. "
+                    + "Set both to give them the lobby world (ADR-0029).")
+                    .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, ServerSettings.LOBBY_SPAWN_PROPERTY));
+        }
 
         try {
             openEveryWorld(catalog.current().rotation(), instances);
@@ -346,18 +354,37 @@ public final class VoyagerServer {
         }
     }
 
+    /** Where a joining racer is first put: an instance, and a position in it. */
+    record Arrival(Instance instance, Pos position) {
+    }
+
+    /**
+     * Where a joining racer spawns: the lobby when one is configured, and otherwise the first map's spawn, as before
+     * ADR-0029. The lobby is resolved already, when the graph was built, so this does not load a world.
+     *
+     * @param lobby    the lobby the waiting room holds, or empty when none is configured
+     * @param first    the first map of the current catalogue
+     * @param instances the world cache the first map's world is resolved through
+     * @return the instance and position a joining racer is spawned at, and respawns at
+     */
+    static Arrival joinArrival(Optional<LobbyTransition> lobby, MapDefinition first, MapInstances instances) {
+        return lobby
+                .map(transition -> new Arrival(transition.instance(), transition.spawn()))
+                .orElseGet(() -> new Arrival(instances.forWorld(first.world()),
+                        Vectors.toMinestom(first.spawn()).asPos()));
+    }
+
     private static void registerEvents(CupSession session, WaitingRoom waitingRoom, ServerSettings settings,
             CatalogHolder catalog, MapInstances instances) {
         GlobalEventHandler events = MinecraftServer.getGlobalEventHandler();
 
         events.addListener(AsyncPlayerConfigurationEvent.class, event -> {
-            // Players spawn straight into the first map's world of the current catalogue. There is no lobby
-            // world in the rebuild: there is no lobby map data, and generating a flat one would be a second world
-            // nobody asked for standing between a tester and the thing being tested. The current catalogue, not
-            // the boot one, so a reload that was promoted at a round start is the one a new joiner sees.
-            MapDefinition first = catalog.current().rotation().getFirst();
-            event.setSpawningInstance(instances.forWorld(first.world()));
-            event.getPlayer().setRespawnPoint(Vectors.toMinestom(first.spawn()).asPos());
+            // A joining racer spawns in the lobby world when one is configured, and in the first map's world of the
+            // current catalogue when not. The current catalogue, not the boot one, so a reload that was promoted at a
+            // round start is the one a new joiner sees.
+            Arrival arrival = joinArrival(waitingRoom.lobby(), catalog.current().rotation().getFirst(), instances);
+            event.setSpawningInstance(arrival.instance());
+            event.getPlayer().setRespawnPoint(arrival.position());
         });
 
         events.addListener(PlayerSpawnEvent.class, event -> {
@@ -386,6 +413,7 @@ public final class VoyagerServer {
 
         events.addListener(PlayerDisconnectEvent.class, event -> {
             session.forget(event.getPlayer().getUuid());
+            waitingRoom.left(event.getPlayer().getUuid());
             LOGGER.info("{} left", event.getPlayer().getUsername());
         });
 
