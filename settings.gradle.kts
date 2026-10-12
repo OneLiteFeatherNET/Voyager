@@ -76,10 +76,12 @@ dependencyResolutionManagement {
 
             // LuckPerms, the optional permission backend behind the PermissionPolicy port (ADR-0024). The API is compileOnly
             // in voyager-platform. The Minestom loader is compileOnly there too, because LuckPermsBootstrap starts it, and
-            // runtimeOnly in the two composition roots only, never on a test class path. The loader is a snapshot, so the
-            // Sonatype snapshot repository is declared for net.luckperms only (see build.gradle.kts). Any bump needs owner approval.
-            version("luckperms-api", "5.5")
-            version("luckperms-minestom-loader", "5.6-SNAPSHOT")
+            // runtimeOnly in the two composition roots only, never on a test class path. Both are release artifacts of the
+            // OneLiteFeather LuckPerms fork, resolved from repo.onelitefeather.dev/releases (declared in build.gradle.kts).
+            // The loader must be 6.0.2 or newer: 6.0.1 calls ConnectionManager.getOnlinePlayers()Ljava/util/Collection;, which
+            // Minestom 2026.10.07 removed (NoSuchMethodError on boot). Any bump needs owner approval.
+            version("luckperms-api", "6.0.1")
+            version("luckperms-minestom-loader", "6.0.2")
             library("luckperms.api", "net.luckperms", "api").versionRef("luckperms-api")
             library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms-minestom-loader")
 
