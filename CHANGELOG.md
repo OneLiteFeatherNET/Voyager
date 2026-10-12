@@ -5,6 +5,23 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.15.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.14.2...v1.15.0) (2026-10-12)
+
+
+### Features
+
+* **race:** add a dedicated lobby world for waiting racers ([#314](https://github.com/OneLiteFeatherNET/Voyager/issues/314)) ([5fee387](https://github.com/OneLiteFeatherNET/Voyager/commit/5fee3873ae5bbb9dfca54ae151cfded9efe45f7d))
+
+
+### Bug Fixes
+
+* **race:** let racers take off themselves at GO and after a reset ([#311](https://github.com/OneLiteFeatherNET/Voyager/issues/311)) ([0c9166d](https://github.com/OneLiteFeatherNET/Voyager/commit/0c9166d4428bd66a9c8c69cb74f2fe69dcdc72a1))
+
+
+### Documentation
+
+* **openspec:** archive remove-start-launch ([#312](https://github.com/OneLiteFeatherNET/Voyager/issues/312)) ([fbb3f48](https://github.com/OneLiteFeatherNET/Voyager/commit/fbb3f4805415211d16c1a1ed12bfef0d00aa1738))
+
 ## [1.14.2](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.14.1...v1.14.2) (2026-10-12)
 
 
