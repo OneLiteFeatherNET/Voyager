@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.LobbyDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
@@ -25,6 +26,9 @@ import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.elytrarace.voyager.platform.lobby.LobbyHud;
+import net.elytrarace.voyager.platform.lobby.LobbyTransition;
+import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -91,6 +95,10 @@ class CupSessionGoldenMasterTest {
 
     private static final Block RIDGE_FLOOR = Block.GOLD_BLOCK;
     private static final Block DUNE_FLOOR = Block.DIAMOND_BLOCK;
+
+    private static final String LOBBY = "lobby_hall";
+    private static final Vec3 LOBBY_SPAWN = new Vec3(20.5, 65.0, -12.5);
+    private static final Block LOBBY_FLOOR = Block.STONE;
 
     private static final BoostConfig RIDGE_BOOST = new BoostConfig(4, 9);
     private static final BoostConfig DUNE_BOOST = new BoostConfig(6, 13);
@@ -196,6 +204,30 @@ class CupSessionGoldenMasterTest {
         assertGolden("skip-finish", harness.transcript);
     }
 
+    /**
+     * The lobby world as the server runs it: a racer waits in the lobby, the room starts the cup, the racer moves from
+     * the lobby to the first map at the launch, and the room returns the racer to the lobby when the cup has finished.
+     * Characterises the lobby transfers; the four scenarios above run without a room and are unchanged.
+     */
+    @Test
+    void lobbyWorldStart(Env env) throws IOException {
+        writeWorld(env, tempDir, LOBBY, LOBBY_SPAWN, LOBBY_FLOOR);
+        harness = Harness.open(env, tempDir);
+        harness.useLobby(new LobbyDefinition(LOBBY, LOBBY_SPAWN));
+        harness.connectToLobby(ADA);
+
+        // Stops on the first tick after the racer has left the lobby and come back to it: the cup's end. The room
+        // starts the next countdown on that same tick, so the transcript ends with that countdown's first tick.
+        boolean[] left = {false};
+        harness.runUntil(() -> {
+            boolean inLobby = harness.racer(ADA).getInstance() == harness.lobbyInstance();
+            left[0] |= !inLobby;
+            return left[0] && inLobby;
+        }, () -> { });
+
+        assertGolden("lobby-world-start", harness.transcript);
+    }
+
     @Test
     void restartPendingReload(Env env) throws IOException {
         harness = Harness.open(env, tempDir);
@@ -229,8 +261,7 @@ class CupSessionGoldenMasterTest {
             return;
         }
         Path written = tempDir.resolve(scenario + ".received.txt");
-        Files.writeString(written, received, StandardCharsets.UTF_8);
-        List<String> want = List.of(expected.split("\n"));
+        Files.writeString(written, received, StandardCharsets.UTF_8);        List<String> want = List.of(expected.split("\n"));
         List<String> got = List.of(received.split("\n"));
         int line = 0;
         while (line < want.size() && line < got.size() && want.get(line).equals(got.get(line))) {
@@ -289,6 +320,8 @@ class CupSessionGoldenMasterTest {
         final CupTranscript transcript = new CupTranscript();
         final CupSession session;
         private final TickPipeline pipeline;
+        private LobbyTransition lobby;
+        private WaitingRoom room;
 
         private Harness(Env env, MapInstances worlds) {
             this.env = env;
@@ -313,8 +346,25 @@ class CupSessionGoldenMasterTest {
 
         /** Connects a racer on the spawn of {@code map}, prepared as the join handler prepares one. */
         void connect(String name, MapDefinition map) {
-            Pos spawn = spawnOf(map);
-            Instance instance = worlds.forWorld(map.world());
+            seat(name, worlds.forWorld(map.world()), spawnOf(map));
+        }
+
+        /** Puts the room in front of the cup: the lobby world, and a room that starts the cup and returns racers to it. */
+        void useLobby(LobbyDefinition definition) {
+            lobby = new LobbyTransition(worlds, definition);
+            room = new WaitingRoom(session, () -> field, 1, 16, lobby, racer -> { }, new LobbyHud());
+        }
+
+        /** Connects a racer on the lobby's spawn, as the join handler does when a lobby is configured. */
+        void connectToLobby(String name) {
+            seat(name, lobby.instance(), lobby.spawn());
+        }
+
+        Instance lobbyInstance() {
+            return lobby.instance();
+        }
+
+        private void seat(String name, Instance instance, Pos spawn) {
             instance.loadChunk(spawn.chunkX(), spawn.chunkZ()).join();
             TestConnection connection = env.createConnection(new GameProfile(
                     UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)), name));
@@ -346,7 +396,7 @@ class CupSessionGoldenMasterTest {
         }
 
         /**
-         * One server tick, in the order the server runs it: the cup's tick, then Minestom's.
+         * One server tick, in the order the server runs it: the cup's tick, the room's, then Minestom's.
          *
          * <p>The server does not start a glide at GO. Each racer deploys their elytra on the first tick of the
          * GAME phase, as a player does after GO, and the transcript shows the deployment on the tick after it.
@@ -363,6 +413,9 @@ class CupSessionGoldenMasterTest {
                 deployedFor = phase;
             }
             pipeline.run();
+            if (room != null) {
+                room.tick();
+            }
             env.tick();
             transcript.end("tick " + ticks, session.describe());
         }
