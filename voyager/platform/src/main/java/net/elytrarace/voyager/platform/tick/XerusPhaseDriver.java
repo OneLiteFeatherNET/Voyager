@@ -47,7 +47,11 @@ import java.util.function.BooleanSupplier;
 public final class XerusPhaseDriver extends TickedPhase {
 
     private final CupDefinition cup;
-    private final RaceTimings timings;
+    /**
+     * The lengths the cup is played with. Replaced, never mutated, and only by {@link #shortenLobby}: the lobby is the
+     * one phase whose length a running cup may change, and it changes only downwards.
+     */
+    private RaceTimings timings;
     private final Duration step;
     private final BooleanSupplier everyPlayerFinished;
     private final RacePhaseListener listener;
@@ -135,6 +139,28 @@ public final class XerusPhaseDriver extends TickedPhase {
      */
     public Duration remainingLobby() {
         return remainingLobby(state);
+    }
+
+    /** The length the first lobby is played with now, which is shorter than configured once it has been shortened. */
+    public Duration lobbyLength() {
+        return timings.lobby();
+    }
+
+    /**
+     * Leaves {@code remaining} of the lobby from the tick {@link #state()} describes, and never more than it had.
+     *
+     * <p>The phase is ticked from outside and reads its length from {@link RaceTimings} on every tick, so a new length
+     * takes effect on the next {@link #onUpdate()}. There is no Xerus timer to reschedule. A request for more time than
+     * the lobby already has is ignored, so a shortened countdown is never lengthened.
+     *
+     * @param remaining how much lobby is to be left, counted from the current tick; positive
+     */
+    public void shortenLobby(Duration remaining) {
+        Duration target = state.inPhase().plus(remaining);
+        if (target.compareTo(timings.lobby()) >= 0) {
+            return;
+        }
+        timings = new RaceTimings(target, timings.race(), timings.endBetweenMaps(), timings.endAfterLastMap());
     }
 
     /**

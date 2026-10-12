@@ -324,6 +324,29 @@ public final class CupSession implements RacePhaseListener {
         return current == null || !current.isRunning() ? Duration.ZERO : current.remainingLobby();
     }
 
+    /** The length the running lobby is played with, which a full server may have shortened. Zero when no cup runs. */
+    public Duration lobbyLength() {
+        XerusPhaseDriver current = driver;
+        return current == null || !current.isRunning() ? Duration.ZERO : current.lobbyLength();
+    }
+
+    /**
+     * Shortens a countdown that is still counting down so that {@code remaining} is left from the next tick, for a full
+     * server (see {@code StartGate.shortenedCountdown}).
+     *
+     * <p>Only the first lobby's countdown, and only before the start is committed. Anywhere else this does nothing: a
+     * committed start is never shortened, and the driver never lengthens a lobby it has already shortened.
+     *
+     * @param remaining how much of the lobby is to be left
+     */
+    public void shortenLobby(Duration remaining) {
+        XerusPhaseDriver current = driver;
+        if (current == null || situation(StartGate.COMMIT_WINDOW) != StartGate.Situation.COUNTDOWN) {
+            return;
+        }
+        current.shortenLobby(remaining);
+    }
+
     /**
      * Cancels a countdown that has not yet entered a map: the cup is not started, and the room returns to waiting.
      *
