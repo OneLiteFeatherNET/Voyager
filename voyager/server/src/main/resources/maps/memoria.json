@@ -145,7 +145,7 @@
       },
       "radius": 5.722732595442632,
       "points": 10,
-      "type": "STANDARD"
+      "type": "CHECKPOINT"
     },
     {
       "index": 8,
@@ -273,7 +273,7 @@
       },
       "radius": 7.280109889280518,
       "points": 10,
-      "type": "STANDARD"
+      "type": "CHECKPOINT"
     },
     {
       "index": 16,
@@ -401,7 +401,7 @@
       },
       "radius": 6.324555320336759,
       "points": 10,
-      "type": "STANDARD"
+      "type": "CHECKPOINT"
     },
     {
       "index": 24,
@@ -440,6 +440,7 @@
     "Converted from the legacy Voyager plugin H2 database (map 'Memoria', author Seelenretterin, display name <gradient:gold:blue:yellow:-1>Memoria</gradient>) by tools/convert_rings.py + tools/write_maps.py.",
     "Ring centre = the legacy CENTER point (integer block coords, no +0.5). Radius = mean centre-to-rim distance. Normal = least-squares plane normal of the rim, signed along the flight direction; normals are snapped to an axis only when the ring lies exactly in an axis plane; tilted rings keep the best-fit normal.",
     "Placeholders: spawn is the old level.dat spawn (-144, 137, 573); referenceTimeSeconds 85.0 is a guess (path length 1732 blocks / 20 blocks per second); points 10 per ring; all rings STANDARD; boostConfig 30/40; guideLine has no points.",
-    "Rings to check in game (index: reason): 9: flow, 25: flow"
+    "Rings to check in game (index: reason): 9: flow, 25: flow",
+    "Checkpoint rings (owner decision, 2026-10-13): CHECKPOINT at ring indices 7, 15, 23. Index is the 0-based position in the rings array, so the 8th, 16th, 24th ring ... are 7, 15, 23 ... . No BOOST ring moved. The last ring is never marked. Only the type field changed; geometry, points and effects are as committed."
   ]
 }

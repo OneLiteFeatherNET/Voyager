@@ -80,7 +80,27 @@ exercised by the alpha.
 
 #### Scenario: the boost rings are the chosen ones
 - **WHEN** `elytraraceblueandred` is loaded
-- **THEN** its `BOOST` rings are at indices 0, 18 and 27, and every other ring is `STANDARD`
+- **THEN** its `BOOST` rings are at indices 0, 18 and 27, and every other ring is `STANDARD`, except the `CHECKPOINT` rings at indices 7, 15, 23 and 31
+
+### Requirement: The shipped maps mark checkpoint rings roughly every eighth ring
+Priority: Must.
+
+THE shipped maps `elytraraceblueandred`, `palmbeach`, `dragonlobby` and `memoria` SHALL mark roughly every eighth ring as
+type `CHECKPOINT`, counting the 0-based ring index (the position in the ring array) as 7, 15, 23 and so on. A chosen index
+whose ring is `BOOST` SHALL move to the nearest `STANDARD` ring, trying distance 1, then 2, and so on, with a tie going to
+the earlier ring. The last ring of a map SHALL NOT be marked. Owner decision, 2026-10-13.
+
+#### Scenario: the checkpoint rings of the alpha map are marked
+- **WHEN** `elytraraceblueandred` is loaded
+- **THEN** its `CHECKPOINT` rings are at indices 7, 15, 23 and 31, and its `BOOST` rings are still at 0, 18 and 27
+
+#### Scenario: the checkpoint rings of the legacy maps are marked
+- **WHEN** `palmbeach`, `dragonlobby` and `memoria` are loaded
+- **THEN** each has its `CHECKPOINT` rings at indices 7, 15 and 23, and no `BOOST` ring moved
+
+#### Scenario: a checkpoint ring has no effect in play
+- **WHEN** a racer passes a `CHECKPOINT` ring of a shipped map
+- **THEN** the ring applies no effect, and the checkpoint is recorded for a later reset
 
 ### Requirement: A BOOST ring is not the final ring and starts a straight segment
 Priority: Should.
