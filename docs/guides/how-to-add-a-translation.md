@@ -2,6 +2,36 @@
 
 This guide explains how the Voyager translation system works and how to add new translatable strings.
 
+## The rebuild (`voyager-*`): two locales
+
+The rebuild ships German (`de_DE`) and English (`en_US`). The client's locale picks the language, and a key a
+German bundle lacks is shown in English. Decision and rationale: ADR-0038.
+
+| Product | English (required) | German |
+|---|---|---|
+| Game server | `voyager/server/src/main/resources/voyager_en_US.properties` | `voyager/server/src/main/resources/voyager_de_DE.properties` |
+| Setup server | `voyager/setup/src/main/resources/voyager_setup_en_US.properties` | `voyager/setup/src/main/resources/voyager_setup_de_DE.properties` |
+
+To add a key:
+
+1. Name it in `Messages` (game) or `SetupMessages` (setup). Use a key constant, never a literal in the method body.
+2. Add the line to the English file, then the German file, with the same key, the same `<arg:N>` indices and the same
+   `<c-*>`/`<m-*>` tags. Write German with informal "du". Keep `.` as the decimal separator for times.
+3. Run `./gradlew :voyager:fitness:test`. `MessageBundleParityTest` fails when a key is missing in either locale, is
+   defined in one locale only, changes a placeholder or a tag, uses `{N}`, or lacks a plural form.
+
+Rules the build enforces (`ApiPurityTest`): no `Component.translatable`, no `MiniMessage.deserialize` and no `String`
+sent to a `CommandSender` outside `net.elytrarace.voyager.platform.text`. Console output and the `/race` operator
+diagnostic are the named exceptions and stay English.
+
+Plurals: a key with a `.one` sibling needs `.one` and `.other` in every locale. The factory picks the form from the count.
+No English key uses plurals yet, so the rule is in place but not yet exercised.
+
+The server logs one warning per key and locale at boot for every English line a locale does not translate. The
+translation is per key: a missing German line shows English, never the dotted key.
+
+Legacy tree (`legacy/`): the sections below describe it and are unchanged.
+
 ## Architecture
 
 The translation pipeline has three layers:

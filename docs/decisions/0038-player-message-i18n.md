@@ -2,11 +2,8 @@
 
 ## Status
 
-Proposed
-
-The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it. The changes that
-implement it are `localise-player-messages` (feat(i18n)) and, for the wording and colour rules it refers to, `improve-message-ux`
-(feat(race)). Neither change is applied before this record is accepted.
+Accepted on 2026-10-13, by the owner's approval of the implementation `localise-player-messages` (feat(i18n)). The wording
+and colour rules it refers to belong to `improve-message-ux` (feat(race)), which is not part of this record's acceptance.
 
 ## Date
 
@@ -86,15 +83,21 @@ Chosen option: **1**, with these rules.
   owner's review before each release.
 - Bad: `GlobalTranslator` is process-wide. Tests use the pure catalogue, and only the composition roots install the source.
 
-## Open items
+## Findings and decisions on the open items
 
-1. Whether `MinestomAdventure`'s default locale can be set to `en_US` at boot, so that a player with no settings yet is shown
-   English on a German host. To verify in the Minestom 2026.08.28-26.2 source before apply. If it cannot, the limit is
-   recorded here.
-2. Whether console and log output follows the operator's locale. Proposal: English always.
-3. Whether Minestom's built-in command errors are sent as vanilla translatable keys (rendered by the client) or as text.
-4. Number and time formatting in German. Proposal: keep `.` as the decimal separator for race times.
-5. Tone in German: `du` (proposal) or `Sie`.
+1. **Default locale: settable.** `MinestomAdventure.setDefaultLocale(Locale)` exists in 2026.08.28-26.2 (its default is
+   `Locale.getDefault()`, and `null` resets it). Both composition roots call `setDefaultLocale(Locale.US)` at boot, so a
+   player whose settings have not arrived is shown English on a German host.
+2. **Console and log output: English.** Decided by the owner (D3). Operator output (the `/race` diagnostic) stays English
+   as a named exemption in `ApiPurityTest`.
+3. **Minestom's built-in command errors: plain text, not translatable.** The `net.minestom.server.command` package in
+   2026.08.28-26.2 builds its messages as plain text and names no translation key, so the client cannot translate them and
+   this change does not either. Recorded as a known limit.
+4. **Number format: `.` decimal separator.** Decided by the owner (D4). Race times read `12.4 s` in both locales.
+5. **Tone: `du`.** Decided by the owner (D2).
+
+Also found while implementing: `CommandSender` has `String` overloads of `sendMessage` that build a `Component.text`. They
+are covered by the third rule added to `ApiPurityTest`.
 
 ## Links
 

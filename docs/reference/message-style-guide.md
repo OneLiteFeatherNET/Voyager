@@ -86,12 +86,12 @@ Rules (enforced by `MessageStyleTest` once `improve-message-ux` lands):
 
 ## German
 
-- Use "du", unless the owner has chosen "Sie" (open item 5 of ADR-0038).
+- Use "du". The owner chose it (ADR-0038, decision 5).
 - Keep every `<arg:N>` and palette tag, in the same count as the English line. A translation may reorder the arguments
   (by index) and reword the words around them, but may not add or drop one.
 - Use the German glossary equivalents from the table above. Keep "Ring", "Cup" and "Map" as they are.
 - Race times keep the point as the decimal separator, so that they match the boss bar, the logs and the leaderboards
-  (open item 4 of ADR-0038, pending the owner).
+  (ADR-0038, decision 4).
 - Plurals are two keys (`.one` and `.other`). Write both; the parity test requires them.
 - Medals: Diamant, Gold, Silber, Bronze, Ziel, DNF. Keep the English abbreviation DNF.
 
