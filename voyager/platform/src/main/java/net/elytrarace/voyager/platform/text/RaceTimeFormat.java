@@ -48,6 +48,17 @@ public abstract class RaceTimeFormat {
                 millis / MILLIS_PER_TENTH % TENTHS_PER_SECOND);
     }
 
+    /**
+     * {@code S.T} — a number of seconds, with no minutes, for a time to save: "0.8", "12.4".
+     *
+     * <p>The separator is always a dot, in both locales, as in the other race times.
+     */
+    @Contract(pure = true)
+    public static String seconds(Duration duration) {
+        long tenths = nonNegativeMillis(duration) / MILLIS_PER_TENTH;
+        return "%d.%d".formatted(tenths / TENTHS_PER_SECOND, tenths % TENTHS_PER_SECOND);
+    }
+
     /** {@code M:SS} — a target that is standing still. */
     @Contract(pure = true)
     public static String whole(Duration duration) {

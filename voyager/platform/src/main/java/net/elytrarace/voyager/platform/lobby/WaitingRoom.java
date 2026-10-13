@@ -73,6 +73,10 @@ public final class WaitingRoom {
     private final Supplier<Instance> firstMapInstance;
     /** The racers the room has handed to the hub. They stay connected until the move, so the room does not count them. */
     private final Set<UUID> handedOff = new HashSet<>();
+    /** Joins that arrive close together, told as one line; the window is counted in {@link #gameTicks}. */
+    private final JoinBurst joins = new JoinBurst();
+    /** The room's own tick count, which the join window is measured in. Starts at zero and counts each {@link #tick}. */
+    private int gameTicks;
     private boolean racersSinceStart;
     private boolean running;
     /** Ticks since the cup's results were announced, or {@link #NO_RESULT}. */
@@ -153,7 +157,11 @@ public final class WaitingRoom {
      */
     public void joined(Player racer) {
         Collection<Player> online = racers();
-        online.forEach(other -> other.sendMessage(Messages.playerJoined(racer.getUsername(), online.size(), maximum)));
+        JoinBurst.Outcome outcome = joins.join(gameTicks, racer.getUsername());
+        announceBurst(outcome.flushed(), online);
+        if (outcome.sendNow()) {
+            online.forEach(other -> other.sendMessage(Messages.playerJoined(racer.getUsername(), online.size(), maximum)));
+        }
         if (session.situation(StartGate.COMMIT_WINDOW) == StartGate.Situation.RUNNING) {
             racer.sendMessage(Messages.joinedMidCup());
         }
@@ -178,6 +186,8 @@ public final class WaitingRoom {
      * count, so a racer who joined during the linger is counted only if they were not handed away.
      */
     public void tick() {
+        gameTicks++;
+        announceBurst(joins.flush(gameTicks), racers());
         if (running && !session.running() && session.cupFinished()) {
             lingerTicks = 0;
         } else if (lingerTicks != NO_RESULT) {
@@ -258,6 +268,20 @@ public final class WaitingRoom {
      * The racers the room counts: everyone online, except the racers it has already handed to the hub. A handed-off racer
      * stays connected until the move, so the count has to skip them.
      */
+    /**
+     * Tells every racer online about a burst of joins: one held join is named as the single join it was, and two or
+     * more are one line with the count. Nothing is sent for an empty burst.
+     */
+    private void announceBurst(List<String> names, Collection<Player> online) {
+        if (names.isEmpty()) {
+            return;
+        }
+        Component line = names.size() == 1
+                ? Messages.playerJoined(names.getFirst(), online.size(), maximum)
+                : Messages.playersJoined(names.size(), online.size(), maximum);
+        online.forEach(other -> other.sendMessage(line));
+    }
+
     private List<Player> racers() {
         return players.get().stream()
                 .filter(racer -> !handedOff.contains(racer.getUuid()))

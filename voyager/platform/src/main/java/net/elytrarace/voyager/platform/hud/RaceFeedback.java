@@ -206,6 +206,11 @@ public abstract class RaceFeedback {
         };
     }
 
+    /** A ring was skipped: its quiet sound, to the racer who skipped it. The line is {@link RaceHud#missedRing}'s. */
+    public static void ringMissed(Player racer) {
+        racer.playSound(missedRingSound());
+    }
+
     /**
      * A DNF: a short, quiet, low note that is not the countdown beat. A loss is informational, so it is quieter than a
      * medal rather than a sting.

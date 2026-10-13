@@ -444,7 +444,10 @@ class WaitingRoomTest {
     // The lobby world, the join line and the full lobby
     // ------------------------------------------------------------------------------------------
 
-    /** A join is announced to every racer online, with the count after the join and the maximum. */
+    /**
+     * A join is announced to every racer online, with the count after the join and the maximum. A join that follows
+     * another inside the join window is held until the window closes, and is then told as the single join it was.
+     */
     @Test
     void aJoinSendsTheJoinLineToEveryRacer(Env env) throws IOException {
         Fixture fixture = fixture(env);
@@ -453,6 +456,7 @@ class WaitingRoomTest {
         fixture.join(first);
 
         Player secondRacer = fixture.join();
+        fixture.ticks(JoinBurst.WINDOW_TICKS + 1);
 
         assertThat(chat.collect().stream().map(SystemChatPacket::message).toList())
                 .contains(Messages.playerJoined(secondRacer.getUsername(), 2, MAXIMUM));
@@ -468,10 +472,12 @@ class WaitingRoomTest {
         fixture.join();
 
         Player third = fixture.join();
+        fixture.ticks(JoinBurst.WINDOW_TICKS + 1);
 
         assertThat(online).contains(third);
         assertThat(chat.collect().stream().map(SystemChatPacket::message).toList())
-                .contains(Messages.playerJoined(third.getUsername(), 3, 2));
+                .as("the two joins after the first are one line, counted past the maximum")
+                .contains(Messages.playersJoined(2, 3, 2));
     }
 
     /** A full lobby with fifteen seconds of its countdown left is shortened to ten seconds from that tick. */
