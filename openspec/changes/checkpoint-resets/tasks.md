@@ -59,7 +59,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
   ground after 5 airborne ticks is not reset again. Fails today: the racer is reset again.
 - [x] 2.15 Red: `CupSessionTest.aRacerBelowTheFloorDuringACooldownIsStillReset`: out-of-bounds is not gated by the cooldown.
   Passes today; pins it.
-- [ ] 2.16 Red: `CupPlaythroughTest.aCheckpointResetKeepsTheScoreOfTheRingsBeforeIt`: the score after a reset to checkpoint 6
+- [x] 2.16 Red: `CupPlaythroughTest.aCheckpointResetKeepsTheScoreOfTheRingsBeforeIt`: the score after a reset to checkpoint 6
   holds the points of rings 0 to 6 only, and passing ring 7 again scores once. Fails today.
 - [ ] 2.17 Red: `CupSessionGoldenMasterTest` gains one transcript, `checkpoint-reset.txt`, for a mid-course reset to a
   checkpoint. It is written by hand from the expected sequence (reset title, glide flag on the reset tick, no velocity
