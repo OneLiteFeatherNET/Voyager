@@ -45,7 +45,7 @@ public record LobbyBoard(String cupName, List<String> mapNames) {
 
     /** The title the sidebar shows: the cup's name. */
     public Component title() {
-        return Component.text(cupName);
+        return Messages.lobbyBoardTitle(cupName);
     }
 
     /**
@@ -57,7 +57,7 @@ public record LobbyBoard(String cupName, List<String> mapNames) {
         List<Component> lines = new ArrayList<>();
         int shown = Math.min(mapNames.size(), MAX_MAP_LINES);
         for (int index = 0; index < shown; index++) {
-            lines.add(Component.text("%d. %s".formatted(index + 1, mapNames.get(index))));
+            lines.add(Messages.lobbyBoardMap(index + 1, mapNames.get(index)));
         }
         int more = mapNames.size() - shown;
         if (more > 0) {

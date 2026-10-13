@@ -261,6 +261,28 @@ public abstract class Messages {
     }
 
     /**
+     * The title of the lobby's cup board: the cup's name. The name is the cup's own, not a sentence the game wrote.
+     *
+     * @param cup the cup's name
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardTitle(String cup) {
+        return Component.text(cup);
+    }
+
+    /**
+     * One map line of the lobby's cup board: its place in the cup and its name. The numbering and the name are data, so the
+     * line is not translated.
+     *
+     * @param position the map's place in play order, from one
+     * @param map      the map's name
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardMap(int position, String map) {
+        return Component.text("%d. %s".formatted(position, map));
+    }
+
+    /**
      * The last line of the lobby's cup board when the cup has more maps than the board holds: how many follow.
      *
      * @param more how many maps the board does not list
