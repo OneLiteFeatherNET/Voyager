@@ -20,13 +20,20 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.run.RaceRun;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.server.world.DimensionType;
+import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.EnvTest;
+import net.minestom.testing.TestConnection;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
 
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,9 +75,19 @@ class CupSessionCompetitorTest {
     private static final UUID RIVAL = UUID.fromString("5b0f1c52-2d1a-4c1e-9a55-0c0ffee00001");
     private static final UUID STRANGER = UUID.fromString("5b0f1c52-2d1a-4c1e-9a55-0c0ffee00002");
 
+    /** Two rings, so a computer racer can pass one and still be on its way to the next. */
     private static final MapDefinition MAP = new MapDefinition("ridge-run", WORLD, SPAWN,
-            List.of(new Ring(0, SPAWN.plus(new Vec3(0, 8, 10)), new Vec3(0, 0, 1), 6.0, 7, RingType.STANDARD)),
+            List.of(new Ring(0, SPAWN.plus(new Vec3(0, 8, 10)), new Vec3(0, 0, 1), 6.0, 7, RingType.STANDARD),
+                    new Ring(1, SPAWN.plus(new Vec3(0, 8, 20)), new Vec3(0, 0, 1), 6.0, 7, RingType.STANDARD)),
             Duration.ofMillis(400), new BoostConfig(4, 9), new GuideLine(List.of(), 2, 1.0));
+
+    /** Just past the plane of each ring, on the line of its centre: a racer there has passed the ring. */
+    private static final Vec3 PAST_RING_ZERO = SPAWN.plus(new Vec3(0, 8, 11));
+    private static final Vec3 PAST_RING_ONE = SPAWN.plus(new Vec3(0, 8, 21));
+
+    /** Five race ticks: a computer racer needs three to pass both rings, and the human has the rest to run out. */
+    private static final RaceTimings FIVE_TICK_RACE = new RaceTimings(
+            Duration.ZERO, STEP.multipliedBy(5), Duration.ZERO, Duration.ZERO);
 
     private static final CupDefinition CUP = new CupDefinition("grand_tour", List.of(MAP.name()), GameMode.RACE);
 
@@ -176,8 +194,80 @@ class CupSessionCompetitorTest {
                 .isEqualTo(1);
     }
 
+    @Test
+    void aFinishedComputerRacerIsListedInTheResultsAsComWithItsTimeAndNoPoints(Env env) throws IOException {
+        ScriptedField field = new ScriptedField(RIVAL, List.of(SPAWN, PAST_RING_ZERO, PAST_RING_ONE));
+        TestConnection connection = env.createConnection();
+        Player human = connection.connect(env.createFlatInstance(), new Pos(0, 41, 0));
+        CupSession session = openSession(env, new RaceRuns(), field, FIVE_TICK_RACE, List.of(human));
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+
+        session.start(true);
+        runToTheEnd(session);
+
+        List<TranslatableComponent> rows = chatWithKey(chat, "voyager.result.cup.row");
+        assertThat(rows)
+                .as("the final standings list the computer racer and the human")
+                .hasSize(2);
+        TranslatableComponent com = rows.get(0);
+        assertThat(describe(com.arguments().get(0).asComponent()))
+                .as("the computer racer is placed first: a human with no time and no points comes after it")
+                .isEqualTo("1");
+        assertThat(describe(com.arguments().get(1).asComponent()))
+                .as("the computer racer is named COM 1, the number of its seat")
+                .isEqualTo("voyager.com.racer.name(1)");
+        assertThat(describe(com.arguments().get(2).asComponent()))
+                .as("a computer racer takes no points, so no placement bonus either")
+                .isEqualTo("0");
+        assertThat(describe(com.arguments().get(5).asComponent()))
+                .as("the computer racer's own finish time is shown, not the no-time placeholder")
+                .doesNotStartWith("voyager.result.cup.notime");
+        assertThat(session.standings().order())
+                .as("the computer racer is never recorded in the cup round")
+                .extracting(standing -> standing.playerId())
+                .doesNotContain(RIVAL);
+    }
+
+    /** Ticks the cup from its first phase until it reports the cup as finished, and asserts that it does. */
+    private void runToTheEnd(CupSession session) {
+        for (int tick = 0; tick < TICK_LIMIT && !session.cupFinished(); tick++) {
+            session.advancePhase();
+        }
+        assertThat(session.cupFinished())
+                .as("the one-map cup must reach its terminal state within %s ticks", TICK_LIMIT)
+                .isTrue();
+    }
+
+    /** The chat lines of the given translation key that {@code chat} collected, in the order they were sent. */
+    private static List<TranslatableComponent> chatWithKey(Collector<SystemChatPacket> chat, String key) {
+        return chat.collect().stream()
+                .map(SystemChatPacket::message)
+                .filter(TranslatableComponent.class::isInstance)
+                .map(TranslatableComponent.class::cast)
+                .filter(line -> line.key().equals(key))
+                .toList();
+    }
+
+    /** A component as a short string: its text, or its key with its arguments in brackets. */
+    private static String describe(Component component) {
+        if (component instanceof TextComponent text) {
+            return text.content();
+        }
+        if (component instanceof TranslatableComponent translatable) {
+            return translatable.key() + translatable.arguments().stream()
+                    .map(argument -> describe(argument.asComponent()))
+                    .collect(Collectors.joining(", ", "(", ")"));
+        }
+        return component.toString();
+    }
+
     private CupSession openSession(Env env, RaceRuns runs, CompetitorField field, RaceTimings timings)
             throws IOException {
+        return openSession(env, runs, field, timings, List.of());
+    }
+
+    private CupSession openSession(Env env, RaceRuns runs, CompetitorField field, RaceTimings timings,
+            List<Player> humans) throws IOException {
         writeWorld(env);
         worlds = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
         LoadedCatalog catalog = new LoadedCatalog(
@@ -187,7 +277,7 @@ class CupSessionCompetitorTest {
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(nobody(), boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
         return new CupSession(new CatalogHolder(catalog), worlds, new MapTransition(worlds, runs), runs, flight,
-                blocks, boosts, timings, STEP, nobody(), field);
+                blocks, boosts, timings, STEP, () -> humans, field);
     }
 
     private static Supplier<Collection<Player>> nobody() {
@@ -209,6 +299,39 @@ class CupSessionCompetitorTest {
         } finally {
             instanceManager.unregisterInstance(instance);
             writer.close();
+        }
+    }
+
+    /**
+     * A competitor field that reports one competitor at the positions it was built with, one per race tick, and
+     * repeats the last of them once they are used up.
+     */
+    private static final class ScriptedField implements CompetitorField {
+
+        private final UUID id;
+        private final List<Vec3> positions;
+        private int advances;
+
+        ScriptedField(UUID id, List<Vec3> positions) {
+            this.id = id;
+            this.positions = positions;
+        }
+
+        @Override
+        public List<UUID> prepare(int mapIndex, MapDefinition map) {
+            return List.of(id);
+        }
+
+        @Override
+        public List<Competitor> advance(RaceClock clock) {
+            Vec3 at = positions.get(Math.min(advances, positions.size() - 1));
+            advances++;
+            return List.of(new Competitor(id, at, true));
+        }
+
+        @Override
+        public void dismiss() {
+            // Nothing to let go: the scripted competitor has no body.
         }
     }
 
