@@ -47,7 +47,7 @@ of type `CHECKPOINT`, so the rule is pure and lives in `race`.
 Dependency direction: `platform` (`CupSession`, `RunResetter`, `Racers`) depends on `race` (`RunReset`, `RaceRun`), which
 depends on `api`. No new class is added; `RunReset.plan` and `RaceRun` change.
 
-### D2. The racer keeps the rings up to the target, and loses the rest (OWNER TO CONFIRM)
+### D2. The racer keeps the rings up to the target, and loses the rest (confirmed 2026-10-13)
 
 Keeping the progress after a reset would let the racer skip rings. Suppose a racer has passed rings 0 to 34 and is reset to
 checkpoint 10 with progress kept. `ProgressTracker` would next test ring 35, so the racer could fly from ring 10 straight
@@ -177,14 +177,28 @@ is the check. No rule is added or removed.
 - The catalogue does not check that a checkpoint lies inside the vertical bounds. A checkpoint outside them would reset
   every tick it is reached. Out of scope; noted for a catalogue change.
 
-## Open questions for the owner
+## Decisions recorded from the owner (2026-10-13)
 
-1. D2: confirm the progress rollback on a reset (the amendment of "keeps every ring"), and whether to add checkpoints to the
-   committed map before or after this change lands.
-2. D3 / F3: a spawn reset as at GO (S1, recommended) or a lifted spawn with a glide (S2).
-3. D4: confirm `N = 20` and `C = 40` as seeds, to be tuned in the playtest.
-4. D8: confirm the new ADR 0031 that amends 0028, rather than an edit of 0028.
-5. D3 / F2: whether the deferred flag (F2) is acceptable as the fallback if F1 does not hold in the playtest.
+The owner answered the five open questions that stood here. The answers are binding and are recorded as follows.
+
+1. D2 accepted, option (a): a reset to a checkpoint drops the rings passed after that checkpoint. A spawn reset keeps
+   no ring. The committed-map option (a) applies to this change. Option (b) follows in a later step (see 2).
+2. Maps get `CHECKPOINT` rings in a later step, not in this change. Roughly every 8th ring of the shipped maps
+   (`elytraraceblueandred`, `palmbeach`, `dragonlobby`, `memoria`) is type `CHECKPOINT`. `BOOST` rings stay `BOOST`;
+   where a multiple-of-8 ring is `BOOST`, the nearest `STANDARD` ring is used instead. The last ring is never marked.
+   Here, only the decision is recorded; the shipped maps are not edited by this change.
+3. With no `CHECKPOINT` ring passed, the reset goes to the map spawn (D1, D2).
+4. S1 (F3): a spawn reset behaves like GO. The racer is grounded at the spawn and not gliding; the racer takes off
+   by jumping and deploying.
+5. Checkpoint resets set the elytra glide with no impulse. F2 (defer the glide flag to the first airborne tick) is the
+   accepted fallback if the flag does not survive (D3, R-glide-1). The racer is placed slightly behind and above the
+   checkpoint ring, facing along its normal, so the racer is airborne. This is the owner's placement; it refines the
+   F1 placement in D3.
+6. Landing grace `N = 20` airborne ticks; reset cooldown `C = 40` ticks (D4). Out-of-bounds resets are gated by neither.
+7. D8: ADR-0031 amends ADR-0028. It stays Proposed until the owner playtests it. It is not Accepted.
+8. Owner playtests (tasks 6.2 to 6.4) remain owner work. Agents do not run them.
+
+Task 1.2 (Pulse review) is replaced by the owner's decision above and the playtest tasks 6.2 to 6.4.
 
 ## Dependency direction and module placement
 

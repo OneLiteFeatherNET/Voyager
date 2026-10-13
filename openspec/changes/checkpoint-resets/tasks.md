@@ -7,15 +7,20 @@ wall-clock reads, no shared static state, each test builds its own fixture.
 
 ## 1. Owner decisions (gates; no code before 1.1 to 1.3 are answered)
 
-- [ ] 1.1 Owner confirms design D2: a reset keeps the rings up to its target and removes the rest, which amends "A reset
+- [x] 1.1 Owner confirms design D2: a reset keeps the rings up to its target and removes the rest, which amends "A reset
   keeps every ring already passed". Owner chooses the committed-map option (a) accept, (b) add checkpoints later, or (c)
   rejected. Record the answer in design.md under "Decisions recorded from the owner".
-- [ ] 1.2 Pulse (`voyager-game-psychologist`) reviews D2 and the restart of a racer on a map with no checkpoint, and the
+  Answer (2026-10-13): D2 accepted, option (a) accept. Later maps get `CHECKPOINT` rings in a separate step (design, "Decisions recorded from the owner").
+- [x] 1.2 Pulse (`voyager-game-psychologist`) reviews D2 and the restart of a racer on a map with no checkpoint, and the
   landing grace (R1, R2). Record the review in design.md. Human in the loop: the owner decides on the review's findings.
-- [ ] 1.3 Owner chooses the spawn reset: S1 (as at GO, recommended) or S2 (a lifted spawn with a glide), and whether the
+  Answer (2026-10-13): the owner decided D2 and the grace on 2026-10-13, so the Pulse review is replaced by the owner's decision and the playtest tasks 6.2 to 6.4.
+- [x] 1.3 Owner chooses the spawn reset: S1 (as at GO, recommended) or S2 (a lifted spawn with a glide), and whether the
   deferred flag F2 is acceptable as the fallback (design D3).
-- [ ] 1.4 Owner confirms the seeds `N = 20` airborne ticks and `C = 40` cooldown ticks (design D4).
-- [ ] 1.5 Owner confirms ADR 0031 as a new record that amends ADR-0028 (design D8). The agent never marks an ADR Accepted.
+  Answer (2026-10-13): S1 (a spawn reset behaves like GO); F2 (deferred glide flag) accepted as the fallback.
+- [x] 1.4 Owner confirms the seeds `N = 20` airborne ticks and `C = 40` cooldown ticks (design D4).
+  Answer (2026-10-13): confirmed, N = 20 airborne ticks and C = 40 cooldown ticks.
+- [x] 1.5 Owner confirms ADR 0031 as a new record that amends ADR-0028 (design D8). The agent never marks an ADR Accepted.
+  Answer (2026-10-13): confirmed, ADR-0031 amends ADR-0028. It stays Proposed until the owner playtests it.
 
 ## 2. Red: behaviour tests (`voyager/race` first, then `voyager/platform` and `voyager/server`)
 
