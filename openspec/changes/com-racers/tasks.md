@@ -41,9 +41,9 @@ D3, D4, D13 and D14 before writing a test. No `System` clock and no unseeded `Ra
 
 Effort for this group: medium (Haiku). The cup must not learn about Minestom bodies (rule F2).
 
-- [ ] 3.1 Red: `CupSessionCompetitorTest` drives explicit ticks with a fake `CompetitorField` and names the behaviours "a competitor's run starts at its map's start", "a competitor's position feeds its run and not the human supplier", "a competitor that is not on the course is not advanced", and "dismiss is called at cup end and on abort" (`feat(race)`). Effort: medium (Haiku).
-- [ ] 3.2 Green: add `CompetitorField` (the port), `Competitor` (a record of id, position and gliding), and `NoCompetitors` in `platform.cup`, and give `CupSession` the port. Call `prepare` in `mapStarted`, `advance` after the human loop in `raceTick`, and `dismiss` at cup end and abort (`feat(race)`). Effort: medium (Haiku).
-- [ ] 3.3 Confirm `CupSessionGoldenMasterTest` and the four other golden transcripts pass unchanged with `NoCompetitors` (no commit, verification) (`feat(race)` on the same commit as 3.2). Effort: low (Haiku).
+- [x] 3.1 Red: `CupSessionCompetitorTest` drives explicit ticks with a fake `CompetitorField` and names the behaviours "a competitor's run starts at its map's start", "a competitor's position feeds its run and not the human supplier", "a competitor that is not on the course is not advanced", and "dismiss is called at cup end and on abort" (`feat(race)`). Effort: medium (Haiku).
+- [x] 3.2 Green: add `CompetitorField` (the port), `Competitor` (a record of id, position and gliding), and `NoCompetitors` in `platform.cup`, and give `CupSession` the port. Call `prepare` in `mapStarted`, `advance` after the human loop in `raceTick`, and `dismiss` at cup end and abort (`feat(race)`). Effort: medium (Haiku).
+- [x] 3.3 Confirm `CupSessionGoldenMasterTest` and the four other golden transcripts pass unchanged with `NoCompetitors` (no commit, verification) (`feat(race)` on the same commit as 3.2). Effort: low (Haiku).
 
 ## 4. platform.com: the Minestom adapter (voyager-platform)
 
