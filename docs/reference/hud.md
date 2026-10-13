@@ -136,6 +136,20 @@ This contrasts with `FireworkBoostComponent`, which is written from both the Net
 | `showRingPassed` | `RingCollisionSystem.process` | When a passthrough is detected on a ring |
 | `cleanup` | `GameOrchestrator.restartGame`, `GameOrchestrator.cleanup` | Before removing a player entity, and when the orchestrator tears down |
 
+## Lobby displays
+
+The rebuild's lobby shows the cup that waiting racers are about to play. Three displays read one board, `LobbyBoard`, so they
+always name the same cup and the same maps in play order (`platform/lobby`, ADR-0033).
+
+| Display | Shown when | Text |
+|---|---|---|
+| Sidebar | The room is waiting and the racer stands in the place racers wait: the lobby instance, or the first map with no lobby. Hidden at `RUNNING` and when the racer enters a map. | The cup's name as the title, then one line per map, `1. <map>`. Twelve maps at most; a longer cup ends with `+<n> more`. |
+| Hologram | `VOYAGER_LOBBY_HOLOGRAM` names a position and a lobby world is set. One text display, spawned at boot, never saved with the lobby. | The same lines as the sidebar, the cup's name on the first line. |
+| Boss bar | Waiting and countdown, as before. | `Cup <name> · waiting for racers: <online> of <needed> online`, or `Cup <name> · starts in <n> s`. |
+
+The cup shown is the cup the catalogue currently holds. A reload that is pending does not change it until a round starts and
+promotes it. A countdown keeps the cup it began with.
+
 ## Related topics
 
 - [ADR-0002: Move HUD state into an ECS component](../decisions/0002-hud-as-ecs-component.md)

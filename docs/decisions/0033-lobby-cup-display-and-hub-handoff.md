@@ -64,16 +64,19 @@ linger (200 ticks, 10 s, owner answer Q3), the empty room after the handoff, a r
 configuration rules (`VOYAGER_LOBBY_HOLOGRAM` needs `VOYAGER_LOBBY_WORLD`).
 
 Verified and pending: the class identity across the boundary is read from the fork's source and is to be confirmed by a spike on the
-owner's node before the handoff is enabled. `connectToFallback` returns no result, so a refusal is detected only by an exception, and the
+owner's node before the handoff is enabled. The owner approved the change on 2026-10-13 and answered its questions; the answers are
+recorded in its design.md, section 10. This record stays Proposed until the owner has playtested the change. `connectToFallback` returns no result, so a refusal is detected only by an exception, and the
 owner's proxy must have a fallback configured for the racers to go anywhere.
 
 ## Consequences
 
 - Good: a racer is never kicked on the normal path, and the local run keeps working with a disconnect and a message.
+- Good: the linger of the results is a constant of 200 ticks, counted without a clock, and the room holds the next start during it.
 - Good: the bridge names exactly one Voyager package, enforced by an ArchUnit rule and by a build check on the bridge jar.
 - Good: the three lobby displays read one board, so they cannot disagree.
 - Bad: the handoff's static slot is a process-wide value. Tests reset it, and a second bridge install replaces the first.
-- Bad: the greenfield design's sentence and ADR-0026's wording are amended. Until the owner accepts that, the spec text and the older texts disagree.
+- Bad: the greenfield design's sentence and ADR-0026's wording are amended (both on 2026-10-13, under the owner's answer Q1). The
+  amendment is recorded in each text; ADR-0029 is not marked amended until this record is accepted.
 - Bad: after a cup the lobby is empty, so no countdown runs until new racers join.
 - Neutral: the hub is whatever CloudNet's fallback configuration names. Voyager does not choose it.
 
