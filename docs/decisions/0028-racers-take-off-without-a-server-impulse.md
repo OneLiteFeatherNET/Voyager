@@ -7,6 +7,10 @@ Proposed
 The owner accepts or rejects this record. The change that implements it is `remove-start-launch` (OpenSpec, design D9).
 Status moves to Accepted only on the owner's word.
 
+Note (2026-10-13): [ADR-0031](0031-checkpoint-resets-with-a-deployed-elytra.md) amends the reset part of this record. A reset to a
+checkpoint places the racer gliding, with the elytra deployed by the server and no impulse, and a reset to the spawn stays on foot.
+The decision of no launch impulse at GO and at a reset is unchanged.
+
 ## Date
 
 2026-10-12

@@ -98,7 +98,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
   with none resets to the spawn.
 - [x] 5.3 `docs(decisions)`: write `docs/decisions/0031-checkpoint-resets-with-a-deployed-elytra.md` as a MADR 4.0 record,
   status Proposed, amending ADR-0028. The owner accepts it.
-- [ ] 5.4 `docs(decisions)`: add a status note to `docs/decisions/0028-racers-take-off-without-a-server-impulse.md` that
+- [x] 5.4 `docs(decisions)`: add a status note to `docs/decisions/0028-racers-take-off-without-a-server-impulse.md` that
   points to ADR-0031 for the reset glide. The decision of no impulse is unchanged.
 - [x] 5.5 `docs(race)`: `docs/guides/how-to-run-a-playtest.md` gains the reset checks of task 6.2 to 6.4.
 - [ ] 5.6 Check, without editing, that `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (velocity section,
