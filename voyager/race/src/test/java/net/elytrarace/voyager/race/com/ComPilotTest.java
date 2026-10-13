@@ -32,8 +32,9 @@ class ComPilotTest {
     private static final long TICK_LIMIT = 2_000L;
 
     /**
-     * Three rings on the z axis at 20, 50 and 80 blocks, each facing {@code normal}. Only the middle ring takes
-     * {@code middleType}: a boost on the first ring would land before the racer has reached its target speed.
+     * Three rings on the z axis at 20, 50 and 80 blocks, each facing {@code normal}, and the grid at the spawn on the
+     * origin, as the field builds it. Only the middle ring takes {@code middleType}: a boost on the first ring would
+     * land before the racer has reached its target speed.
      */
     private static ComPath course(Vec3 normal, RingType middleType) {
         List<Ring> rings = List.of(
@@ -42,7 +43,7 @@ class ComPilotTest {
                 new Ring(2, new Vec3(0.0, 64.0, 80.0), normal, RING_RADIUS, 8, RingType.STANDARD));
         MapDefinition map = new MapDefinition("fixture", "fixture", new Vec3(0.0, 64.0, 0.0), rings,
                 Duration.ofSeconds(30), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
-        return ComPath.of(RacingLine.of(map), map.rings());
+        return ComPath.fromGrid(map.spawn(), RacingLine.of(map), map.rings());
     }
 
     /** The straight course with rings that face down the course, so a racer can pass them. */

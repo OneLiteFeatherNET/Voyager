@@ -28,8 +28,8 @@ public record ComState(ComSeat seat, double distance, double speed, RingProgress
     /** The value of {@link #boostDueTick} when no boost is waiting to take effect. */
     static final long NO_BOOST = Long.MIN_VALUE;
 
-    /** Where a racer starts on the grid: eight blocks behind the first ring's centre, so it passes the ring. */
-    static final double START_DISTANCE = -8.0;
+    /** Where a racer starts on the grid: at the first point of its path, the map's spawn (see {@code ComPath#fromGrid}). */
+    static final double START_DISTANCE = 0.0;
 
     public ComState {
         if (stalledTicks < 0) {
