@@ -128,6 +128,26 @@ class ComFieldTest {
     }
 
     @Test
+    void aComputerRacerStartsOnTheGridAtTheMapsSpawn(Env env) {
+        Instance instance = flatInstance(env);
+        ComField field = new ComField(List::of, 1, ComDifficulty.MEDIUM, ROUND_SEED, world -> instance);
+
+        field.prepare(0, MAP);
+        env.tick();
+
+        assertThat(computerEntities(instance))
+                .as("one computer racer is on the grid")
+                .hasSize(1);
+        Pos start = computerEntities(instance).getFirst().getPosition();
+        assertThat(start.y())
+                .as("the racer starts at the spawn's height, not at the height of the first ring, which is eight blocks up")
+                .isEqualTo(SPAWN.y());
+        assertThat(Math.hypot(start.x() - SPAWN.x(), start.z() - SPAWN.z()))
+                .as("the racer starts within a block of the spawn, where the wander of a MEDIUM racer keeps it")
+                .isLessThanOrEqualTo(1.0);
+    }
+
+    @Test
     void thePathForAMapIsBuiltOnceAndShared(Env env) {
         Instance instance = flatInstance(env);
         FakeBrain brain = new FakeBrain();
