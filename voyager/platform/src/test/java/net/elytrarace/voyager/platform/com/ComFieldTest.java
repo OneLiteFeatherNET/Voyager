@@ -148,6 +148,22 @@ class ComFieldTest {
     }
 
     @Test
+    void aOneRingMapWithNoGuidePointsPreparesWhenItsSpawnIsOnTheRing(Env env) {
+        Instance instance = flatInstance(env);
+        Vec3 spawn = new Vec3(3.5, 65.0, 5.5);
+        MapDefinition oneRing = new MapDefinition("one-ring", WORLD, spawn,
+                List.of(new Ring(0, spawn, new Vec3(0.0, 0.0, 1.0), 6.0, 7, RingType.STANDARD)),
+                Duration.ofMillis(400), new BoostConfig(4, 9), new GuideLine(List.of(), 2, 1.0));
+        ComField field = new ComField(List::of, 2, ComDifficulty.MEDIUM, ROUND_SEED, world -> instance);
+
+        List<UUID> ids = field.prepare(0, oneRing);
+
+        assertThat(ids)
+                .as("a map with one ring and no guide points still gets its two computer racers, with no exception")
+                .hasSize(2);
+    }
+
+    @Test
     void thePathForAMapIsBuiltOnceAndShared(Env env) {
         Instance instance = flatInstance(env);
         FakeBrain brain = new FakeBrain();
