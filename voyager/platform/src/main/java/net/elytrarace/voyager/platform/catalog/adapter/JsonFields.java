@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Reads fields out of a {@link JsonObject}, refusing an absent or wrongly typed one by name.
  *
@@ -66,6 +68,24 @@ final class JsonFields {
                     "%s field '%s' must be a whole number, was %s".formatted(what, field, value));
         }
         return (int) value;
+    }
+
+    /**
+     * An optional whole number: the value when the field is stated, {@code absent} when it is not. Used for
+     * the fields a map may leave out because the default is the value that existed before the field did.
+     */
+    static int integerOr(JsonObject json, String field, String what, int absent) {
+        return present(json, field) ? integer(json, field, what) : absent;
+    }
+
+    /** An optional number: the value when the field is stated, {@code absent} when it is not. */
+    static double numberOr(JsonObject json, String field, String what, double absent) {
+        return present(json, field) ? number(json, field, what) : absent;
+    }
+
+    /** An optional number with no default: {@code null} when the field is not stated, meaning no value. */
+    static @Nullable Double numberOrNull(JsonObject json, String field, String what) {
+        return present(json, field) ? number(json, field, what) : null;
     }
 
     static JsonArray array(JsonObject json, String field, String what) {

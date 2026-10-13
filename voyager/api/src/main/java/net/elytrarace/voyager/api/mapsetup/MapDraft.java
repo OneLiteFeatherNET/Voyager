@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.mapsetup.exception.InvalidDraftException;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -21,9 +22,16 @@ import java.util.List;
  * @param referenceTimeSeconds the provisional reference time, finite and positive
  * @param boostConfig          the boost tuning of the map
  * @param guideLine            the racing line of the map
+ * @param ringEffects          the velocity factors of the map's BOOST and SLOW rings
  */
 public record MapDraft(MapId id, String world, @Nullable Vec3 spawn, List<Ring> rings, double referenceTimeSeconds,
-                       BoostConfig boostConfig, GuideLine guideLine) {
+                       BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects) {
+
+    /** A draft with the factors every map used before they were per map. */
+    public MapDraft(MapId id, String world, @Nullable Vec3 spawn, List<Ring> rings, double referenceTimeSeconds,
+                    BoostConfig boostConfig, GuideLine guideLine) {
+        this(id, world, spawn, rings, referenceTimeSeconds, boostConfig, guideLine, RingEffectTuning.DEFAULT);
+    }
 
     public MapDraft {
         if (world.isBlank()) {

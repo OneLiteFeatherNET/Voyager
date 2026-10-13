@@ -34,6 +34,7 @@
       "description": "The lap time, in seconds, a new record must beat."
     },
     "boostConfig": { "$ref": "#/$defs/boostConfig" },
+    "ringEffects": { "$ref": "#/$defs/ringEffects" },
     "guideLine": { "$ref": "#/$defs/guideLine" },
     "rings": {
       "type": "array",
@@ -94,7 +95,38 @@
         "cooldownTicks": {
           "type": "integer",
           "minimum": 1,
-          "description": "Must be longer than burnDurationTicks; the loader refuses it otherwise."
+          "description": "Must be longer than burnDurationTicks; the loader refuses it otherwise. The cooldown is measured from the tick a boost starts, so it must outlast the burn."
+        },
+        "rocketsPerRacer": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64,
+          "default": 64,
+          "description": "How many rockets a racer is given when the map begins. Optional; 64, the item stack limit, when absent. Every rocket burns for burnDurationTicks and the item's flight duration is derived from that burn."
+        },
+        "maxSpeedBlocksPerTick": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Optional speed cap in blocks per tick. It limits only the velocity a BOOST or SLOW ring writes, and keeps its direction. It never limits normal flight or rockets. Absent means no cap."
+        }
+      }
+    },
+    "ringEffects": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional. The velocity factors of this map's BOOST and SLOW rings. A factor that is left out keeps its default: 1.5 for BOOST, 0.5 for SLOW.",
+      "properties": {
+        "boostMultiplier": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1.5,
+          "description": "The factor a BOOST ring multiplies the racer's velocity by. Zero or more."
+        },
+        "slowMultiplier": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0.5,
+          "description": "The factor a SLOW ring multiplies the racer's velocity by. Zero or more."
         }
       }
     },

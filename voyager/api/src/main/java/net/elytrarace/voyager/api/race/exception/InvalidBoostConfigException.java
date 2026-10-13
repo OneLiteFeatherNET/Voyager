@@ -12,6 +12,19 @@ public final class InvalidBoostConfigException extends RuntimeException {
                 "boost burn duration must be positive, was %s tick(s)".formatted(burnDurationTicks));
     }
 
+    /** A stack a racer cannot hold: the item stack limit is {@code BoostConfig.MAX_ROCKETS_PER_RACER}. */
+    public static InvalidBoostConfigException rocketsOutOfRange(int rocketsPerRacer) {
+        return new InvalidBoostConfigException(
+                "boost field rocketsPerRacer must be between 1 and 64, was %s".formatted(rocketsPerRacer));
+    }
+
+    /** A cap that is not a speed: it must be finite and greater than zero, or it is left out to mean no cap. */
+    public static InvalidBoostConfigException nonPositiveSpeedCap(double maxSpeedBlocksPerTick) {
+        return new InvalidBoostConfigException(
+                "boost field maxSpeedBlocksPerTick must be finite and greater than zero, was %s"
+                        .formatted(maxSpeedBlocksPerTick));
+    }
+
     /**
      * The refusal that exists for a reason outside the config: the simulation's boost input is a
      * boolean, so two rockets burning on one player at the same time cannot be told from one. The

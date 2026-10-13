@@ -75,6 +75,6 @@ public abstract class DraftEditor {
 
     private static MapDraft with(MapDraft draft, List<Ring> rings, Vec3 spawn) {
         return new MapDraft(draft.id(), draft.world(), spawn, rings, draft.referenceTimeSeconds(),
-                draft.boostConfig(), draft.guideLine());
+                draft.boostConfig(), draft.guideLine(), draft.ringEffects());
     }
 }

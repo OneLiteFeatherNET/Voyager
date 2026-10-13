@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.api.race;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.api.race.exception.InvalidMapException;
 
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,25 @@ class MapDefinitionTest {
      * repository uses, so a map that fell back to one instead of keeping what it was handed shows up.
      */
     private static final GuideLine NO_GUIDES = new GuideLine(List.of(), 3, 1.75);
+
+    /** A map file without {@code ringEffects} is built with the factors that were hard-coded before. */
+    @Test
+    void aMapWithoutRingEffectsGetsTheDefaultTuning() {
+        MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
+
+        assertThat(map.ringEffects()).isEqualTo(RingEffectTuning.DEFAULT);
+    }
+
+    @Test
+    void theEightArgumentConstructorKeepsTheTuningItIsGiven() {
+        RingEffectTuning tuning = new RingEffectTuning(2.0, 0.25);
+
+        MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES, tuning);
+
+        assertThat(map.ringEffects()).isEqualTo(tuning);
+    }
 
     @Test
     void keepsWhatItWasGiven() {

@@ -3,9 +3,11 @@ package net.elytrarace.voyager.platform.catalog.writer;
 import com.google.gson.stream.JsonWriter;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 
@@ -54,16 +56,46 @@ public abstract class MapDraftJsonWriter {
             vector(json, draft.spawn());
         }
         json.name("referenceTimeSeconds").value(draft.referenceTimeSeconds());
-        json.name("boostConfig").beginObject()
-                .name("burnDurationTicks").value(draft.boostConfig().burnDurationTicks())
-                .name("cooldownTicks").value(draft.boostConfig().cooldownTicks())
-                .endObject();
+        boostConfig(json, draft.boostConfig());
+        ringEffects(json, draft.ringEffects());
         guideLine(json, draft.guideLine());
         json.name("rings").beginArray();
         for (Ring ring : draft.rings()) {
             ring(json, ring);
         }
         json.endArray();
+        json.endObject();
+    }
+
+    /**
+     * Writes the two required boost fields, and each optional one only when it differs from what a file that omits it
+     * means: 64 rockets, and no speed cap. A saved file therefore changes only where a designer set a value.
+     */
+    private static void boostConfig(JsonWriter json, BoostConfig boost) throws IOException {
+        json.name("boostConfig").beginObject()
+                .name("burnDurationTicks").value(boost.burnDurationTicks())
+                .name("cooldownTicks").value(boost.cooldownTicks());
+        if (boost.rocketsPerRacer() != BoostConfig.MAX_ROCKETS_PER_RACER) {
+            json.name("rocketsPerRacer").value(boost.rocketsPerRacer());
+        }
+        if (boost.maxSpeedBlocksPerTick() != null) {
+            json.name("maxSpeedBlocksPerTick").value(boost.maxSpeedBlocksPerTick());
+        }
+        json.endObject();
+    }
+
+    /** Writes {@code ringEffects} only when the map sets a factor away from its default, and then only that factor. */
+    private static void ringEffects(JsonWriter json, RingEffectTuning tuning) throws IOException {
+        if (tuning.equals(RingEffectTuning.DEFAULT)) {
+            return;
+        }
+        json.name("ringEffects").beginObject();
+        if (tuning.boostMultiplier() != RingEffectTuning.DEFAULT.boostMultiplier()) {
+            json.name("boostMultiplier").value(tuning.boostMultiplier());
+        }
+        if (tuning.slowMultiplier() != RingEffectTuning.DEFAULT.slowMultiplier()) {
+            json.name("slowMultiplier").value(tuning.slowMultiplier());
+        }
         json.endObject();
     }
 

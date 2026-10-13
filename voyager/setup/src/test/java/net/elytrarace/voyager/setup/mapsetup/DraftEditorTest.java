@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -64,6 +65,28 @@ class DraftEditorTest {
         MapDraft draft = withRings(2);
 
         assertThatThrownBy(() -> DraftEditor.withoutRing(draft, 2)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * An edit rebuilds the draft. A designer's ring factors must come through every edit, or a single spawn placement
+     * would reset them to the defaults without a word.
+     */
+    @Test
+    void everyEditKeepsTheRingEffectsTheDraftCarries() {
+        RingEffectTuning tuning = new RingEffectTuning(2.0, 0.25);
+        MapDraft tuned = new MapDraft(ID, ID.value(), null, List.of(), RingDefaults.REFERENCE_TIME_SECONDS,
+                RingDefaults.BOOST, RingDefaults.GUIDE_LINE, tuning);
+
+        MapDraft placed = DraftEditor.withSpawn(tuned, new Vec3(109, -62, 54));
+        MapDraft withRing = DraftEditor.withRingAppended(placed, ring(0, 1.0));
+
+        assertThat(placed.ringEffects()).isEqualTo(tuning);
+        assertThat(withRing.ringEffects()).isEqualTo(tuning);
+    }
+
+    @Test
+    void theSkeletonHasTheDefaultRingEffects() {
+        assertThat(DraftEditor.skeleton(ID).ringEffects()).isEqualTo(RingEffectTuning.DEFAULT);
     }
 
     @Test

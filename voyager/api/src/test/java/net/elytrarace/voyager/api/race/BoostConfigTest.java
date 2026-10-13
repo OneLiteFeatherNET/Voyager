@@ -59,6 +59,46 @@ class BoostConfigTest {
         assertThat(BoostConfig.VANILLA_BURN_TICKS).isEqualTo(30);
     }
 
+    /** A map file that states only the two required fields races with the stack and the cap today's code uses. */
+    @Test
+    void aBoostConfigWithoutTheNewFieldsKeeps64RocketsAndNoCap() {
+        BoostConfig config = new BoostConfig(30, 40);
+
+        assertThat(config.rocketsPerRacer()).isEqualTo(64);
+        assertThat(config.maxSpeedBlocksPerTick()).isNull();
+    }
+
+    @Test
+    void rocketsPerRacerIsKeptWhenItIsWithinTheStackLimit() {
+        assertThat(new BoostConfig(30, 40, 12, null).rocketsPerRacer()).isEqualTo(12);
+    }
+
+    @Test
+    void rocketsPerRacerMustBeBetweenOneAndSixtyFour() {
+        assertThatThrownBy(() -> new BoostConfig(30, 40, 0, null))
+                .isInstanceOf(InvalidBoostConfigException.class)
+                .hasMessageContaining("rocketsPerRacer");
+        assertThatThrownBy(() -> new BoostConfig(30, 40, 65, null))
+                .isInstanceOf(InvalidBoostConfigException.class)
+                .hasMessageContaining("rocketsPerRacer");
+        assertThatCode(() -> new BoostConfig(30, 40, 1, null)).doesNotThrowAnyException();
+        assertThatCode(() -> new BoostConfig(30, 40, 64, null)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void aSpeedCapMustBeFiniteAndGreaterThanZero() {
+        assertThatThrownBy(() -> new BoostConfig(30, 40, 64, 0.0))
+                .isInstanceOf(InvalidBoostConfigException.class)
+                .hasMessageContaining("maxSpeedBlocksPerTick");
+        assertThatThrownBy(() -> new BoostConfig(30, 40, 64, -1.0))
+                .isInstanceOf(InvalidBoostConfigException.class);
+        assertThatThrownBy(() -> new BoostConfig(30, 40, 64, Double.NaN))
+                .isInstanceOf(InvalidBoostConfigException.class);
+        assertThatThrownBy(() -> new BoostConfig(30, 40, 64, Double.POSITIVE_INFINITY))
+                .isInstanceOf(InvalidBoostConfigException.class);
+        assertThat(new BoostConfig(30, 40, 64, 3.5).maxSpeedBlocksPerTick()).isEqualTo(3.5);
+    }
+
     /**
      * The real map's own cooldown of 2000 ms is 40 ticks, which is longer than the derived burn of 30
      * — so the two values the committed course is built from can actually be held together. Asserted
