@@ -18,6 +18,7 @@ import net.elytrarace.voyager.platform.hud.RaceFeedback;
 import net.elytrarace.voyager.platform.hud.RaceHud;
 import net.elytrarace.voyager.platform.hud.StartCountdown;
 import net.elytrarace.voyager.platform.render.GuideLineRenderer;
+import net.elytrarace.voyager.platform.stats.RacerTally;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTick;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
@@ -132,6 +133,9 @@ public final class CupSession implements RacePhaseListener {
     private final CupAnnouncer announcer;
     private final RunResetter resetter;
 
+    /** What each racer boosted, reset and glided on the map being raced. Cleared when a map is entered. */
+    private final RacerTally tally;
+
     /**
      * The cup being played: the boot cup until a round starts, then the cup of the catalogue that round pinned.
      * Written only by {@link #start}.
@@ -213,6 +217,7 @@ public final class CupSession implements RacePhaseListener {
         this.players = players;
         this.announcer = new CupAnnouncer(players);
         this.resetter = new RunResetter(runs, boosts, flight);
+        this.tally = new RacerTally(step);
     }
 
     /** The cup being played: the one the current round pinned, or the boot cup before the first round. */
@@ -258,6 +263,7 @@ public final class CupSession implements RacePhaseListener {
         pinned = catalog.promoteForNewRound();
         cup = pinned.cup();
         round.reset();
+        tally.clear();
         lastSimulated.clear();
         // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
         // must not still be running when the new first map releases its racers.
@@ -522,6 +528,7 @@ public final class CupSession implements RacePhaseListener {
         if (!boosts.requestBoost(racer.getUuid(), config, racer.isFlyingWithElytra())) {
             return false;
         }
+        tally.recordBoost(racer.getUuid());
         Rockets.fire(racer, config);
         return true;
     }
@@ -603,6 +610,7 @@ public final class CupSession implements RacePhaseListener {
                         .formatted(cup.name(), mapName)));
         currentMap = map;
         preparedMapIndex = mapIndex;
+        tally.clear();
         ringEffects = RingEffectRegistry.create(map.ringEffects());
         LOGGER.info("Map {}/{} '{}' tuning: {}", mapIndex + 1, cup.mapNames().size(), map.name(), tuningOf(map));
         Instance instance = instances.forWorld(map.world());
@@ -633,6 +641,9 @@ public final class CupSession implements RacePhaseListener {
             boolean wasFinished = held.get().finished();
             Vec3 position = Vectors.toDomain(racer.getPosition());
             RaceRun advanced = runs.advance(id, map, clock, position, racer.isFlyingWithElytra(), racer.isOnGround());
+            if (advanced.gliding()) {
+                tally.recordGlidingTick(id);
+            }
             announcer.report(racer, map, advanced, wasFinished, clock);
             RaceRun shown = sendBackIfLostOrLanded(racer, map, held.get(), advanced, position);
             // sendBackIfLostOrLanded hands back the run it was given unless it reset the racer, so a reset
@@ -678,6 +689,7 @@ public final class CupSession implements RacePhaseListener {
         }
         ResetPlan plan = RunReset.plan(map, advanced, cause);
         resetter.reset(racer, plan, map.boostConfig());
+        tally.recordReset(racer.getUuid());
         LOGGER.info("Racer {} reset for {} to {}", racer.getUsername(), cause, plan.position());
         return plan.run();
     }
