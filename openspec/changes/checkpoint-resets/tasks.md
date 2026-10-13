@@ -78,7 +78,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
   which says the reset ends the glide (task 2.11).
 - [x] 3.5 Green: `RunResetter.reset` keeps its order; it passes the checkpoint number to the feedback (task 2.13).
 - [x] 3.6 Green: `CupSession` passes the ground state to `advance` and the landing rule (task 2.14).
-- [ ] 3.7 Green: the reset title keys name the checkpoint number or the start. Add the keys to
+- [x] 3.7 Green: the reset title keys name the checkpoint number or the start. Add the keys to
   `voyager/server/src/main/resources/voyager_en_US.properties` if the wording changes.
 - [ ] 3.8 Green: generate `checkpoint-reset.txt` from the Green run and diff it with the hand-written expectation (task 2.17).
   Any difference is a decision, not a regeneration; stop and ask the owner.

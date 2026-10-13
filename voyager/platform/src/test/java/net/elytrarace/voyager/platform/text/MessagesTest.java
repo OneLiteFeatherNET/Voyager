@@ -336,10 +336,10 @@ class MessagesTest {
     }
 
     @Test
-    void aRingTargetNamesTheRingByItsOneBasedNumber() {
+    void aCheckpointTargetNamesTheCheckpointByItsOneBasedNumber() {
         TranslatableComponent target = translatable(Messages.resetSubtitle(OptionalInt.of(3)));
 
-        assertThat(target.key()).isEqualTo("voyager.reset.target.ring");
+        assertThat(target.key()).isEqualTo("voyager.reset.target.checkpoint");
         assertThat(PlainTextComponentSerializer.plainText().serialize(target.arguments().getFirst().asComponent())).isEqualTo("3");
     }
 

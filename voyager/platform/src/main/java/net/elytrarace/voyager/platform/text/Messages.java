@@ -53,7 +53,7 @@ public abstract class Messages {
     private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown";
     private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
     private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
-    private static final String RESET_TARGET_RING = "voyager.reset.target.ring";
+    private static final String RESET_TARGET_CHECKPOINT = "voyager.reset.target.checkpoint";
     private static final String RESET_TARGET_START = "voyager.reset.target.start";
     private static final long MILLIS_PER_SECOND = 1_000L;
     private static final String MAP_RESULT_MEDAL = "voyager.result.map.medal";
@@ -430,11 +430,12 @@ public abstract class Messages {
     /**
      * The line under a reset title: where the racer is being sent back to.
      *
-     * @param ringNumber the one-based number of the last ring passed, or empty for a reset to the start
+     * @param checkpointNumber the one-based number of the checkpoint the racer is returned to, or empty for a reset
+     *     to the start
      */
-    public static Component resetSubtitle(OptionalInt ringNumber) {
-        return ringNumber.isPresent()
-                ? Component.translatable(RESET_TARGET_RING, Component.text(ringNumber.getAsInt()))
+    public static Component resetSubtitle(OptionalInt checkpointNumber) {
+        return checkpointNumber.isPresent()
+                ? Component.translatable(RESET_TARGET_CHECKPOINT, Component.text(checkpointNumber.getAsInt()))
                 : Component.translatable(RESET_TARGET_START);
     }
 }
