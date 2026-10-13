@@ -66,8 +66,9 @@ Chosen option: **1**, with these rules.
 - Good: the stored light of the worlds is used as it was saved, and nothing is recomputed that does not need to be.
 - Good: no dependency is added, and the engine is Minestom's, which the rebuild already runs on.
 - Good: the boot check's time and peak memory stay where they are, because stored light is already applied today.
-- Bad: a section without stored light is computed on the packet path when a player first sees it, which may cause a
-  hitch. Measured in the change's task 6.2. If it is too slow, option 2 is the fallback.
+- Bad: a section without stored light is computed on the packet path when a player first sees it. Measured in task 6.2: the
+  first send of a 289-chunk view takes about 1 s, against about 0.2 s without the change. The owner decides whether that is
+  acceptable or whether option 2 is taken (see Numbers).
 - Bad: the computed light is repeated on every boot, because it is never saved.
 - Neutral: the lobby keeps the overworld's sky light. No custom dimension type is added (owner decision, 2026-10-13).
 - Neutral: the shipped `ElytraraceBlueAndRed` stores light for under 1.5 % of its sections, so almost all of the lit
@@ -75,10 +76,43 @@ Chosen option: **1**, with these rules.
 
 ## Numbers
 
-Not measured yet. The design gives analytic bounds: about zero extra work at boot, and at most roughly 28 MB for a
-289-chunk view (view distance 8, the default) of light-less sections, before packet caches. The measured boot time, the boot memory and the time to the
-first light packet of a view are recorded here by tasks 6.1 and 6.2 of the change. Lighting for the spawn is not
-pre-computed (owner decision, 2026-10-13); the first send of each chunk pays the cost.
+Measured on 2026-10-13 on the build of this change, JDK 25, Minestom 2026.10.07-26.2. Single runs, so the spread is
+given where there were two.
+
+**First view of the racetrack spawn (task 6.2).** The spawn of `ElytraraceBlueAndRed` is chunk (6, 3). A 17 x 17 view is
+289 chunks, which is the default view distance of 8. The chunks were loaded, then each one's full data packet was built.
+Heap was sampled after a forced GC.
+
+| Configuration | Load of 289 chunks | First send of 289 chunks | Heap used after send |
+|---|---|---|---|
+| Without the change (`DynamicChunk`, stored light only) | 163 ms, 182 ms | 181 ms, 184 ms | 39 MB |
+| With the change (`LightingChunk`, light-less sections relit) | 85 ms, 89 ms | 979 ms, 1 227 ms | 56 MB |
+
+The first send is about five times slower with the change, roughly 1 s more on the first view of a track spawn. The
+extra heap is about 17 MB for the view. The owner has not agreed a numeric budget for the first send, so this has not
+been treated as a failure. It is the trigger for the fallback in the design (option 2, `falco-light`), and the owner
+must decide whether to accept it or to take the fallback before this change is considered done.
+
+**Configuration check on ElytraLobby (task 6.1).** Run as the production check (`-Dvoyager.config.check=true`, `-Xmx2G`,
+G1 log) on the lobby copy at `/mnt/projects/lab/voyager-legacy-worlds/team-build/ElytraLobby`, with the same data as the
+smoke boot.
+
+| Configuration | Wall time to exit | Peak live heap after GC |
+|---|---|---|
+| Without the change (`origin/main`, 3efba76) | 4.8 s | 549 MB |
+| With the change | 5.3 s | 552 MB |
+
+The wall times are single runs. The peak is +3 MB, which fits the design's claim that the check computes no light. The
+check exits with status 1 in both builds. It refuses the lobby on the world's own content, which the change does not
+touch: 2 block names unknown to this server, and 7 708 chunks with no data in their region files. ADR-0029 already
+records that `ElytraLobby` needs its upgrade to Minecraft 26.2. The lobby is therefore not yet a usable configuration, and
+the numbers above describe a check that stops at the lobby rather than a boot that serves it.
+
+**Smoke boot (task 7.1).** The shadow jar was booted with the map data and `ElytraraceBlueAndRed`, without a lobby, because
+the lobby refuses as described above. The server reached "Voyager started", took the `stop` command, and exited with
+status 0. Heap was 585 MB used and 800 MB committed, read with `jcmd GC.heap_info` at the ready point. A comparison
+boot without the change was not made, because it needed a second full build for the same result; the check comparison
+above is the measured one.
 
 ## Confirmation
 
