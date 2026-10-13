@@ -10,6 +10,8 @@ import com.google.gson.JsonParseException;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuideLineMode;
+import net.elytrarace.voyager.api.race.GuideParticle;
 import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
@@ -123,9 +125,22 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
                     Vec3Adapter.read(JsonFields.required(guide, "position",
                             "%s guide point %s".formatted(what, orderIndex)))));
         }
+        // The style fields are optional: a file that names none of them loads to FULL, END_ROD and the
+        // amber default, the course it always was drawn as a window of. dustColor is read as stated and
+        // refused by GuideLine on any particle but DUST, so the refusal names both fields.
+        GuideLineMode mode = JsonFields.present(line, "mode")
+                ? GuideLineMode.parse(JsonFields.string(line, "mode", where))
+                : GuideLineMode.FULL;
+        GuideParticle particle = JsonFields.present(line, "particle")
+                ? GuideParticle.parse(JsonFields.string(line, "particle", where))
+                : GuideParticle.END_ROD;
+        Integer dustRgb = JsonFields.present(line, "dustColor")
+                ? GuideLine.parseDustColor(JsonFields.string(line, "dustColor", where))
+                : null;
         return new GuideLine(points,
                 JsonFields.integer(line, "lookAheadRings", where),
-                JsonFields.number(line, "particleSpacing", where));
+                JsonFields.number(line, "particleSpacing", where),
+                mode, particle, dustRgb);
     }
 
     /**

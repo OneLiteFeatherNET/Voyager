@@ -7,6 +7,9 @@ import com.google.gson.JsonParser;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuideLineMode;
+import net.elytrarace.voyager.api.race.GuideParticle;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.platform.catalog.DraftFixtures;
@@ -61,5 +64,22 @@ class MapDraftJsonRoundTripTest {
         assertThat(reloaded.ringEffects()).isEqualTo(new RingEffectTuning(2.0, 0.25));
         assertThat(map.boostConfig()).isEqualTo(new BoostConfig(30, 40, 12, 3.5));
         assertThat(map.ringEffects()).isEqualTo(new RingEffectTuning(2.0, 0.25));
+    }
+
+    @Test
+    void aDraftKeepsTheGuideLineStyleThroughALoadAndASave() {
+        MapDraft base = DraftFixtures.complete(new MapId("skyfortress"));
+        GuideLine styled = new GuideLine(base.guideLine().points(), base.guideLine().lookAheadRings(),
+                base.guideLine().particleSpacing(), GuideLineMode.WINDOW, GuideParticle.DUST, 0x3366FF);
+        MapDraft draft = new MapDraft(base.id(), base.world(), base.spawn(), base.rings(),
+                base.referenceTimeSeconds(), new BoostConfig(30, 40, 12, 3.5), styled,
+                new RingEffectTuning(2.0, 0.25));
+        String saved = MapDraftJsonWriter.toJson(draft);
+
+        MapDraft reloaded = MapDraftAdapter.read("skyfortress.json", JsonParser.parseString(saved));
+        MapDefinition map = GAME_GSON.fromJson(saved, MapDefinition.class);
+
+        assertThat(reloaded.guideLine()).isEqualTo(styled);
+        assertThat(map.guideLine()).isEqualTo(styled);
     }
 }

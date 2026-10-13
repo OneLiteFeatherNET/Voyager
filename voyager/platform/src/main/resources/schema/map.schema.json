@@ -144,6 +144,21 @@
           "minimum": 0.25,
           "description": "Blocks between drawn particles on the racing line. The loader refuses less than 0.25."
         },
+        "mode": {
+          "type": "string",
+          "enum": ["FULL", "WINDOW"],
+          "description": "Optional. FULL draws the line from the ring the racer is heading for to the last ring, and is the default. WINDOW draws only lookAheadRings rings ahead."
+        },
+        "particle": {
+          "type": "string",
+          "enum": ["END_ROD", "DUST"],
+          "description": "Optional. The particle the line is drawn with. END_ROD is the default."
+        },
+        "dustColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Optional. The colour of a DUST line, as #RRGGBB. Default #FFC800. The loader refuses it unless particle is DUST."
+        },
         "points": {
           "type": "array",
           "items": { "$ref": "#/$defs/guidePoint" }
