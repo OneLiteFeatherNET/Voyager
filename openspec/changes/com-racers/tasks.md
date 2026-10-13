@@ -114,11 +114,11 @@ They are listed in the results as `COM n` with their time and no points, and eac
 
 Effort for this group: low (Haiku), except 8.4, which is research and takes medium.
 
-- [ ] 8.1 Reference page `docs/reference/com-racers.md`: the two settings, the difficulty table, the lifecycle, the scoring exclusion and the known limits (`docs`). Effort: low (Haiku).
-- [ ] 8.2 Update `docs/reference/config-check.md` with `VOYAGER_COM_COUNT` and `VOYAGER_COM_DIFFICULTY` and the boot line (`docs`). Effort: low (Haiku).
-- [ ] 8.3 Update `docs/guides/how-to-run-a-playtest.md` with how to turn computer racers on and what to look for (`docs`). Effort: low (Haiku).
-- [ ] 8.4 Research note in `docs/research/` on the movement model, the speed bounds from spike 0.3 and the tuning plan (`docs`). Effort: medium (Haiku).
-- [ ] 8.5 ADR-0035 stays Proposed. Consequences section updated with the measured numbers from D14 when they exist (`docs`). Effort: low (Haiku).
+- [x] 8.1 Reference page `docs/reference/com-racers.md`: the two settings, the difficulty table, the lifecycle, the scoring exclusion and the known limits (`docs`). Effort: low (Haiku).
+- [x] 8.2 Update `docs/reference/config-check.md` with `VOYAGER_COM_COUNT` and `VOYAGER_COM_DIFFICULTY` and the boot line (`docs`). Effort: low (Haiku).
+- [x] 8.3 Update `docs/guides/how-to-run-a-playtest.md` with how to turn computer racers on and what to look for (`docs`). Effort: low (Haiku).
+- [x] 8.4 Research note in `docs/research/` on the movement model, the speed bounds from spike 0.3 and the tuning plan (`docs`). Effort: medium (Haiku).
+- [x] 8.5 ADR-0035 stays Proposed. Consequences section updated with the measured numbers from D14 when they exist (`docs`). Effort: low (Haiku).
 - [ ] 8.6 Delta specs are synced by the archive step after merge (`openspec archive com-racers --yes`, apply-rules "Archive"), not by a task here. No separate sync commit. Effort: none.
 
 ## 9. Verification
