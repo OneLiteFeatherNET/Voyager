@@ -7,13 +7,13 @@ test with explicit ticks, and region fixtures written in the test itself, never 
 
 ## 1. Decisions
 
-- [ ] 1.1 Owner accepts ADR-0034 (`docs/decisions/0034-world-lighting.md`) and its Status line changes from Proposed to Accepted (`docs`)
-- [ ] 1.2 Spike, no commit: with the owner's approval, read the section light arrays of the shipped `ElytraraceBlueAndRed` and `ElytraLobby` region files and record how many sections carry no `SkyLight` or `BlockLight` array. Record the result in design.md, OQ1. Blocked until the owner approves reading `run/`; if the arrays are present, re-scope this change before task 2.
+- [x] 1.1 Owner accepts ADR-0034 (`docs/decisions/0034-world-lighting.md`) and its Status line changes from Proposed to Accepted (`docs`)
+- [x] 1.2 Spike, no commit: read the section light arrays of the shipped `ElytraraceBlueAndRed` region files, read-only. Result: 98.8 % of sections store no light; the change stays in scope (design.md, OQ1). `ElytraLobby` was not read; the owner asked for `ElytraraceBlueAndRed` only.
 
 ## 2. platform: marking light-less sections
 
 - [ ] 2.1 Red: `WorldLightingTest` names the behaviours "a loaded chunk keeps its stored light", "a section without stored light is marked for relight", "a section with an all-zero stored array is not marked", and "the boot check computes no light" (`feat(platform)`)
-- [ ] 2.2 Green: add `platform.world.WorldLight` (package-private, one static method) that marks a section's light only when its array is empty (`Light.array()` length 0), and call it from `TrackingInstance.retrieveChunk` after the load completes (`feat(platform)`)
+- [ ] 2.2 Green: add `platform.world.WorldLight` (package-private) that marks a light only when it has no stored array (`requiresSend()` is false; `Light.array()` cannot tell absent from all-zero), and wrap the Falco loader in its `ChunkLoader` decorator so the mark runs before the chunk is cached (`feat(platform)`)
 - [ ] 2.3 Red: `WorldLightingTest` names the behaviours "a viewer sent a light-less chunk receives computed block light", and "a relit chunk leaves the region file byte-identical after close" (`feat(platform)`)
 - [ ] 2.4 Green: no production change expected; if 2.3 fails, fix the cause in `WorldLight` or `TrackingInstance` and record it in design.md (`feat(platform)`)
 
@@ -34,7 +34,7 @@ test with explicit ticks, and region fixtures written in the test itself, never 
 ## 6. Measurement
 
 - [ ] 6.1 On ElytraLobby (8676 chunks) with the owner's copy, record the boot time and the peak heap of the configuration check, with and without the change; record the numbers in ADR-0034 (no commit; needs the operator's world)
-- [ ] 6.2 Measure the time to the first light packet of a 441-chunk view (view distance 10) and the heap after it, with and without the change; if the first view exceeds the budget agreed with the owner, record the fallback to `falco-light` in ADR-0034 (no commit)
+- [ ] 6.2 Measure the time to the first light packet of a 289-chunk view (view distance 8, the default) and the heap after it, with and without the change; if the first view exceeds the budget agreed with the owner, record the fallback to `falco-light` in ADR-0034 (no commit)
 
 ## 7. Smoke boot and pull request
 

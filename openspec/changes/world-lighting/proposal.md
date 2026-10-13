@@ -36,14 +36,15 @@ sections.
   loads. The light is computed the first time a viewer is sent that chunk, and it is never written to disk.
 - **Boot check stays cheap.** `MapInstances.readEveryChunk` and `checkWorld` load chunks but never send them, so they
   compute no light. The check's time and memory stay within the bounds in the design.
+- **Setup server.** The authoring worlds of `voyager-setup` open through `MapInstances.forWorld` in `SetupCommands`, so
+  the same change lights them (owner decision, 2026-10-13). No setup code changes.
 - **No save path.** Nothing in this change writes light to a region file. The worlds stay read-only and are never saved.
 
 **BREAKING:** none. No setting, catalogue file or map format changes.
 
 Out of scope:
 - `falco-light` and its `falco-instance` dependency.
-- Lighting in the setup server (`voyager-setup`), which does not use `MapInstances`.
 - A dimension type without sky light for the lobby. This is an open question for the owner (design, OQ2).
 - Pre-lighting the spawn area at boot. The light is computed lazily by default (design, OQ4).
 - Any change to the race, cup or scoring behaviour, or to the golden transcripts.
-- Reading the shipped worlds under `run/` for this proposal. That needs the owner's approval first (design, OQ1).
+- Reading the shipped worlds under `run/` beyond the read-only check of `ElytraraceBlueAndRed` (design, OQ1 result).

@@ -76,13 +76,13 @@ for each section that has any light, so that the viewer does not see a dark area
 
 #### Scenario: A viewer walks into an unlit area
 - **WHEN** a viewer enters chunks that carry no stored light
-- **THEN** each chunk sent to the viewer carries computed light, and the first send of a 441-chunk view stays within the
+- **THEN** each chunk sent to the viewer carries computed light, and the first send of a 289-chunk view (view distance 8) stays within the
   time budget measured in task 6.2
 
 ### Requirement: Relight cost is measured before the change is accepted
 **Priority:** MoSCoW Should
 
-THE SYSTEM SHALL record the boot time, the boot memory and the time to the first light packet of a 441-chunk view for
+THE SYSTEM SHALL record the boot time, the boot memory and the time to the first light packet of a 289-chunk view for
 the ElytraLobby world, with and without this change, before the pull request is merged.
 
 #### Scenario: The change is measured on the lobby world

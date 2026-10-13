@@ -107,8 +107,9 @@ The bounds below come from the source and the section count. They are not measur
 - **Runtime, theoretical ceiling for the whole lobby.** If every section were light-less and relit: about
   208 000 × 2 × 2 KB ≈ 0.85 GB. This is not reached, because only chunks sent to a viewer are relit. It is the bound
   that justifies a view-based policy.
-- **Runtime, one viewer.** With a view distance `v`, a viewer is sent `(2v+1)²` chunks. At `v = 10` that is 441 chunks,
-  so about 441 × 24 × 4 KB ≈ 42 MB in the worst case for light-less sections. `LightingChunk` also keeps packet-ready
+- **Runtime, one viewer.** With a view distance `v`, a viewer is sent `(2v+1)²` chunks. At the default `v = 8` (decided
+  above) that is 289 chunks, so about 289 × 24 × 4 KB ≈ 28 MB in the worst case for light-less sections. At `v = 10` it
+  would be 441 chunks and about 42 MB. `LightingChunk` also keeps packet-ready
   light copies per chunk, which may roughly double that. Both figures are upper bounds, and the real number depends on
   how much of each chunk lacks light.
 - **Runtime, time.** The relight of a section is a flood fill per section. No measurement exists yet. Task 6.2 records
@@ -128,14 +129,49 @@ stored light is already correct, so its ceiling is the full loaded set, not the 
   `retrieveChunk`.
 - ArchUnit: no new rule is required. A rule that only `platform.world` imports `LightingChunk` is optional (Could).
 
-## Open questions for the owner
+## Owner decisions and resolved questions
 
-- **OQ1 (blocking for the claim "nothing is dark today").** Do the shipped `ElytraraceBlueAndRed` and `ElytraLobby` region
-  files carry `SkyLight` and `BlockLight` arrays? If they do, the darkness comes from somewhere else and this change must
-  be re-scoped. The rebuild's `run/` tree was not read for this proposal, by the hard rule. Reading it needs the owner's
-  approval.
-- **OQ2.** Should the lobby keep sky light? Under a closed roof sky light is zero, and a dimension type without sky light
-  would skip the sky pass entirely. This needs a custom dimension type and is not in this change.
-- **OQ3.** Should the setup server (`voyager-setup`) light its authoring worlds? It does not use `MapInstances` today.
-- **OQ4.** Pre-light the spawn area at boot, or relight lazily only (the default in this design)?
-- **OQ5.** The view distance the server uses for the estimate above.
+Recorded on 2026-10-13 from the owner's answers to the open questions.
+
+- **Engine (D1).** Minestom's `LightingChunk`, with light-less sections marked for relight. `falco-light` is not used.
+- **Setup server (was OQ3).** The setup server lights its authoring worlds too. The premise of the question was wrong:
+  `SetupCommands` opens every authoring world through `MapInstances.forWorld` (`voyager/setup/.../SetupCommands.java`), so
+  the one change in `MapInstances` covers both servers. No separate setup code path is needed.
+- **Sky light in the lobby (was OQ2).** The lobby keeps sky light. No custom dimension type is added.
+- **Pre-lighting the spawn (was OQ4).** Not done. Light is computed lazily on the first send of a chunk, and the
+  explanation page says so. Pre-lighting the spawn at boot is a possible follow-up, not part of this change.
+- **View distance (was OQ5).** The budget uses Minestom's default `minestom.chunk-view-distance` of 8, which is what
+  `ServerProperties.CHUNK_VIEW_DISTANCE` reports (2026.10.07). No voyager code overrides it. `Arrivals` caps the view at
+  the client's setting, so 8 is the ceiling the budget assumes. A full view at 8 is `17 x 17 = 289` chunks, not the 441 of
+  view distance 10 in the cost estimate below.
+
+### OQ1 result: the shipped worlds store almost no light (read-only check, 2026-10-13)
+
+The owner approved reading `run/` read-only. The region NBT of `run/run/worlds/ElytraraceBlueAndRed/region` (20 `.mca`
+files, format `root`, not `Level`) was read with a stdlib-only parser, `python3 -I`, and no file was written. Result:
+
+| Measure | Count |
+|---|---|
+| Chunks | 14 270 |
+| Chunks with at least one stored light array | 285 |
+| Sections | 343 048 |
+| Sections with a stored `SkyLight` (2048 bytes) | 2 277 |
+| Sections with a stored `BlockLight` (2048 bytes) | 3 178 |
+| Sections with neither array | 338 790 (98.8 %) |
+
+So the premise holds: the world stores almost no light, and the darkness comes from the missing arrays. The change stays in
+scope. `ElytraLobby` was not read; the owner asked for `ElytraraceBlueAndRed` only. The run's chunk statuses are mixed
+(`full`, `minecraft:full`, `biomes`, `features`, `liquid_carvers`, `structure_starts`), so part of the world is not fully
+generated. That is a separate world-data question and is not part of this change.
+
+### Corrections found while reading the sources
+
+- **`Light.array()` cannot tell an absent array from an all-zero one.** `BlockLight` and `SkyLight` return the shared
+  empty `UNSET_CONTENT` for both, because `bake` returns `EMPTY_CONTENT` for all-zero content. A length test would mark a
+  stored all-zero section, which the spec forbids. The implementation asks `requiresSend()` instead: `set(...)` arms that
+  flag and an absent light never has it set. A stored light is re-armed with `set(array())`, the same round trip
+  `Section.copy()` uses, so its state is unchanged.
+- **Marking after the load is too late.** `InstanceContainer.retrieveChunk` calls `cacheChunk` and `onLoad` before the
+  returned future completes, so a chunk can be visible and sent before a mark applied in `thenApply`. The marking therefore
+  runs inside a `ChunkLoader` decorator that wraps the Falco loader, before the chunk is cached. The sketch in D1 is
+  superseded by this rule.

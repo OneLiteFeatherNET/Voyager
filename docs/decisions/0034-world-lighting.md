@@ -2,10 +2,9 @@
 
 ## Status
 
-Proposed
+Accepted
 
-The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it. The change
-that implements it is `world-lighting`.
+Accepted by the project owner on 2026-10-13, with the approval of the change `world-lighting` that implements it.
 
 ## Date
 
@@ -53,9 +52,12 @@ Falco ships a second engine, `falco-light`, which recomputes the light of every 
 
 Chosen option: **1**, with these rules.
 
-- Every instance that `MapInstances` opens uses `LightingChunk`. That covers the lobby world and every map world.
-- A section keeps its stored `SkyLight` and `BlockLight` arrays. An array of length 0 means no stored light, and only that
-  kind is marked for relight.
+- Every instance that `MapInstances` opens uses `LightingChunk`. That covers the lobby world, every map world and the
+  authoring worlds of the setup server, which open through `MapInstances` too.
+- A section keeps its stored `SkyLight` and `BlockLight` arrays. A light with no stored array is marked for relight, and
+  only that kind. The test is `requiresSend()`, not the array length, because an all-zero stored array reads back as
+  empty too.
+- The marking runs in a `ChunkLoader` decorator before the chunk is cached, so no viewer can be sent an unmarked chunk.
 - Light is computed on the first send to a viewer and is never written to a region file.
 - The configuration check computes no light, because it loads chunks but never sends them.
 
@@ -67,14 +69,16 @@ Chosen option: **1**, with these rules.
 - Bad: a section without stored light is computed on the packet path when a player first sees it, which may cause a
   hitch. Measured in the change's task 6.2. If it is too slow, option 2 is the fallback.
 - Bad: the computed light is repeated on every boot, because it is never saved.
-- Neutral: the lobby keeps the overworld's sky light. Whether a dimension type without sky light is wanted is open (OQ2
-  in the change's design).
+- Neutral: the lobby keeps the overworld's sky light. No custom dimension type is added (owner decision, 2026-10-13).
+- Neutral: the shipped `ElytraraceBlueAndRed` stores light for under 1.5 % of its sections, so almost all of the lit
+  result is computed on the packet path (the read-only check is recorded in the change's design.md).
 
 ## Numbers
 
-Not measured yet. The design gives analytic bounds: about zero extra work at boot, and at most roughly 42 MB for a
-441-chunk view of light-less sections, before packet caches. The measured boot time, the boot memory and the time to the
-first light packet of a view are recorded here by tasks 6.1 and 6.2 of the change.
+Not measured yet. The design gives analytic bounds: about zero extra work at boot, and at most roughly 28 MB for a
+289-chunk view (view distance 8, the default) of light-less sections, before packet caches. The measured boot time, the boot memory and the time to the
+first light packet of a view are recorded here by tasks 6.1 and 6.2 of the change. Lighting for the spawn is not
+pre-computed (owner decision, 2026-10-13); the first send of each chunk pays the cost.
 
 ## Confirmation
 
