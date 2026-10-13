@@ -298,7 +298,76 @@ class ApiPurityTest {
                             + "net.elytrarace.voyager.platform.text.Messages, so that it can be "
                             + "translated, coloured from one palette and found in one file; the one "
                             + "exception is /race's operator diagnostic, which is a dump of numbers "
-                            + "with no audience but somebody debugging")
+                            + "with no audience but somebody debugging. That diagnostic is "
+                            + "CupSession.describe() and, as the room line, WaitingRoom.describe(), "
+                            + "both printed by RaceCommand. They stay English on purpose: decision D3 "
+                            + "of localise-player-messages keeps operator output in English, and a "
+                            + "key per field would bury a dump of numbers in a bundle")
+                    .allowEmptyShould(false);
+
+    // The same boundary, for the two other ways a player-facing string is built: a translation key named outside the
+    // message layer (Component.translatable, with a literal or a computed key), and a MiniMessage source written at a
+    // call site (MiniMessage.deserialize). A key named outside Messages or SetupMessages is a line no bundle-parity test
+    // will ever see, so it is refused here, not left to review.
+    private static final DescribedPredicate<JavaCall<?>> BUILD_A_TRANSLATION_KEY_OUTSIDE_THE_MESSAGE_LAYER =
+            JavaCall.Predicates.target(HasName.Predicates.name("translatable"))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.assignableTo("net.kyori.adventure.text.Component"))))
+                    .as("build a translatable component");
+
+    @ArchTest
+    static final ArchRule onlyTheTextPackageNamesATranslationKey =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.platform.text..")
+                    .should().callMethodWhere(BUILD_A_TRANSLATION_KEY_OUTSIDE_THE_MESSAGE_LAYER)
+                    .as("no classes in net.elytrarace.voyager.. outside net.elytrarace.voyager.platform.text should "
+                            + "build a Component.translatable")
+                    .because("a translation key is named once, in Messages or SetupMessages, so that every bundle "
+                            + "is checked for it by MessageBundleParityTest")
+                    .allowEmptyShould(false);
+
+    private static final DescribedPredicate<JavaCall<?>> DESERIALIZE_MINIMESSAGE_SOURCE =
+            JavaCall.Predicates.target(HasName.Predicates.name("deserialize"))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.assignableTo("net.kyori.adventure.text.minimessage.MiniMessage"))))
+                    .as("deserialize a MiniMessage source");
+
+    @ArchTest
+    static final ArchRule onlyTheTextPackageDeserializesMiniMessage =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.platform.text..")
+                    .should().callMethodWhere(DESERIALIZE_MINIMESSAGE_SOURCE)
+                    .as("no classes in net.elytrarace.voyager.. outside net.elytrarace.voyager.platform.text should "
+                            + "deserialize MiniMessage")
+                    .because("MiniMessage sources are translation values, parsed by VoyagerTranslator with the "
+                            + "palette and the arguments bound; a source written at a call site is a line no bundle "
+                            + "holds")
+                    .allowEmptyShould(false);
+
+    // Minestom's CommandSender has String overloads of sendMessage that build a plain Component.text behind the
+    // caller's back, so the String overloads are matched too. Two exemptions, both named: the console, whose replies
+    // are English log lines by decision, and RaceCommand, the /race operator diagnostic, matched by class as above.
+    private static final DescribedPredicate<JavaCall<?>> SEND_A_STRING_TO_A_COMMAND_SENDER =
+            JavaCall.Predicates.target(HasName.Predicates.name("sendMessage"))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.assignableTo("net.minestom.server.command.CommandSender"))))
+                    // The console is English by decision (localise-player-messages, D3): its replies are log lines.
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(DescribedPredicate.not(
+                            JavaClass.Predicates.assignableTo("net.minestom.server.command.ConsoleSender")))))
+                    .and(DescribedPredicate.describe("take a String",
+                            (JavaCall<?> call) -> call.getTarget().getRawParameterTypes().stream()
+                                    .anyMatch(type -> type.getName().contains("java.lang.String"))))
+                    .as("send a String to a command sender");
+
+    @ArchTest
+    static final ArchRule onlyTheTextPackageSendsAStringToACommandSender =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager..")
+                    .and().resideOutsideOfPackage("net.elytrarace.voyager.platform.text..")
+                    .and().doNotHaveFullyQualifiedName("net.elytrarace.voyager.server.command.RaceCommand")
+                    .should().callMethodWhere(SEND_A_STRING_TO_A_COMMAND_SENDER)
+                    .as("no classes in net.elytrarace.voyager.. outside net.elytrarace.voyager.platform.text should "
+                            + "send a String to a CommandSender")
+                    .because("a String sent to a CommandSender is a Component.text the translator never sees")
                     .allowEmptyShould(false);
 
     // Written as "everything outside voyager-server" rather than one rule per module, so a future

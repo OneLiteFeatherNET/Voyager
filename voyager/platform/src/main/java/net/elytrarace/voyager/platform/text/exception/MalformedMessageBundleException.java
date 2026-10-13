@@ -27,6 +27,21 @@ public final class MalformedMessageBundleException extends RuntimeException {
                         + "write <arg:0> instead of {0}; the value was '%s'").formatted(key, value));
     }
 
+    /** A translation whose arguments or palette tags differ from the English line of the same key. */
+    public static MalformedMessageBundleException placeholdersDiffer(String key, String locale, String english,
+            String value) {
+        return new MalformedMessageBundleException(
+                ("message '%s' in %s uses different arguments or palette tags from its English line — "
+                        + "a translation may reword a line but must keep every <arg:N> and <c-*>/<m-*> tag; "
+                        + "English was '%s', %s was '%s'").formatted(key, locale, english, locale, value));
+    }
+
+    /** No table for the fallback locale, which every other locale depends on. */
+    public static MalformedMessageBundleException missingFallback(String locale) {
+        return new MalformedMessageBundleException(
+                "no message table for %s: it is the fallback every other locale depends on".formatted(locale));
+    }
+
     /** The bundle exists but could not be read. */
     public static MalformedMessageBundleException unreadable(String resource, Throwable cause) {
         return new MalformedMessageBundleException(

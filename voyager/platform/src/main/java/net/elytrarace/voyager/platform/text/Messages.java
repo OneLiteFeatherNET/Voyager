@@ -76,6 +76,12 @@ public abstract class Messages {
     private static final String COMMAND_DENIED = "voyager.command.denied";
     private static final String COMMAND_RELOAD_PROBLEM = "voyager.command.reload.problem";
     private static final String COMMAND_RELOAD_WARNING = "voyager.command.reload.warning";
+    private static final String MEDAL_DIAMOND = "voyager.medal.diamond";
+    private static final String MEDAL_GOLD = "voyager.medal.gold";
+    private static final String MEDAL_SILVER = "voyager.medal.silver";
+    private static final String MEDAL_BRONZE = "voyager.medal.bronze";
+    private static final String MEDAL_FINISH = "voyager.medal.finish";
+    private static final String MEDAL_DNF = "voyager.medal.dnf";
 
     private Messages() {
     }
@@ -343,12 +349,12 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component medal(MedalTier tier) {
         return Component.translatable(switch (tier) {
-            case DIAMOND -> "voyager.medal.diamond";
-            case GOLD -> "voyager.medal.gold";
-            case SILVER -> "voyager.medal.silver";
-            case BRONZE -> "voyager.medal.bronze";
-            case FINISH -> "voyager.medal.finish";
-            case DNF -> "voyager.medal.dnf";
+            case DIAMOND -> MEDAL_DIAMOND;
+            case GOLD -> MEDAL_GOLD;
+            case SILVER -> MEDAL_SILVER;
+            case BRONZE -> MEDAL_BRONZE;
+            case FINISH -> MEDAL_FINISH;
+            case DNF -> MEDAL_DNF;
         });
     }
 
