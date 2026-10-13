@@ -79,9 +79,9 @@ because `allowEmptyShould(false)` makes an empty match a failure.
 
 ## 7. golden master and the zero-count proof (voyager-server)
 
-- [ ] 7.1 Red: `CupSessionComGoldenTest` names the behaviour "a cup with three computer racers at MEDIUM replays the committed transcript", with a fixed clock and round seed. The golden file is absent, so the test fails (`feat(race)`). Effort: medium (Haiku).
-- [ ] 7.2 Green: write `voyager/server/src/test/resources/golden/cup-session/com-field.txt` from the harness, and a human reviews the transcript before it is committed (`feat(race)`). Effort: medium (Haiku).
-- [ ] 7.3 Verify that `lobby-and-start.txt`, `lobby-world-start.txt`, `racing-boost-disconnect.txt`, `restart-pending-reload.txt` and `skip-finish.txt` are byte-identical to `main` (`git diff --exit-code` on the five files, verification, no commit). Effort: low (Haiku).
+- [x] 7.1 Red: `CupSessionComGoldenTest` names the behaviour "a cup with three computer racers at MEDIUM replays the committed transcript", with a fixed clock and round seed. The golden file is absent, so the test fails (`feat(race)`). Effort: medium (Haiku).
+- [x] 7.2 Green: write `voyager/server/src/test/resources/golden/cup-session/com-field.txt` from the harness, and a human reviews the transcript before it is committed (`feat(race)`). Effort: medium (Haiku).
+- [x] 7.3 Verify that `lobby-and-start.txt`, `lobby-world-start.txt`, `racing-boost-disconnect.txt`, `restart-pending-reload.txt` and `skip-finish.txt` are byte-identical to `main` (`git diff --exit-code` on the five files, verification, no commit). Effort: low (Haiku).
 
 ## 8. docs (Diátaxis Framework)
 
