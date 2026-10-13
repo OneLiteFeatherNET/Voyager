@@ -34,8 +34,8 @@ import java.time.Duration;
  * <p>Sound is the only channel with no screen cost at 33 blocks a second and no read latency, so it
  * carries the meaning. A ring's bell climbs in pitch with the ring number, which makes a racer
  * <em>hear</em> their own progress accumulate — thirty-five identical bells stop being information by
- * ring six. When the missed-ring signal lands, it will be told apart from this one by being a falling
- * double thud rather than a rising bell, and only then by symbol and colour: red and green is the
+ * ring six. The missed-ring signal is told apart from this one by being a quiet low sound rather than a
+ * rising bell, and by its action bar line in the warn colour: red and green is the
  * worst possible pair for deuteranopia, and here it is not even available, because the course spent
  * red on its own finish line.
  */
@@ -50,6 +50,9 @@ public abstract class RaceFeedback {
     private static final Key LAUNCH = Key.key("block.note_block.pling");
     private static final Key CHALLENGE_COMPLETE = Key.key("ui.toast.challenge_complete");
     private static final Key LEVEL_UP = Key.key("entity.player.levelup");
+    private static final Key RESET_CHIME = Key.key("block.note_block.chime");
+    private static final Key DNF_BIT = Key.key("block.note_block.bit");
+    private static final Key MISSED_RING = Key.key("block.note_block.didgeridoo");
 
     /**
      * The bottom of the ring ladder and how far it climbs.
@@ -125,8 +128,14 @@ public abstract class RaceFeedback {
         racer.showTitle(Title.title(
                 Messages.countdownDigit(digit),
                 subtitle,
-                Title.Times.times(Duration.ZERO, TICK.multipliedBy(15), TICK.multipliedBy(5))));
+                countdownTimes()));
         racer.playSound(Sound.sound(COUNTDOWN_BEAT, SOURCE, 0.8f, countdownPitch(digit)));
+    }
+
+    /** The hold and fade of a countdown digit: fifteen ticks, then five out, one second in all. */
+    @Contract(pure = true)
+    public static Title.Times countdownTimes() {
+        return Title.Times.times(Duration.ZERO, TICK.multipliedBy(15), TICK.multipliedBy(5));
     }
 
     /** The beat under each digit rises, so three of them are heard as a run and not as a repeat. */
@@ -149,7 +158,7 @@ public abstract class RaceFeedback {
         racer.showTitle(Title.title(
                 Messages.go(),
                 Messages.goJump(),
-                Title.Times.times(Duration.ZERO, TICK.multipliedBy(10), TICK.multipliedBy(5))));
+                goTimes()));
         racer.playSound(Sound.sound(LAUNCH, SOURCE, 0.9f, 2.0f));
     }
 
@@ -168,6 +177,17 @@ public abstract class RaceFeedback {
     }
 
     /**
+     * The hold and fade of the GO title: twenty ticks, then five out, one second and a quarter in all.
+     *
+     * <p>The GO is held for at least as long as a countdown digit, so the one cue that starts the race is never shorter
+     * than the numbers that lead to it.
+     */
+    @Contract(pure = true)
+    public static Title.Times goTimes() {
+        return Title.Times.times(Duration.ZERO, TICK.multipliedBy(20), TICK.multipliedBy(5));
+    }
+
+    /**
      * The sound a result makes, proportional to what it is.
      *
      * <p>A DNF must not sound like a win, and a finish outside every bracket must not sound like a
@@ -182,19 +202,38 @@ public abstract class RaceFeedback {
             case SILVER -> Sound.sound(LEVEL_UP, SOURCE, 0.9f, 1.0f);
             case BRONZE -> Sound.sound(LEVEL_UP, SOURCE, 0.9f, 0.8f);
             case FINISH -> Sound.sound(LAUNCH, SOURCE, 0.9f, 1.0f);
-            case DNF -> Sound.sound(COUNTDOWN_BEAT, SOURCE, 0.9f, 0.5f);
+            case DNF -> dnfSound();
         };
     }
 
     /**
-     * The sound a course reset makes: one low note on the countdown's beat, at the bottom of the register.
+     * A DNF: a short, quiet, low note that is not the countdown beat. A loss is informational, so it is quieter than a
+     * medal rather than a sting.
+     */
+    @Contract(pure = true)
+    public static Sound dnfSound() {
+        return Sound.sound(DNF_BIT, SOURCE, 0.6f, 0.6f);
+    }
+
+    /**
+     * A ring was skipped: one quiet, low sound, not the ring bell and not the countdown beat. It confirms the line
+     * on the action bar and carries no information of its own.
+     */
+    @Contract(pure = true)
+    public static Sound missedRingSound() {
+        return Sound.sound(MISSED_RING, SOURCE, 0.5f, 0.5f);
+    }
+
+    /**
+     * The sound a course reset makes: one falling note, a chime at the lower end of the register, that is not the
+     * countdown beat.
      *
-     * <p>It is the opposite of the rising ring bell, so a racer who has just been sent back hears that they
-     * were, without reading the title.
+     * <p>It is the opposite of the rising ring bell, so a racer who has just been sent back hears that they were,
+     * without reading the title.
      */
     @Contract(pure = true)
     public static Sound resetSound() {
-        return Sound.sound(COUNTDOWN_BEAT, SOURCE, 0.8f, 0.6f);
+        return Sound.sound(RESET_CHIME, SOURCE, 0.8f, 0.7f);
     }
 
     /**
