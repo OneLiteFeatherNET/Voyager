@@ -1,0 +1,3 @@
+ERROR <WORK>/no-such-worlds VOYAGER_WORLDS_PATH: the worlds directory does not exist: <WORK>/no-such-worlds (set -DVOYAGER_WORLDS_PATH=<dir> (java -jar) or -PworldsPath=<dir> (Gradle), or run from the directory the relative default resolves against)
+config check failed: 1 error(s)
+exit=1

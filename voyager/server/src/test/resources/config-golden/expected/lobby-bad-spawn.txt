@@ -1,0 +1,3 @@
+ERROR system property VOYAGER_LOBBY_SPAWN VOYAGER_LOBBY_SPAWN: VOYAGER_LOBBY_SPAWN must be three numbers x,y,z in block coordinates, was '0,x,0'
+config check failed: 1 error(s)
+exit=1

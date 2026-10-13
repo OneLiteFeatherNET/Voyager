@@ -1,0 +1,3 @@
+ERROR system property service.bind.port service.bind.port: service.bind.port must be in 1..65535, was 70000
+config check failed: 1 error(s)
+exit=1
