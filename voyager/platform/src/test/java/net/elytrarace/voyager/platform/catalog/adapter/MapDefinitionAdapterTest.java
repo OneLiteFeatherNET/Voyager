@@ -4,6 +4,9 @@ import com.google.gson.JsonParseException;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuideLineMode;
+import net.elytrarace.voyager.api.race.GuideParticle;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.GuidePoint;
@@ -246,6 +249,48 @@ class MapDefinitionAdapterTest {
                 MAP.replace("\"lookAheadRings\": 4,", ""), MapDefinition.class))
                 .isInstanceOf(JsonParseException.class)
                 .hasMessageContaining("missing the field 'lookAheadRings'");
+    }
+
+    @Test
+    void aGuideLineWithNoStyleLoadsAsFullEndRodAndAmber() {
+        GuideLine line = Adapters.GSON.fromJson(MAP, MapDefinition.class).guideLine();
+
+        assertThat(line.mode()).isEqualTo(GuideLineMode.FULL);
+        assertThat(line.particle()).isEqualTo(GuideParticle.END_ROD);
+        assertThat(line.dustRgbOrDefault()).isEqualTo(0xFFC800);
+    }
+
+    @Test
+    void aGuideLineWithTheThreeFieldsLoadsThem() {
+        String styled = MAP.replace("\"particleSpacing\": 1.5,",
+                "\"particleSpacing\": 1.5, \"mode\": \"WINDOW\", \"particle\": \"DUST\", \"dustColor\": \"#3366FF\",");
+
+        GuideLine line = Adapters.GSON.fromJson(styled, MapDefinition.class).guideLine();
+
+        assertThat(line.mode()).isEqualTo(GuideLineMode.WINDOW);
+        assertThat(line.particle()).isEqualTo(GuideParticle.DUST);
+        assertThat(line.dustRgbOrDefault()).isEqualTo(0x3366FF);
+    }
+
+    @Test
+    void anUnknownModeIsRefusedAndTheMessageNamesTheField() {
+        String unknown = MAP.replace("\"particleSpacing\": 1.5,",
+                "\"particleSpacing\": 1.5, \"mode\": \"SPIRAL\",");
+
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(unknown, MapDefinition.class))
+                .isInstanceOf(InvalidGuideLineException.class)
+                .hasMessageContaining("guideLine.mode")
+                .hasMessageContaining("SPIRAL");
+    }
+
+    @Test
+    void aColourOnEndRodIsRefused() {
+        String colourOnEndRod = MAP.replace("\"particleSpacing\": 1.5,",
+                "\"particleSpacing\": 1.5, \"particle\": \"END_ROD\", \"dustColor\": \"#3366FF\",");
+
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(colourOnEndRod, MapDefinition.class))
+                .isInstanceOf(InvalidGuideLineException.class)
+                .hasMessageContaining("dustColor");
     }
 
     /**

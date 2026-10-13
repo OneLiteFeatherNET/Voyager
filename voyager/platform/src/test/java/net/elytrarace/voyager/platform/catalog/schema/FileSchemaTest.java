@@ -195,6 +195,19 @@ class FileSchemaTest {
     }
 
     @Test
+    void theSchemaAcceptsAGuideLineWithAndWithoutTheStyleFieldsAndRefusesAnUnknownParticle() {
+        String styled = VALID_MAP.replace("\"particleSpacing\": 1.0,",
+                "\"particleSpacing\": 1.0, \"mode\": \"FULL\", \"particle\": \"DUST\", \"dustColor\": \"#3366FF\",");
+        String unknownParticle = VALID_MAP.replace("\"particleSpacing\": 1.0,",
+                "\"particleSpacing\": 1.0, \"particle\": \"END-ROD\",");
+
+        assertThat(errors(mapSchema(), JSON.readTree(VALID_MAP))).isEmpty();
+        assertThat(errors(mapSchema(), JSON.readTree(styled))).isEmpty();
+        assertThat(errors(mapSchema(), JSON.readTree(unknownParticle))).anySatisfy(
+                error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/guideLine/particle"));
+    }
+
+    @Test
     void mapWithAMisspelledKeyIsRejectedNamingIt() {
         // The schema is stricter than the loader on purpose: the loader ignores unknown keys, the editor does not.
         String misspelt = VALID_MAP.replace("\"referenceTimeSeconds\"", "\"referenceTimeSecond\"");

@@ -111,6 +111,11 @@ public abstract class MapDraftJsonWriter {
         json.endArray();
         json.name("lookAheadRings").value(line.lookAheadRings());
         json.name("particleSpacing").value(line.particleSpacing());
+        json.name("mode").value(line.mode().name());
+        json.name("particle").value(line.particle().name());
+        if (line.dustRgb() != null) {
+            json.name("dustColor").value("#%06X".formatted(line.dustRgb()));
+        }
         json.endObject();
     }
 
