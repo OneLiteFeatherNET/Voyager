@@ -73,9 +73,9 @@ Effort for this group: low for wiring and the check; the settings tests are medi
 Effort for this group: medium (Haiku). The rules are written first and fail on an empty match until the code exists,
 because `allowEmptyShould(false)` makes an empty match a failure.
 
-- [ ] 6.1 Red: `ComBoundaryTest` declares `comBrainIsPure` (F1), `cupDoesNotDependOnComPlatform` (F2), `comAdapterDoesNotSimulateFlight` (F3) and `onlyServerConfigReadsComSettings` (F4), each with `allowEmptyShould(false)` and not frozen. Run it: the rules fail with no matching classes (`feat(race)`). Effort: medium (Haiku).
-- [ ] 6.2 Green: the rules pass once groups 2 to 5 are in. Any violation found is fixed in the production code, not by a freeze (`feat(race)`). Effort: low (Haiku).
-- [ ] 6.3 Confirm that `SliceBoundaryRulesTest` r4 and r7 match `platform.com` and `race.com` without a change, and that `FitnessCoverageTest` needs no change (verification, no commit). Effort: low (Haiku).
+- [x] 6.1 Red: `ComBoundaryTest` declares `comBrainIsPure` (F1), `cupDoesNotDependOnComPlatform` (F2), `comAdapterDoesNotSimulateFlight` (F3) and `onlyServerConfigReadsComSettings` (F4), each with `allowEmptyShould(false)` and not frozen. Run it: the rules fail with no matching classes (`feat(race)`). Effort: medium (Haiku).
+- [x] 6.2 Green: the rules pass once groups 2 to 5 are in. Any violation found is fixed in the production code, not by a freeze (`feat(race)`). Effort: low (Haiku).
+- [x] 6.3 Confirm that `SliceBoundaryRulesTest` r4 and r7 match `platform.com` and `race.com` without a change, and that `FitnessCoverageTest` needs no change (verification, no commit). Effort: low (Haiku).
 
 ## 7. golden master and the zero-count proof (voyager-server)
 
