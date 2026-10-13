@@ -104,7 +104,7 @@ test with explicit ticks, no shared static state. Test names state the behaviour
 
 ## 10. Ship
 
-- [ ] 10.1 Open the pull request for branch `feat/full-course-guide-line`. Title:
+- [x] 10.1 Open the pull request for branch `feat/full-course-guide-line`. Title:
   `feat(race): draw the whole course as the racing line`. Body: the budget numbers from 1.2 and 7.1, the open questions
   that remain (the owner's playtest and ADR-0030's acceptance), and these two final lines, in this order:
   `https://claude.ai/referral/m5Ak2Sa7aQ`
