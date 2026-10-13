@@ -37,7 +37,7 @@ public final class ComTabList {
     private final Supplier<Collection<Player>> humans;
 
     /** The entries on show, in the order they were added. */
-    private final Map<UUID, String> entries = new LinkedHashMap<>();
+    private final Map<UUID, Shown> entries = new LinkedHashMap<>();
 
     /** The humans who have been sent every entry on show. */
     private final Set<UUID> informed = new HashSet<>();
@@ -54,13 +54,15 @@ public final class ComTabList {
      * entries is sent all of them instead.
      *
      * @param id the computer racer's id, the same id its body carries
-     * @param name the seat name, for example {@code COM 1}
+     * @param name the seat name the client keys the entry by, for example {@code COM 1}
+     * @param displayName the translated seat name shown in the list
      */
-    public void add(UUID id, String name) {
-        entries.put(id, name);
+    public void add(UUID id, String name, Component displayName) {
+        Shown shown = new Shown(name, displayName);
+        entries.put(id, shown);
         for (Player human : humans.get()) {
             if (informed.contains(human.getUuid())) {
-                human.sendPacket(new PlayerInfoUpdatePacket(ADD_ACTIONS, entryOf(id, name)));
+                human.sendPacket(new PlayerInfoUpdatePacket(ADD_ACTIONS, entryOf(id, shown)));
             } else {
                 inform(human);
             }
@@ -127,7 +129,11 @@ public final class ComTabList {
     }
 
     /** The entry for one computer racer: listed, named after its seat, with no texture and no game mode of its own. */
-    private static Entry entryOf(UUID id, String name) {
-        return new Entry(id, name, List.of(), true, 0, GameMode.SURVIVAL, Component.text(name), null, 0, true);
+    private static Entry entryOf(UUID id, Shown shown) {
+        return new Entry(id, shown.name(), List.of(), true, 0, GameMode.SURVIVAL, shown.displayName(), null, 0, true);
+    }
+
+    /** The two names of one entry: the key the client knows it by, and the translated text it shows. */
+    private record Shown(String name, Component displayName) {
     }
 }

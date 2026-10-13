@@ -1,6 +1,8 @@
 package net.elytrarace.voyager.platform.com;
 
+import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.race.com.ComSeat;
+import net.kyori.adventure.text.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -28,6 +30,16 @@ public final class ComNames {
      */
     public static String nameOf(ComSeat seat) {
         return seat.name();
+    }
+
+    /**
+     * The name a seat is shown under, as a translated component for the body and the tab list.
+     *
+     * @param seat the seat on the grid
+     * @return the translation of {@code COM n}, where n counts the computer racers from one
+     */
+    public static Component displayNameOf(ComSeat seat) {
+        return Messages.computerRacerName(seat.index() + 1);
     }
 
     /**

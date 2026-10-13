@@ -1,6 +1,6 @@
 package net.elytrarace.voyager.platform.com;
 
-import net.kyori.adventure.text.Component;
+import net.elytrarace.voyager.platform.text.Messages;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
@@ -25,7 +25,7 @@ class ComBodyTest {
     void aBodySpawnsInItsInstanceAtItsPosition(Env env) {
         Instance instance = flatInstance(env);
         Pos start = new Pos(4, 41, 9);
-        ComBody body = new ComBody(ID, "COM 1");
+        ComBody body = new ComBody(ID, Messages.computerRacerName(1));
 
         body.spawn(instance, start).join();
         env.tick();
@@ -37,7 +37,7 @@ class ComBodyTest {
     @Test
     void aTeleportMovesTheBodyOnTheNextTick(Env env) {
         Instance instance = flatInstance(env);
-        ComBody body = new ComBody(ID, "COM 1");
+        ComBody body = new ComBody(ID, Messages.computerRacerName(1));
         body.spawn(instance, new Pos(4, 41, 9)).join();
         Pos target = new Pos(12, 41, 7); // inside chunk 0,0, the only chunk the fixture loads
 
@@ -50,7 +50,7 @@ class ComBodyTest {
     @Test
     void removalDespawnsTheBody(Env env) {
         Instance instance = flatInstance(env);
-        ComBody body = new ComBody(ID, "COM 1");
+        ComBody body = new ComBody(ID, Messages.computerRacerName(1));
         body.spawn(instance, new Pos(4, 41, 9)).join();
 
         body.remove();
@@ -62,12 +62,12 @@ class ComBodyTest {
     @Test
     void theBodyShowsItsCustomName(Env env) {
         Instance instance = flatInstance(env);
-        ComBody body = new ComBody(ID, "COM 1");
+        ComBody body = new ComBody(ID, Messages.computerRacerName(1));
         body.spawn(instance, new Pos(4, 41, 9)).join();
 
         assertThat(body.customName())
                 .as("the body carries the seat's name")
-                .isEqualTo(Component.text("COM 1"));
+                .isEqualTo(Messages.computerRacerName(1));
         assertThat(body.isCustomNameVisible())
                 .as("the name is drawn above the body's head")
                 .isTrue();

@@ -95,9 +95,9 @@ public final class ComField implements CompetitorField {
             UUID id = ComNames.idOf(seat);
             Racer racer = racers.remove(id);
             if (racer == null) {
-                ComBody body = new ComBody(id, ComNames.nameOf(seat));
+                ComBody body = new ComBody(id, ComNames.displayNameOf(seat));
                 racer = new Racer(id, ComTuning.of(difficulty, seat.seed()), body);
-                tabList.add(id, ComNames.nameOf(seat));
+                tabList.add(id, ComNames.nameOf(seat), ComNames.displayNameOf(seat));
             }
             racer.startRun(seat, path);
             racer.body.spawn(instance, toPos(brain.positionOf(racer.state, racer.tuning, path)));

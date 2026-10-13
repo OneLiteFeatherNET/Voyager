@@ -29,9 +29,9 @@ public final class ComBody {
      * Builds a body that is not yet in any instance.
      *
      * @param id the racer's id, the same id the cup runs the racer's run under
-     * @param name the seat name drawn above the body, for example {@code COM 1}
+     * @param name the seat name drawn above the body, translated, for example {@code COM 1}
      */
-    public ComBody(UUID id, String name) {
+    public ComBody(UUID id, Component name) {
         this.entity = new Entity(EntityType.PLAYER, id);
         PlayerMeta meta = (PlayerMeta) entity.getEntityMeta();
         meta.setCapeEnabled(true);
@@ -41,7 +41,7 @@ public final class ComBody {
         meta.setLeftLegEnabled(true);
         meta.setRightLegEnabled(true);
         meta.setHatEnabled(true);
-        entity.setCustomName(Component.text(name));
+        entity.setCustomName(name);
         entity.setCustomNameVisible(true);
     }
 

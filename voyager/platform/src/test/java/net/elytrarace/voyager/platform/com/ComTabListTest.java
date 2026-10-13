@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.com;
 
+import net.elytrarace.voyager.platform.text.Messages;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -37,9 +38,9 @@ class ComTabListTest {
         Player human = connection.connect(instance, new Pos(0, 41, 0));
         Collector<ServerPacket> received = connection.trackIncoming();
         ComTabList tabList = new ComTabList(() -> List.of(human));
-        ComBody body = new ComBody(FIRST, "COM 1");
+        ComBody body = new ComBody(FIRST, Messages.computerRacerName(1));
 
-        tabList.add(FIRST, "COM 1");
+        tabList.add(FIRST, "COM 1", Messages.computerRacerName(1));
         body.spawn(instance, new Pos(4, 41, 9));
         env.tick();
 
@@ -65,7 +66,7 @@ class ComTabListTest {
         Collector<PlayerInfoUpdatePacket> received = connection.trackIncoming(PlayerInfoUpdatePacket.class);
         ComTabList tabList = new ComTabList(() -> List.of(human));
 
-        tabList.add(FIRST, "COM 1");
+        tabList.add(FIRST, "COM 1", Messages.computerRacerName(1));
         env.tick();
 
         PlayerInfoUpdatePacket.Entry entry = entryFor(received.collect(), FIRST);
@@ -82,8 +83,8 @@ class ComTabListTest {
         Instance instance = flatInstance(env);
         List<Player> humans = new ArrayList<>();
         ComTabList tabList = new ComTabList(() -> humans);
-        tabList.add(FIRST, "COM 1");
-        tabList.add(SECOND, "COM 2");
+        tabList.add(FIRST, "COM 1", Messages.computerRacerName(1));
+        tabList.add(SECOND, "COM 2", Messages.computerRacerName(2));
         TestConnection latecomer = env.createConnection();
         humans.add(latecomer.connect(instance, new Pos(0, 41, 0)));
         Collector<PlayerInfoUpdatePacket> received = latecomer.trackIncoming(PlayerInfoUpdatePacket.class);
@@ -102,8 +103,8 @@ class ComTabListTest {
         TestConnection connection = env.createConnection();
         Player human = connection.connect(instance, new Pos(0, 41, 0));
         ComTabList tabList = new ComTabList(() -> List.of(human));
-        tabList.add(FIRST, "COM 1");
-        tabList.add(SECOND, "COM 2");
+        tabList.add(FIRST, "COM 1", Messages.computerRacerName(1));
+        tabList.add(SECOND, "COM 2", Messages.computerRacerName(2));
         Collector<PlayerInfoRemovePacket> received = connection.trackIncoming(PlayerInfoRemovePacket.class);
 
         tabList.dismiss();
