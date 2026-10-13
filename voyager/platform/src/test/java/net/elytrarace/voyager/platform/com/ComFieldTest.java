@@ -24,7 +24,11 @@ import net.minestom.testing.TestConnection;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnvTest
 class ComFieldTest {
 
-    private static final long ROUND_SEED = 20261014L;
+    /** The clock reading at which the round of each test starts; its milliseconds are the round seed. */
+    private static final long ROUND_MILLIS = 20261014L;
     private static final Duration STEP = Duration.ofMillis(50);
     private static final String WORLD = "ridge_arena";
     private static final Vec3 SPAWN = new Vec3(3.5, 65.0, 5.5);
@@ -130,7 +135,7 @@ class ComFieldTest {
     @Test
     void aComputerRacerStartsOnTheGridAtTheMapsSpawn(Env env) {
         Instance instance = flatInstance(env);
-        ComField field = new ComField(List::of, 1, ComDifficulty.MEDIUM, ROUND_SEED, world -> instance);
+        ComField field = new ComField(List::of, 1, ComDifficulty.MEDIUM, clockAt(ROUND_MILLIS), world -> instance);
 
         field.prepare(0, MAP);
         env.tick();
@@ -154,13 +159,69 @@ class ComFieldTest {
         MapDefinition oneRing = new MapDefinition("one-ring", WORLD, spawn,
                 List.of(new Ring(0, spawn, new Vec3(0.0, 0.0, 1.0), 6.0, 7, RingType.STANDARD)),
                 Duration.ofMillis(400), new BoostConfig(4, 9), new GuideLine(List.of(), 2, 1.0));
-        ComField field = new ComField(List::of, 2, ComDifficulty.MEDIUM, ROUND_SEED, world -> instance);
+        ComField field = new ComField(List::of, 2, ComDifficulty.MEDIUM, clockAt(ROUND_MILLIS), world -> instance);
 
         List<UUID> ids = field.prepare(0, oneRing);
 
         assertThat(ids)
                 .as("a map with one ring and no guide points still gets its two computer racers, with no exception")
                 .hasSize(2);
+    }
+
+    @Test
+    void aRoundStartedAtADifferentClockReadingHasDifferentRacers(Env env) {
+        Instance instance = flatInstance(env);
+        List<UUID> first = new ComField(List::of, 2, ComDifficulty.MEDIUM, clockAt(1_000L), world -> instance)
+                .prepare(0, MAP);
+        List<UUID> second = new ComField(List::of, 2, ComDifficulty.MEDIUM, clockAt(2_000L), world -> instance)
+                .prepare(0, MAP);
+
+        assertThat(second)
+                .as("a round started at another clock reading seats its racers from another seed")
+                .isNotEqualTo(first);
+    }
+
+    @Test
+    void aRoundStartedAtTheSameClockReadingHasTheSameRacers(Env env) {
+        Instance instance = flatInstance(env);
+        List<UUID> first = new ComField(List::of, 2, ComDifficulty.MEDIUM, clockAt(1_000L), world -> instance)
+                .prepare(0, MAP);
+        List<UUID> second = new ComField(List::of, 2, ComDifficulty.MEDIUM, clockAt(1_000L), world -> instance)
+                .prepare(0, MAP);
+
+        assertThat(second)
+                .as("a round started at the same clock reading seats the same racers, so it can be replayed")
+                .isEqualTo(first);
+    }
+
+    @Test
+    void theRoundSeedIsReadWhenTheRoundStartsNotWhenTheFieldIsBuilt(Env env) {
+        Instance instance = flatInstance(env);
+        SettableClock clock = new SettableClock(Instant.ofEpochMilli(1_000L));
+        ComField field = new ComField(List::of, 2, ComDifficulty.MEDIUM, clock, world -> instance);
+        clock.set(Instant.ofEpochMilli(2_000L));
+
+        List<UUID> ids = field.prepare(0, MAP);
+
+        assertThat(ids)
+                .as("the round is seeded from the clock when its first map starts (2000 ms), not at boot (1000 ms)")
+                .isEqualTo(new ComField(List::of, 2, ComDifficulty.MEDIUM, clockAt(2_000L), world -> instance)
+                        .prepare(0, MAP));
+    }
+
+    @Test
+    void theRoundSeedIsKeptForTheMapsThatFollowTheFirst(Env env) {
+        Instance instance = flatInstance(env);
+        SettableClock clock = new SettableClock(Instant.ofEpochMilli(1_000L));
+        ComField field = new ComField(List::of, 2, ComDifficulty.MEDIUM, clock, world -> instance);
+        List<UUID> firstMap = field.prepare(0, MAP);
+        clock.set(Instant.ofEpochMilli(2_000L));
+
+        List<UUID> secondMap = field.prepare(1, MAP);
+
+        assertThat(secondMap)
+                .as("the second map of the round seats the same racers as the first, because the round has not ended")
+                .isEqualTo(firstMap);
     }
 
     @Test
@@ -184,7 +245,12 @@ class ComFieldTest {
     }
 
     private static ComField field(Instance instance, List<Player> humans, int count, ComBrain brain) {
-        return new ComField(() -> humans, count, ComDifficulty.MEDIUM, ROUND_SEED, world -> instance, brain);
+        return new ComField(() -> humans, count, ComDifficulty.MEDIUM, clockAt(ROUND_MILLIS), world -> instance,
+                brain);
+    }
+
+    private static Clock clockAt(long millis) {
+        return Clock.fixed(Instant.ofEpochMilli(millis), ZoneOffset.UTC);
     }
 
     private static List<Player> humans(Env env, Instance instance, int count) {
@@ -210,6 +276,35 @@ class ComFieldTest {
             }
         }
         return instance;
+    }
+
+    /** A clock whose reading the test sets, so a round can start at one reading and the next at another. */
+    private static final class SettableClock extends Clock {
+
+        private Instant now;
+
+        SettableClock(Instant now) {
+            this.now = now;
+        }
+
+        void set(Instant instant) {
+            now = instant;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return now;
+        }
     }
 
     /** A brain that moves a racer to its seat index plus the tick, and places it at its distance on its column. */
