@@ -100,7 +100,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
   status Proposed, amending ADR-0028. The owner accepts it.
 - [ ] 5.4 `docs(decisions)`: add a status note to `docs/decisions/0028-racers-take-off-without-a-server-impulse.md` that
   points to ADR-0031 for the reset glide. The decision of no impulse is unchanged.
-- [ ] 5.5 `docs(race)`: `docs/guides/how-to-run-a-playtest.md` gains the reset checks of task 6.2 to 6.4.
+- [x] 5.5 `docs(race)`: `docs/guides/how-to-run-a-playtest.md` gains the reset checks of task 6.2 to 6.4.
 - [ ] 5.6 Check, without editing, that `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (velocity section,
   about lines 411 to 416) still holds: two velocity senders, zero on map end and zero on reset.
 

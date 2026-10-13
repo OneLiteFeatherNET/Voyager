@@ -108,6 +108,44 @@ These commands are not registered on a production run.
    was aborted. Use `/race start` in dev mode to start a cup at once, or `/race skip` to end the map being raced.
 5. If the server reports a problem with a world, run `./gradlew :voyager:server:validateCatalog` and fix what it lists.
 
+## Check the course resets
+
+These steps check the checkpoint resets of the `alpha_cup` map `elytraraceblueandred`. Its rings 8, 16, 24 and 32 (indices 7,
+15, 23 and 31) are `CHECKPOINT` rings. The reset rules are in [course reset](../reference/course-reset.md). Run the steps
+with one racer on a development server:
+
+```bash
+./gradlew :voyager:server:runServerDev -PminPlayers=1 -Pcup=alpha_cup
+```
+
+Fly the course in order. A reset is a landing (you glide, then touch the ground, with at least one second in the air) or
+a fall out of the world.
+
+### Reset to a checkpoint
+
+1. Fly through ring 8 and keep gliding for at least one second.
+2. Land on the ground. Expected: the title `Landed` and the subtitle `back to checkpoint 8`, with one low sound.
+3. Check that you are placed just behind ring 8, facing along the ring, and that you are still gliding without jumping.
+   Glide through ring 8 again and check that it scores its points again.
+4. Record whether the glide held after the reset. If you fell instead of gliding, record it, and stop. The owner chooses
+   the fallback.
+
+### Reset to the spawn
+
+1. Start the course, and land before you pass ring 8. Land after at least one second in the air.
+2. Expected: the title `Landed` and the subtitle `back to the start`. You stand on the spawn, facing the first ring, with
+   no glide, as at the start.
+3. Check that you take off by jumping and deploying the elytra, as at GO, and that a rocket is refused until you glide.
+4. Record whether the take-off worked as at GO.
+
+### Count the resets of one run
+
+1. Fly one full run on `elytraraceblueandred` without skipping any ring. Note each reset: its title and its subtitle.
+2. Note each touch of the ground that did not reset you. A touch within the first second after a takeoff, or within two
+   seconds after a reset, is one of these.
+3. Record the number of resets, the number of touches that did not reset you, and whether two resets came one after the
+   other within two seconds. That chain is the one the rules are meant to prevent.
+
 ## Related
 
 - [Configuration check](../reference/config-check.md) for the settings the server validates.
