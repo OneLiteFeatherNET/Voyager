@@ -63,10 +63,7 @@ Three facts from the inventory make this more than adding a file:
   `PacketSendingUtils`), which is already the case today.
 - **Setup server.** Its bundle gains the German file and one key. Its behaviour is otherwise unchanged.
 
-## Owner questions (copied from design.md, to be answered before apply)
+## Owner questions
 
-- OQ-1 Console and log output: English always, or follow the operator's locale?
-- OQ-2 Tone: `du` or `Sie` in German player-facing text? Proposal: `du`.
-- OQ-3 Number format in German: `12.4 s` or `12,4 s`? Proposal: keep `.` for race times, so that they match the wall
-  clock and the logs.
-- OQ-4 Minestom's built-in command errors: are they client-translated, or sent as English text?
+Answered 2026-10-13, see `design.md` "Decisions": OQ-1 console stays English; OQ-2 `du`; OQ-3 `.` decimal separator.
+OQ-4 (Minestom's built-in command errors) is still open and is answered by task 2.5.

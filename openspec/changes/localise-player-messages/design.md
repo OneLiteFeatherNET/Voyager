@@ -73,11 +73,24 @@ have not arrived yet. If it cannot, that is recorded as a known limit in ADR-003
 **Colour.** Palette tags only. No hex in any bundle (already stated in the bundle header). The palette itself is not
 changed here.
 
-## Owner decisions this change needs
+## Decisions
 
-- ADR-0038 is the record of the architecture. It is Proposed until the owner accepts it. No code merges before that.
-- OQ-1 to OQ-4 in `proposal.md`. The proposal assumes: console stays English (OQ-1); `du` (OQ-2); `.` decimal for race
-  times (OQ-3); Minestom's own command errors are checked at task 2.5 and reported back (OQ-4).
+Recorded from the owner's answers of 2026-10-13. These replace the open questions OQ-1 to OQ-3 in `proposal.md`.
+
+- **D1 Locales.** German (`de_DE`) and English (`en_US`). The language follows the player's client locale. Per-key
+  fallback to `en_US`.
+- **D2 Tone.** German player-facing text uses informal `du`.
+- **D3 Console.** Console and log output stays English. Operator-facing `/race` output stays English as well (see the
+  exemption in `ApiPurityTest`).
+- **D4 Numbers.** Race times keep `.` as the decimal separator (`12.4 s`). No locale-dependent number formatting in this
+  change (OQ-3 closed).
+- **D5 Setup bug.** `voyager.command.denied` is defined in the setup bundle, in English and German.
+- **D6 German text.** Written by the implementation agent (medium effort): natural, concise, gamer register. The owner
+  reviews `de_DE` files before merge (task 4.3).
+- **D7 ADR-0038.** Accepted by the owner with the approval of this implementation. Its open items 1 and 3 are answered
+  by the spike at task 2.5 and recorded in the ADR.
+
+Still open: OQ-4 (whether Minestom's own command errors are client-translated). Task 2.5 answers it.
 
 ## Options considered (summary; full text in ADR-0038)
 
