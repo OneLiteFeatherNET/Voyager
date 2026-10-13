@@ -48,6 +48,21 @@ class ComBodyTest {
     }
 
     @Test
+    void aBodyStaysWhereItIsPlacedWhenNothingMovesIt(Env env) {
+        Instance instance = flatInstance(env);
+        ComBody body = new ComBody(ID, Messages.computerRacerName(1));
+        body.spawn(instance, new Pos(4, 60, 9)).join();
+
+        for (int tick = 0; tick < 17; tick++) {
+            env.tick();
+        }
+
+        assertThat(body.position().y())
+                .as("a finished body keeps the height it finished at: nothing pulls it down after the last move")
+                .isEqualTo(60.0);
+    }
+
+    @Test
     void removalDespawnsTheBody(Env env) {
         Instance instance = flatInstance(env);
         ComBody body = new ComBody(ID, Messages.computerRacerName(1));
