@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.api.race.exception;
 
 import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuideParticle;
 import net.elytrarace.voyager.api.race.GuidePoint;
 
 /**
@@ -34,6 +35,28 @@ public final class InvalidGuideLineException extends RuntimeException {
                 ("a guide line must reach at least one ring ahead of the one a racer is heading for, "
                         + "was %s; a line that reaches nowhere is a line nobody can follow")
                         .formatted(lookAheadRings));
+    }
+
+    public static InvalidGuideLineException unknownMode(String mode) {
+        return new InvalidGuideLineException(
+                "guideLine.mode must be FULL or WINDOW, was %s".formatted(mode));
+    }
+
+    public static InvalidGuideLineException unknownParticle(String particle) {
+        return new InvalidGuideLineException(
+                "guideLine.particle must be END_ROD or DUST, was %s".formatted(particle));
+    }
+
+    public static InvalidGuideLineException badDustColor(String dustColor) {
+        return new InvalidGuideLineException(
+                "guideLine.dustColor must be # followed by six hexadecimal digits, was %s".formatted(dustColor));
+    }
+
+    public static InvalidGuideLineException dustColorWithoutDust(GuideParticle particle) {
+        return new InvalidGuideLineException(
+                ("guideLine.dustColor and guideLine.particle disagree: a colour has no effect with particle %s, "
+                        + "so set particle to DUST or drop dustColor")
+                        .formatted(particle));
     }
 
     public static InvalidGuideLineException particleSpacingTooFine(double particleSpacing) {
