@@ -28,6 +28,7 @@ import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
+import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.minestom.server.coordinate.Pos;
@@ -421,7 +422,7 @@ class CupSessionGoldenMasterTest {
                         throw new AssertionError("no refused handoff was expected, but got: " + message);
                     });
             room = new WaitingRoom(session, holder, () -> field, 1, 16, lobby, hub, new LobbyHud(),
-                    () -> worlds.forWorld(RIDGE));
+                    new LobbySidebar(), null, () -> worlds.forWorld(RIDGE));
         }
 
         /** Connects a racer on the lobby's spawn, as the join handler does when a lobby is configured. */

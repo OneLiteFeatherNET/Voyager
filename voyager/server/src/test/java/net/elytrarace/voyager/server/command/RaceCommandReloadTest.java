@@ -29,6 +29,7 @@ import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
+import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.minestom.server.command.ConsoleSender;
@@ -188,7 +189,7 @@ class RaceCommandReloadTest {
                 blocks, boosts, TIMINGS, STEP, List::of);
         HubHandoff hub = new HubHandoff(Optional::empty, (racer, reason) -> { }, message -> { });
         WaitingRoom room = new WaitingRoom(session, holder, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
-                ServerSettings.DEFAULT_MAXIMUM_RACERS, null, hub, new LobbyHud(), () -> {
+                ServerSettings.DEFAULT_MAXIMUM_RACERS, null, hub, new LobbyHud(), new LobbySidebar(), null, () -> {
                     throw new AssertionError("the room is never ticked in this test");
                 });
         env.process().command().register(new RaceCommand(session, room, devMode, service, policy));

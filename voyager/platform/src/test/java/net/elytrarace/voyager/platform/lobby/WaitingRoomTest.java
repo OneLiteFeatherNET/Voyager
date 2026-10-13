@@ -30,7 +30,9 @@ import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.flow.StartGate.Situation;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
@@ -96,6 +98,13 @@ class WaitingRoomTest {
 
     private static final CupDefinition TOUR = new CupDefinition("waiting_tour", List.of("arena-run", "other-run"),
             GameMode.RACE);
+
+    /** The cup a reload offers: it plays from the next round, so the lobby keeps naming TOUR until a round promotes it. */
+    private static final CupDefinition RELOADED_TOUR = new CupDefinition("waiting_tour_two",
+            List.of("arena-run", "other-run"), GameMode.RACE);
+    private static final LoadedCatalog RELOADED = new LoadedCatalog(new CatalogSnapshot(
+            Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(RELOADED_TOUR.name(), RELOADED_TOUR)),
+            RELOADED_TOUR, Instant.EPOCH);
 
     /** Lobby 10 s (200 ticks), race 5 s (100 ticks), results 100 ms. */
     private static final RaceTimings TIMINGS = new RaceTimings(
@@ -533,6 +542,40 @@ class WaitingRoomTest {
         assertThat(fixture.hud.barOf(racer.getUuid())).isEmpty();
     }
 
+    /** A reload waits for the next round: the lobby names the cup that is loaded until a round promotes the reload. */
+    @Test
+    void aPendingReloadDoesNotChangeTheCupTheLobbyNames(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.tick();
+
+        fixture.holder.offer(RELOADED);
+        fixture.tick();
+
+        assertThat(cupOnBar(fixture.hud.barOf(racer.getUuid()).orElseThrow())).isEqualTo(TOUR.name());
+    }
+
+    /** A countdown keeps the cup it began with, even when a reload is applied while it runs. */
+    @Test
+    void aCountdownKeepsItsCupWhenAReloadIsApplied(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.join();
+        fixture.tick();
+        assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.COUNTDOWN);
+
+        fixture.holder.offer(RELOADED);
+        fixture.tick();
+
+        assertThat(cupOnBar(fixture.hud.barOf(racer.getUuid()).orElseThrow())).isEqualTo(TOUR.name());
+    }
+
+    /** The cup name the boss bar carries, which is the first argument of its translated line. */
+    private static String cupOnBar(BossBar bar) {
+        TranslatableComponent line = (TranslatableComponent) bar.name();
+        return PlainTextComponentSerializer.plainText().serialize(line.arguments().getFirst().asComponent());
+    }
+
     // ------------------------------------------------------------------------------------------
     // The fixture
     // ------------------------------------------------------------------------------------------
@@ -575,8 +618,8 @@ class WaitingRoomTest {
                     throw new AssertionError("no refused handoff was expected, but got: " + message);
                 });
         WaitingRoom room = new WaitingRoom(session, holder, () -> online, MINIMUM, maximum, lobby, hub, hud,
-                () -> instances.forWorld(ARENA));
-        return new Fixture(session, pipeline, room, hud, runs, instances, env, handedToHub, kicked);
+                new LobbySidebar(), null, () -> instances.forWorld(ARENA));
+        return new Fixture(session, holder, pipeline, room, hud, runs, instances, env, handedToHub, kicked);
     }
 
     /** Writes a world with one floor block under the spawn, through a Falco loader of its own. */
@@ -601,6 +644,7 @@ class WaitingRoomTest {
     private final class Fixture {
 
         private final CupSession session;
+        private final CatalogHolder holder;
         private final TickPipeline pipeline;
         private final WaitingRoom room;
         private final LobbyHud hud;
@@ -612,9 +656,11 @@ class WaitingRoomTest {
         /** The racers the room disconnected because no handoff ran or it refused. */
         private final List<Player> kicked;
 
-        private Fixture(CupSession session, TickPipeline pipeline, WaitingRoom room, LobbyHud hud, RaceRuns runs,
+        private Fixture(CupSession session, CatalogHolder holder, TickPipeline pipeline, WaitingRoom room, LobbyHud hud,
+                RaceRuns runs,
                 MapInstances instances, Env env, List<UUID> handedToHub, List<Player> kicked) {
             this.session = session;
+            this.holder = holder;
             this.pipeline = pipeline;
             this.room = room;
             this.hud = hud;

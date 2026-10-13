@@ -68,6 +68,8 @@ public final class WaitingRoom {
     private final @Nullable LobbyTransition lobby;
     private final HubHandoff hub;
     private final LobbyHud hud;
+    private final LobbySidebar sidebar;
+    private final @Nullable LobbyHologram hologram;
     private final Supplier<Instance> firstMapInstance;
     /** The racers the room has handed to the hub. They stay connected until the move, so the room does not count them. */
     private final Set<UUID> handedOff = new HashSet<>();
@@ -87,12 +89,15 @@ public final class WaitingRoom {
      * @param lobby   the lobby world racers who join wait in, or {@code null} when none is configured
      * @param hub     moves the racers of a finished cup to the network hub after the results linger
      * @param hud     the boss bar, one per racer
+     * @param sidebar the sidebar that names the cup, one per racer
+     * @param hologram the cup as a text display in the lobby, or {@code null} when the server has none
      * @param firstMapInstance the instance of the first map of the current catalogue. With no lobby the racers wait in
      *     it, so the bar is shown there; it is read only in that case
      * @throws IllegalArgumentException if {@code minimum} or {@code maximum} is below one
      */
     public WaitingRoom(CupSession session, CatalogHolder catalog, Supplier<Collection<Player>> players, int minimum,
-            int maximum, @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, Supplier<Instance> firstMapInstance) {
+            int maximum, @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, LobbySidebar sidebar,
+            @Nullable LobbyHologram hologram, Supplier<Instance> firstMapInstance) {
         if (minimum < 1) {
             throw new IllegalArgumentException("the minimum racer count must be at least 1, was %s".formatted(minimum));
         }
@@ -107,6 +112,8 @@ public final class WaitingRoom {
         this.lobby = lobby;
         this.hub = hub;
         this.hud = hud;
+        this.sidebar = sidebar;
+        this.hologram = hologram;
         this.firstMapInstance = firstMapInstance;
     }
 
@@ -159,6 +166,7 @@ public final class WaitingRoom {
      */
     public void left(UUID playerId) {
         hud.forget(playerId);
+        sidebar.forget(playerId);
         handedOff.remove(playerId);
     }
 
@@ -269,21 +277,28 @@ public final class WaitingRoom {
      * lobby once the racer has entered the first map. A racing cup shows no waiting bar.
      */
     private void announce(StartGate.Situation situation, Collection<Player> online, int count) {
-        Component title = waitingTitle(situation, count);
+        // Every lobby display reads this one board, so the sidebar, the hologram and the boss bar name the same cup.
+        LobbyBoard board = LobbyBoard.of(catalog.current().cup());
+        Component title = waitingTitle(situation, count, board);
         Instance waitingPlace = lobby != null ? lobby.instance() : firstMapInstance.get();
         float progress = situation == StartGate.Situation.WAITING ? 1.0f : countdownFraction();
+        boolean waiting = situation != StartGate.Situation.RUNNING;
         for (Player racer : online) {
+            sidebar.update(racer, waitingPlace, board, waiting);
             if (title == null) {
                 hud.hide(racer);
             } else {
                 hud.update(racer, waitingPlace, title, progress);
             }
         }
+        if (hologram != null) {
+            hologram.update(board);
+        }
     }
 
     /** The line the bar reads in this situation, or {@code null} when no waiting bar is shown. */
-    private @Nullable Component waitingTitle(StartGate.Situation situation, int count) {
-        String cup = catalog.current().cup().name();
+    private @Nullable Component waitingTitle(StartGate.Situation situation, int count, LobbyBoard board) {
+        String cup = board.cupName();
         return switch (situation) {
             case WAITING -> Messages.lobbyBossBarWaiting(cup, count, minimum);
             case COUNTDOWN -> Messages.lobbyBossBarCountdown(cup, session.lobbyRemaining());

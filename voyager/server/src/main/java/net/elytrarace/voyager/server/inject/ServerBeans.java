@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
+import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
@@ -147,7 +148,8 @@ public final class ServerBeans {
                 .orElse(null);
         HubHandoff hub = HubHandoff.fromSlot((racer, reason) -> racer.kick(reason), LOGGER::warn);
         return new WaitingRoom(session, catalog, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
-                hub, new LobbyHud(), () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
+                hub, new LobbyHud(), new LobbySidebar(), null,
+                () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
     }
 
     @Bean
