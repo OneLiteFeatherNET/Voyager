@@ -19,62 +19,62 @@ test follows F.I.R.S.T.: no sleeps, no clock reads, explicit ticks, a fresh Mine
 
 ## 3. api: the handoff port
 
-- [ ] 3.1 Red: `PlayerHandoffsTest` names the behaviours "an empty holder answers no handoff", "an installed handoff is the one returned", "a later install replaces the earlier one", and "uninstall clears the holder". Each test uses its own install and uninstalls in `@AfterEach` so no test depends on another (`feat(race)`)
-- [ ] 3.2 Green: add `PlayerHandoff`, `PlayerHandoffs` and `exception.HandoffUnavailableException` in `net.elytrarace.voyager.api.handoff`, each package with a `package-info.java` (`feat(race)`)
-- [ ] 3.3 Red: add `handoffPortDependsOnlyOnJdkAndApi` and `onlyTheBridgeInstallsAPlayerHandoff` to the fitness module, with `allowEmptyShould(false)`. The first fails because the package does not exist yet; the second fails until task 8 (`feat(race)`)
-- [ ] 3.4 Green: the first rule passes with the port from 3.2; the second passes once the bridge has the only install call (task 8.2) (`feat(race)`)
+- [x] 3.1 Red: `PlayerHandoffsTest` names the behaviours "an empty holder answers no handoff", "an installed handoff is the one returned", "a later install replaces the earlier one", and "uninstall clears the holder". Each test uses its own install and uninstalls in `@AfterEach` so no test depends on another (`feat(race)`)
+- [x] 3.2 Green: add `PlayerHandoff`, `PlayerHandoffs` and `exception.HandoffUnavailableException` in `net.elytrarace.voyager.api.handoff`, each package with a `package-info.java` (`feat(race)`)
+- [x] 3.3 Red: add `handoffPortDependsOnlyOnJdkAndApi` and `onlyTheBridgeInstallsAPlayerHandoff` to the fitness module, with `allowEmptyShould(false)`. The first fails because the package does not exist yet; the second fails until task 8 (`feat(race)`). The second rule was added with its satisfying code in the bridge commit, so CI stays green; `HandoffRuleSeededTest` proves it matches
+- [x] 3.4 Green: the first rule passes with the port from 3.2; the second passes once the bridge has the only install call (task 8.2) (`feat(race)`)
 
 ## 4. platform: the hub handoff and the results linger
 
-- [ ] 4.1 Red: `HubHandoffTest` names the behaviours "an installed handoff receives every racer", "without an installed handoff each racer is disconnected with the translated message", and "a refused handoff disconnects with the same message and logs a warning naming the racer". The test installs a fake handoff and uninstalls it afterwards (`feat(race)`)
-- [ ] 4.2 Green: add `platform.handoff.HubHandoff` (uses `PlayerHandoffs.current()`, falls back to a disconnect) and the translated key `voyager.handoff.disconnect` in `voyager_en_US.properties`, with a `Messages` factory (`feat(race)`)
-- [ ] 4.3 Red: extend `WaitingRoomTest` with the explicit-tick behaviours "a finished cup hands racers online to the hub after 200 ticks", "a racer who joins during the linger is handed off too", "nothing is handed off on tick 199 after the result", "a running cup hands nobody off", and "a finished cup with nobody online hands nobody off" (`feat(race)`)
-- [ ] 4.4 Green: `WaitingRoom` replaces the return branch with `HubHandoff` after `RESULTS_LINGER_TICKS` (200), counted in ticks, with no clock. It keeps the lobby field for joins (`feat(race)`)
-- [ ] 4.5 Red then green: replace the test "a finished cup returns racers through LobbyTransition" in `WaitingRoomTest` and "a finished cup returns racers to the lobby spawn" in `LobbyTransitionTest`. Regenerate the golden `golden/cup-session/lobby-world-start.txt` for the cup end; the other golden transcripts must not change (`feat(race)`)
-- [ ] 4.6 Refactor: remove `LobbyTransition.returnTo` once no caller is left, keeping `instance()` and `spawn()` for joins (`refactor(race)`)
+- [x] 4.1 Red: `HubHandoffTest` names the behaviours "an installed handoff receives every racer", "without an installed handoff each racer is disconnected with the translated message", and "a refused handoff disconnects with the same message and logs a warning naming the racer". The test installs a fake handoff and uninstalls it afterwards (`feat(race)`)
+- [x] 4.2 Green: add `platform.handoff.HubHandoff` (uses `PlayerHandoffs.current()`, falls back to a disconnect) and the translated key `voyager.handoff.disconnect` in `voyager_en_US.properties`, with a `Messages` factory (`feat(race)`)
+- [x] 4.3 Red: extend `WaitingRoomTest` with the explicit-tick behaviours "a finished cup hands racers online to the hub after 200 ticks", "a racer who joins during the linger is handed off too", "nothing is handed off on tick 199 after the result", "a running cup hands nobody off", and "a finished cup with nobody online hands nobody off" (`feat(race)`)
+- [x] 4.4 Green: `WaitingRoom` replaces the return branch with `HubHandoff` after `RESULTS_LINGER_TICKS` (200), counted in ticks, with no clock. It keeps the lobby field for joins (`feat(race)`)
+- [x] 4.5 Red then green: replace the test "a finished cup returns racers through LobbyTransition" in `WaitingRoomTest` and "a finished cup returns racers to the lobby spawn" in `LobbyTransitionTest`. Regenerate the golden `golden/cup-session/lobby-world-start.txt` for the cup end; the other golden transcripts must not change (`feat(race)`)
+- [x] 4.6 Refactor: remove `LobbyTransition.returnTo` once no caller is left, keeping `instance()` and `spawn()` for joins (`refactor(race)`)
 
 ## 5. platform: the cup name on the boss bar
 
-- [ ] 5.1 Red: `Messages` tests name the behaviours "the waiting boss bar names the cup, the count and the minimum" and "the countdown boss bar names the cup and the seconds left" (`feat(race)`)
-- [ ] 5.2 Green: add `voyager.lobby.bossbar.waiting.cup` and `voyager.lobby.bossbar.countdown.cup` with `<arg:N>` placeholders, the matching `Messages` factories, and `WaitingRoom` passes the cup name. The old two keys are removed in the same commit once nothing uses them (`feat(race)`)
+- [x] 5.1 Red: `Messages` tests name the behaviours "the waiting boss bar names the cup, the count and the minimum" and "the countdown boss bar names the cup and the seconds left" (`feat(race)`)
+- [x] 5.2 Green: add `voyager.lobby.bossbar.waiting.cup` and `voyager.lobby.bossbar.countdown.cup` with `<arg:N>` placeholders, the matching `Messages` factories, and `WaitingRoom` passes the cup name. The old two keys are removed in the same commit once nothing uses them (`feat(race)`)
 
 ## 6. platform: the lobby board, sidebar and hologram
 
-- [ ] 6.1 Red: `LobbyBoardTest` names the behaviours "the board lists the maps in play order", "a cup of fifteen maps shows twelve and a +3 more line", "a cup of five maps shows no more line", "the board shows the pending cup while waiting after a reload", and "the board keeps the pinned cup during a countdown" (`feat(race)`)
-- [ ] 6.2 Green: add `platform.lobby.LobbyBoard`, a pure view model with no Minestom type beyond `Component` (`feat(race)`)
-- [ ] 6.3 Red: `LobbySidebarTest` on a fresh Minestom instance with explicit ticks names the behaviours "the sidebar shows while the room waits", "the sidebar is removed when a racer enters a map", and "no sidebar is shown while a cup races" (`feat(race)`)
-- [ ] 6.4 Green: add `platform.lobby.LobbySidebar`, one Minestom `Sidebar` per racer, driven by `WaitingRoom.announce` (`feat(race)`)
-- [ ] 6.5 Red: `LobbyHologramTest` names the behaviours "the hologram stands at the configured position in the lobby instance", "its text follows the board when the cup changes", and "no hologram is spawned without a position" (`feat(race)`)
-- [ ] 6.6 Green: add `platform.lobby.LobbyHologram`, one `TextDisplay` entity updated from `LobbyBoard` (`feat(race)`)
+- [x] 6.1 Red: `LobbyBoardTest` names the behaviours "the board lists the maps in play order", "a cup of fifteen maps shows twelve and a +3 more line", "a cup of five maps shows no more line", "the board shows the pending cup while waiting after a reload", and "the board keeps the pinned cup during a countdown" (`feat(race)`)
+- [x] 6.2 Green: add `platform.lobby.LobbyBoard`, a pure view model with no Minestom type beyond `Component` (`feat(race)`)
+- [x] 6.3 Red: `LobbySidebarTest` on a fresh Minestom instance with explicit ticks names the behaviours "the sidebar shows while the room waits", "the sidebar is removed when a racer enters a map", and "no sidebar is shown while a cup races" (`feat(race)`)
+- [x] 6.4 Green: add `platform.lobby.LobbySidebar`, one Minestom `Sidebar` per racer, driven by `WaitingRoom.announce` (`feat(race)`)
+- [x] 6.5 Red: `LobbyHologramTest` names the behaviours "the hologram stands at the configured position in the lobby instance", "its text follows the board when the cup changes", and "no hologram is spawned without a position" (`feat(race)`)
+- [x] 6.6 Green: add `platform.lobby.LobbyHologram`, one `TextDisplay` entity updated from `LobbyBoard` (`feat(race)`)
 
 ## 7. server: settings, configuration check and boot
 
-- [ ] 7.1 Red: `ServerSettingsHologramTest` names the behaviours "the hologram position is read", "a position that is not three numbers is refused and names the setting", "a position without a lobby world is refused and names both settings", and "no position is no hologram" (`feat(race)`)
-- [ ] 7.2 Green: add the hologram setting to `ServerSettings` with the existing compatibility constructors, and `InvalidHologramException` in `server.config.exception` with its `package-info.java` (`feat(race)`)
-- [ ] 7.3 Red: `ConfigCheckHologramTest` names the behaviours "no hologram is no problem", "a hologram without a lobby is an error that names both", and "a hologram of two numbers is an error that names the setting" (`feat(race)`)
-- [ ] 7.4 Green: add the hologram checks to `ConfigCheck`, keyed by the setting name (`feat(race)`)
-- [ ] 7.5 Red: `LobbyWiringTest` names the behaviours "the hologram is spawned in the lobby instance at boot" and "the hologram is not saved when the server stops" (`feat(race)`)
-- [ ] 7.6 Green: `VoyagerServer` spawns the hologram after the lobby world is loaded, and passes `LobbySidebar`, `LobbyHologram` and `HubHandoff` to the room (`feat(race)`)
+- [x] 7.1 Red: `ServerSettingsHologramTest` names the behaviours "the hologram position is read", "a position that is not three numbers is refused and names the setting", "a position without a lobby world is refused and names both settings", and "no position is no hologram" (`feat(race)`)
+- [x] 7.2 Green: add the hologram setting to `ServerSettings` with the existing compatibility constructors, and `InvalidHologramException` in `server.config.exception` with its `package-info.java` (`feat(race)`)
+- [x] 7.3 Red: `ConfigCheckHologramTest` names the behaviours "no hologram is no problem", "a hologram without a lobby is an error that names both", and "a hologram of two numbers is an error that names the setting" (`feat(race)`)
+- [x] 7.4 Green: add the hologram checks to `ConfigCheck`, keyed by the setting name (`feat(race)`)
+- [x] 7.5 Red: `LobbyWiringTest` names the behaviours "the hologram is spawned in the lobby instance at boot" and "the hologram is not saved when the server stops" (`feat(race)`)
+- [x] 7.6 Green: `VoyagerServer` spawns the hologram after the lobby world is loaded, and passes `LobbySidebar`, `LobbyHologram` and `HubHandoff` to the room (`feat(race)`)
 
 ## 8. cloudnet-bridge: the hub connector (`feat(cloudnet)`)
 
-- [ ] 8.1 Red: `CloudNetPlayerHandoffTest` uses a fake `FallbackConnector` (no CloudNet type on the test classpath) and names the behaviours "a handoff calls the connector with the player's id", "a connector failure becomes HandoffUnavailableException", and "a handoff never kicks the player" (`feat(cloudnet)`)
-- [ ] 8.2 Green: add `CloudNetPlayerHandoff` and the `FallbackConnector` seam. `VoyagerCloudNetExtension.initialize` builds the production connector with `ServiceRegistry.registry().defaultInstance(PlayerManager.class).playerExecutor(uuid).connectToFallback()`, and calls `PlayerHandoffs.install` (`feat(cloudnet)`)
-- [ ] 8.3 Build: add `compileOnly(project(":voyager:api"))` to `voyager/cloudnet-bridge/build.gradle.kts` and the task `verifyNoVoyagerApiInBridgeJar`, wired to `check`. Red first: a bridge jar that bundles `PlayerHandoffs.class` fails the task (`feat(cloudnet)`)
-- [ ] 8.4 Red then green: in `CloudNetBoundaryTest`, `bridgeDependsOnlyOnJdkAndLibraries` must still fail for `api.race`; widen it to allow `net.elytrarace.voyager.api.handoff..` only (`feat(cloudnet)`)
+- [x] 8.1 Red: `CloudNetPlayerHandoffTest` uses a fake `FallbackConnector` (no CloudNet type on the test classpath) and names the behaviours "a handoff calls the connector with the player's id", "a connector failure becomes HandoffUnavailableException", and "a handoff never kicks the player" (`feat(cloudnet)`)
+- [x] 8.2 Green: add `CloudNetPlayerHandoff` and the `FallbackConnector` seam. `VoyagerCloudNetExtension.initialize` builds the production connector with `ServiceRegistry.registry().defaultInstance(PlayerManager.class).playerExecutor(uuid).connectToFallback()`, and calls `PlayerHandoffs.install` (`feat(cloudnet)`)
+- [x] 8.3 Build: add `compileOnly(project(":voyager:api"))` to `voyager/cloudnet-bridge/build.gradle.kts` and the task `verifyNoVoyagerApiInBridgeJar`, wired to `check`. Red first: a bridge jar that bundles `PlayerHandoffs.class` fails the task (`feat(cloudnet)`)
+- [x] 8.4 Red then green: in `CloudNetBoundaryTest`, `bridgeDependsOnlyOnJdkAndLibraries` must still fail for `api.race`; widen it to allow `net.elytrarace.voyager.api.handoff..` only (`feat(cloudnet)`)
 
 ## 9. Documentation (`docs`)
 
-- [ ] 9.1 `docs/reference/config-check.md`: `VOYAGER_LOBBY_HOLOGRAM`, its rules and the two refusals
-- [ ] 9.2 `docs/reference/hud.md`: the lobby sidebar, the hologram and the boss bar text naming the cup
-- [ ] 9.3 `docs/guides/how-to-run-a-playtest.md`: what a racer sees in the lobby, the hub handoff after a cup, and the local disconnect message
-- [ ] 9.4 `docs/guides/how-to-deploy-on-cloudnet.md`: the proxy needs a fallback for the game's group, otherwise `connectToFallback` has no target (the answer to Q4)
-- [ ] 9.5 `docs/research/`: a research note on the handoff investigation (the RC17 call, the fork's class loader, the linger), as Lumen's entry
-- [ ] 9.6 `docs/decisions/0033-lobby-cup-display-and-hub-handoff.md` status and consequences updated with the answers (`docs`)
+- [x] 9.1 `docs/reference/config-check.md`: `VOYAGER_LOBBY_HOLOGRAM`, its rules and the two refusals
+- [x] 9.2 `docs/reference/hud.md`: the lobby sidebar, the hologram and the boss bar text naming the cup
+- [x] 9.3 `docs/guides/how-to-run-a-playtest.md`: what a racer sees in the lobby, the hub handoff after a cup, and the local disconnect message
+- [x] 9.4 `docs/guides/how-to-deploy-on-cloudnet.md`: the proxy needs a fallback for the game's group, otherwise `connectToFallback` has no target (the answer to Q4)
+- [x] 9.5 `docs/research/`: a research note on the handoff investigation (the RC17 call, the fork's class loader, the linger), as Lumen's entry
+- [x] 9.6 `docs/decisions/0033-lobby-cup-display-and-hub-handoff.md` status and consequences updated with the answers (`docs`)
 
 ## 10. Verification
 
-- [ ] 10.1 `./gradlew build` for both trees, plus `:voyager:api:test`, `:voyager:platform:test`, `:voyager:server:test`, `:voyager:cloudnet-bridge:test` and `:voyager:fitness:test`. Confirm `verifyNoCloudNetInFatJars` and `verifyNoVoyagerApiInBridgeJar` pass, and that `CupSessionGoldenMasterTest` is unchanged apart from 4.5
+- [x] 10.1 `./gradlew build` for both trees, plus `:voyager:api:test`, `:voyager:platform:test`, `:voyager:server:test`, `:voyager:cloudnet-bridge:test` and `:voyager:fitness:test`. Confirm `verifyNoCloudNetInFatJars` and `verifyNoVoyagerApiInBridgeJar` pass, and that `CupSessionGoldenMasterTest` is unchanged apart from 4.5
 - [ ] 10.2 `./gradlew :voyager:server:validateCatalog`, then `./gradlew :voyager:server:runServer` on the playtest server: a lobby sidebar, the hologram, the boss bar naming the cup, a cup end that leaves the racers in the hub, and the local disconnect message when no bridge runs. Owner-run (not CI); record the result in the PR description
 
 ## 11. Archive and sync
