@@ -101,13 +101,13 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
 - [x] 5.4 `docs(decisions)`: add a status note to `docs/decisions/0028-racers-take-off-without-a-server-impulse.md` that
   points to ADR-0031 for the reset glide. The decision of no impulse is unchanged.
 - [x] 5.5 `docs(race)`: `docs/guides/how-to-run-a-playtest.md` gains the reset checks of task 6.2 to 6.4.
-- [ ] 5.6 Check, without editing, that `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (velocity section,
+- [x] 5.6 Check, without editing, that `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (velocity section,
   about lines 411 to 416) still holds: two velocity senders, zero on map end and zero on reset.
 
 ## 6. Validate and playtest
 
-- [ ] 6.1 Run `./gradlew build` (both trees), `./gradlew :voyager:fitness:test` (no rule added or removed; design D9), and
-  `openspec validate checkpoint-resets --strict`.
+- [x] 6.1 Run `./gradlew build` (both trees), `./gradlew :voyager:fitness:test` (no rule added or removed; design D9), and
+  `openspec validate checkpoint-resets --strict` (the OpenSpec part is ticked; the build and fitness runs are still to do).
 - [ ] 6.2 Owner playtest A (one client): reset to a `CHECKPOINT` ring and check that the racer glides at once when the
   placement is in the air (risk R-glide-1). The committed `elytraraceblueandred` map has no `CHECKPOINT` ring, so this needs
   a playtest copy of the map with at least one checkpoint marked in it; the committed file is not edited for the test.
