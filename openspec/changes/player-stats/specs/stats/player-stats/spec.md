@@ -41,16 +41,19 @@ on a tie SHALL keep the earlier finish.
 - **THEN** the personal best becomes 59.8 s and points at that run
 
 ### Requirement: The profile counts ranked play only
-**MoSCoW:** Must. THE SYSTEM SHALL count cups played, cups won, races played, races won, rings passed, boosts, resets and
-flight time in the player profile only for modes where the mode is ranked, while every mode is kept per run.
+**MoSCoW:** Must. THE SYSTEM SHALL count cups played, cup wins, medals per tier, races played, races won, rings passed, boosts,
+resets and flight time in the player profile only for modes where the mode is ranked, while every mode is kept per run.
 
 #### Scenario: a practice run
 - **WHEN** a racer finishes a practice map
-- **THEN** the run is stored, and the profile's races played and total flight time do not change
+- **THEN** the run is stored, and the profile's races played, medals and total flight time do not change
 
 ### Requirement: `/stats` shows a player's profile
-**MoSCoW:** Must. WHEN a racer runs `/stats`, THE SYSTEM SHALL reply in chat with the racer's profile, and WHEN the player has no
-recorded run, THE SYSTEM SHALL say so. The reply SHALL be sent from the game loop.
+**MoSCoW:** Must. WHEN a racer runs `/stats`, THE SYSTEM SHALL reply in chat with the player's profile: cups played, cup wins,
+medals per tier (the total of each tier), total flight time and the player's personal bests. WHEN the player has no recorded run,
+THE SYSTEM SHALL say so. `/stats [player]` without an argument SHALL answer for the sender. The reply SHALL be sent from the game
+loop. Anyone may run `/stats`; no permission node is required. The reply is a plain chat message, not clickable, and its text
+exists in de_DE (informal "du") and en_US.
 
 #### Scenario: a new player
 - **WHEN** a player who has never finished a map runs `/stats`
@@ -58,11 +61,20 @@ recorded run, THE SYSTEM SHALL say so. The reply SHALL be sent from the game loo
 
 #### Scenario: a returning player
 - **WHEN** a player with recorded races runs `/stats`
-- **THEN** the reply shows cups played, cups won, races won and total flight time
+- **THEN** the reply shows cups played, cup wins, medals per tier, total flight time and the personal bests
+
+#### Scenario: a player looked up by name
+- **WHEN** a racer runs `/stats Alex`
+- **THEN** the profile of the player whose `player.last_known_name` is `Alex`, compared case-insensitively, is shown; if several players match, the one with the most recent `last_seen` is shown
+
+#### Scenario: an unknown name
+- **WHEN** a racer runs `/stats` with a name that no player has as last known name
+- **THEN** the reply says that no player was found
 
 ### Requirement: `/leaderboard` lists the best times of the current layout
 **MoSCoW:** Should. WHEN a racer runs `/leaderboard <map>`, THE SYSTEM SHALL list the top ten personal bests for that map's
-current layout in ranked mode, fastest first.
+current layout in ranked mode, fastest first. Anyone may run it; no permission node is required. The reply is a plain chat message,
+not clickable.
 
 #### Scenario: a map with no runs
 - **WHEN** the leaderboard is asked for a map with no recorded finish

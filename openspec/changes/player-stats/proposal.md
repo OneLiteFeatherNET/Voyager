@@ -12,13 +12,13 @@ is named `voyager-persistence` as the design says.
 - Decision D16 (avaje-config) is in `openspec/changes/adopt-avaje-config`. This change depends on it.
 
 **Decisions changed in the greenfield design** (`docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md`), recorded as
-decision rows D15 and D16 in its table (task 6.4):
+decision rows D15 and D16 in its table (task 9.5; not done in this change):
 - Persistence section: MariaDB and Hibernate `ON DUPLICATE KEY` become PostgreSQL and `ON CONFLICT`; `DATETIME(6)`, `INT UNSIGNED`
   and `rewriteBatchedStatements` become their PostgreSQL forms. The rest of the section stands: `StatelessSession`, no associations,
   Flyway owns the schema, hand-written repositories, single writer, `void` submits.
 - Configuration section: the database keys are read through the loader of `adopt-avaje-config`.
 
-**Depends on:** `adopt-avaje-config` (must merge first). Also `com-racers` (planned, branch `openspec/com-racers`, not merged):
+**Depends on:** `adopt-avaje-config` (merged to `main` on 2026-10-13, archived as `2026-10-13-adopt-avaje-config`). Also `com-racers` (planned, branch `openspec/com-racers`, not merged):
 this change does not store computer racers, which matches that proposal's rule "no stored record".
 
 **Slices touched:** `api/stats` (new: records, ports, exception), `api/config` (database settings and `Secret`), `persistence` (new
@@ -34,7 +34,7 @@ computer racers, per-cup leaderboards (a query later), changes to the legacy tre
 ## Why
 
 The owner wants player statistics collected from now on: cup results and medals, per-run details (rings passed, boosts, resets,
-split times), per-map best times with leaderboards, and a profile (cups played, wins, total flight time) that `/stats` shows. The
+split times), per-map best times with leaderboards, and a profile (cups played, cup wins, medals per tier, total flight time, personal bests) that `/stats` shows. The
 greenfield design already has a schema for most of it (`docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md`,
 "Entity model"), written for MariaDB, and gates the whole persistence stage on E5. Data that is not collected from now on cannot be
 recovered later, so collection starts with this change even though the reads are small.
@@ -54,9 +54,9 @@ geometry (design "Entity model").
 - **Storage (`persistence`).** PostgreSQL schema in one Flyway migration, `V1__baseline.sql`, in schema `voyager`. Hibernate 7 with
   `StatelessSession`; entities with raw foreign keys and no associations; HQL constructor expressions for reads; plain JDBC
   upserts where the design asks for an atomic statement. One single-writer thread drains a bounded queue (see design, "Write path").
-- **Reads.** `/stats [player]` and `/leaderboard <map>` (command names are proposals, see Q4). Reads run on a read executor; the reply
+- **Reads.** `/stats [player]` and `/leaderboard <map>` (decided in Q4; no permission node). Reads run on a read executor; the reply
   is queued back to the tick and written there.
-- **Configuration.** `VOYAGER_PERSISTENCE` (`off` or `required`), `VOYAGER_DB_URL`, `VOYAGER_DB_USER`, `VOYAGER_DB_PASSWORD` or
+- **Configuration.** `VOYAGER_PERSISTENCE` (`off` or `on`; unset means `off`), `VOYAGER_DB_URL`, `VOYAGER_DB_USER`, `VOYAGER_DB_PASSWORD` or
   `VOYAGER_DB_PASSWORD_FILE`, `VOYAGER_DB_POOL_SIZE`, `VOYAGER_DB_QUEUE_CAPACITY`. Checked by `ConfigCheck` for shape only; it does not
   connect (a check must be repeatable with no network).
 - **Documentation.** The CloudNet guide's table of node-provided values gets the database variables; a reference page; a local run guide
@@ -71,4 +71,4 @@ geometry (design "Entity model").
 
 ### Modified Capabilities
 - `server/configuration`: gains the database keys (depends on `adopt-avaje-config`).
-- `architecture/architecture-enforcement`: gains the persistence module and the rules of this change (design D12 of the change).
+- `architecture/architecture-enforcement`: gains the persistence module and the rules of this change (design D11 of the change).

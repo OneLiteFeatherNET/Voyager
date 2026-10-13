@@ -4,8 +4,9 @@
 
 Proposed
 
-The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it. The change that
-implements it is `player-stats`, which depends on `adopt-avaje-config` (ADR-0036).
+This record stays Proposed. The project owner decided on 2026-10-13 not to accept it in the change that implements it, and
+the change `player-stats` does not accept it. The change implements it and depends on `adopt-avaje-config` (ADR-0036), which
+is merged.
 
 ## Date
 
@@ -57,13 +58,15 @@ Chosen option: **2**, with these rules.
   queue drops the newest completion with a warning; a lost database is retried with a backoff and never stops the game.
 - One finished map or cup is one transaction.
 - Computer racers are not stored (proposal `com-racers`, "no stored record").
-- The database is `off` or `required` (`VOYAGER_PERSISTENCE`); a configured database that is unavailable at boot stops the start.
+- The database is `off` or `on` (`VOYAGER_PERSISTENCE`; unset means `off`). A database that is unavailable at boot never stops
+  the start: the game runs without statistics, buffers completions and retries in the background, with one WARN at boot.
 - The legacy tree keeps MariaDB and is not changed by this record.
 
 **Consequences.**
 - The design's "Persistence" section changes to PostgreSQL. Design decision D15 records it (task 9.5).
-- The design's `cup` and `map` registry tables are dropped in favour of text keys. Owner question Q6 may reverse it.
-- Operators must provision a PostgreSQL database and set `VOYAGER_PERSISTENCE` in the CloudNet task before the release (owner question Q2).
+- The design's `cup` and `map` registry tables are dropped in favour of text keys (owner decision Q6, 2026-10-13).
+- Operators provision a PostgreSQL database and set `VOYAGER_PERSISTENCE=on` in the CloudNet task to collect statistics; unset
+  keeps them off. The PostgreSQL host and role are not known yet (owner question Q2); this record does not depend on them.
 - The rebuild gets its first Testcontainers suite; CI runs it in one Linux job only.
 
 ## Pros and cons of the options
@@ -90,4 +93,4 @@ Chosen option: **2**, with these rules.
 - Design sections that still apply unchanged: "The governing decision", "Repositories" (ports not sealed), "Tick safety", "Query
   design", "Flyway", "HikariCP" (apart from the database types).
 - Titan's jump-and-run records: `features/jumprun` and `persistence` in the Titan repository (PostgreSQL, Flyway, HikariCP, `TITAN_DATABASE_*`).
-- Owner questions Q1 to Q8 are open in `openspec/changes/player-stats/design.md`.
+- Owner decisions of 2026-10-12 and 2026-10-13 are recorded in `openspec/changes/player-stats/design.md`.

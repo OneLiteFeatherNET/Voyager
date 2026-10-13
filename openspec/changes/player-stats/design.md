@@ -119,14 +119,15 @@ Indexes: `map_personal_best (map_key, layout_version, game_mode, best_time_milli
 **Deviations from the greenfield design's "Entity model"**, taken on purpose:
 - No `cup` and `map` registry tables. Keys are text (`map_key` is the map's name in its file). The registry was a size
   optimisation and a rename shield; with fifty players per race it buys nothing measurable, and it would need a boot-time upsert
-  from the catalogue. Owner question Q6 can reverse this.
+  from the catalogue. Owner decision Q6 (2026-10-13) keeps this: text keys, no registry tables.
 - `layout_version` is the first 16 hex characters of SHA-256 over the canonical form of the map definition (see D7).
 - Durations are `integer` milliseconds (cap 24.8 days, far above any race length) and `bigint` for totals. PostgreSQL has no
   `UNSIGNED`, so the check constraints `>= 0` replace it.
 - Timestamps are `timestamptz`, written from an injected `Clock` (design rule 7).
 
-Profile reads are three queries in one read-only transaction: identity plus statistics, the last ten `race_result` rows with their
-session, and the personal bests of the player (the design's "profile on join" rule, here for `/stats`).
+Profile reads are three queries in one read-only transaction: identity plus statistics; the medal count per tier (a count of the
+player's ranked `race_result` rows grouped by `medal_tier`, DIAMOND to BRONZE); and the personal bests of the player. These are
+the rows that `/stats` shows (owner decision Q4, 2026-10-13).
 
 **Upserts (atomic, no read-modify-write):**
 
@@ -166,19 +167,21 @@ use `voyager-db-read`, a fixed pool of 2. Neither executor is `ForkJoinPool.comm
 fixed point with a budget, and the chat message is sent from the tick (design, "Completions re-enter through the tick"). A read that
 takes longer than two seconds is answered with "statistics are unavailable right now".
 
-**DB-down behaviour (proposed, owner question Q3):**
+**DB-down behaviour (owner decisions Q1 and Q3, 2026-10-13; the game never refuses to start because of the database):**
 
 | State | Behaviour |
 |---|---|
-| `VOYAGER_PERSISTENCE=off` | a no-op recorder is bound; one WARN at boot says no records are kept; `/stats` answers that statistics are not recorded on this server |
-| `required`, database unreachable, migration or schema validation fails at boot | the server refuses to start, exits non-zero before it binds a port; the message names `VOYAGER_DB_URL`, never the password |
-| `required`, database lost while running | completions queue up (up to the capacity); the writer retries with a backoff of 1 s doubling to 60 s; one WARN when the outage starts and one when it ends; the game is unaffected |
+| `VOYAGER_PERSISTENCE` unset or `off` | a no-op recorder is bound; one WARN at boot says no statistics are kept; `/stats` answers that statistics are not recorded on this server |
+| `on`, database unreachable, migration or schema validation fails at boot | the game runs without stats; completions are buffered and the writer retries in the background with a backoff of 1 s doubling to 60 s; one WARN at boot names the failing setting, never the password |
+| `on`, database lost while running | completions queue up (up to the capacity of 256); the writer retries with the same backoff; one WARN when the outage starts and one when it ends; the game is unaffected |
 | queue full | the newest completion is dropped; one WARN per drop with the cup and map keys; a counter is exposed for the metrics of design E4 |
 | a data error (SQLSTATE class 22 or 23) | the completion is dropped after one attempt with an ERROR that names the keys; the writer goes on |
 | shutdown | the writer drains for at most 10 s; the number still queued is logged; the pool closes after the writer |
 
 **Why buffer, not only drop.** A race that finishes during a short outage is worth keeping; the cost is bounded memory and
-the loss on a crash, which the owner accepts for v1 (a spool file is a later change). Owner question Q3 asks for the other choice.
+the loss on a crash, which the owner accepts for v1 (a spool file is a later change). Owner decision Q3 (2026-10-13): buffer
+256 completions in memory, retry with a backoff of 1 s doubling to 60 s, and when the queue is full drop the NEWEST completion
+with a WARN.
 
 ### D6. Computer racers are not stored
 
@@ -193,17 +196,17 @@ a racer kind can be added without a migration of these tables.
 - `layout_version` is the first 16 hex characters of SHA-256 over the map definition's canonical JSON (the parsed definition written
   back in the schema's canonical field order, so whitespace and key order do not change it). A change of a ring or a spawn changes it,
   and the leaderboard shows only the current layout. Old rows stay and stop appearing (design, "Records are scoped by `layout_version`").
-  Owner question Q6 asks whether the canonical form is the right boundary.
+  Owner decision Q6 (2026-10-13) accepts the canonical form as the boundary.
 - Every mode is stored (`RACE` and `PRACTICE`). Profile statistics and leaderboards count only modes where `GameMode.ranked()` is true,
-  so practice runs are recorded for later analysis without changing a player's numbers.
+  so practice runs are recorded for later analysis without changing a player's numbers (owner decision Q7, 2026-10-13).
 
 ### D8. Configuration (through `adopt-avaje-config`)
 
 | Key (system property) | Environment name | Default | Rule |
 |---|---|---|---|
-| `voyager.persistence` | `VOYAGER_PERSISTENCE` | unset | `off` or `required`; anything else refused; see Q1 for unset |
-| `voyager.db.url` | `VOYAGER_DB_URL` | none | `jdbc:postgresql://host:port/database`; required when `required` |
-| `voyager.db.user` | `VOYAGER_DB_USER` | none | required when `required`; no default, so a missing value is not the development user |
+| `voyager.persistence` | `VOYAGER_PERSISTENCE` | unset (= `off`) | `off` or `on`; unset means `off` (Q1) |
+| `voyager.db.url` | `VOYAGER_DB_URL` | none | `jdbc:postgresql://host:port/database`; required when `on` |
+| `voyager.db.user` | `VOYAGER_DB_USER` | none | required when `on`; no default, so a missing value is not the development user |
 | `voyager.db.password` | `VOYAGER_DB_PASSWORD` | none | environment only in the documented setup; a `-D` value is accepted but the guide says not to use it |
 | `voyager.db.password.file` | `VOYAGER_DB_PASSWORD_FILE` | none | a path whose content is the secret; the file is read once at boot |
 | `voyager.db.pool.size` | `VOYAGER_DB_POOL_SIZE` | 10 | 2 to 20 |
@@ -211,7 +214,11 @@ a racer kind can be added without a migration of these tables.
 
 `Secret` (in `api.config`) wraps the password: `toString` prints `Secret[masked]`, the record has no `value()` accessor that is
 public outside `persistence` and the composition root (design rule "no class outside persistence calls `Secret.value()`").
-`ConfigCheck` checks the shape of the URL and the presence of user and password when `required`; it does not connect.
+`ConfigCheck` checks the shape of the URL and the presence of user and password when `on`; it does not connect.
+
+**Rule for invalid settings (Q1, 2026-10-13).** An unknown switch value, a missing URL, user or password while `on`, or a pool
+size or queue capacity outside its range logs one WARN that names the setting and runs with stats off. None of these refuses the
+start. The password is never printed, in the WARN or anywhere else.
 
 ### D9. Hibernate and pool settings
 
@@ -230,10 +237,12 @@ first under a PostgreSQL advisory lock, with `baselineOnMigrate=false`, `validat
   container per test class, one schema per test. They run `V1__baseline.sql`, validate the mappings, execute every named query, prove
   the upsert keeps the minimum under two concurrent writers (2 x 500 updates, one fixed expected value), assert the leaderboard plan with
   `EXPLAIN`, and check the DB-down rows of D5 against a container stopped mid-test.
-- **Docker.** The integration tests are skipped only when `voyager.requireDocker` is not set. CI sets it and the job fails instead of
-  skipping, so a missing Docker cannot turn the integration suite silently green. Titan's `@Testcontainers(disabledWithoutDocker = true)`
-  is not copied for CI for that reason. GitHub-hosted `windows-latest` and `macos-latest` runners do not provide Linux containers by
-  default, so the integration suite runs in one new job on `ubuntu-latest`; the existing three-OS job runs unit tests only.
+- **Docker.** The integration base class uses `postgres:17-alpine` and is annotated `@Testcontainers(disabledWithoutDocker = true)`
+  (owner decision, 2026-10-13). Without Docker it skips locally. When the Gradle property `voyager.requireDocker` is `true`, the
+  base class first asserts that Docker is available, so the suite fails instead of skipping; the skip is allowed only when the
+  property is unset. CI sets it with `-Pvoyager.requireDocker=true`, so a missing Docker cannot turn the integration suite
+  silently green. GitHub-hosted `windows-latest` and `macos-latest` runners do not provide Linux containers by default, so the
+  integration suite runs in one new job, `persistence-integration`, on `ubuntu-latest`; the existing three-OS job runs unit tests only.
 
 ### D11. Fitness rules (`voyager/fitness`, `allowEmptyShould(false)`)
 
@@ -259,36 +268,65 @@ metrics wiring of design E4 is a later change; the counters are plain getters fo
 
 | Risk | Mitigation |
 |---|---|
-| A bad migration blocks boot | the integration suite runs V1 against PostgreSQL 17 on every change; `required` refuses to start, so no half-state |
-| The queue holds results in memory during an outage | bounded (256); the loss on crash is accepted (Q3) |
+| A bad migration blocks boot | the integration suite runs V1 against PostgreSQL 17 on every change; a failed migration with `on` runs the game without stats and logs one WARN, so it cannot block boot |
+| The queue holds results in memory during an outage | bounded (256); the loss on crash is accepted (owner decision Q3) |
 | A race result is written twice | unique keys on `(race_session_id, player_id)`; the session id is created once per map |
 | Upsert contention on `player_statistics` | one row per player, written once per race; the writer is single-threaded, so there is no contention inside the server |
 | `/stats` answers from a stale read | reads are not cached; the answer is the database's |
-| The operator forgets `VOYAGER_PERSISTENCE` | unset is refused (Q1), so the omission is loud |
+| The operator forgets `VOYAGER_PERSISTENCE` | unset means `off` and logs one WARN at every boot, so the omission is visible in the log (Q1) |
 | A map edit changes `layout_version` mid-season | intended (design); the leaderboard shows the new layout only |
 
 ## Migration Plan
 
 1. No data migration. The schema is new in its own database (`voyager`), so the MariaDB legacy data is untouched and stays out (D11 of the design).
-2. Provision the database and role (owner question Q2). Set `VOYAGER_PERSISTENCE=required` and the URL, user and password in the CloudNet task's
-   environment (node-level, as the design's secrets rule says) before the release that contains this change, or set `VOYAGER_PERSISTENCE=off`
-   in the same task. The guide states both.
+2. Provision the database and role (owner question Q2; not yet answered, and it does not block this change; the docs use placeholders
+   such as `db.example.invalid`). To collect statistics, set `VOYAGER_PERSISTENCE=on` and the URL, user and password in the CloudNet
+   task's environment (node-level, as the design's secrets rule says). Without it, leave the switch unset: statistics stay off. The
+   guide states both.
 3. Rollback: set `VOYAGER_PERSISTENCE=off`. Schema and rows stay; nothing else changes.
 
-## Owner questions
+## Owner questions (answered)
 
 - **Q1.** `VOYAGER_PERSISTENCE` unset: refuse to start (recommended; the design's rule, so an omission is loud) or treat as `off` with a WARN
   until the owner flips it?
+  Decision: unset means `off`, with one WARN at boot that no statistics are kept; the game runs normally. `on` uses the database. If
+  the database is down at boot, the game runs without stats, completions are buffered and the writer retries in the background. The
+  game never refuses to start because of the database. The switch value `required` is renamed to `on`.
 - **Q2.** Which PostgreSQL server holds `voyager`, who provisions the role, and is it reachable from the CloudNet nodes? Titan's configuration
   is a hint, not an answer.
+  Decision: the operator session provisions the PostgreSQL host and role. It is not known yet and does not block this change; the docs
+  use placeholders (for example `db.example.invalid`) and no real host is written.
 - **Q3.** DB-down: buffer up to 256 completions in memory and drop the newest on overflow (recommended), or drop immediately with a WARN
   (simpler, loses every race of an outage)?
+  Decision: buffer 256 completions in memory; retry with a backoff of 1 s doubling to 60 s; when the queue is full, drop the newest
+  completion with a WARN.
 - **Q4.** `/stats` and leaderboard UX: command names (`/stats [player]`, `/leaderboard <map>` proposed); what the profile shows (wins,
   cups played, total flight time, best time per map); own profile only, or anyone's; chat only or clickable; leaderboard length (10
   proposed).
+  Decision: `/stats [player]` (no argument means the sender) and `/leaderboard <map>`. The profile shows cups played, cup wins, medals
+  per tier (total per tier), total flight time and the best times (personal bests). Anyone may use both; no permission node. Replies
+  are chat messages, not clickable. The player text exists in de_DE (informal "du") and en_US. The leaderboard shows the top 10
+  personal bests of the current layout in ranked mode, fastest first.
 - **Q5.** Retention: keep all rows (recommended for v1, the volume is small) or purge after a period; who may ask for erasure, and by
   which tool.
+  Decision: keep all rows indefinitely. The retention purge and the erasure tooling are a follow-up change, out of scope here.
 - **Q6.** Layout identity: is the canonical JSON of the map definition the right boundary for `layout_version` (recommended), or should
   the owner mark a layout change by hand? Also: keep the `cup` and `map` registry tables of the design, which this change drops?
+  Decision: the canonical JSON of the map definition (D7) is the layout identity; the `cup` and `map` registry tables stay dropped
+  (text keys).
 - **Q7.** Practice runs: stored, flagged by mode, and excluded from profile and leaderboards (proposed), or not stored at all?
+  Decision: practice runs are stored with their mode and excluded from profile and leaderboards (D7).
 - **Q8.** Confirm the bot exclusion (D6) before `com-racers` lands.
+  Decision: computer racers are never stored; only `bot_count` on the race session (D6).
+
+## Owner decisions (2026-10-13)
+
+Q1 to Q8 are answered above, each with its "Decision:" line. The other owner decisions of 2026-10-13 that touch this change:
+
+- **Stack unchanged.** PostgreSQL, Hibernate 7, HikariCP and Flyway, configured through avaje-config, following the Titan pattern.
+- **Switch values.** `VOYAGER_PERSISTENCE` is `off` or `on`; unset means `off`. The value `required` is not used anywhere.
+- **Integration tests.** `postgres:17-alpine` with `@Testcontainers(disabledWithoutDocker = true)`; CI fails instead of skipping,
+  through `voyager.requireDocker` (D10).
+- **Velocity secret.** Stays environment-first, the existing exception. This change does not touch it.
+- **ADR-0037.** Stays Proposed. The owner has not accepted it and will not accept it in this change.
+- **Greenfield design.** The amendments D15 (PostgreSQL) and D16 (avaje-config) stay as task 9.5 and are not done here.

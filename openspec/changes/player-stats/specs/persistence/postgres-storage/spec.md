@@ -8,26 +8,32 @@ how writes leave the tick thread, and how a finished race is stored as one trans
 
 ## ADDED Requirements
 
-### Requirement: The database is used only when the operator asks for it
-**MoSCoW:** Must. WHEN `VOYAGER_PERSISTENCE` is `off`, THE SYSTEM SHALL bind a recorder that keeps nothing, SHALL log one
-warning at boot that no records are kept, and SHALL answer `/stats` that statistics are not recorded on this server.
+### Requirement: The database is used only when the operator sets `on`
+**MoSCoW:** Must. WHEN `VOYAGER_PERSISTENCE` is unset or `off`, THE SYSTEM SHALL bind a recorder that keeps nothing, SHALL log
+one warning at boot that no statistics are kept, and SHALL answer `/stats` that statistics are not recorded on this server.
+WHEN `VOYAGER_PERSISTENCE` is `on`, THE SYSTEM SHALL use the database as the rest of this capability describes.
+
+#### Scenario: persistence unset
+- **WHEN** the server starts with `VOYAGER_PERSISTENCE` unset and no `VOYAGER_DB_URL`
+- **THEN** the server starts, exactly one warning says that no statistics are kept, and no connection to a database is attempted
 
 #### Scenario: persistence off
 - **WHEN** the server starts with `VOYAGER_PERSISTENCE=off` and no `VOYAGER_DB_URL`
 - **THEN** the server starts, one warning names the state, and no connection to a database is attempted
 
-### Requirement: A required database that cannot be used stops the start
-**MoSCoW:** Must. WHEN `VOYAGER_PERSISTENCE` is `required` and the database is unreachable, the migration fails, or the
-schema does not match the mappings, THE SYSTEM SHALL exit non-zero before it binds a port, and the message SHALL name the failing
-setting and SHALL NOT contain the password.
+### Requirement: A database that cannot be used at boot does not stop the game
+**MoSCoW:** Must. WHEN `VOYAGER_PERSISTENCE` is `on` and the database is unreachable, the migration fails, or the schema does not
+match the mappings at boot, THE SYSTEM SHALL start the game without statistics, SHALL log one warning at boot that names the failing
+setting and SHALL NOT contain the password, and SHALL retry the database in the background. THE SYSTEM SHALL NOT refuse to start
+because of the database.
 
-#### Scenario: unreachable database at boot
-- **WHEN** the server starts with `VOYAGER_PERSISTENCE=required` and a URL that refuses connections
-- **THEN** the process exits non-zero, the server never listens, and the message names `VOYAGER_DB_URL` without the password
+#### Scenario: on with an unreachable database at boot
+- **WHEN** the server starts with `VOYAGER_PERSISTENCE=on` and a URL that refuses connections
+- **THEN** the game starts and listens, one warning names `VOYAGER_DB_URL` without the password, completions are buffered, and the writer retries until the database returns
 
-#### Scenario: required without credentials
-- **WHEN** `VOYAGER_PERSISTENCE=required` and `VOYAGER_DB_USER` is not set
-- **THEN** the server refuses to start and names `VOYAGER_DB_USER`
+#### Scenario: on without a user
+- **WHEN** `VOYAGER_PERSISTENCE=on` and `VOYAGER_DB_USER` is not set
+- **THEN** one warning names `VOYAGER_DB_USER`, statistics are off, and the game runs normally
 
 ### Requirement: Writes never block the game loop
 **MoSCoW:** Must. WHEN a race or cup completes, THE SYSTEM SHALL hand the completion to a bounded queue without waiting, and
@@ -80,7 +86,7 @@ sees part of a race.
 is built, SHALL run Hibernate with `hbm2ddl.auto=validate`, and SHALL NOT run `baselineOnMigrate` or `clean`.
 
 #### Scenario: a fresh database
-- **WHEN** the server starts against an empty database with `required`
+- **WHEN** the server starts against an empty database with `on`
 - **THEN** version 1 is applied once and the mappings validate
 
 ### Requirement: Shutdown drains the queue for at most ten seconds
