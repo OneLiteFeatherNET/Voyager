@@ -88,7 +88,7 @@ dependencyResolutionManagement {
             // OneLiteFeather LuckPerms fork, resolved from repo.onelitefeather.dev/releases (declared in build.gradle.kts).
             // The loader must be 6.0.2 or newer: 6.0.1 calls ConnectionManager.getOnlinePlayers()Ljava/util/Collection;, which
             // Minestom 2026.10.07 removed (NoSuchMethodError on boot). Any bump needs owner approval.
-            version("luckperms-api", "6.0.1")
+            version("luckperms-api", "6.0.2")
             version("luckperms-minestom-loader", "6.0.2")
             library("luckperms.api", "net.luckperms", "api").versionRef("luckperms-api")
             library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms-minestom-loader")
