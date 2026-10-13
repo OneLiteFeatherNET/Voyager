@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.world;
 
 import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.world.DimensionType;
 import net.minestom.server.registry.RegistryKey;
 
@@ -25,6 +26,7 @@ final class TrackingInstance extends InstanceContainer {
     TrackingInstance(UUID uuid, RegistryKey<DimensionType> dimensionType, InFlightChunkLoads loads) {
         super(uuid, dimensionType);
         this.loads = loads;
+        setChunkSupplier(LightingChunk::new);
     }
 
     @Override
