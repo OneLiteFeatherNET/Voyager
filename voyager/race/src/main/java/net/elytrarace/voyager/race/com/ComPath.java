@@ -70,8 +70,11 @@ public final class ComPath {
      * @param line the racing line of the map
      * @param rings the rings of the course, in ring order, one for each ring anchor of {@code line}
      * @return the path, shared by every racer on that map
+     * <p>A single ring with no other point, on its grid, is the straight line through the ring's centre along its
+     * normal, since a direction needs two points.
+     *
      * @throws IllegalArgumentException if the ring count does not match the line's ring anchors, or the grid and the
-     *     line together have fewer than two distinct points
+     *     line together have fewer than two distinct points and more than one ring
      */
     public static ComPath fromGrid(Vec3 grid, RacingLine line, List<Ring> rings) {
         List<Vec3> points = new ArrayList<>(line.points().size() + 1);
@@ -91,6 +94,20 @@ public final class ComPath {
                     "a computer racer's path needs one ring for each of the line's %s ring anchors, was %s"
                             .formatted(ringPoints.size(), rings.size()));
         }
+        List<Vec3> distinct = new ArrayList<>(points.size());
+        for (Vec3 point : points) {
+            if (distinct.isEmpty() || point.distanceTo(distinct.getLast()) > MINIMUM_SEGMENT) {
+                distinct.add(point);
+            }
+        }
+        if (distinct.size() == 1 && rings.size() == 1) {
+            return throughRing(rings.getFirst());
+        }
+        if (distinct.size() < 2) {
+            throw new IllegalArgumentException(
+                    "a computer racer's path needs at least two distinct points, was %s"
+                            .formatted(distinct.size()));
+        }
         double[] originalDistance = new double[points.size()];
         for (int i = 1; i < originalDistance.length; i++) {
             originalDistance[i] = originalDistance[i - 1] + points.get(i - 1).distanceTo(points.get(i));
@@ -99,22 +116,22 @@ public final class ComPath {
         for (int ring = 0; ring < ringDistances.length; ring++) {
             ringDistances[ring] = originalDistance[ringPoints.get(ring)];
         }
-        List<Vec3> distinct = new ArrayList<>(points.size());
-        for (Vec3 point : points) {
-            if (distinct.isEmpty() || point.distanceTo(distinct.getLast()) > MINIMUM_SEGMENT) {
-                distinct.add(point);
-            }
-        }
-        if (distinct.size() < 2) {
-            throw new IllegalArgumentException(
-                    "a computer racer's path needs at least two distinct points, was %s"
-                            .formatted(distinct.size()));
-        }
         double[] cumulative = new double[distinct.size()];
         for (int i = 1; i < distinct.size(); i++) {
             cumulative[i] = cumulative[i - 1] + distinct.get(i - 1).distanceTo(distinct.get(i));
         }
         return new ComPath(List.copyOf(distinct), cumulative, List.copyOf(rings), ringDistances);
+    }
+
+    /**
+     * The path of a single ring with no other point: the straight line through its centre along its normal, one
+     * block to either side, so the racer starts a block behind the ring's plane and the ring is one block along.
+     */
+    private static ComPath throughRing(Ring ring) {
+        Vec3 before = ring.center().minus(ring.normal());
+        Vec3 after = ring.center().plus(ring.normal());
+        double[] cumulative = {0.0, before.distanceTo(after)};
+        return new ComPath(List.of(before, after), cumulative, List.of(ring), new double[] {1.0});
     }
 
     /** The total arc length of the course, in blocks. */
