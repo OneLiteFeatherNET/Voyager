@@ -61,7 +61,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
   Passes today; pins it.
 - [x] 2.16 Red: `CupPlaythroughTest.aCheckpointResetKeepsTheScoreOfTheRingsBeforeIt`: the score after a reset to checkpoint 6
   holds the points of rings 0 to 6 only, and passing ring 7 again scores once. Fails today.
-- [ ] 2.17 Red: `CupSessionGoldenMasterTest` gains one transcript, `checkpoint-reset.txt`, for a mid-course reset to a
+- [x] 2.17 Red: `CupSessionGoldenMasterTest` gains one transcript, `checkpoint-reset.txt`, for a mid-course reset to a
   checkpoint. It is written by hand from the expected sequence (reset title, glide flag on the reset tick, no velocity
   other than zero) and fails until Green. It is regenerated only after Green and reviewed line by line.
 
@@ -80,7 +80,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
 - [x] 3.6 Green: `CupSession` passes the ground state to `advance` and the landing rule (task 2.14).
 - [x] 3.7 Green: the reset title keys name the checkpoint number or the start. Add the keys to
   `voyager/server/src/main/resources/voyager_en_US.properties` if the wording changes.
-- [ ] 3.8 Green: generate `checkpoint-reset.txt` from the Green run and diff it with the hand-written expectation (task 2.17).
+- [x] 3.8 Green: generate `checkpoint-reset.txt` from the Green run and diff it with the hand-written expectation (task 2.17).
   Any difference is a decision, not a regeneration; stop and ask the owner.
 
 ## 4. Refactor
