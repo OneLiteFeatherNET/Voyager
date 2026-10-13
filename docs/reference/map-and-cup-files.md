@@ -33,7 +33,23 @@ The boost fields and the ring factors are described in [Map boost and ring-effec
 | `guideLine` | object | Yes | None. | Missing, or one of the three fields below is missing. |
 | `guideLine.lookAheadRings` | integer | Yes | None. | Less than 1. |
 | `guideLine.particleSpacing` | number | Yes | None. | Less than 0.25. |
+| `guideLine.mode` | string | No | `FULL`. | Any value other than `FULL` or `WINDOW`. |
+| `guideLine.particle` | string | No | `END_ROD`. | Any value other than `END_ROD` or `DUST`. |
+| `guideLine.dustColor` | string | No | `#FFC800`. | Not `#` followed by six hexadecimal digits, or given when `particle` is not `DUST`. |
 | `guideLine.points` | array | Yes | May be empty. | Missing. Each point is refused as described below. |
+
+`mode` decides how much of the line a racer sees. `FULL` draws the line from the ring the racer is heading for to the last
+ring, and the part already flown is not drawn. `WINDOW` draws `lookAheadRings` rings past that ring and nothing more, which
+is the look a course had before. `lookAheadRings` is required in both modes but has an effect only in `WINDOW`.
+
+`particle` is the particle the line is drawn with. `dustColor` is the colour of a `DUST` line and has no effect, and is
+refused, with `END_ROD`. The refresh is set by the particle and not by the file: the line is redrawn every 6 ticks for
+`END_ROD` and every 4 ticks for `DUST`. A racer is sent only the points within 160 blocks of them.
+
+A file that names none of the optional fields loads with the same rings, boost tuning, guide points, look-ahead and spacing as
+before. Only the drawing changes: the line is drawn as a full line in `END_ROD`, where it was drawn as a window in amber dust.
+The budget is 30,000 packets a second in total and 2,000 for any one racer at sixteen racers, and `particleSpacing` is
+the value that keeps the shipped course inside it: 2.0 for `elytraraceblueandred`.
 | `rings` | array | Yes | None. | Missing, or empty. |
 | `notes` | array of strings | No | None. The loader ignores it. | Never. |
 

@@ -51,8 +51,9 @@ the owner wants per-map choice.
 2. **Draw the whole course for everyone, at one block spacing and four ticks.** Rejected: about 136,000 packets per second
    for sixteen racers, roughly 6.8 MB per second on the wire. Over any reasonable budget.
 3. **Whole course per map, a per-map style and spacing, a per-particle refresh and a distance cut-off, with the window kept
-   as a per-map mode (chosen).** Packets are bounded by the spacing, the refresh and the local density; the shipped course
-   at spacing 2.0 with END_ROD every 10 ticks is about 27,200 packets per second for sixteen racers with no cut-off.
+   as a per-map mode (chosen).** Packets are bounded by the spacing, the refresh and the local density. Measured on the
+   shipped course at spacing 2.0 with END_ROD every 6 ticks, sixteen spread racers are sent about 15,083 packets per
+   second in total and at most 1,700 for one racer; without the reach, one racer at the first ring would exceed 2,000.
 4. **A free list of Minecraft particle names in the map file.** Rejected: DUST takes a colour and a scale and the others
    take none, so every name would need its own data type and an unknown name would fail at run time on the server.
 5. **Redraw from one shared packet list for the whole instance (`sendGroupedPacket`).** Rejected for now: it sends the far
@@ -69,8 +70,10 @@ Chosen option: **3**, with these rules.
 - `FULL` draws the line from the ring the racer is heading for to the last ring. The part already flown is not drawn
   (owner decision, 2026-10-13). `WINDOW` keeps today's policy.
 - A racer is sent only the points within 160 blocks of them. The cut-off is a server constant.
-- The line is redrawn at most every half of the particle's shortest life: every 4 ticks for DUST, and for END_ROD every
-  10 ticks if its shortest life is at least 20 ticks, which the change verifies before the value is fixed.
+- The line is redrawn at most every half of the particle's shortest life: every 4 ticks for DUST, and every 6 ticks for
+  END_ROD. The owner proposed 10 for END_ROD, which needs its shortest life to be at least 20 ticks. That life could not
+  be read from any source the change could reach, so the safe 6 is used and the owner's 10 is recorded as the value to
+  adopt if the life is verified (design D4).
 - The spacing between points, which already exists in the file, is the density. The shipped course uses 2.0 blocks
   (from 1.0), the owner's decision.
 - Budget: at most 30,000 particle packets per second in total and 2,000 for any one racer, at sixteen racers on the
