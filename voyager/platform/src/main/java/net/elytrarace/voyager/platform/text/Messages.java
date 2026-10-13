@@ -31,6 +31,9 @@ import java.util.OptionalInt;
  * medal word, which is coloured by which medal it is. Those arrive as coloured components, built
  * here from the same palette. A translator can still translate every one of these lines; none of
  * them can recolour anything.
+ *
+ * <p>The colour, wording and channel rules that these lines follow are in
+ * {@code docs/reference/message-style-guide.md}.
  */
 @ApiStatus.Internal
 public abstract class Messages {

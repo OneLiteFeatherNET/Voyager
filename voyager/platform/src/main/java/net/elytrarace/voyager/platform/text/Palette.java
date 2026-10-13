@@ -37,6 +37,9 @@ import org.jetbrains.annotations.Contract;
  * <p>{@link #tagResolver()} is what makes {@code <c-speed>} mean something inside a translation value.
  * A hex code repeated across forty properties lines in three languages is a palette that has already
  * drifted, and a translator must be able to translate a line without being able to recolour it.
+ *
+ * <p>The colour, wording and channel rules that these lines follow are in
+ * {@code docs/reference/message-style-guide.md}.
  */
 @ApiStatus.Internal
 public abstract class Palette {
