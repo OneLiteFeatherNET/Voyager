@@ -13,7 +13,7 @@ or blocks the tick.
 - [ ] 1.1 ADR-0037 stays Proposed (owner decision 2026-10-13); the record is not accepted by this change (`docs`). Haiku effort: low.
 - [x] 1.2 Owner answers Q1 to Q8 in design.md, "Owner questions (answered)" (answered 2026-10-13; `docs(openspec)`). Haiku effort: low.
 - [x] 1.3 `adopt-avaje-config` is merged to `main` before any task of this change starts (dependency; merged, archived as `2026-10-13-adopt-avaje-config`). Haiku effort: low.
-- [ ] 1.4 Catalogue entries in `settings.gradle.kts`: `hikaricp` 7.1.0, `flyway-database-postgresql` 12.10.0, `postgresql` 42.7.13, `testcontainers-postgresql` and `testcontainers-junit-jupiter` 2.0.5, each with a comment naming its upload date and the cooling window. Do not change the `hibernate` or `flyway` pins (`feat(stats)`). Haiku effort: low.
+- [x] 1.4 Catalogue entries in `settings.gradle.kts`: `hikaricp` 7.1.0, `flyway-database-postgresql` 12.10.0, `postgresql` 42.7.13, `testcontainers-postgresql` and `testcontainers-junit-jupiter` 2.0.5, each with a comment naming its upload date and the cooling window. Do not change the `hibernate` or `flyway` pins (`feat(stats)`). Haiku effort: low.
 
 ## 2. Spike (no commit, results into design.md)
 

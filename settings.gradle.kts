@@ -39,6 +39,21 @@ dependencyResolutionManagement {
             library("hibernate.hikaricp", "org.hibernate.orm", "hibernate-hikaricp").versionRef("hibernate")
             library("flyway.core", "org.flywaydb", "flyway-core").versionRef("flyway")
             library("flyway.mysql", "org.flywaydb", "flyway-mysql").versionRef("flyway")
+
+            // PostgreSQL statistics store (openspec change player-stats, design D1, ADR-0037). Each version was on Maven Central
+            // for at least two weeks on 2026-10-12, the date the versions were checked; newer releases inside that window are not used.
+            // HikariCP 7.1.0, uploaded 2026-06-14: the pool, used directly so Flyway and the session factory share it.
+            version("hikaricp", "7.1.0")
+            library("hikaricp", "com.zaxxer", "HikariCP").versionRef("hikaricp")
+            // Flyway's PostgreSQL support, required since Flyway 10; same release as flyway-core, uploaded 2026-06-30.
+            library("flyway.postgresql", "org.flywaydb", "flyway-database-postgresql").versionRef("flyway")
+            // JDBC driver, uploaded 2026-07-06. 42.7.14 (uploaded 2026-10-07) is inside the window and not used yet.
+            version("postgresql", "42.7.13")
+            library("postgresql", "org.postgresql", "postgresql").versionRef("postgresql")
+            // Testcontainers for the integration source set, uploaded 2026-04-20.
+            version("testcontainers", "2.0.5")
+            library("testcontainers.postgresql", "org.testcontainers", "testcontainers-postgresql").versionRef("testcontainers")
+            library("testcontainers.junit.jupiter", "org.testcontainers", "testcontainers-junit-jupiter").versionRef("testcontainers")
             library("mariadb", "org.mariadb.jdbc", "mariadb-java-client").versionRef("mariadb-client")
             library("jetbrains.annotations", "org.jetbrains", "annotations").versionRef("jetbrains-annotations")
             library("fawe.bom", "com.intellectualsites.bom","bom-newest").versionRef("fawe-bom")
