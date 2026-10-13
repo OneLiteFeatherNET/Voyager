@@ -47,4 +47,4 @@ a test contract, `high` for the spike and the golden comparison, where a wrong r
 
 - [x] 7.1 `./gradlew build` on both trees and `./gradlew :voyager:fitness:test`; both green before the change is marked done (`docs(openspec)` for the archive note only). Haiku effort: low.
 - [x] 7.2 `openspec validate adopt-avaje-config --strict` is clean. Haiku effort: low.
-- [ ] 7.3 Open the pull request. Title: `refactor(server): load configuration through avaje-config`. Body: the smoke boot results (5.2), the golden diff result (5.1), and the footer with two lines: `https://claude.ai/referral/m5Ak2Sa7aQ` and `https://claude.ai/code/session_01QgtyvQwXoNTXyBjSyAABrz`. Do not push without the owner's go-ahead. Haiku effort: low.
+- [x] 7.3 Open the pull request. Title: `refactor(server): load configuration through avaje-config`. Body: the smoke boot results (5.2), the golden diff result (5.1), and the footer with two lines: `https://claude.ai/referral/m5Ak2Sa7aQ` and `https://claude.ai/code/session_01QgtyvQwXoNTXyBjSyAABrz`. Do not push without the owner's go-ahead. Haiku effort: low.
