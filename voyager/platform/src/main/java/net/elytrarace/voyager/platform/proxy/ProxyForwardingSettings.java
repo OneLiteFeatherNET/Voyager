@@ -1,5 +1,7 @@
 package net.elytrarace.voyager.platform.proxy;
 
+import net.elytrarace.voyager.platform.config.ConfigLoader;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -50,18 +52,20 @@ public record ProxyForwardingSettings(@Nullable String secret) {
     }
 
     /**
-     * Reads the settings from the running process: the environment, and the one system property.
+     * Reads the settings through the configuration loader: its environment, and the property through its configuration. The
+     * environment still comes first; the loader does not change that order for this one key.
      *
+     * @param loader the loader of the running server, or of a test
      * @return the settings; offline when neither source is set
      * @throws IllegalArgumentException when the source that is set holds only whitespace
      */
-    public static ProxyForwardingSettings fromEnvironment() {
+    public static ProxyForwardingSettings fromLoader(ConfigLoader loader) {
         Map<String, String> properties = new HashMap<>();
-        String secret = System.getProperty(PROPERTY_NAME);
+        String secret = loader.get(PROPERTY_NAME);
         if (secret != null) {
             properties.put(PROPERTY_NAME, secret);
         }
-        return from(System.getenv(), properties);
+        return from(loader.environment(), properties);
     }
 
     /**

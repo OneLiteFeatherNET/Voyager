@@ -3,12 +3,12 @@ package net.elytrarace.voyager.server.config;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -32,6 +32,9 @@ class ServerSettingsTest {
     private Path data;
     private Path worlds;
 
+    /** The property source the test fills. A fresh map per test, so no test sees another test's values. */
+    private final Map<String, String> properties = new HashMap<>();
+
     private Path data() {
         if (data == null) {
             data = createDirectory("catalogue");
@@ -52,18 +55,6 @@ class ServerSettingsTest {
         } catch (java.io.IOException exception) {
             throw new java.io.UncheckedIOException(exception);
         }
-    }
-
-    /**
-     * {@code fromEnvironment} reads real system properties, so every test that sets one has to put
-     * the JVM back the way it found it — the whole module's tests share one.
-     */
-    @AfterEach
-    void clearProperties() {
-        System.clearProperty(ServerSettings.DATA_PATH_PROPERTY);
-        System.clearProperty(ServerSettings.WORLDS_PATH_PROPERTY);
-        System.clearProperty(ServerSettings.CUP_PROPERTY);
-        System.clearProperty(ServerSettings.DEV_MODE_PROPERTY);
     }
 
     // ------------------------------------------------------------------------------------------
@@ -141,10 +132,10 @@ class ServerSettingsTest {
 
     @Test
     void takesTheHostAndPortFromTheArguments() {
-        System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
-        System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
+        properties.put(ServerSettings.DATA_PATH_PROPERTY, data().toString());
+        properties.put(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
 
-        ServerSettings settings = ServerSettings.fromEnvironment(new String[] {"127.0.0.1", "25599"});
+        ServerSettings settings = ServerSettings.fromProperties(new String[] {"127.0.0.1", "25599"}, properties::get);
 
         assertThat(settings.host()).isEqualTo("127.0.0.1");
         assertThat(settings.port()).isEqualTo(25599);
@@ -152,10 +143,10 @@ class ServerSettingsTest {
 
     @Test
     void defaultsTheHostAndPortWhenNoArgumentsAreGiven() {
-        System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
-        System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
+        properties.put(ServerSettings.DATA_PATH_PROPERTY, data().toString());
+        properties.put(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
 
-        ServerSettings settings = ServerSettings.fromEnvironment(new String[0]);
+        ServerSettings settings = ServerSettings.fromProperties(new String[0], properties::get);
 
         assertThat(settings.host()).isEqualTo("0.0.0.0");
         assertThat(settings.port()).isEqualTo(25565);
@@ -167,10 +158,10 @@ class ServerSettingsTest {
      */
     @Test
     void refusesAPortThatIsNotANumberRatherThanFallingBackToTheDefault() {
-        System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
-        System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
+        properties.put(ServerSettings.DATA_PATH_PROPERTY, data().toString());
+        properties.put(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
 
-        assertThatThrownBy(() -> ServerSettings.fromEnvironment(new String[] {"127.0.0.1", "twenty-five-thousand"}))
+        assertThatThrownBy(() -> ServerSettings.fromProperties(new String[] {"127.0.0.1", "twenty-five-thousand"}, properties::get))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("twenty-five-thousand");
     }
@@ -192,10 +183,10 @@ class ServerSettingsTest {
 
     @Test
     void readsTheDataAndWorldsPathsFromTheirOwnProperties() {
-        System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
-        System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
+        properties.put(ServerSettings.DATA_PATH_PROPERTY, data().toString());
+        properties.put(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
 
-        ServerSettings settings = ServerSettings.fromEnvironment(new String[0]);
+        ServerSettings settings = ServerSettings.fromProperties(new String[0], properties::get);
 
         assertThat(settings.dataPath()).isEqualTo(data());
         assertThat(settings.worldsPath()).isEqualTo(worlds());
@@ -203,11 +194,11 @@ class ServerSettingsTest {
 
     @Test
     void readsTheChosenCupFromItsProperty() {
-        System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
-        System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
-        System.setProperty(ServerSettings.CUP_PROPERTY, "winter_series");
+        properties.put(ServerSettings.DATA_PATH_PROPERTY, data().toString());
+        properties.put(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
+        properties.put(ServerSettings.CUP_PROPERTY, "winter_series");
 
-        assertThat(ServerSettings.fromEnvironment(new String[0]).cupName()).contains("winter_series");
+        assertThat(ServerSettings.fromProperties(new String[0], properties::get).cupName()).contains("winter_series");
     }
 
     /**
@@ -216,20 +207,20 @@ class ServerSettingsTest {
      */
     @Test
     void treatsABlankCupPropertyAsNoChoiceRatherThanACupNamedNothing() {
-        System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
-        System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
-        System.setProperty(ServerSettings.CUP_PROPERTY, "   ");
+        properties.put(ServerSettings.DATA_PATH_PROPERTY, data().toString());
+        properties.put(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
+        properties.put(ServerSettings.CUP_PROPERTY, "   ");
 
-        assertThat(ServerSettings.fromEnvironment(new String[0]).cupName()).isEmpty();
+        assertThat(ServerSettings.fromProperties(new String[0], properties::get).cupName()).isEmpty();
     }
 
     @Test
     void readsDevModeFromItsProperty() {
-        System.setProperty(ServerSettings.DATA_PATH_PROPERTY, data().toString());
-        System.setProperty(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
-        System.setProperty(ServerSettings.DEV_MODE_PROPERTY, "true");
+        properties.put(ServerSettings.DATA_PATH_PROPERTY, data().toString());
+        properties.put(ServerSettings.WORLDS_PATH_PROPERTY, worlds().toString());
+        properties.put(ServerSettings.DEV_MODE_PROPERTY, "true");
 
-        assertThat(ServerSettings.fromEnvironment(new String[0]).devMode()).isTrue();
+        assertThat(ServerSettings.fromProperties(new String[0], properties::get).devMode()).isTrue();
     }
 
     // ------------------------------------------------------------------------------------------

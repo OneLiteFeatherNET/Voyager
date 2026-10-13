@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -95,6 +96,14 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The system property naming the port to bind; read when no positional port is given. A node sets it. */
     public static final String BIND_PORT_PROPERTY = "service.bind.port";
 
+    /**
+     * Every key the settings read, so the configuration loader can hand the server one view of them for the configuration
+     * check and the boot log.
+     */
+    public static final List<String> KEYS = List.of(DATA_PATH_PROPERTY, WORLDS_PATH_PROPERTY, CUP_PROPERTY,
+            DEV_MODE_PROPERTY, MIN_RACERS_PROPERTY, LOBBY_WORLD_PROPERTY, LOBBY_SPAWN_PROPERTY, MAX_PLAYERS_PROPERTY,
+            BIND_HOST_PROPERTY, BIND_PORT_PROPERTY);
+
     /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is off. */
     public static final int PRODUCTION_MINIMUM_RACERS = 2;
 
@@ -156,26 +165,19 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     }
 
     /**
-     * Reads the settings from {@code args} and the system properties.
+     * Reads the settings from {@code args} and a property source. The composition root passes the configuration loader's
+     * {@code get}, so the values come from every layer the loader reads (ADR-0036); a test passes a map.
      *
-     * <p>{@code args} is {@code [host] [port]}, both optional, matching the tree being replaced's
-     * command line so the same invocation works against either jar. Each of host and port takes the
-     * argument when one is given, then {@link #BIND_HOST_PROPERTY} or {@link #BIND_PORT_PROPERTY}, then the default. A port that is not a number is
-     * a refusal rather than a warning and a fallback: a server that silently binds 25565 when it was
-     * told 25566 is a server two people are about to fight over.
+     * <p>{@code args} is {@code [host] [port]}, both optional, matching the tree being replaced's command line so the same
+     * invocation works against either jar. Each of host and port takes the argument when one is given, then
+     * {@link #BIND_HOST_PROPERTY} or {@link #BIND_PORT_PROPERTY}, then the default. A port that is not a number is a refusal
+     * rather than a warning and a fallback: a server that silently binds 25565 when it was told 25566 is a server two people
+     * are about to fight over.
      *
      * @throws MissingServerDirectoryException if either directory does not exist
      * @throws IllegalArgumentException if the port is not a number in range
      */
-    public static ServerSettings fromEnvironment(String[] args) {
-        return fromProperties(args, System::getProperty);
-    }
-
-    /**
-     * {@link #fromEnvironment} with the properties supplied, so the configuration check can read the
-     * same settings from a map in a test. Same defaults, same parsing, same refusals.
-     */
-    static ServerSettings fromProperties(String[] args, Function<String, @Nullable String> property) {
+    public static ServerSettings fromProperties(String[] args, Function<String, @Nullable String> property) {
         String host = args.length > 0 ? args[0] : blankToDefault(property.apply(BIND_HOST_PROPERTY), DEFAULT_HOST);
         int port = args.length > 1 ? parsePort(args[1]) : bindPort(property.apply(BIND_PORT_PROPERTY));
         boolean devMode = Boolean.parseBoolean(property.apply(DEV_MODE_PROPERTY));
