@@ -17,6 +17,11 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,7 +38,8 @@ import java.util.function.Supplier;
  *
  * <p>The field decides who is on the grid and where they are. It does not decide which humans there are, how many
  * computer racers a cup wants, or which difficulty they play: those come in through the constructor, from the server's
- * composition root, which reads them from settings. The round seed is also given, so the field reads no clock.
+ * composition root, which reads them from settings. The clock is given too, and the round seed is read from it when a
+ * cup's first map starts: a round seats its racers from the time it starts, not from the time the server booted.
  *
  * <p>Each map start tops the grid up to the wanted count: a racer that is already on the grid keeps its body and its
  * name, and is moved to the new start. Only a seat the humans have taken goes, and that happens at a map start, never
@@ -44,10 +50,15 @@ import java.util.function.Supplier;
  */
 public final class ComField implements CompetitorField {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ComField.class);
+
     private final Supplier<Collection<Player>> humans;
     private final int comCount;
     private final ComDifficulty difficulty;
-    private final long roundSeed;
+    private final Clock clock;
+
+    /** The seed of the round in progress, read from the clock when the round's first map starts; null before that. */
+    private @Nullable Long roundSeed;
     private final Function<String, Instance> instances;
     private final ComBrain brain;
     private final ComTabList tabList;
@@ -64,21 +75,21 @@ public final class ComField implements CompetitorField {
      * @param humans the human players, read on every call; the count of them decides how many seats are left
      * @param comCount the grid size the cup wants, humans included, between zero and {@link ComRoster#MAXIMUM_COUNT}
      * @param difficulty how hard every computer racer plays
-     * @param roundSeed the seed of this cup round, from which every seat is derived
+     * @param clock the clock the round seed is read from, once, when the cup's first map starts
      * @param instances the instance a map's world is loaded into, by the world's name
      */
     public ComField(Supplier<Collection<Player>> humans, int comCount, ComDifficulty difficulty,
-            long roundSeed, Function<String, Instance> instances) {
-        this(humans, comCount, difficulty, roundSeed, instances, new PilotBrain());
+            Clock clock, Function<String, Instance> instances) {
+        this(humans, comCount, difficulty, clock, instances, new PilotBrain());
     }
 
     /** The same field with the brain given, so a test can put a fake in its place. */
-    ComField(Supplier<Collection<Player>> humans, int comCount, ComDifficulty difficulty, long roundSeed,
+    ComField(Supplier<Collection<Player>> humans, int comCount, ComDifficulty difficulty, Clock clock,
             Function<String, Instance> instances, ComBrain brain) {
         this.humans = humans;
         this.comCount = comCount;
         this.difficulty = difficulty;
-        this.roundSeed = roundSeed;
+        this.clock = clock;
         this.instances = instances;
         this.brain = brain;
         this.tabList = new ComTabList(humans);
@@ -86,7 +97,7 @@ public final class ComField implements CompetitorField {
 
     @Override
     public List<UUID> prepare(int mapIndex, MapDefinition map) {
-        List<ComSeat> seats = ComRoster.plan(comCount, humans.get().size(), roundSeed);
+        List<ComSeat> seats = ComRoster.plan(comCount, humans.get().size(), roundSeedFor(mapIndex));
         ComPath path = pathFor(map);
         Instance instance = instances.apply(map.world());
 
@@ -135,6 +146,18 @@ public final class ComField implements CompetitorField {
         }
         tabList.dismiss();
         racers.clear();
+    }
+
+    /**
+     * The seed of the round the map belongs to. The first map of a cup starts a round, and the seed is read from the
+     * clock then, once, and logged so the round can be replayed. The maps after the first keep that seed.
+     */
+    private long roundSeedFor(int mapIndex) {
+        if (mapIndex == 0 || roundSeed == null) {
+            roundSeed = clock.millis();
+            LOGGER.info("Computer racers round seed {} at map index {}", roundSeed, mapIndex);
+        }
+        return roundSeed;
     }
 
     /** The racing line of {@code map}, built on first use and shared by every racer that runs it. */

@@ -60,8 +60,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -174,8 +176,11 @@ class CupSessionGoldenMasterTest {
     private static final CupDefinition COM_CUP =
             new CupDefinition("com_tour", List.of("com-ridge", "dune-run"), GameMode.RACE);
 
-    /** The round seed of the computer racers, fixed so that the field plays the same race on every run. */
-    private static final long COM_ROUND_SEED = 20261014L;
+    /**
+     * The clock reading at which the computer racers' round starts, fixed so that the field plays the same race on every
+     * run; its milliseconds are the round seed.
+     */
+    private static final long COM_ROUND_MILLIS = 20261014L;
 
     /** The grid of the computer scenario: one human and three computer racers, the grid size counting the human. */
     private static final int COM_GRID = 4;
@@ -435,7 +440,8 @@ class CupSessionGoldenMasterTest {
                     new LivePlayerSampler(() -> field, boosts), new FlightTracker(),
                     new MinestomCollisionSpace(blocks));
             CompetitorField competitors = comGrid == 0 ? NoCompetitors.INSTANCE
-                    : new ComField(() -> field, comGrid, ComDifficulty.MEDIUM, COM_ROUND_SEED, worlds::forWorld);
+                    : new ComField(() -> field, comGrid, ComDifficulty.MEDIUM,
+                            Clock.fixed(Instant.ofEpochMilli(COM_ROUND_MILLIS), ZoneOffset.UTC), worlds::forWorld);
             this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, timings, STEP,
                     () -> field, competitors);
             this.pipeline = new CupBeans().tickPipeline(session, boosts);

@@ -89,8 +89,8 @@ public final class CupBeans {
     /**
      * The computer racers of every cup this server plays. A count of zero binds {@link NoCompetitors}, so a cup with no
      * computer racers runs exactly as it did before them; a count above zero binds a {@link ComField} of the configured
-     * difficulty. The round seed is the clock's reading at boot, so the seats and their names are the same for every map of
-     * one run and differ between runs.
+     * difficulty. The round seed is read from the clock when a cup's first map starts, so the seats and their names are the
+     * same for every map of one round and differ between rounds.
      */
     @Bean
     CompetitorField competitorField(@External ServerSettings settings, Supplier<Collection<Player>> players,
@@ -98,8 +98,7 @@ public final class CupBeans {
         if (settings.comCount() == 0) {
             return NoCompetitors.INSTANCE;
         }
-        return new ComField(players, settings.comCount(), settings.comDifficulty(), clock.millis(),
-                instances::forWorld);
+        return new ComField(players, settings.comCount(), settings.comDifficulty(), clock, instances::forWorld);
     }
 
     @Bean
