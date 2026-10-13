@@ -4,6 +4,9 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.GuideLineMode;
+import net.elytrarace.voyager.api.race.GuideParticle;
 import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
@@ -165,9 +168,10 @@ class CommittedMapDataTest {
         assertThat(map.guideLine().points()).extracting(GuidePoint::afterRing)
                 .contains(24, 24)
                 .doesNotContain(-1, 34);
-        // Seeded, and stated here so a change to either is a deliberate edit of this test as well.
+        // Stated here so a change to either is a deliberate edit of this test as well. The spacing is the owner's
+        // decision (ADR-0030), set from 1.0 to 2.0 so that sixteen racers stay within the packet budget.
         assertThat(map.guideLine().lookAheadRings()).isEqualTo(2);
-        assertThat(map.guideLine().particleSpacing()).isEqualTo(1.0);
+        assertThat(map.guideLine().particleSpacing()).isEqualTo(2.0);
     }
 
     /**
@@ -200,10 +204,11 @@ class CommittedMapDataTest {
      * course that is 1588 straight, and a stretch a racer can afford to be sent.
      *
      * <p>The last of those is the budget, and it is here rather than in a comment because it is a
-     * property of this course's geometry and nothing else: a particle is a packet, so the widest
-     * two-ring stretch of this line is the worst tick one racer costs. 198 packets, on one tick in
-     * four — about 25 a tick averaged. Halving {@code particleSpacing} in the file above doubles both
-     * numbers, which is the one edit that can make this feature unaffordable.
+     * property of this course's geometry and nothing else: a particle is a packet, so the widest stretch
+     * one racer is sent is the worst redraw one racer costs. At spacing 2.0 that is the whole line from
+     * the first ring in FULL mode, and the widest two-ring window in WINDOW mode. Halving
+     * {@code particleSpacing} in the file above roughly doubles both numbers, which is the one edit that
+     * can make this feature unaffordable; the sixteen-racer budget is enforced in {@code GuideLineRendererTest}.
      */
     @Test
     void theRacingLineOfTheCommittedRacecourseRunsThroughItAndFitsInTheBudget() {
@@ -236,8 +241,31 @@ class CommittedMapDataTest {
             widestStretch = Math.max(widestStretch, line.between(passed, lastRing).size());
         }
         assertThat(widestStretch)
-                .as("particles one racer is sent on the worst refresh of this course")
-                .isBetween(150, 220);
+                .as("particles one racer is sent on the worst window of this course at spacing 2.0")
+                .isBetween(75, 110);
+
+        // FULL mode sends the whole line from the first ring: the worst single redraw of the shipped map.
+        assertThat(line.between(0, line.ringCount() - 1).size())
+                .as("particles one racer is sent in FULL mode from the first ring, at spacing 2.0")
+                .isBetween(800, 870);
+    }
+
+    /**
+     * The shipped file names no mode and no particle, so it draws the course in the defaults: the whole line
+     * from the racer's next ring, drawn as END_ROD. Asserted on the loaded course, not on the file's text.
+     */
+    @Test
+    void theShippedMapLoadsInFullModeWithEndRod() {
+        GuideLine line = committedCourse().guideLine();
+
+        assertThat(line.mode()).isEqualTo(GuideLineMode.FULL);
+        assertThat(line.particle()).isEqualTo(GuideParticle.END_ROD);
+        assertThat(line.dustRgb()).isNull();
+    }
+
+    @Test
+    void theShippedMapsParticleSpacingIsTheTwoBlockOwnerDecision() {
+        assertThat(committedCourse().guideLine().particleSpacing()).isEqualTo(2.0);
     }
 
     private static MapDefinition committedCourse() {
