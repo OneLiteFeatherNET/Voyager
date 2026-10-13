@@ -816,19 +816,27 @@ modes. Behind one mechanism, the slowest-changing one dictates the ergonomics of
 |---|---|---|---|---|---|
 | a | Runtime parameters | bind host/port, data and world paths, view distance, log level, run profile | per service start | operator | env + system properties, non-secret file |
 | b | Secrets | database user and password | on rotation | operator | environment only |
-| c | Gameplay tuning | boost burn ticks, boost cooldown, ring points, medal brackets, plausibility tolerances | per balancing pass | game designer | versioned JSON in the repo |
-| d | Content data | map and cup definitions, worlds | per map release | map builder | JSON + Anvil directories from `voyager-setup` |
+| c | Gameplay tuning | ring points, medal brackets, plausibility tolerances | per balancing pass | game designer | versioned JSON in the repo |
+| d | Content data | map and cup definitions, including each map's boost tuning (burn, cooldown, rocket count, speed cap) and ring-effect factors; worlds | per map release | map builder | JSON + Anvil directories from `voyager-setup` |
 | e | i18n | `elytrarace_en_US.properties` and siblings | per translation update | translators | classpath resources, optional override directory |
 
 Two boundaries in that table carry most of the weight.
 
-**(c) is source, not configuration.** A boost cooldown and a bracket threshold are part of what the
+**(c) is source, not configuration.** A bracket threshold and a plausibility tolerance are part of what the
 game *is*. They belong in git, they are reviewed, they are tagged with the release, and a record set
 under one set of values is not comparable to a record set under another. They are separated from
 Java source only so a designer can change them without a compiler — not so an operator can vary them
 per environment. There is no `VOYAGER_BOOST_COOLDOWN_MS` variable and there will not be one; a
 per-environment override of a gameplay constant means the staging leaderboard silently measures a
 different game.
+
+**Boost tuning is per-map content, so it is row (d), not row (c).** Since the owner's decision of
+2026-10-13 (ADR-0032), a map's burn duration, cooldown, rocket count, speed cap and ring-effect factors
+are stated in its map file. The map file is versioned in git like every other map, so the two properties
+the paragraph above relies on still hold per map: the value is reviewed in git and tagged with the
+release, and it is never overridden by an operator. The game-wide word goes, because a cooldown can now
+differ between maps. A record is comparable only with records made on the same map file version.
+There is still no `VOYAGER_*` variable for any of these values.
 
 **(b) has no file layer.** Secrets come from the environment and nowhere else. They are never passed
 as `-Dvoyager.db.password=…`: the JVM command line is readable by any local user through

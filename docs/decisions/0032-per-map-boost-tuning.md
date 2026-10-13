@@ -61,7 +61,7 @@ Chosen: option 2.
 - Rocket impulse strength stays Vanilla's and is not per map. The item's flight duration is derived from the burn.
 - Operators get no environment override for any of these values.
 
-### Amendment to the greenfield design spec (pending owner acceptance)
+### Amendment to the greenfield design spec (accepted by the owner, 2026-10-13)
 
 Row (c) and the paragraph "(c) is source, not configuration" are amended as follows: boost burn, cooldown, rocket count,
 speed cap and ring factors move to row (d), map and cup definitions, which is per-map content. Ring points, medal
@@ -121,5 +121,5 @@ operators stays. The "game-wide" wording goes, because a cooldown can now differ
 - OpenSpec change: `openspec/changes/per-map-boost/` (proposal, design D1 to D10, tasks, delta specs).
 - Related: ADR-0028 (racers take off without a server impulse), the velocity-authority section of `CLAUDE.md`,
   `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` lines 818-828.
-- Reference page for the new fields: to be written under `docs/reference/` by the change's documentation task.
+- Reference page for the new fields: [`docs/reference/map-boost-tuning.md`](../reference/map-boost-tuning.md).
 - ADR-0027 is reserved by the unmerged `oval-tilted-rings` change. ADR-0030 and ADR-0031 are not used here.

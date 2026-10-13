@@ -23,6 +23,13 @@ A file the loader refuses stops the server at boot. The refusal names the file, 
 | `boostConfig` | object | Yes | None. | Missing, or either field below is missing. |
 | `boostConfig.burnDurationTicks` | integer | Yes | None. | Zero or negative. |
 | `boostConfig.cooldownTicks` | integer | Yes | None. | Not longer than `burnDurationTicks`. |
+| `boostConfig.rocketsPerRacer` | integer | No | `64`, the item stack limit. | Less than 1, or more than 64. |
+| `boostConfig.maxSpeedBlocksPerTick` | number | No | No cap. | Not finite, or zero or negative. The cap limits only the velocity a `BOOST` or `SLOW` ring writes. |
+| `ringEffects` | object | No | Both factors at their defaults. | Not an object. A factor is refused as described below. |
+| `ringEffects.boostMultiplier` | number | No | `1.5`. | Negative or not finite. |
+| `ringEffects.slowMultiplier` | number | No | `0.5`. | Negative or not finite. |
+
+The boost fields and the ring factors are described in [Map boost and ring-effect tuning](map-boost-tuning.md).
 | `guideLine` | object | Yes | None. | Missing, or one of the three fields below is missing. |
 | `guideLine.lookAheadRings` | integer | Yes | None. | Less than 1. |
 | `guideLine.particleSpacing` | number | Yes | None. | Less than 0.25. |
