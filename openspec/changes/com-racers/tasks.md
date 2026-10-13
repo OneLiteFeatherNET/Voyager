@@ -19,18 +19,18 @@ decisions, which the join policy and the settings in groups 2 and 4 follow.
 
 ## 1. api: the difficulty value
 
-- [ ] 1.1 Red: `ComDifficultyTest` names the behaviours "the names EASY, MEDIUM and HARD are listed in that order", "byName is case-insensitive", and "an unknown name is empty" (`feat(race)`). Effort: low (Haiku).
-- [ ] 1.2 Green: add the enum `ComDifficulty` in `net.elytrarace.voyager.api.race.com` with `VALUES` and `byName` returning `Optional`, and a `package-info.java` with `@NotNullByDefault` (`feat(race)`). Effort: low (Haiku).
+- [x] 1.1 Red: `ComDifficultyTest` names the behaviours "the names EASY, MEDIUM and HARD are listed in that order", "byName is case-insensitive", and "an unknown name is empty" (`feat(race)`). Effort: low (Haiku).
+- [x] 1.2 Green: add the enum `ComDifficulty` in `net.elytrarace.voyager.api.race.com` with `VALUES` and `byName` returning `Optional`, and a `package-info.java` with `@NotNullByDefault` (`feat(race)`). Effort: low (Haiku).
 
 ## 2. race: the pure brain (voyager-race, `race.com`)
 
 Effort for this whole group: high (Haiku). It is the movement model and the difficulty numbers; the agent reads design.md D1,
 D3, D4, D13 and D14 before writing a test. No `System` clock and no unseeded `Random` appear in this group (rule F1).
 
-- [ ] 2.1 Red: `ComPathTest` names the behaviours "the arc length of a straight course is the sum of its segments", "a distance before the start clamps to the first point", "a distance past the end clamps to the last point", and "the tangent at any distance has unit length" (`feat(race)`). Effort: high (Haiku).
-- [ ] 2.2 Green: add `ComPath`, built once from a `RacingLine` with cumulative arc lengths and binary search for `pointAt` and `tangentAt` (`feat(race)`). Effort: high (Haiku).
-- [ ] 2.3 Red: `ComTuningTest` names the behaviours "EASY is slower and wanders further than MEDIUM", "HARD has no miss chance and the reference speed factor", "the speed factor never exceeds one", and "a negative amplitude is refused" (`feat(race)`). Effort: medium (Haiku).
-- [ ] 2.4 Green: add `ComTuning.of(ComDifficulty)` with the table in design.md D3, the exceptions `InvalidComTuningException` in `race.com.exception` with its `package-info.java`, and the seeded personal variation of plus or minus 2 per cent (`feat(race)`). Effort: medium (Haiku).
+- [x] 2.1 Red: `ComPathTest` names the behaviours "the arc length of a straight course is the sum of its segments", "a distance before the start clamps to the first point", "a distance past the end clamps to the last point", and "the tangent at any distance has unit length" (`feat(race)`). Effort: high (Haiku).
+- [x] 2.2 Green: add `ComPath`, built once from a `RacingLine` with cumulative arc lengths and binary search for `pointAt` and `tangentAt` (`feat(race)`). Effort: high (Haiku).
+- [x] 2.3 Red: `ComTuningTest` names the behaviours "EASY is slower and wanders further than MEDIUM", "HARD has no miss chance and the reference speed factor", "the speed factor never exceeds one", and "a negative amplitude is refused" (`feat(race)`). Effort: medium (Haiku).
+- [x] 2.4 Green: add `ComTuning.of(ComDifficulty)` with the table in design.md D3, the exceptions `InvalidComTuningException` in `race.com.exception` with its `package-info.java`, and the seeded personal variation of plus or minus 2 per cent (`feat(race)`). Effort: medium (Haiku).
 - [ ] 2.5 Red: `ComRosterTest` names the behaviours "the grid fills to the target count", "humans already on the grid reduce the count", "the same seed gives the same seats", "seats are numbered COM 1 to COM n in order", and "a count above 15 is refused" (`feat(race)`). Effort: medium (Haiku).
 - [ ] 2.6 Green: add `ComRoster.plan(targetCount, humans, seed)` returning seats, with `InvalidComCountException` in `race.com.exception` (`feat(race)`). Effort: medium (Haiku).
 - [ ] 2.7 Red: `ComPilotTest` names the behaviours "one step advances the distance by the speed", "the same seed and tick give the same position", "the speed never exceeds the cap", "the speed changes by no more than the acceleration bound in one tick", "a missed ring is re-crossed through its disc and counted once", "HARD never misses a ring", "a boost takes effect after the reaction delay, with a fake ring effect", "a racer with no progress for 400 ticks is marked did-not-finish", and "a whole lap of a fixture course is run with no server and no clock" (`feat(race)`). The lap test uses `RingPass` and `ProgressTracker` on a fixture `MapDefinition`. Effort: high (Haiku).
