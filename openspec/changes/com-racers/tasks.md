@@ -96,7 +96,19 @@ previous commit), then Green. The golden transcript `com-field.txt` is regenerat
 
 ## 7c. Results and chat
 
-The tasks of this group are added when the ranking table and the chat line are specified.
+Effort for this group: medium (Haiku). Computer racers are never in `CupRound`, never stored and never scored (D6, OQ2).
+They are listed in the results as `COM n` with their time and no points, and each finish gives one chat line (OQ9).
+
+- [ ] 7c.1 Red: a test that a finished computer racer appears in the ranking table as `COM n` with its time, placed among
+  humans by time, and gets no points and no placement bonus (`feat(race)`). Green: the table includes computer racers by
+  reading the competitor port's results through the `CupSession`, not through `platform.com` directly (`feat(race)`).
+  Effort: medium (Haiku).
+- [ ] 7c.2 Red: a test that a finished computer racer produces exactly one chat line per language and no line per ring
+  (`feat(race)`). Green: one finish line through the existing message path, with bundle keys in both `voyager_en_US` and
+  `voyager_de_DE` (`feat(race)`). Effort: medium (Haiku).
+- [ ] 7c.3 Verify (no commit): the existing scoring and the golden transcripts are unchanged except `com-field.txt`, which
+  changes only where the chat or table rows change. Regenerate `com-field.txt` only if it changes, and read the diff.
+  Effort: low (Haiku).
 
 ## 8. docs (Diátaxis Framework)
 
