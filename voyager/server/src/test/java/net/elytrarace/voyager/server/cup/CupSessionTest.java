@@ -1054,8 +1054,10 @@ class CupSessionTest {
     }
 
     /**
-     * A landing straight after a reset does not count: the racer has been airborne for fewer than twenty race ticks,
-     * and the reset cooldown is running. The racer is not sent back again.
+     * A landing after the cooldown of a reset does not count until the racer has been airborne for twenty race ticks
+     * since they last touched the ground. The racer touches down once during the cooldown, which clears the count, is
+     * airborne again once the cooldown has run out, and touches down after fifteen airborne ticks: not a landing, so the
+     * racer stays where they landed. The cooldown is not what holds this landing back, the grace is.
      */
     @Test
     void aLandingAfterAResetIsNotCountedBeforeTheGrace(Env env) throws IOException {
@@ -1069,13 +1071,17 @@ class CupSessionTest {
                 .isTrue();
 
         fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
-        glideFor(fixture, 5);
+        glideFor(fixture, 29);
+        fixture.racer.refreshOnGround(true);
+        fixture.tickOnce();
+        fixture.racer.setFlyingWithElytra(true);
+        glideFor(fixture, 15);
         Pos touchdown = fixture.racer.getPosition();
         fixture.racer.refreshOnGround(true);
         fixture.tickOnce();
 
         assertThat(fixture.racer.getPosition().samePoint(touchdown))
-                .describedAs("a touchdown after five airborne ticks is not a landing, so the racer stays where they landed")
+                .describedAs("fifteen airborne ticks are fewer than the grace of twenty, so this is not a landing")
                 .isTrue();
     }
 
