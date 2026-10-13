@@ -3,6 +3,7 @@ package net.elytrarace.voyager.race.effect;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.race.effect.RingEffect;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 
 import org.junit.jupiter.api.Test;
 
@@ -96,6 +97,31 @@ class RingEffectRegistryTest {
                     .isEqualTo(other.effectFor(type).isPresent());
         }
         assertThatThrownBy(() -> other.entries().clear()).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    /** A map's own factors reach the effects it gets: 2 times 0.75 is 1.5 on each component of the test velocity. */
+    @Test
+    void aRegistryBuiltFromATuningMultipliesByThatTuning() {
+        RingEffectRegistry tuned = RingEffectRegistry.create(new RingEffectTuning(2.0, 0.25));
+
+        Vec3 boosted = tuned.effectFor(RingType.BOOST).orElseThrow().apply(VELOCITY);
+        Vec3 slowed = tuned.effectFor(RingType.SLOW).orElseThrow().apply(VELOCITY);
+
+        assertThat(boosted.x()).isCloseTo(1.5, within(TOLERANCE));
+        assertThat(boosted.z()).isCloseTo(3.2, within(TOLERANCE));
+        assertThat(slowed.x()).isCloseTo(0.1875, within(TOLERANCE));
+        assertThat(slowed.z()).isCloseTo(0.4, within(TOLERANCE));
+    }
+
+    /** The no-argument factory is the default tuning, so every caller that predates per-map factors keeps its values. */
+    @Test
+    void createWithoutATuningKeepsOneAndAHalfAndOneHalf() {
+        RingEffectRegistry defaults = RingEffectRegistry.create(RingEffectTuning.DEFAULT);
+
+        assertThat(registry.effectFor(RingType.BOOST).orElseThrow().apply(VELOCITY))
+                .isEqualTo(defaults.effectFor(RingType.BOOST).orElseThrow().apply(VELOCITY));
+        assertThat(registry.effectFor(RingType.SLOW).orElseThrow().apply(VELOCITY))
+                .isEqualTo(defaults.effectFor(RingType.SLOW).orElseThrow().apply(VELOCITY));
     }
 
     @Test
