@@ -65,6 +65,43 @@ public abstract class MedalCountdown {
      * @throws IllegalArgumentException for {@link MedalTier#FINISH} and {@link MedalTier#DNF},
      *     neither of which is a bracketed band
      */
+    /**
+     * The next better medal a finished run could still earn, and the time to save to earn it.
+     *
+     * @param saving how much faster than the racer finished the boundary of {@link #tier} is: the seconds to save
+     */
+    public record NextMedal(MedalTier tier, Duration saving) {
+    }
+
+    /**
+     * The next better medal after {@code tier} for a finish at {@code completion}, and the time the racer would have
+     * to save to earn it. Empty for Diamond, which has nothing better, and for a DNF, which is not a finish.
+     *
+     * <p>A finish outside every bracket is a FINISH, and its next goal is Bronze. The saving is the same subtraction
+     * as {@link #outlook}, taken against the boundary of the better medal rather than the one the racer holds.
+     *
+     * @param tier the medal the run was awarded
+     * @param completion the racer's completion time
+     * @param reference the map's reference time
+     * @param brackets the multipliers of {@code reference} that mark each band off
+     */
+    @Contract(pure = true)
+    public static Optional<NextMedal> nextGoal(MedalTier tier, Duration completion, Duration reference,
+            MedalBrackets brackets) {
+        MedalTier better = switch (tier) {
+            case GOLD -> MedalTier.DIAMOND;
+            case SILVER -> MedalTier.GOLD;
+            case BRONZE -> MedalTier.SILVER;
+            case FINISH -> MedalTier.BRONZE;
+            case DIAMOND, DNF -> null;
+        };
+        if (better == null) {
+            return Optional.empty();
+        }
+        Duration boundary = boundaryOf(better, reference, brackets);
+        return Optional.of(new NextMedal(better, completion.minus(boundary)));
+    }
+
     @Contract(pure = true)
     public static Duration boundaryOf(MedalTier tier, Duration reference, MedalBrackets brackets) {
         double multiplier = switch (tier) {

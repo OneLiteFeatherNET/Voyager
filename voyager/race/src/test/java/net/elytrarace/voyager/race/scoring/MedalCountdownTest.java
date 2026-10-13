@@ -173,4 +173,31 @@ class MedalCountdownTest {
         assertThat(at("89.999").untilLost().orElseThrow()).isGreaterThanOrEqualTo(Duration.ZERO);
         assertThat(at("120").untilLost()).isEmpty();
     }
+
+    /** A Silver finish 0.8 s past the Gold boundary names 0.8 s as the time to save for Gold. */
+    @Test
+    void theNextGoalNamesTheSecondsToSaveForTheNextBetterMedal() {
+        Duration completion = Duration.ofMillis(66_800);
+
+        assertThat(MedalCountdown.nextGoal(MedalTier.SILVER, completion, REFERENCE, BRACKETS))
+                .contains(new MedalCountdown.NextMedal(MedalTier.GOLD, Duration.ofMillis(800)));
+    }
+
+    @Test
+    void aFinishWithNoMedalNamesBronzeAsItsNextGoal() {
+        Duration completion = Duration.ofMillis(91_500);
+
+        assertThat(MedalCountdown.nextGoal(MedalTier.FINISH, completion, REFERENCE, BRACKETS))
+                .contains(new MedalCountdown.NextMedal(MedalTier.BRONZE, Duration.ofMillis(1_500)));
+    }
+
+    @Test
+    void noNextGoalAtTheTopBracket() {
+        assertThat(MedalCountdown.nextGoal(MedalTier.DIAMOND, Duration.ofSeconds(50), REFERENCE, BRACKETS)).isEmpty();
+    }
+
+    @Test
+    void noNextGoalForADnf() {
+        assertThat(MedalCountdown.nextGoal(MedalTier.DNF, Duration.ofSeconds(120), REFERENCE, BRACKETS)).isEmpty();
+    }
 }
