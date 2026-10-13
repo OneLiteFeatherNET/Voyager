@@ -89,6 +89,17 @@ Chosen option: **1**.
 - Neutral: the bridge depends on Minestom's and Adventure's types, which is the only place a Minestom type crosses a module boundary
   in the rebuild besides the composition roots.
 
+## Amendment (2026-10-13)
+
+The project owner approved on 2026-10-13 (answer Q1 of the change `lobby-cup-display-and-hub-handoff`, recorded in its
+design.md, section 10) that `voyager-cloudnet-bridge` may name one Voyager package: `net.elytrarace.voyager.api.handoff..`.
+The package holds the hub handoff port, `PlayerHandoff` and its holder `PlayerHandoffs`, which the bridge installs when it starts
+(ADR-0033). The bridge names no other Voyager type. Where this record says the bridge depends on "nothing else of Voyager"
+(Decision outcome, first bullet), that sentence now reads "nothing else of Voyager but `api.handoff`".
+
+`CloudNetBoundaryTest` allows `net.elytrarace.voyager.api.handoff..` and nothing else of Voyager. `verifyNoVoyagerApiInBridgeJar`
+fails the build when the bridge jar carries a Voyager class, so the port is never bundled into the extension.
+
 ## More information
 
 - `openspec/changes/add-cloudnet-deployment/design.md`, Decisions 1 to 8, and the risks R1 to R8.

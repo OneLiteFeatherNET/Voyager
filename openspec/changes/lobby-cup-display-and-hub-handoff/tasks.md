@@ -9,8 +9,8 @@ test follows F.I.R.S.T.: no sleeps, no clock reads, explicit ticks, a fresh Mine
 
 - [x] 1.1 Record the owner's answers to design.md Q1 to Q9 in design.md, "Owner decisions" (`docs(openspec)`)
 - [ ] 1.2 Owner accepts ADR-0033; its Status changes from Proposed to Accepted (`docs`). **Not done: the owner keeps ADR-0033 Proposed until the change is playtested.**
-- [ ] 1.3 After 1.2, mark ADR-0029 "Amended by ADR-0033" (its return rule is replaced; its Status stays Proposed) and add an amendment note to ADR-0026 (the bridge names `api.handoff`) (`docs`)
-- [ ] 1.4 After 1.2 and only with the owner's approval of Q1, amend the greenfield design paragraph "the extension names no Voyager type" in `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (`docs`)
+- [x] 1.3 ADR-0026 amendment note for the bridge naming `api.handoff` (`docs`), done 2026-10-13 under Q1. **The ADR-0029 part is not done: it waits for 1.2.**
+- [x] 1.4 Amend (done 2026-10-13, owner approved Q1) the greenfield design paragraph "the extension names no Voyager type" in `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (`docs`)
 
 ## 2. Spikes on the owner's node (no commit; results go into design.md section 2)
 

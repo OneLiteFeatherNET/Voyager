@@ -991,6 +991,9 @@ module permitted to reference `eu.cloudnetservice..`, every such dependency in i
 and its `extension.json` declares `"dependencies": ["CloudNet_Bridge"]` so it loads after the bridge
 and shares its classloader hierarchy. The application and the extension exchange only the permission
 pointer that every player carries, which is Adventure's type; the extension names no Voyager type.
+**Amended (2026-10-13):** the extension may also name the package `net.elytrarace.voyager.api.handoff`, which holds the hub
+handoff port (`PlayerHandoff`, `PlayerHandoffs`) that the extension installs at start (ADR-0033, change
+`lobby-cup-display-and-hub-handoff`). It names no other Voyager type, and `CloudNetBoundaryTest` enforces that.
 **Status (2026-10-11):** the owner brought this module forward. It is in progress under the change
 `add-cloudnet-deployment` and ADR-0026, and it is no longer deferred. It is still outside E4's scope
 and is built as the ninth module, and the `compileOnly` boundary is enforced by `CloudNetBoundaryTest`.
