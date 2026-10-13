@@ -48,9 +48,12 @@ class RunResetterTest {
     /** The tuning the reset racer is given their rockets back under: the default count, a 30-tick burn. */
     private static final BoostConfig TUNING = new BoostConfig(30, 40);
 
-    /** The ring the racer last passed: its centre is where a reset puts them, and its normal is where they face. */
+    /**
+     * The checkpoint the racer last passed: its centre is where a reset puts them, and its normal is where they face.
+     * A reset targets the last checkpoint, not the last ring of any type.
+     */
     private static final Ring LAST = new Ring(0, new Vec3(0.5, 70.0, 0.5), new Vec3(0.0, 0.0, 1.0), 5.0, 7,
-            RingType.STANDARD);
+            RingType.CHECKPOINT);
 
     /** The ring after it, not yet passed, so a reset target is never the next ring. */
     private static final Ring NEXT = new Ring(1, new Vec3(0.5, 70.0, 20.5), new Vec3(0.0, 0.0, 1.0), 5.0, 9,
@@ -86,7 +89,7 @@ class RunResetterTest {
 
     /** A run that has passed the first ring, on the tick after it, and is still gliding. */
     private static RaceRun passedFirstRing() {
-        return new RaceRun(new RingProgress(1, -1), new Vec3(0.5, 70.0, 0.4), List.of(3), Optional.empty(),
+        return new RaceRun(new RingProgress(1, 0), new Vec3(0.5, 70.0, 0.4), List.of(3), Optional.empty(),
                 LAST, true);
     }
 

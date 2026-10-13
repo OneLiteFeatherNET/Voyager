@@ -69,7 +69,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
 
 - [x] 3.1 Green: `RunReset.plan` targets `lastCheckpointIndex` (or the spawn when it is -1), rolls the progress back to the
   target and truncates `passedOnGameTick`, sets `gliding` true and the cooldown to 40 (tasks 2.1 to 2.5).
-- [ ] 3.2 Green: `RaceRun` gains `airborneTicks` and `resetCooldownTicks`; `advance` takes the racer's ground state and
+- [x] 3.2 Green: `RaceRun` gains `airborneTicks` and `resetCooldownTicks`; `advance` takes the racer's ground state and
   maintains both counters (tasks 2.9, 2.10). Update every caller and fixture (`CupSession.raceTick`, `CupPlaythroughTest`,
   `RaceRunTest`). The secondary constructor keeps its meaning with both counters at zero.
 - [x] 3.3 Green: `RunReset.isLanded` adds the grace (20) and the cooldown check on the previous run (tasks 2.6 to 2.8).
