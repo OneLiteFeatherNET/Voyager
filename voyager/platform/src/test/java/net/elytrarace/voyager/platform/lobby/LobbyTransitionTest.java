@@ -92,30 +92,19 @@ class LobbyTransitionTest {
         assertThat(runs.of(racer.getUuid())).contains(RaceRun.atStart());
     }
 
+    /**
+     * A finished cup no longer returns racers to the lobby (ADR-0033). The lobby is still where a joining racer is placed,
+     * so it names the instance and the spawn a join uses.
+     */
     @Test
-    void aFinishedCupReturnsTheRacerToTheLobbySpawn(Env env) throws IOException {
+    void theLobbyNamesTheInstanceAndSpawnAJoiningRacerIsPlacedAt(Env env) throws IOException {
         writeWorlds(env);
         MapInstances instances = openWorlds(env);
+
         LobbyTransition lobby = new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN));
-        Player racer = connectTo(env, instances.forWorld(FIRST), Vectors.toMinestom(FIRST_SPAWN).asPos());
 
-        lobby.returnTo(List.of(racer));
-
-        assertThat(racer.getInstance()).isSameAs(lobby.instance());
-        assertThat(racer.getPosition()).isEqualTo(Vectors.toMinestom(LOBBY_SPAWN).asPos());
-    }
-
-    @Test
-    void aRacerAlreadyInTheLobbyIsRepositionedOnTheSpawn(Env env) throws IOException {
-        writeWorlds(env);
-        MapInstances instances = openWorlds(env);
-        LobbyTransition lobby = new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN));
-        Player racer = connectTo(env, lobby.instance(), Vectors.toMinestom(ELSEWHERE_IN_LOBBY).asPos());
-
-        lobby.returnTo(List.of(racer));
-
-        assertThat(racer.getInstance()).isSameAs(lobby.instance());
-        assertThat(racer.getPosition()).isEqualTo(Vectors.toMinestom(LOBBY_SPAWN).asPos());
+        assertThat(lobby.instance()).isSameAs(instances.forWorld(LOBBY));
+        assertThat(lobby.spawn()).isEqualTo(Vectors.toMinestom(LOBBY_SPAWN).asPos());
     }
 
     // ------------------------------------------------------------------------------------------

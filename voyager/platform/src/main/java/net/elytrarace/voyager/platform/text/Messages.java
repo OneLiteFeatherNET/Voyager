@@ -51,6 +51,7 @@ public abstract class Messages {
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
     private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting";
     private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown";
+    private static final String HANDOFF_DISCONNECT = "voyager.handoff.disconnect";
     private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
     private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
     private static final String RESET_TARGET_CHECKPOINT = "voyager.reset.target.checkpoint";
@@ -246,6 +247,15 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component lobbyCancelled(int online, int needed) {
         return Component.translatable(LOBBY_CANCELLED, Component.text(online), Component.text(needed));
+    }
+
+    /**
+     * The disconnect a racer gets when no hub handoff runs (a local run without the bridge) or the handoff refuses. The
+     * refusal is not retried; the racer reconnects (ADR-0033).
+     */
+    @Contract(pure = true)
+    public static Component handoffDisconnect() {
+        return Component.translatable(HANDOFF_DISCONNECT);
     }
 
     /** A finisher's map result, in one chat line that is still there when the next map starts. */

@@ -26,6 +26,7 @@ import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
@@ -58,6 +59,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
@@ -71,10 +73,11 @@ import static org.assertj.core.api.Assertions.fail;
  * The Golden Master of a running cup: four scenarios whose whole observable behaviour, tick by tick, is pinned
  * to a committed text file.
  *
- * <p>The golden files were generated once, from the code of {@code main} before the cup was moved out of the
- * server module, and they are never regenerated. A move that changes a line of any transcript is a behaviour
- * change, and the test fails naming the first differing step and line. The test itself never writes a golden
- * file.
+ * <p>The golden files were generated from the code of {@code main}, and they are not regenerated for a refactor. A move
+ * that changes a line of any transcript is a behaviour change, and the test fails naming the first differing step and
+ * line. The one exception is {@code lobby-world-start}, which the hub handoff changed on purpose (ADR-0033): a finished
+ * cup no longer returns its racers to the lobby, so its transcript now ends on the tick the racer is handed to the hub.
+ * The test itself never writes a golden file.
  *
  * <p>Every scenario has its own server ({@link EnvTest}), its own worlds in a {@link TempDir}, fixed player
  * names and identities, and a fixed catalogue load instant. Time advances only by explicit ticks, and nothing
@@ -222,8 +225,9 @@ class CupSessionGoldenMasterTest {
 
     /**
      * The lobby world as the server runs it: a racer waits in the lobby, the room starts the cup, the racer moves from
-     * the lobby to the first map at the launch, and the room returns the racer to the lobby when the cup has finished.
-     * Characterises the lobby transfers; the four scenarios above run without a room and are unchanged.
+     * the lobby to the first map at the launch, and the cup's results linger before the room hands the racer to the hub
+     * (ADR-0033). Characterises the lobby transfers and the hand-off; the four scenarios above run without a room and are
+     * unchanged.
      */
     @Test
     void lobbyWorldStart(Env env) throws IOException {
@@ -232,14 +236,10 @@ class CupSessionGoldenMasterTest {
         harness.useLobby(new LobbyDefinition(LOBBY, LOBBY_SPAWN));
         harness.connectToLobby(ADA);
 
-        // Stops on the first tick after the racer has left the lobby and come back to it: the cup's end. The room
-        // starts the next countdown on that same tick, so the transcript ends with that countdown's first tick.
-        boolean[] left = {false};
-        harness.runUntil(() -> {
-            boolean inLobby = harness.racer(ADA).getInstance() == harness.lobbyInstance();
-            left[0] |= !inLobby;
-            return left[0] && inLobby;
-        }, () -> { });
+        // Stops on the tick the racer is handed to the hub: the cup's end, then the linger of the results. The racer is
+        // never moved back to the lobby, so the transcript shows the cup's end and the hand-off, and nothing after it.
+        UUID ada = harness.racer(ADA).getUuid();
+        harness.runUntil(() -> harness.handedToHub.contains(ada), () -> { });
 
         assertGolden("lobby-world-start", harness.transcript);
     }
@@ -376,6 +376,8 @@ class CupSessionGoldenMasterTest {
         private final TickPipeline pipeline;
         private LobbyTransition lobby;
         private WaitingRoom room;
+        /** The racers the room handed to the hub, in order. */
+        private final List<UUID> handedToHub = new ArrayList<>();
 
         private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings) {
             this.env = env;
@@ -408,10 +410,17 @@ class CupSessionGoldenMasterTest {
             seat(name, worlds.forWorld(map.world()), spawnOf(map));
         }
 
-        /** Puts the room in front of the cup: the lobby world, and a room that starts the cup and returns racers to it. */
+        /**
+         * Puts the room in front of the cup: the lobby world, and a room that starts the cup and hands its racers to the hub
+         * when the results have lingered. The hub is installed, and every racer it is sent is recorded in {@link #handedToHub}.
+         */
         void useLobby(LobbyDefinition definition) {
             lobby = new LobbyTransition(worlds, definition);
-            room = new WaitingRoom(session, () -> field, 1, 16, lobby, racer -> { }, new LobbyHud(),
+            HubHandoff hub = new HubHandoff(() -> Optional.of(handedToHub::add), (racer, reason) -> { },
+                    message -> {
+                        throw new AssertionError("no refused handoff was expected, but got: " + message);
+                    });
+            room = new WaitingRoom(session, () -> field, 1, 16, lobby, hub, new LobbyHud(),
                     () -> worlds.forWorld(RIDGE));
         }
 
