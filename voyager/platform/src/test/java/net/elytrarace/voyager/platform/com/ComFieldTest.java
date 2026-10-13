@@ -176,7 +176,7 @@ class ComFieldTest {
         return instance;
     }
 
-    /** A brain that moves a racer to its seat index plus the tick, and places it at its distance on the seat's column. */
+    /** A brain that moves a racer to its seat index plus the tick, and places it at its distance on its column. */
     private static final class FakeBrain implements ComBrain {
 
         private final List<ComPath> pathsSeen = new ArrayList<>();

@@ -118,7 +118,9 @@ public final class ComTabList {
     /** Sends every entry on show to one human, and records that they have them. */
     private void inform(Player human) {
         if (!entries.isEmpty()) {
-            List<Entry> all = entries.entrySet().stream().map(entry -> entryOf(entry.getKey(), entry.getValue())).toList();
+            List<Entry> all = entries.entrySet().stream()
+                    .map(entry -> entryOf(entry.getKey(), entry.getValue()))
+                    .toList();
             human.sendPacket(new PlayerInfoUpdatePacket(ADD_ACTIONS, all));
         }
         informed.add(human.getUuid());
