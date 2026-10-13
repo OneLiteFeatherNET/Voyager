@@ -143,6 +143,24 @@ class RacingLineTest {
     }
 
     /**
+     * The stretch from a racer's next ring to the last ring is the tail of the whole line.
+     *
+     * <p>A racer who has flown the first two rings is shown the line from ring 2 on, so the part already
+     * flown is not part of what they are sent. This is the stretch the renderer draws in FULL mode.
+     */
+    @Test
+    void theStretchFromTheNextRingToTheLastIsTheTailOfTheWholeLine() {
+        RacingLine line = RacingLine.of(courseWith(BEFORE_THE_TURN, AROUND_THE_OUTSIDE, BACK_ON_LINE));
+
+        List<Vec3> fromNextRing = line.between(2, line.ringCount() - 1);
+
+        assertThat(fromNextRing.getFirst()).isEqualTo(RINGS.get(2).center());
+        assertThat(fromNextRing.getLast()).isEqualTo(RINGS.get(4).center());
+        assertThat(line.points()).endsWith(fromNextRing.toArray(Vec3[]::new));
+        assertThat(fromNextRing).doesNotContain(RINGS.get(1).center());
+    }
+
+    /**
      * The spacing the map asks for is the spacing the line is sampled at.
      *
      * <p>Two blocks apart is about half the points of one block apart. Asserted as a ratio rather than
