@@ -35,6 +35,9 @@ public abstract class RunReset {
     /** Race ticks after a reset during which a landing does not count (design D4). */
     private static final int RESET_COOLDOWN_TICKS = 40;
 
+    /** Consecutive airborne race ticks a racer needs before a landing counts (design D4). */
+    private static final int LANDING_GRACE_TICKS = 20;
+
     private RunReset() {
     }
 
@@ -59,7 +62,9 @@ public abstract class RunReset {
     /**
      * Whether this tick is a landing: the racer was gliding on the tick that produced {@code before}, is on
      * the ground now, and is no longer gliding. A finished run cannot land, because nothing is reset after
-     * the last ring.
+     * the last ring. A landing also needs twenty consecutive airborne race ticks before it, and no reset
+     * cooldown left: a touch of the ground sooner is a racer who has only just left it, or has just been
+     * placed on it.
      *
      * @param before the run as the previous tick left it
      * @param gliding whether the racer is gliding on this tick
@@ -67,7 +72,8 @@ public abstract class RunReset {
      */
     @Contract(pure = true)
     public static boolean isLanded(RaceRun before, boolean gliding, boolean onGround) {
-        return before.gliding() && !gliding && onGround && !before.finished();
+        return before.gliding() && !gliding && onGround && !before.finished()
+                && before.airborneTicks() >= LANDING_GRACE_TICKS && before.resetCooldownTicks() == 0;
     }
 
     /**

@@ -138,6 +138,27 @@ class RunResetTest {
         assertThat(RunReset.isLanded(RaceRun.atStart(), false, true)).isFalse();
     }
 
+    @Test
+    void aLandingBeforeTheAirborneGraceIsNotALanding() {
+        RaceRun glidingNineteenTicks = airborneGliding(LANDING_GRACE_TICKS - 1, 0);
+
+        assertThat(RunReset.isLanded(glidingNineteenTicks, false, true)).isFalse();
+    }
+
+    @Test
+    void aLandingDuringTheCooldownIsNotALanding() {
+        RaceRun cooling = airborneGliding(LANDING_GRACE_TICKS, 1);
+
+        assertThat(RunReset.isLanded(cooling, false, true)).isFalse();
+    }
+
+    @Test
+    void aLandingAfterTheGraceAndOutsideTheCooldownIsALanding() {
+        RaceRun pastTheGrace = airborneGliding(LANDING_GRACE_TICKS, 0);
+
+        assertThat(RunReset.isLanded(pastTheGrace, false, true)).isTrue();
+    }
+
     // ------------------------------------------------------------------------------------------
     // The reset plan: target
     // ------------------------------------------------------------------------------------------
@@ -305,6 +326,11 @@ class RunResetTest {
      */
     private static RaceRun gliding(RingProgress progress, List<Integer> ticks) {
         return new RaceRun(progress, SPAWN, ticks, Optional.empty(), null, true, LANDING_GRACE_TICKS, 0);
+    }
+
+    /** A run that glided on the tick before, with {@code airborne} airborne ticks and {@code cooldown} ticks left. */
+    private static RaceRun airborneGliding(int airborne, int cooldown) {
+        return new RaceRun(progress(1), SPAWN, List.of(5), Optional.empty(), null, true, airborne, cooldown);
     }
 
     /** A course of ten rings with checkpoints at 2 and 6, every normal tilted the same way. */
