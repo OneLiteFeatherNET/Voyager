@@ -53,14 +53,10 @@ import java.util.List;
 public abstract class Rockets {
 
     /**
-     * The flight duration written into the item the racer holds.
-     *
-     * <p>Three, the maximum a player can craft, and the same three
-     * {@link BoostConfig#VANILLA_BURN_TICKS} is derived from — so what the item claims and how long
-     * the server burns it agree. A rocket whose tooltip says one thing while the server does another
-     * is a discrepancy a player notices and cannot explain.
+     * The longest flight duration a player can craft. The item's duration is capped here, so a burn past
+     * thirty ticks states the same rocket Vanilla's maximum is.
      */
-    static final int FLIGHT_DURATION = 3;
+    static final int MAX_FLIGHT_DURATION = 3;
 
     /**
      * The cooldown group the client greys the stack out under.
@@ -76,20 +72,36 @@ public abstract class Rockets {
     }
 
     /**
-     * The item a racer carries, {@code count} of them in one stack.
+     * The item a racer carries: the map's count of rockets, in one stack, with the flight duration that
+     * matches the map's burn.
      *
      * <p>The stack is never consumed: the cooldown is what limits a racer, not the number of rockets
      * they happen to be holding. A race decided by somebody running out three rings from the end is a
      * race decided by inventory management, and the committed course climbs 380 blocks — running out
      * on it is not a challenge, it is a stranding.
+     *
+     * @param config the tuning of the map being raced; its {@code rocketsPerRacer} is the stack size
      */
     @Contract(pure = true)
-    public static ItemStack item(int count) {
+    public static ItemStack item(BoostConfig config) {
+        return stack(config.rocketsPerRacer(), flightDuration(config.burnDurationTicks()));
+    }
+
+    /**
+     * The flight duration an item states for a burn: {@code round(burn / 10)}, which is Vanilla's
+     * {@code 10 * flightDuration} inverted, clamped to the one to three a player can craft. A thirty-tick
+     * burn states three, a ten-tick burn states one, and anything longer than thirty still states three.
+     */
+    static int flightDuration(int burnDurationTicks) {
+        return Math.clamp(Math.round(burnDurationTicks / 10.0), 1, MAX_FLIGHT_DURATION);
+    }
+
+    private static ItemStack stack(int count, int flightDuration) {
         return ItemStack.builder(Material.FIREWORK_ROCKET)
                 .amount(count)
                 // No explosions: this rocket exists to boost, and a burst of colour at the end of
                 // every burn on a course flown at 60 blocks a second is noise in front of the rings.
-                .set(DataComponents.FIREWORKS, new FireworkList(FLIGHT_DURATION, List.of()))
+                .set(DataComponents.FIREWORKS, new FireworkList(flightDuration, List.of()))
                 .build();
     }
 
@@ -110,7 +122,7 @@ public abstract class Rockets {
         }
         Entity rocket = new Entity(EntityType.FIREWORK_ROCKET);
         FireworkRocketMeta meta = (FireworkRocketMeta) rocket.getEntityMeta();
-        meta.setFireworkInfo(item(1));
+        meta.setFireworkInfo(stack(1, flightDuration(config.burnDurationTicks())));
         meta.setShooter(shooter);
         // The client puts the rocket at whatever it is attached to on every one of its own ticks, so
         // the server neither moves it nor lets it fall. Gravity here would only make the entity drift

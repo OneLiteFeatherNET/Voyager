@@ -108,6 +108,7 @@ messages
   Ben subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
   Ben title {"translate":"voyager.countdown.digit","with":["3"]}
 logs
+  INFO Map 1/2 'ridge-run' tuning: burn 4, cooldown 9, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5
 ## tick 11
 describe
   catalogue loaded 1970-01-01T00:00:00Z
@@ -993,6 +994,7 @@ messages
   Ada subtitle {"translate":"voyager.countdown.subtitle","with":["dune-run","2","0:00"]}
   Ada title {"translate":"voyager.countdown.digit","with":["3"]}
 logs
+  INFO Map 2/2 'dune-run' tuning: burn 6, cooldown 13, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5
 ## tick 105
 describe
   catalogue loaded 1970-01-01T00:00:00Z

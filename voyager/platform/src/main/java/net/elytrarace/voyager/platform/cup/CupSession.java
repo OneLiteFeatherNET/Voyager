@@ -4,8 +4,12 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.effect.RingEffect;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.convert.VelocityExit;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.hud.HudState;
@@ -20,6 +24,8 @@ import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.tick.RacePhaseListener;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.WorldHealth;
+import net.elytrarace.voyager.race.effect.RingEffectRegistry;
+import net.elytrarace.voyager.race.effect.RingEffectSequence;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.flow.RacePhase;
 import net.elytrarace.voyager.race.cup.CupStanding;
@@ -157,6 +163,12 @@ public final class CupSession implements RacePhaseListener {
 
     private @Nullable XerusPhaseDriver driver;
     private @Nullable MapDefinition currentMap;
+
+    /**
+     * The ring effects of the map being raced, built from its {@code ringEffects} when the map is entered. Until
+     * then it holds the default factors, which no race reads: {@link #raceTick} does nothing without a current map.
+     */
+    private RingEffectRegistry ringEffects = RingEffectRegistry.create();
 
     /**
      * Which map of the rotation has already been moved to, or {@link #NO_MAP} for none.
@@ -591,6 +603,8 @@ public final class CupSession implements RacePhaseListener {
                         .formatted(cup.name(), mapName)));
         currentMap = map;
         preparedMapIndex = mapIndex;
+        ringEffects = RingEffectRegistry.create(map.ringEffects());
+        LOGGER.info("Map {}/{} '{}' tuning: {}", mapIndex + 1, cup.mapNames().size(), map.name(), tuningOf(map));
         Instance instance = instances.forWorld(map.world());
         blocks.follow(instance);
 
@@ -621,6 +635,11 @@ public final class CupSession implements RacePhaseListener {
             RaceRun advanced = runs.advance(id, map, clock, position, racer.isFlyingWithElytra());
             announcer.report(racer, map, advanced, wasFinished, clock);
             RaceRun shown = sendBackIfLostOrLanded(racer, map, held.get(), advanced, position);
+            // sendBackIfLostOrLanded hands back the run it was given unless it reset the racer, so a reset
+            // cancels the effect of the ring it was crossed on. A reset racer has no ring effect on that tick.
+            if (shown == advanced) {
+                applyRingEffect(racer, map, advanced);
+            }
             hud.render(racer, HudStates.of(MapFigures.inFlight(shown, clock, map, preparedMapIndex + 1,
                     cup.mapNames().size())));
             // After the advance, not before it: a racer who passed a ring on this tick is heading for
@@ -658,9 +677,53 @@ public final class CupSession implements RacePhaseListener {
             return advanced;
         }
         ResetPlan plan = RunReset.plan(map, advanced, cause);
-        resetter.reset(racer, plan);
+        resetter.reset(racer, plan, map.boostConfig());
         LOGGER.info("Racer {} reset for {} to {}", racer.getUsername(), cause, plan.position());
         return plan.run();
+    }
+
+    /**
+     * Applies the effect of the ring {@code run} was passed on this tick, if that ring has one, to the velocity the
+     * server's simulation holds, and sends the result to the racer.
+     *
+     * <p>Only a gliding racer whose run is unfinished after this tick gets an effect. A STANDARD or CHECKPOINT ring
+     * has none, and sends nothing. The velocity written is the simulated one times the ring's factor, capped by the
+     * map's speed cap if it states one, and it is written to the simulation as well as the client so the next tick
+     * starts from it. A racer whose flight is not simulated has no velocity to multiply, and gets nothing.
+     */
+    private void applyRingEffect(Player racer, MapDefinition map, RaceRun run) {
+        Ring passed = run.justPassed();
+        if (passed == null || run.finished() || !racer.isFlyingWithElytra()) {
+            return;
+        }
+        List<RingEffect> effects = ringEffects.effectFor(passed.type()).map(List::of).orElse(List.of());
+        if (effects.isEmpty()) {
+            return;
+        }
+        UUID id = racer.getUuid();
+        Optional<Vec3> simulated = flight.velocityOf(id);
+        if (simulated.isEmpty()) {
+            return;
+        }
+        Vec3 written = RingEffectSequence.apply(simulated.get(), effects,
+                map.boostConfig().maxSpeedBlocksPerTick());
+        flight.replaceVelocity(id, written);
+        VelocityExit.send(racer, written);
+    }
+
+    /**
+     * One map's tuning in one line: its burn, cooldown, rocket count, speed cap and the two ring factors. Written at
+     * the start countdown, so the operator reads what a map is played with before the first racer flies it.
+     */
+    private static String tuningOf(MapDefinition map) {
+        BoostConfig boost = map.boostConfig();
+        RingEffectTuning effects = map.ringEffects();
+        String cap = boost.maxSpeedBlocksPerTick() == null
+                ? "no speed cap"
+                : "speed cap %s blocks per tick".formatted(boost.maxSpeedBlocksPerTick());
+        return "burn %s, cooldown %s, rockets %s, %s, BOOST %s, SLOW %s".formatted(
+                boost.burnDurationTicks(), boost.cooldownTicks(), boost.rocketsPerRacer(), cap,
+                effects.boostMultiplier(), effects.slowMultiplier());
     }
 
     @Override

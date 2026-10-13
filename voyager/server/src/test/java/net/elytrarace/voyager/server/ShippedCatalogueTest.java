@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -76,6 +78,25 @@ class ShippedCatalogueTest {
         assertThat(boosts)
                 .as("the BOOST rings of %s", ALPHA_MAP)
                 .hasSizeGreaterThanOrEqualTo(2);
+    }
+
+    /**
+     * The shipped map states no ring effects, no rocket count and no speed cap, so it races with exactly the values
+     * the optional fields default to. Changing the shipped tuning is a data change and fails here first.
+     */
+    @Test
+    void theShippedMapRacesWithDefaultRingEffectsAndNoSpeedCap() {
+        MapDefinition map = CatalogLoader.load(RESOURCES).mapByName(ALPHA_MAP).orElseThrow();
+
+        assertThat(map.ringEffects())
+                .as("ring effects of %s", ALPHA_MAP)
+                .isEqualTo(RingEffectTuning.DEFAULT);
+        assertThat(map.boostConfig().maxSpeedBlocksPerTick())
+                .as("speed cap of %s", ALPHA_MAP)
+                .isNull();
+        assertThat(map.boostConfig().rocketsPerRacer())
+                .as("rockets per racer of %s", ALPHA_MAP)
+                .isEqualTo(64);
     }
 
     @Test

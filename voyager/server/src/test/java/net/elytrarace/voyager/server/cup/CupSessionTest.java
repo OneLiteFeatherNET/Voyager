@@ -12,6 +12,10 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
+import net.elytrarace.voyager.platform.flight.FlightTransition;
+import net.elytrarace.voyager.server.LogCapture;
+import net.minestom.server.ServerFlag;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
@@ -73,6 +77,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * A whole two-map cup, played on a live server, through the same {@link CupSession} the composition
@@ -155,9 +160,9 @@ class CupSessionTest {
             new CupDefinition("grand_tour", List.of("ridge-run", "dune-run"), GameMode.RACE);
 
     /** The catalogue the fixture plays: both maps, and the one cup that plays them in order. */
-    private static CatalogHolder holder() {
+    private static CatalogHolder holder(MapDefinition ridge) {
         return new CatalogHolder(new LoadedCatalog(
-                new CatalogSnapshot(Map.of("ridge-run", RIDGE_RUN, "dune-run", DUNE_RUN), Map.of(CUP.name(), CUP)),
+                new CatalogSnapshot(Map.of("ridge-run", ridge, "dune-run", DUNE_RUN), Map.of(CUP.name(), CUP)),
                 CUP, Instant.EPOCH));
     }
 
@@ -257,15 +262,18 @@ class CupSessionTest {
         fixture.runUntil(tick -> fixture.session.describe().contains("phase GAME"));
 
         assertThat(fixture.racer.getEquipment(EquipmentSlot.CHESTPLATE).material()).isEqualTo(Material.ELYTRA);
-        // And rockets that carry their flight duration. A plain stack would look identical in an
-        // inventory and claim a one-gunpowder rocket in its tooltip, against a server that burns the
-        // three-gunpowder length — a discrepancy a player notices and cannot explain.
+        // And rockets that carry their flight duration, derived from the map's burn. The ridge map burns for four
+        // ticks, which states a flight duration of one (round(4 / 10), clamped to at least one), so the item and the
+        // server agree on the burn they show. A plain stack would claim the three-gunpowder length regardless.
         ItemStack rockets = fixture.racer.getInventory().getItemStack(0);
         assertThat(rockets.material()).isEqualTo(Material.FIREWORK_ROCKET);
+        assertThat(rockets.amount())
+                .describedAs("the map's count of rockets")
+                .isEqualTo(64);
         assertThat(rockets.get(DataComponents.FIREWORKS))
-                .describedAs("the rocket declares a flight duration")
+                .describedAs("the rocket declares the flight duration its burn corresponds to")
                 .isNotNull()
-                .satisfies(fireworks -> assertThat(fireworks.flightDuration()).isEqualTo(3));
+                .satisfies(fireworks -> assertThat(fireworks.flightDuration()).isEqualTo(1));
         assertThat(fixture.racer.getPosition().samePoint(spawnOf(RIDGE_RUN))).isTrue();
         assertThat(fixture.runs.of(fixture.racer.getUuid())).isPresent();
     }
@@ -1287,6 +1295,11 @@ class CupSessionTest {
 
     /** As {@link #start(Env)}, with the cup's timings given, for a case that needs a lobby longer than the standard one. */
     private Fixture start(Env env, RaceTimings timings) throws IOException {
+        return start(env, timings, RIDGE_RUN);
+    }
+
+    /** As {@link #start(Env, RaceTimings)}, on the ridge course given rather than the standard one. */
+    private Fixture start(Env env, RaceTimings timings, MapDefinition ridge) throws IOException {
         writeWorld(env, RIDGE, RIDGE_SPAWN, RIDGE_FLOOR);
         writeWorld(env, DUNE, DUNE_SPAWN, DUNE_FLOOR);
 
@@ -1296,7 +1309,7 @@ class CupSessionTest {
         MapTransition transition = new MapTransition(instances, runs);
 
         Instance first = instances.forWorld(RIDGE);
-        Pos spawn = spawnOf(RIDGE_RUN);
+        Pos spawn = spawnOf(ridge);
         first.loadChunk(spawn.chunkX(), spawn.chunkZ()).join();
         TestConnection connection = env.createConnection();
         Player racer = connection.connect(first, spawn);
@@ -1306,10 +1319,187 @@ class CupSessionTest {
         // Mutable, because a player joining while a cup is already running is a case worth testing
         // and a fixed field could not produce one.
         List<Player> field = new ArrayList<>(List.of(racer));
-        CupWiring.Cup cup = CupWiring.assemble(holder(), instances, transition, runs, new FlightTracker(),
+        CupWiring.Cup cup = CupWiring.assemble(holder(ridge), instances, transition, runs, new FlightTracker(),
                 timings, STEP, () -> field);
         cup.session().start(false);
         return new Fixture(instances, runs, cup.session(), cup.pipeline(), racer, connection, field, env);
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Ring effects
+    // ------------------------------------------------------------------------------------------
+
+    private static final double TOLERANCE = 1e-9;
+
+    /**
+     * Moves the racer across the BOOST ring and returns the two simulation ticks around the crossing: the ring tick,
+     * whose {@code after} is the velocity the ring found, and the next tick, whose {@code before} is the velocity the
+     * simulation starts from. The race plays one tick first, so the racer has a previous position to cross from.
+     */
+    private static List<FlightTick> crossBoostRing(Fixture fixture) {
+        fixture.runUntilRacing();
+        fixture.tickOnce();
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+        fixture.tickOnce();
+        FlightTick ringTick = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
+        fixture.tickOnce();
+        FlightTick next = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
+        return List.of(ringTick, next);
+    }
+
+    private static void assertVelocity(Vec3 actual, Vec3 expected, String what) {
+        assertThat(actual.x()).as("x of %s", what).isCloseTo(expected.x(), within(TOLERANCE));
+        assertThat(actual.y()).as("y of %s", what).isCloseTo(expected.y(), within(TOLERANCE));
+        assertThat(actual.z()).as("z of %s", what).isCloseTo(expected.z(), within(TOLERANCE));
+    }
+
+    /** The ridge course with a BOOST ring 10 blocks down +z and a STANDARD finish 30 blocks down. */
+    private static MapDefinition boostingRidge(BoostConfig boost, RingEffectTuning effects) {
+        return new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN,
+                List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7, RingType.BOOST),
+                        ring(1, RIDGE_SPAWN.plus(new Vec3(0, 8, 30)), 7, RingType.STANDARD)),
+                Duration.ofMillis(400), boost, new GuideLine(List.of(), 2, 1.0), effects);
+    }
+
+    /** The ridge course with the BOOST ring as its only ring, so crossing it finishes the run. */
+    private static MapDefinition finishingBoostRidge(BoostConfig boost) {
+        return new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN,
+                List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7, RingType.BOOST)),
+                Duration.ofMillis(400), boost, new GuideLine(List.of(), 2, 1.0));
+    }
+
+    /** The velocity the client is sent is the simulated one times the factor, in blocks per second. */
+    @Test
+    void aBoostRingMultipliesTheVelocityTheClientIsSentByTheDefaultFactor(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, boostingRidge(RIDGE_BOOST, RingEffectTuning.DEFAULT));
+
+        FlightTick ringTick = crossBoostRing(fixture).getFirst();
+
+        double tps = ServerFlag.SERVER_TICKS_PER_SECOND;
+        Vec3 sent = ringTick.after().velocity().scale(1.5);
+        assertThat(fixture.racer.getVelocity().x()).isCloseTo(sent.x() * tps, within(TOLERANCE));
+        assertThat(fixture.racer.getVelocity().z()).isCloseTo(sent.z() * tps, within(TOLERANCE));
+    }
+
+    /** The server's simulation holds the velocity the client was sent, so the next tick starts from it. */
+    @Test
+    void theSimulationStartsTheNextTickFromTheBoostedVelocity(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, boostingRidge(RIDGE_BOOST, RingEffectTuning.DEFAULT));
+
+        List<FlightTick> ticks = crossBoostRing(fixture);
+
+        assertVelocity(ticks.get(1).before().velocity(), ticks.get(0).after().velocity().scale(1.5),
+                "the velocity the next tick starts from");
+    }
+
+    /** A map's own factor is the one applied, not the default: two here, not one and a half. */
+    @Test
+    void aBoostRingAppliesTheMapsOwnFactor(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, boostingRidge(RIDGE_BOOST, new RingEffectTuning(2.0, 0.5)));
+
+        List<FlightTick> ticks = crossBoostRing(fixture);
+
+        assertVelocity(ticks.get(1).before().velocity(), ticks.get(0).after().velocity().scale(2.0),
+                "the velocity after a boost by a factor of two");
+    }
+
+    /**
+     * A speed cap bounds what the ring writes: the racer keeps their heading at the cap's speed. The racer is almost at
+     * rest on the crossing (a boosted velocity of about 0.0027 blocks per tick), so the cap is set below that, and the
+     * assertion reads the cap back rather than the multiplied speed.
+     */
+    @Test
+    void aCappedBoostRingWritesTheCapAndKeepsTheHeading(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS,
+                boostingRidge(new BoostConfig(4, 9, 64, 0.001), RingEffectTuning.DEFAULT));
+
+        List<FlightTick> ticks = crossBoostRing(fixture);
+
+        Vec3 capped = ticks.get(1).before().velocity();
+        assertThat(capped.length()).isCloseTo(0.001, within(TOLERANCE));
+        assertThat(capped.dot(ticks.get(0).after().velocity()))
+                .describedAs("the capped velocity points the same way the racer was flying")
+                .isPositive();
+    }
+
+    /**
+     * A racer on foot crosses the ring and gets nothing. The velocity the racer had is not multiplied and no boosted
+     * velocity is sent. The precondition makes the check meaningful: a zero velocity would be multiplied to zero too.
+     */
+    @Test
+    void aRacerOnFootCrossingABoostRingGetsNoEffect(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, boostingRidge(RIDGE_BOOST, RingEffectTuning.DEFAULT));
+        fixture.runUntilRacing();
+        fixture.tickOnce();
+        fixture.racer.setFlyingWithElytra(false);
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+
+        fixture.tickOnce();
+
+        FlightTick ringTick = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
+        assertThat(ringTick.transition()).isInstanceOf(FlightTransition.Ended.class);
+        assertThat(ringTick.after().velocity().z())
+                .describedAs("the velocity the racer left the flight with is non-zero, so a boost would show")
+                .isNotZero();
+        assertThat(fixture.racer.getVelocity().z())
+                .describedAs("no boosted velocity was sent to a racer who was not gliding")
+                .isNotCloseTo(ringTick.after().velocity().z() * 1.5 * ServerFlag.SERVER_TICKS_PER_SECOND,
+                        within(TOLERANCE));
+    }
+
+    /**
+     * A racer whose last ring is a BOOST ring finishes on it, and a finished run gets no effect. The velocity the
+     * simulation starts from is the one it had, not the boosted one.
+     */
+    @Test
+    void aRacerWhoFinishesOnABoostRingGetsNoEffect(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, finishingBoostRidge(RIDGE_BOOST));
+
+        List<FlightTick> ticks = crossBoostRing(fixture);
+
+        assertVelocity(ticks.get(1).before().velocity(), ticks.get(0).after().velocity(),
+                "the velocity after a finishing boost ring, which is unchanged");
+    }
+
+    /**
+     * A racer who is reset on the tick they cross a BOOST ring gets no effect. The reset's own zero is the velocity
+     * the racer is left with. The previous position sits just short of the ring plane and the next one is far below the
+     * floor past it, so the segment crosses the ring near its centre and the racer is out of bounds on the same tick.
+     */
+    @Test
+    void aRacerResetOnTheTickOfABoostRingGetsNoEffect(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, boostingRidge(RIDGE_BOOST, RingEffectTuning.DEFAULT));
+        fixture.runUntilRacing();
+        fixture.tickOnce();
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 9.9999)));
+        fixture.tickOnce();
+
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, -200, 10.5)));
+        fixture.tickOnce();
+
+        assertThat(fixture.racer.getVelocity().x()).isCloseTo(0.0, within(TOLERANCE));
+        assertThat(fixture.racer.getVelocity().y()).isCloseTo(0.0, within(TOLERANCE));
+        assertThat(fixture.racer.getVelocity().z())
+                .describedAs("only the reset's zero was sent: no boosted velocity on the reset tick")
+                .isCloseTo(0.0, within(TOLERANCE));
+    }
+
+    /**
+     * The map-start log line names the tuning the map is played with, so an operator can read it before the first
+     * racer flies. The default values are the ones this fixture's ridge map states.
+     */
+    @Test
+    void theMapStartLogStatesTheTuningTheMapIsPlayedWith(Env env) throws IOException {
+        try (LogCapture logs = LogCapture.of(CupSession.class)) {
+            Fixture fixture = start(env);
+
+            fixture.runUntilRacing();
+
+            assertThat(logs.infos())
+                    .anySatisfy(line -> assertThat(line).contains(
+                            "Map 1/2 'ridge-run' tuning: burn 4, cooldown 9, rockets 64, no speed cap, "
+                                    + "BOOST 1.5, SLOW 0.5"));
+        }
     }
 
     private static List<Entity> rocketsAround(Player racer) {
@@ -1319,7 +1509,11 @@ class CupSessionTest {
     }
 
     private static Ring ring(int index, Vec3 center, int points) {
-        return new Ring(index, center, new Vec3(0, 0, 1), 6.0, points, RingType.STANDARD);
+        return ring(index, center, points, RingType.STANDARD);
+    }
+
+    private static Ring ring(int index, Vec3 center, int points, RingType type) {
+        return new Ring(index, center, new Vec3(0, 0, 1), 6.0, points, type);
     }
 
     private static Pos spawnOf(MapDefinition map) {

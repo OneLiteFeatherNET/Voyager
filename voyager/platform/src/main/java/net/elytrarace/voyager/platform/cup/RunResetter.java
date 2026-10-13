@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.platform.convert.VelocityExit;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
@@ -50,15 +51,16 @@ public final class RunResetter {
     /**
      * Performs {@code plan} for {@code racer}. The racer must hold a run on the map being raced.
      *
+     * @param boost the tuning of the map being raced, for the rockets the racer is given again
      * @throws net.elytrarace.voyager.platform.cup.exception.UnstartedRunException if the racer holds no run
      */
-    public void reset(Player racer, ResetPlan plan) {
+    public void reset(Player racer, ResetPlan plan, BoostConfig boost) {
         UUID id = racer.getUuid();
         runs.resetTo(id, plan.run());
         boosts.cancelBurn(id);
         flight.forget(id);
         MapTransition.reposition(racer, Vectors.toMinestom(plan.position()).asPos());
-        Racers.place(racer, plan.toward());
+        Racers.place(racer, plan.toward(), boost);
         VelocityExit.send(racer, Vec3.ZERO);
         RaceFeedback.reset(
                 racer,

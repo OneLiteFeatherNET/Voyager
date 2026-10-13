@@ -41,27 +41,49 @@ class RocketsTest {
     private static final BoostConfig SHORT = new BoostConfig(3, 8);
     private static final BoostConfig LONG = new BoostConfig(6, 13);
 
+    /** The map's count is the stack a racer carries, and the item carries no explosions. */
     @Test
-    void theItemARacerCarriesDeclaresVanillasLongestFlightDuration(Env env) {
-        ItemStack rocket = Rockets.item(64);
+    void theItemCarriesTheMapsCountOfRockets(Env env) {
+        ItemStack rocket = Rockets.item(new BoostConfig(30, 40, 12, null));
 
         assertThat(rocket.material()).isEqualTo(Material.FIREWORK_ROCKET);
-        assertThat(rocket.amount()).isEqualTo(64);
+        assertThat(rocket.amount()).isEqualTo(12);
         FireworkList fireworks = rocket.get(DataComponents.FIREWORKS);
         assertThat(fireworks).isNotNull();
-        assertThat(fireworks.flightDuration())
-                .describedAs("three, the longest a player can craft")
-                .isEqualTo(3);
-        // Not asserted against Rockets.FLIGHT_DURATION, which would only be the constant compared
-        // with itself. The claim worth pinning is that the item's tooltip and the server's burn come
-        // from the same number: Vanilla's lifetime is 10 * flightDuration, and the seed the map data
-        // is built on has to be that product for this rocket.
-        assertThat(BoostConfig.VANILLA_BURN_TICKS)
-                .describedAs("the burn the map data is seeded with is 10 * the item's own flight duration")
-                .isEqualTo(10 * fireworks.flightDuration());
         assertThat(fireworks.explosions())
                 .describedAs("a burst of colour every burn is noise in front of the rings")
                 .isEmpty();
+    }
+
+    /**
+     * The item states the flight duration its burn corresponds to, so the tooltip and the server agree. The
+     * thirty-tick burn is Vanilla's longest rocket, three; ten ticks is the shortest, one; fifty is clamped to three.
+     */
+    @Test
+    void theItemsFlightDurationFollowsTheBurn() {
+        assertThat(flightDurationOf(new BoostConfig(30, 40)))
+                .describedAs("a 30-tick burn is Vanilla's longest rocket")
+                .isEqualTo(3);
+        assertThat(flightDurationOf(new BoostConfig(10, 40)))
+                .describedAs("a 10-tick burn is the shortest rocket Vanilla has")
+                .isEqualTo(1);
+        assertThat(flightDurationOf(new BoostConfig(50, 60)))
+                .describedAs("a burn past three is clamped to three, the longest a player can craft")
+                .isEqualTo(3);
+    }
+
+    /**
+     * Pinned because the item's tooltip and the server's burn come from the same number: Vanilla's lifetime is
+     * 10 * flightDuration, and the default burn is that product for the longest rocket.
+     */
+    @Test
+    void theDefaultBurnIsTenTimesTheLongestFlightDuration() {
+        assertThat(BoostConfig.VANILLA_BURN_TICKS)
+                .isEqualTo(10 * flightDurationOf(new BoostConfig(BoostConfig.VANILLA_BURN_TICKS, 40)));
+    }
+
+    private static int flightDurationOf(BoostConfig config) {
+        return Rockets.item(config).get(DataComponents.FIREWORKS).flightDuration();
     }
 
     /**

@@ -68,6 +68,14 @@ public final class LogCapture implements AutoCloseable {
                 .toList();
     }
 
+    /** The formatted message of every INFO event captured so far, in the order logged. */
+    public List<String> infos() {
+        return events.stream()
+                .filter(event -> event.getLevel() == Level.INFO)
+                .map(event -> event.getMessage().getFormattedMessage())
+                .toList();
+    }
+
     /** The formatted message of every WARN event captured so far, in the order logged. */
     public List<String> warnings() {
         return events.stream()

@@ -22,7 +22,9 @@ import org.jetbrains.annotations.ApiStatus;
  * <ol>
  *   <li>a zero, which ends a racer's velocity: when a map ends ({@code Racers.standDown}) and when a racer is
  *       reset ({@code RunResetter}), so a fall is not carried into the target;</li>
- *   <li>a ring {@code BOOST}/{@code SLOW} effect, which is not built yet.</li>
+ *   <li>a ring {@code BOOST}/{@code SLOW} effect, written by the cup's ring step ({@code CupSession}) with the
+ *       velocity {@code RingEffectSequence} computes, which is the simulated velocity times the map's factors and
+ *       capped by the map's speed cap if it has one. Only a ring writes it; rockets and normal flight never do.</li>
  * </ol>
  *
  * <p>The launch that used to start a map, and the impulse a reset gave, are gone: a racer takes off by deploying
