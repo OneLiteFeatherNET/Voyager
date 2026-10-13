@@ -1,0 +1,3 @@
+ERROR system property service.bind.port service.bind.port: service.bind.port must be a number, was 'abc'
+config check failed: 1 error(s)
+exit=1

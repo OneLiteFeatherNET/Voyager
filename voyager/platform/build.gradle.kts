@@ -39,6 +39,13 @@ dependencies {
     // tools/trace-recorder and Paper 26.2 already agree on.
     implementation("com.google.code.gson:gson:2.14.0")
 
+    // Server configuration (ADR-0036). platform.config.ConfigLoader is the one type that builds an avaje-config Configuration,
+    // and its public surface names no avaje type, so no other module compiles against it. implementation keeps it off the
+    // compile classpath of every consumer; the runtime classpath still gets it. SnakeYAML reads application.yaml in the
+    // working directory.
+    implementation(libs.avaje.config)
+    implementation(libs.snakeyaml)
+
     // The logging facade both Minestom and falco-anvil already put on the runtime classpath, and
     // which neither exposes for compilation. compileOnly is what it costs: this module's published
     // runtime metadata then says nothing about a library its code calls, and a consumer that got

@@ -1,0 +1,3 @@
+ERROR system property VOYAGER_LOBBY_SPAWN VOYAGER_LOBBY_SPAWN: VOYAGER_LOBBY_SPAWN is not set, but VOYAGER_LOBBY_WORLD is: a lobby world needs the spawn racers stand on
+config check failed: 1 error(s)
+exit=1

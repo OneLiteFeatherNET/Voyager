@@ -6,6 +6,7 @@ import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.LobbyDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogLoader;
+import net.elytrarace.voyager.platform.config.ConfigLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
 import net.elytrarace.voyager.platform.catalog.CupResolution;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -48,22 +50,22 @@ public final class ConfigCheck {
 
     private static final String PORT_KEY = "port";
     private static final String PORT_SOURCE = "command line";
-    private static final String CUP_SOURCE = "system property " + ServerSettings.CUP_PROPERTY;
-
-    private ConfigCheck() {
-    }
+    /** The label of a setting named by a system property, which is where every setting came from before the loader. */
+    public static final Function<String, String> PROPERTY_SOURCE = key -> "system property " + key;
 
     /**
-     * The JVM's system properties as a plain map, the form the settings read from.
+     * The labels of the configuration loader's sources. A key that is set is labelled with the source that set it (system
+     * property, environment variable, or file); a key that is not set keeps the label it always had, the system property
+     * it would be set by, so the report for an unset key is the one the release before the loader printed.
      *
-     * @return every system property that has a string value
+     * @param loader the loader of the running server
+     * @return the label of each key
      */
-    public static Map<String, String> systemProperties() {
-        Map<String, String> properties = new HashMap<>();
-        for (String name : System.getProperties().stringPropertyNames()) {
-            properties.put(name, System.getProperty(name));
-        }
-        return properties;
+    public static Function<String, String> sourcesOf(ConfigLoader loader) {
+        return key -> loader.get(key) == null ? PROPERTY_SOURCE.apply(key) : loader.sourceOf(key);
+    }
+
+    private ConfigCheck() {
     }
 
     /**
@@ -74,6 +76,17 @@ public final class ConfigCheck {
      * @return every problem with the settings; empty when {@link ServerSettings#fromProperties} would accept them
      */
     public static List<ConfigProblem> settingsProblems(String[] args, Map<String, String> properties) {
+        return settingsProblems(args, properties, PROPERTY_SOURCE);
+    }
+
+    /**
+     * {@link #settingsProblems(String[], Map)} with each problem labelled by {@code sources}, which names the source of a
+     * setting the way the configuration loader knows it.
+     *
+     * @param sources the label of the source of a key, such as {@code system property VOYAGER_CUP}
+     */
+    public static List<ConfigProblem> settingsProblems(String[] args, Map<String, String> properties,
+            Function<String, String> sources) {
         List<ConfigProblem> problems = new ArrayList<>();
         if (args.length > 0 && args[0].isBlank()) {
             problems.add(error("host", PORT_SOURCE, "host must not be blank"));
@@ -86,14 +99,14 @@ public final class ConfigCheck {
             }
         }
         if (args.length <= 1) {
-            bindPortProblem(problems, properties);
+            bindPortProblem(problems, properties, sources);
         }
         directoryProblem(problems, properties, ServerSettings.DATA_PATH_PROPERTY,
                 ServerSettings.DEFAULT_DATA_PATH, MissingServerDirectoryException.DATA);
         directoryProblem(problems, properties, ServerSettings.WORLDS_PATH_PROPERTY,
                 ServerSettings.DEFAULT_WORLDS_PATH, MissingServerDirectoryException.WORLDS);
-        minimumRacersProblem(problems, properties);
-        lobbySettingProblems(problems, properties);
+        minimumRacersProblem(problems, properties, sources);
+        lobbySettingProblems(problems, properties, sources);
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
@@ -122,6 +135,10 @@ public final class ConfigCheck {
      * @return one problem when the selection cannot be resolved; empty otherwise
      */
     static List<ConfigProblem> cupSelectionProblems(ServerSettings settings) {
+        return cupSelectionProblems(settings, PROPERTY_SOURCE);
+    }
+
+    static List<ConfigProblem> cupSelectionProblems(ServerSettings settings, Function<String, String> sources) {
         Optional<String> refusal;
         try {
             refusal = CupResolution.refusalOf(CatalogLoader.read(settings.dataPath()), settings.cupName());
@@ -132,7 +149,7 @@ public final class ConfigCheck {
             return List.of();
         }
         String source = settings.cupName().isPresent()
-                ? CUP_SOURCE
+                ? sources.apply(ServerSettings.CUP_PROPERTY)
                 : settings.dataPath().resolve("cups").toAbsolutePath().toString();
         return List.of(error(ServerSettings.CUP_PROPERTY, source, refusal.get()));
     }
@@ -150,7 +167,13 @@ public final class ConfigCheck {
      * @return every problem; empty when the catalogue and every world it names are sound
      */
     public static List<ConfigProblem> catalogueProblems(ServerSettings settings, InstanceManager instances) {
-        return problems(settings, instances, map -> true);
+        return catalogueProblems(settings, instances, PROPERTY_SOURCE);
+    }
+
+    /** {@link #catalogueProblems(ServerSettings, InstanceManager)} with each setting labelled by {@code sources}. */
+    public static List<ConfigProblem> catalogueProblems(ServerSettings settings, InstanceManager instances,
+            Function<String, String> sources) {
+        return problems(settings, instances, map -> true, sources);
     }
 
     /**
@@ -159,22 +182,22 @@ public final class ConfigCheck {
      * already refuses the boot.
      */
     private static List<ConfigProblem> playedCupProblems(ServerSettings settings, InstanceManager instances,
-            Optional<CupDefinition> played) {
+            Optional<CupDefinition> played, Function<String, String> sources) {
         Predicate<MapDefinition> playedMap = played
                 .<Predicate<MapDefinition>>map(cup -> map -> cup.mapNames().contains(map.name()))
                 .orElse(map -> false);
-        return problems(settings, instances, playedMap);
+        return problems(settings, instances, playedMap, sources);
     }
 
     private static List<ConfigProblem> problems(ServerSettings settings, InstanceManager instances,
-            Predicate<MapDefinition> checkWorld) {
+            Predicate<MapDefinition> checkWorld, Function<String, String> sources) {
         Objects.requireNonNull(instances, "the instance manager must come from an initialised server");
-        List<ConfigProblem> problems = new ArrayList<>(cupSelectionProblems(settings));
+        List<ConfigProblem> problems = new ArrayList<>(cupSelectionProblems(settings, sources));
         MapInstances worlds = new MapInstances(instances, settings.worldsPath());
         try {
             problems.addAll(CatalogValidation.validate(settings.dataPath(), settings.worldsPath(), checkWorld,
                     worlds::checkWorld));
-            problems.addAll(lobbyProblems(settings, worlds));
+            problems.addAll(lobbyProblems(settings, worlds, sources));
         } finally {
             worlds.close();
         }
@@ -197,8 +220,14 @@ public final class ConfigCheck {
      * @return the errors that refuse boot, sorted; empty when boot may proceed
      */
     public static List<ConfigProblem> bootRefusals(ServerSettings settings, InstanceManager instances) {
+        return bootRefusals(settings, instances, PROPERTY_SOURCE);
+    }
+
+    /** {@link #bootRefusals(ServerSettings, InstanceManager)} with each setting labelled by {@code sources}. */
+    public static List<ConfigProblem> bootRefusals(ServerSettings settings, InstanceManager instances,
+            Function<String, String> sources) {
         Optional<CupDefinition> played = playedCup(settings);
-        List<ConfigProblem> errors = playedCupProblems(settings, instances, played).stream()
+        List<ConfigProblem> errors = playedCupProblems(settings, instances, played, sources).stream()
                 .filter(problem -> problem.severity() == Severity.ERROR)
                 .toList();
         if (played.isEmpty()) {
@@ -235,7 +264,13 @@ public final class ConfigCheck {
      * @return 0 when there is no error, 1 when there is at least one
      */
     public static int run(ServerSettings settings, InstanceManager instances, PrintStream out) {
-        return report(catalogueProblems(settings, instances), out);
+        return run(settings, instances, out, PROPERTY_SOURCE);
+    }
+
+    /** {@link #run(ServerSettings, InstanceManager, PrintStream)} with each setting labelled by {@code sources}. */
+    public static int run(ServerSettings settings, InstanceManager instances, PrintStream out,
+            Function<String, String> sources) {
+        return report(catalogueProblems(settings, instances, sources), out);
     }
 
     /**
@@ -266,11 +301,12 @@ public final class ConfigCheck {
      * warning, and a lobby may not be a catalogue map's world. The world is read and closed before this returns, so the
      * check holds one world open at a time, as {@link MapInstances#checkWorld} does for each map's world.
      */
-    private static List<ConfigProblem> lobbyProblems(ServerSettings settings, MapInstances worlds) {
+    private static List<ConfigProblem> lobbyProblems(ServerSettings settings, MapInstances worlds,
+            Function<String, String> sources) {
         Optional<LobbyDefinition> lobby = settings.lobby();
         if (lobby.isEmpty()) {
             return List.of(new ConfigProblem(ServerSettings.LOBBY_WORLD_PROPERTY,
-                    "system property " + ServerSettings.LOBBY_WORLD_PROPERTY,
+                    sources.apply(ServerSettings.LOBBY_WORLD_PROPERTY),
                     "no lobby world is set, so waiting racers stand at the first map's spawn; set %s and %s to give them a lobby (ADR-0029)"
                             .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, ServerSettings.LOBBY_SPAWN_PROPERTY),
                     Severity.WARNING));
@@ -280,7 +316,7 @@ public final class ConfigCheck {
                 .filter(map -> map.world().equals(world))
                 .findFirst();
         if (played.isPresent()) {
-            return List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, "system property " + ServerSettings.LOBBY_WORLD_PROPERTY,
+            return List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, sources.apply(ServerSettings.LOBBY_WORLD_PROPERTY),
                     "%s names world '%s', which map '%s' plays; a racer waiting in a map's world is inside that map's race"
                             .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, world, played.get().name())));
         }
@@ -309,19 +345,20 @@ public final class ConfigCheck {
     }
 
     /** A lobby setting that cannot be used, keyed under the setting that is at fault. */
-    private static void lobbySettingProblems(List<ConfigProblem> problems, Map<String, String> properties) {
+    private static void lobbySettingProblems(List<ConfigProblem> problems, Map<String, String> properties,
+            Function<String, String> sources) {
         try {
             ServerSettings.parseLobby(blankToNull(properties.get(ServerSettings.LOBBY_WORLD_PROPERTY)),
                     blankToNull(properties.get(ServerSettings.LOBBY_SPAWN_PROPERTY)));
         } catch (InvalidSettingException exception) {
-            problems.add(error(exception.setting(), "system property " + exception.setting(), exception.getMessage()));
+            problems.add(error(exception.setting(), sources.apply(exception.setting()), exception.getMessage()));
         }
         int maximum;
         try {
             maximum = ServerSettings.parseMaximumRacers(blankToNull(properties.get(ServerSettings.MAX_PLAYERS_PROPERTY)));
         } catch (InvalidSettingException exception) {
             problems.add(error(ServerSettings.MAX_PLAYERS_PROPERTY,
-                    "system property " + ServerSettings.MAX_PLAYERS_PROPERTY, exception.getMessage()));
+                    sources.apply(ServerSettings.MAX_PLAYERS_PROPERTY), exception.getMessage()));
             return;
         }
         try {
@@ -331,7 +368,7 @@ public final class ConfigCheck {
             ServerSettings.requireMaximumRacers(maximum, minimum);
         } catch (InvalidSettingException exception) {
             problems.add(error(ServerSettings.MAX_PLAYERS_PROPERTY,
-                    "system property " + ServerSettings.MAX_PLAYERS_PROPERTY, exception.getMessage()));
+                    sources.apply(ServerSettings.MAX_PLAYERS_PROPERTY), exception.getMessage()));
         } catch (IllegalArgumentException ignored) {
             // A minimum that is not a number is reported by minimumRacersProblem, once.
         }
@@ -354,7 +391,8 @@ public final class ConfigCheck {
      * The minimum racer setting, when it is set: a value that is not a whole number or is below one is refused under
      * its key. An unset or blank value is no problem, because the run's mode supplies the default.
      */
-    private static void minimumRacersProblem(List<ConfigProblem> problems, Map<String, String> properties) {
+    private static void minimumRacersProblem(List<ConfigProblem> problems, Map<String, String> properties,
+            Function<String, String> sources) {
         String raw = properties.get(ServerSettings.MIN_RACERS_PROPERTY);
         if (raw == null || raw.isBlank()) {
             return;
@@ -363,7 +401,7 @@ public final class ConfigCheck {
             ServerSettings.requireMinimumRacers(ServerSettings.parseMinimumRacers(raw));
         } catch (IllegalArgumentException exception) {
             problems.add(error(ServerSettings.MIN_RACERS_PROPERTY,
-                    "system property " + ServerSettings.MIN_RACERS_PROPERTY, exception.getMessage()));
+                    sources.apply(ServerSettings.MIN_RACERS_PROPERTY), exception.getMessage()));
         }
     }
 
@@ -371,12 +409,13 @@ public final class ConfigCheck {
      * The bind port a node sets through the system property, checked only when no positional port overrides it, as the
      * settings read it. The message names the property.
      */
-    private static void bindPortProblem(List<ConfigProblem> problems, Map<String, String> properties) {
+    private static void bindPortProblem(List<ConfigProblem> problems, Map<String, String> properties,
+            Function<String, String> sources) {
         try {
             ServerSettings.bindPort(properties.get(ServerSettings.BIND_PORT_PROPERTY));
         } catch (IllegalArgumentException exception) {
             problems.add(error(ServerSettings.BIND_PORT_PROPERTY,
-                    "system property " + ServerSettings.BIND_PORT_PROPERTY, exception.getMessage()));
+                    sources.apply(ServerSettings.BIND_PORT_PROPERTY), exception.getMessage()));
         }
     }
 

@@ -50,11 +50,27 @@ change the defaults were `run/data` and `run/worlds`, and a service needed two `
 
 | Value | How it reaches the service |
 |---|---|
-| Bind host and port | the system properties `service.bind.host` and `service.bind.port`, which the node sets for each service |
+| Bind host and port | the system properties `service.bind.host` and `service.bind.port`, which the node sets for each service. The environment variables `SERVICE_BIND_HOST` and `SERVICE_BIND_PORT` also work |
 | Velocity forwarding secret | the environment variable `VOYAGER_VELOCITY_SECRET` in the task's environment, the same secret the Velocity proxy holds. The system property `voyager.velocity.secret` also works. Never write it into a file in the service directory |
+| Racer counts, cup and paths | the system properties `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH`, and the lobby pair `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`. Each of them also works as an environment variable of the same name |
 | The `stop` command | the node writes `end` and then `stop` to the service's standard input. `end` is ignored, `stop` shuts the service down cleanly |
 
 A blank secret refuses the start: the server does not fall back to offline mode with an empty secret.
+
+### Precedence
+
+The server reads one loader (ADR-0036). When a key is set in more than one place, the highest source wins:
+
+| Rank | Source | On the CloudNet node |
+|---|---|---|
+| 1 (lowest) | Defaults in code | used when nothing else sets the key |
+| 2 | `application.yaml` in the service directory | optional; the node does not write it |
+| 3 | The file named by `CONFIG_FILE` | not set on the node |
+| 4 | Environment variables | the velocity secret, and any key set in the task's environment |
+| 5 (highest) | System properties | what the node sets for each service today |
+
+The velocity secret is the one exception: the environment variable wins over the system property for that key only, as the
+forwarding specification requires. The full list of keys and names is in `docs/reference/configuration.md`.
 
 ## The JVM translation flag
 

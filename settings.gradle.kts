@@ -74,6 +74,14 @@ dependencyResolutionManagement {
             library("avaje.inject.test", "io.avaje", "avaje-inject-test").versionRef("avaje-inject")
             library("jakarta.inject", "jakarta.inject", "jakarta.inject-api").version("2.0.1")
 
+            // Server configuration (ADR-0036): the loader in voyager-platform builds one avaje-config Configuration. The same
+            // release Titan runs in production. SnakeYAML is optional in avaje-config's POM and is what reads application.yaml
+            // in the working directory; without it avaje-config falls back to a simpler parser that does not read every YAML.
+            version("avaje-config", "5.2")
+            library("avaje.config", "io.avaje", "avaje-config").versionRef("avaje-config")
+            version("snakeyaml", "2.7")
+            library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml")
+
             // LuckPerms, the optional permission backend behind the PermissionPolicy port (ADR-0024). The API is compileOnly
             // in voyager-platform. The Minestom loader is compileOnly there too, because LuckPermsBootstrap starts it, and
             // runtimeOnly in the two composition roots only, never on a test class path. Both are release artifacts of the

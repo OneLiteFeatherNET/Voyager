@@ -16,6 +16,7 @@ import net.elytrarace.voyager.platform.lifecycle.StopCommand;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
+import net.elytrarace.voyager.platform.config.ConfigLoader;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
 import net.elytrarace.voyager.server.command.RaceCommand;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -58,7 +60,7 @@ import java.util.function.Supplier;
  *
  * <p>Usage: {@code java -jar voyager-server.jar [host] [port]}, or {@code ./gradlew
  * :voyager:server:runServerDev} / {@code :voyager:server:runServer}. Configuration is
- * {@link ServerSettings}; there is no configuration file, and everything it reads is named there.
+ * {@link ServerSettings}, read through {@code ConfigLoader} (ADR-0036); every key it reads is named in {@code ServerSettings}.
  *
  * <h2>The order, which is the only interesting thing in this file</h2>
  *
@@ -129,14 +131,17 @@ public final class VoyagerServer {
 
     public static void main(String[] args) {
         enableAutomaticComponentTranslation();
+        // Every setting is read through one loader (ADR-0036): the working directory's application.yaml, CONFIG_FILE, the
+        // environment and the system properties, in that order of precedence.
+        ConfigLoader config = ConfigLoader.fromJvm();
         // The validate-and-exit run returns before any game-server state is touched. See configCheck.
-        if (Boolean.getBoolean(ConfigCheck.CHECK_PROPERTY)) {
-            System.exit(configCheck(args, ConfigCheck.systemProperties(), VoyagerServer::initialisedInstances, System.out));
+        if (Boolean.parseBoolean(config.get(ConfigCheck.CHECK_PROPERTY))) {
+            System.exit(configCheck(args, config, VoyagerServer::initialisedInstances, System.out));
             return;
         }
         // Settings first, and all of them: a bad directory and a bad port are both reported, not the first.
-        Map<String, String> properties = ConfigCheck.systemProperties();
-        List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties);
+        Map<String, String> properties = config.view(ServerSettings.KEYS);
+        List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties, ConfigCheck.sourcesOf(config));
         if (!settingsProblems.isEmpty()) {
             refuse(settingsProblems);
             return;
@@ -178,7 +183,7 @@ public final class VoyagerServer {
         // refuses to start rather than running offline; no secret runs offline with a WARN (ADR-0025).
         Auth auth;
         try {
-            ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromEnvironment();
+            ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromLoader(config);
             auth = VelocityAuth.of(forwarding);
             if (auth == null) {
                 LOGGER.warn("No Velocity secret is set ({} or -D{}): the server runs in offline mode and player UUIDs are "
@@ -209,7 +214,8 @@ public final class VoyagerServer {
         // Every problem that concerns the played cup, the maps or the worlds, at once, before the graph is
         // built: boot refuses with the whole report rather than the first problem the graph trips over. A
         // broken cup that is not played is not in it; the cup bean logs that one as a warning.
-        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings, MinecraftServer.getInstanceManager());
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings, MinecraftServer.getInstanceManager(),
+                ConfigCheck.sourcesOf(config));
         if (!refusals.isEmpty()) {
             refuse(refusals);
             return;
@@ -289,13 +295,24 @@ public final class VoyagerServer {
      * @param instances supplies the instance manager of an initialised Minestom server; {@link #main} passes
      *     the one that initialises it
      */
+    static int configCheck(String[] args, ConfigLoader config,
+            Supplier<InstanceManager> instances, PrintStream out) {
+        return configCheck(args, config.view(ServerSettings.KEYS), ConfigCheck.sourcesOf(config), instances, out);
+    }
+
+    /** {@link #configCheck(String[], ConfigLoader, Supplier, PrintStream)} over a map of values, labelled as properties. */
     static int configCheck(String[] args, Map<String, String> properties,
             Supplier<InstanceManager> instances, PrintStream out) {
-        List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties);
+        return configCheck(args, properties, ConfigCheck.PROPERTY_SOURCE, instances, out);
+    }
+
+    private static int configCheck(String[] args, Map<String, String> properties, Function<String, String> sources,
+            Supplier<InstanceManager> instances, PrintStream out) {
+        List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties, sources);
         if (!settingsProblems.isEmpty()) {
             return ConfigCheck.report(settingsProblems, out);
         }
-        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out);
+        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out, sources);
     }
 
     /** Initialises Minestom's registries, which the world loader needs, and returns the instance manager. */

@@ -19,8 +19,8 @@ play does not stop it. The catalogue-wide checks (JSON, schema, references) stil
 
 The same check runs without Gradle as `java -Dvoyager.config.check=true -jar <server jar>`, with
 `-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH`, `-DVOYAGER_CUP`, `-DVOYAGER_MIN_PLAYERS`, `-DVOYAGER_LOBBY_WORLD`,
-`-DVOYAGER_LOBBY_SPAWN` and `-DVOYAGER_MAX_PLAYERS` as needed. The lobby settings are read from system properties, as the
-minimum is.
+`-DVOYAGER_LOBBY_SPAWN` and `-DVOYAGER_MAX_PLAYERS` as needed. Each key also reads its environment variable of the same name,
+and the report names the source of each problem (see `docs/reference/configuration.md`).
 
 A normal boot runs the same check before it builds the object graph, and refuses with the same report.
 `-PskipCatalogCheck` skips only the Gradle dependency. It does not skip the server's own check.

@@ -1,0 +1,3 @@
+ERROR system property VOYAGER_LOBBY_WORLD VOYAGER_LOBBY_WORLD: VOYAGER_LOBBY_WORLD is not set, but VOYAGER_LOBBY_SPAWN is: a lobby spawn needs the lobby world it stands in
+config check failed: 1 error(s)
+exit=1

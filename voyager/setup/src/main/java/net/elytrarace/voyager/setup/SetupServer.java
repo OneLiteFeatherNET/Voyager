@@ -7,6 +7,7 @@ import net.elytrarace.voyager.platform.lifecycle.StopCommand;
 import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
+import net.elytrarace.voyager.platform.config.ConfigLoader;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
 import net.hollowcube.minestom.extensions.ExtensionBootstrap;
@@ -116,7 +117,7 @@ public final class SetupServer {
         // Velocity forwarding is fixed at init, so it is read first; a blank secret refuses to start (ADR-0025).
         Auth auth;
         try {
-            ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromEnvironment();
+            ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromLoader(ConfigLoader.fromJvm());
             auth = VelocityAuth.of(forwarding);
             if (auth == null) {
                 LOGGER.warn("No Velocity secret is set ({} or -D{}): the setup server runs in offline mode and player UUIDs "
