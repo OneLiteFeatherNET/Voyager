@@ -18,6 +18,7 @@ class CloudNetBoundaryTest {
 
     private static final String CLOUDNET = "eu.cloudnetservice..";
     private static final String BRIDGE = "net.elytrarace.voyager.cloudnet.bridge..";
+    private static final String HANDOFF = "net.elytrarace.voyager.api.handoff..";
 
     @ArchTest
     static final ArchRule cloudNetIsConfinedToBridge =
@@ -36,16 +37,18 @@ class CloudNetBoundaryTest {
                     .allowEmptyShould(false);
 
     /**
-     * The bridge is loaded beside the node's CloudNet and knows nothing of Voyager: it reads the pointer that a player
-     * carries, and every Voyager type it could name would be a second copy in the extension's class loader. Its
-     * dependencies are the JDK, Minestom, Adventure, CloudNet and the annotations, and its own package.
+     * The bridge is loaded beside the node's CloudNet and names almost no Voyager type: every Voyager type it could name
+     * would be a second copy in the extension's class loader. Its dependencies are the JDK, Minestom, Adventure, CloudNet,
+     * the annotations and its own package, and the one Voyager package the hub handoff needs, {@code api.handoff}
+     * (ADR-0026, amended 2026-10-13; ADR-0033). The handoff port is the only Voyager type the bridge may name.
      */
     @ArchTest
     static final ArchRule bridgeDependsOnlyOnJdkAndLibraries =
             classes().that().resideInAPackage(BRIDGE)
                     .should().onlyDependOnClassesThat().resideInAnyPackage(
-                            "java..", "net.minestom..", "net.kyori..", CLOUDNET, "org.jetbrains..", BRIDGE)
-                    .because("voyager-cloudnet-bridge loads in CloudNet's extension class loader and must not name a Voyager "
-                            + "type; it answers through the pointer that the platform installs on each player")
+                            "java..", "net.minestom..", "net.kyori..", CLOUDNET, "org.jetbrains..", BRIDGE, HANDOFF)
+                    .because("voyager-cloudnet-bridge loads in CloudNet's extension class loader and may name only the hub "
+                            + "handoff port of voyager-api among Voyager types; it answers permission questions through the "
+                            + "pointer that the platform installs on each player")
                     .allowEmptyShould(false);
 }
