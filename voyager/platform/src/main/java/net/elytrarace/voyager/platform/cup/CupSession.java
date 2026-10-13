@@ -692,7 +692,11 @@ public final class CupSession implements RacePhaseListener {
             RaceRun advanced = runs.advance(competitor.id(), map, clock, competitor.position(), competitor.gliding(),
                     false);
             if (!before.get().finished() && advanced.finished()) {
-                computerRacers.finished(competitor.id(), advanced.timeOnCourse(timings.race()));
+                Duration time = advanced.timeOnCourse(timings.race());
+                ComStandings.Standing standing = computerRacers.finished(competitor.id(), time);
+                if (standing != null) {
+                    announcer.announceComputerFinish(standing.number(), time);
+                }
             }
         }
     }

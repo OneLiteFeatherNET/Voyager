@@ -983,6 +983,9 @@ describe
     {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:01.0",{"color":"white","text":"0"},"2","      "]}
+  Ada chat {"translate":"voyager.com.racer.finished","with":[{"translate":"voyager.com.racer.name","with":["1"]},"0:01.0"]}
+  Ada chat {"translate":"voyager.com.racer.finished","with":[{"translate":"voyager.com.racer.name","with":["2"]},"0:01.0"]}
+  Ada chat {"translate":"voyager.com.racer.finished","with":[{"translate":"voyager.com.racer.name","with":["3"]},"0:01.0"]}
 logs
 ## tick 90
 describe
@@ -2301,6 +2304,9 @@ describe
     {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.9",{"color":"white","text":"0"},"2","      "]}
+  Ada chat {"translate":"voyager.com.racer.finished","with":[{"translate":"voyager.com.racer.name","with":["1"]},"0:00.9"]}
+  Ada chat {"translate":"voyager.com.racer.finished","with":[{"translate":"voyager.com.racer.name","with":["2"]},"0:00.9"]}
+  Ada chat {"translate":"voyager.com.racer.finished","with":[{"translate":"voyager.com.racer.name","with":["3"]},"0:00.9"]}
 logs
 ## tick 182
 describe

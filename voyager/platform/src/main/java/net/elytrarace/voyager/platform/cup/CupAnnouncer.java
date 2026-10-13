@@ -102,6 +102,16 @@ public final class CupAnnouncer {
     }
 
     /**
+     * A computer racer's finish of a map, to every human racer: one line, and none for the rings it passed on the way.
+     *
+     * @param number the computer racer's number, counted from one
+     * @param time the time it finished the map in
+     */
+    public void announceComputerFinish(int number, Duration time) {
+        broadcast(Messages.computerRacerFinished(number, time));
+    }
+
+    /**
      * The subtitle under a finisher's medal: the seconds to save for the next better medal, or nothing when no better
      * medal is reachable. The medal boundaries are the default brackets, the same ones {@code MapScorer} classifies with.
      */
