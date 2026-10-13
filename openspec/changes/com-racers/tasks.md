@@ -62,11 +62,11 @@ Effort for this group: medium (Haiku). The body is the primary PLAYER entity (D2
 
 Effort for this group: low for wiring and the check; the settings tests are medium (Haiku).
 
-- [ ] 5.1 Red: `ServerSettingsComTest` names the behaviours "an absent count is zero", "a count of 16 is refused and names the range", "a count that is not a number is refused and names the value", "an absent difficulty is MEDIUM", "a difficulty is case-insensitive", and "an unknown difficulty is refused and lists the three names" (`feat(race)`). Effort: medium (Haiku).
-- [ ] 5.2 Green: add `COM_COUNT_PROPERTY` and `COM_DIFFICULTY_PROPERTY` and the two components to `ServerSettings` with the existing compatibility constructors (`feat(race)`). Effort: low (Haiku).
-- [ ] 5.3 Red: `ConfigCheckComTest` names the behaviours "a boot line states the count and difficulty when enabled" and "no line is logged when the count is zero" (`feat(race)`). Effort: low (Haiku).
-- [ ] 5.4 Green: add the computer racer lines to `ConfigCheck`, keyed by setting name (`feat(race)`). Effort: low (Haiku).
-- [ ] 5.5 Red then green: `CupBeans` wiring test names the behaviours "a count of zero binds NoCompetitors" and "a count above zero binds ComField"; wire it in the composition root only (`feat(race)`). Effort: low (Haiku).
+- [x] 5.1 Red: `ServerSettingsComTest` names the behaviours "an absent count is zero", "a count of 16 is refused and names the range", "a count that is not a number is refused and names the value", "an absent difficulty is MEDIUM", "a difficulty is case-insensitive", and "an unknown difficulty is refused and lists the three names" (`feat(race)`). Effort: medium (Haiku).
+- [x] 5.2 Green: add `COM_COUNT_PROPERTY` and `COM_DIFFICULTY_PROPERTY` and the two components to `ServerSettings` with the existing compatibility constructors (`feat(race)`). Effort: low (Haiku).
+- [x] 5.3 Red: `ConfigCheckComTest` names the behaviours "a boot line states the count and difficulty when enabled" and "no line is logged when the count is zero" (`feat(race)`). Effort: low (Haiku).
+- [x] 5.4 Green: add the computer racer lines to `ConfigCheck`, keyed by setting name (`feat(race)`). Effort: low (Haiku).
+- [x] 5.5 Red then green: `CupBeans` wiring test names the behaviours "a count of zero binds NoCompetitors" and "a count above zero binds ComField"; wire it in the composition root only (`feat(race)`). Effort: low (Haiku).
 
 ## 6. fitness: the boundary rules (voyager-fitness)
 
