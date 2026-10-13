@@ -91,7 +91,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
 
 ## 5. Documentation and decision
 
-- [ ] 5.1 `docs(race)`: rewrite `docs/reference/course-reset.md`: the target table (line ~30) names the checkpoint or the
+- [x] 5.1 `docs(race)`: rewrite `docs/reference/course-reset.md`: the target table (line ~30) names the checkpoint or the
   spawn; the definition of a landing (line ~13) and the taking-off paragraph (line ~23) name the grace and the reset glide;
   the "not implemented" list (line ~56) drops the minimum air time and the cooldown, which now exist.
 - [ ] 5.2 `docs(race)`: `docs/reference/map-and-cup-files.md` notes that `CHECKPOINT` is the reset target and that a map
