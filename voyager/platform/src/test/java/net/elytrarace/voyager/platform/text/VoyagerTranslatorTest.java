@@ -184,9 +184,9 @@ class VoyagerTranslatorTest {
      */
     @Test
     void aBundleThatIsNotOnTheClasspathIsARefusalNamingWhatWasLookedFor() {
-        assertThat(new MissingMessageBundleException(VoyagerTranslator.BUNDLE_RESOURCE))
+        assertThat(new MissingMessageBundleException("/voyager_en_US.properties"))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining(VoyagerTranslator.BUNDLE_RESOURCE);
+                .hasMessageContaining("/voyager_en_US.properties");
     }
 
     @Test
@@ -206,5 +206,28 @@ class VoyagerTranslatorTest {
     @Test
     void reportsHowManyMessagesItHolds() {
         assertThat(VoyagerTranslator.of(Map.of("a", "1", "b", "2")).size()).isEqualTo(2);
+    }
+
+    @Test
+    void aGermanPlayerGetsTheGermanRenderingOfAKey() {
+        VoyagerTranslator translator = VoyagerTranslator.ofLocales(Map.of(
+                "en_US", Map.of("greeting", "Hello <arg:0>"),
+                "de_DE", Map.of("greeting", "Hallo <arg:0>")));
+
+        Component rendered = translator.translate(
+                (TranslatableComponent) Component.translatable("greeting", Component.text("Bob")), Locale.GERMANY);
+
+        assertThat(rendered).isNotNull();
+        assertThat(PlainTextComponentSerializer.plainText().serialize(rendered)).isEqualTo("Hallo Bob");
+    }
+
+    @Test
+    void aGermanValueThatDropsAnArgumentIsRefusedAtLoad() {
+        assertThatThrownBy(() -> VoyagerTranslator.ofLocales(Map.of(
+                "en_US", Map.of("greeting", "Hello <arg:0>, you are <arg:1>"),
+                "de_DE", Map.of("greeting", "Hallo <arg:0>"))))
+                .isInstanceOf(MalformedMessageBundleException.class)
+                .hasMessageContaining("greeting")
+                .hasMessageContaining("de_DE");
     }
 }

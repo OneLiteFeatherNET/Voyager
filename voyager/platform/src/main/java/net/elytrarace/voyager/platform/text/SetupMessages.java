@@ -6,12 +6,12 @@ import org.jetbrains.annotations.Contract;
 /**
  * Every sentence the setup server says to a builder, as a translation key with its arguments bound. The keys live in
  * {@code voyager_setup_en_US.properties}, shipped by voyager-setup and loaded with
- * {@link VoyagerTranslator#fromClasspath(String)}.
+ * {@link VoyagerTranslator#fromClasspath(String)}, which reads every locale of the bundle.
  */
 public abstract class SetupMessages {
 
-    /** The bundle the setup server loads. */
-    public static final String BUNDLE_RESOURCE = "/voyager_setup_en_US.properties";
+    /** The base name of the bundle the setup server loads. */
+    public static final String BUNDLE = "voyager_setup";
 
     private static final String ID_INVALID = "voyager.setup.id.invalid";
     private static final String MAP_CREATED = "voyager.setup.map.created";

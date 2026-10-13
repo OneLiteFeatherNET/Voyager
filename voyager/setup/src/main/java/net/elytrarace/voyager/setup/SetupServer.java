@@ -22,6 +22,7 @@ import net.elytrarace.voyager.setup.adapter.TerrainGuard;
 import net.elytrarace.voyager.setup.adapter.WandListener;
 import net.elytrarace.voyager.setup.config.SetupSettings;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.adventure.MinestomAdventure;
 import net.minestom.server.ServerFlag;
 
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The composition root of the setup server, the second {@code main} of the rebuild after voyager-server.
@@ -97,7 +99,12 @@ public final class SetupServer {
             return;
         }
         try {
-            VoyagerTranslator.fromClasspath(SetupMessages.BUNDLE_RESOURCE).install();
+            VoyagerTranslator translations = VoyagerTranslator.fromClasspath(SetupMessages.BUNDLE);
+            translations.install();
+            translations.untranslated().forEach((tag, keys) -> keys.forEach(key -> LOGGER.warn(
+                    "Message {} has no {} line, so players in that locale are shown English", key, tag)));
+            // A player whose settings have not arrived yet is shown English, not the JVM default locale.
+            MinestomAdventure.setDefaultLocale(Locale.US);
         } catch (RuntimeException exception) {
             LOGGER.error("Setup server refused to start: {}", exception.getMessage());
             System.exit(1);

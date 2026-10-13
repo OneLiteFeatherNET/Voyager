@@ -41,7 +41,7 @@ class MessageBundleTest {
 
     @BeforeAll
     static void installTheShippedBundle() {
-        translator = VoyagerTranslator.fromClasspath();
+        translator = VoyagerTranslator.fromClasspath(VoyagerTranslator.BUNDLE);
         translator.install();
     }
 

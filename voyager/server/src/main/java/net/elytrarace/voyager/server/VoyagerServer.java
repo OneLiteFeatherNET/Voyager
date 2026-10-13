@@ -29,6 +29,7 @@ import net.elytrarace.voyager.platform.flight.Racers;
 import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.adventure.MinestomAdventure;
 import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.GlobalEventHandler;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -158,14 +160,19 @@ public final class VoyagerServer {
 
         VoyagerTranslator translations;
         try {
-            translations = VoyagerTranslator.fromClasspath();
+            translations = VoyagerTranslator.fromClasspath(VoyagerTranslator.BUNDLE);
             translations.install();
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start: {}", exception.getMessage());
             System.exit(1);
             return;
         }
-        LOGGER.info("Loaded {} message(s) from {}", translations.size(), VoyagerTranslator.BUNDLE_RESOURCE);
+        LOGGER.info("Loaded {} message(s) in {} from {}", translations.size(), translations.tags(), VoyagerTranslator.BUNDLE);
+        translations.untranslated().forEach((tag, keys) -> keys.forEach(key -> LOGGER.warn(
+                "Message {} has no {} line, so players in that locale are shown English", key, tag)));
+        // A player whose settings have not arrived yet gets the Minestom default, which is the JVM default. On a German
+        // host that would be German for a player who has not said so; English is the answer the fallback chain gives.
+        MinestomAdventure.setDefaultLocale(Locale.US);
 
         // Velocity forwarding is decided before Minestom starts, because the auth is fixed at init. A blank secret
         // refuses to start rather than running offline; no secret runs offline with a WARN (ADR-0025).

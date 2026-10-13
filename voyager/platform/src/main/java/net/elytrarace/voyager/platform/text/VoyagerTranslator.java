@@ -21,18 +21,18 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 /**
- * The rebuild's message bundle, as an Adventure {@link Translator}: keys in, MiniMessage out.
+ * The rebuild's message bundles, as an Adventure {@link Translator}: keys in, MiniMessage out, in the player's locale.
  *
  * <h2>What it is for</h2>
  *
@@ -51,27 +51,27 @@ import java.util.regex.Pattern;
  * first is the wrong format — {@code {0}} is MessageFormat's placeholder syntax and this project
  * writes {@code <arg:0>}, which is MiniMessage's — and the second is a component that was parsed
  * before its arguments existed, so a line could never interleave an argument with colour. So the
- * store here is the raw MiniMessage source per key, parsed at render time with the arguments bound.
- * That is the same shape the tree being replaced arrived at, for the same reason, and it is the
- * reason {@link #translate(String, Locale)} returns {@code null}: there is no MessageFormat to give.
+ * store here is the raw MiniMessage source per key and locale, parsed at render time with the arguments bound.
  *
  * <h2>{@code {0}} is refused at load, not discovered in a screenshot</h2>
  *
  * <p>Because the MessageFormat path is disabled, a value written with {@code {0}} does not fail — it
  * renders the four characters {@code {0}} into the middle of a sentence, in production, forever.
- * {@link #of} rejects such a value with the key and the value named. That check is the reason this
- * class validates at all.
+ * {@link MessageCatalogue} rejects such a value, in every locale, with the key and the value named.
  *
- * <h2>One language</h2>
+ * <h2>Locales</h2>
  *
- * <p>English, and every locale gets it. A second language is a second file and a locale-keyed map;
- * nothing here has to change shape for that, and until somebody writes one, pretending to choose
- * between bundles would be a mechanism with no second case to prove it works.
+ * <p>Each shipped bundle is one file per locale, read as UTF-8. The locale of the player picks the
+ * bundle along a {@link LocaleChain}; a key missing from that bundle is shown in English. A translation
+ * must keep the arguments and palette tags of its English line, and the catalogue refuses it otherwise.
  */
 public final class VoyagerTranslator implements Translator {
 
-    /** The bundle on the classpath, shipped by {@code voyager-server}. */
-    public static final String BUNDLE_RESOURCE = "/voyager_en_US.properties";
+    /** The base name of the game server's bundles: {@code voyager_en_US.properties} and so on. */
+    public static final String BUNDLE = "voyager";
+
+    /** Every locale tag a server may ship a bundle for. {@link LocaleChain#FALLBACK} is required. */
+    public static final List<String> SHIPPED_TAGS = List.of(LocaleChain.FALLBACK, "de_DE");
 
     /**
      * The translator's own name, namespaced {@code voyager} rather than {@code elytrarace}.
@@ -82,64 +82,70 @@ public final class VoyagerTranslator implements Translator {
      */
     private static final Key NAME = Key.key("voyager", "messages");
 
-    /** MessageFormat's placeholder syntax, which must never appear in a value. */
-    private static final Pattern MESSAGE_FORMAT_PLACEHOLDER = Pattern.compile("\\{\\d+}");
+    private final MessageCatalogue catalogue;
 
-    private final Map<String, String> sources;
-
-    private VoyagerTranslator(Map<String, String> sources) {
-        this.sources = sources;
+    private VoyagerTranslator(MessageCatalogue catalogue) {
+        this.catalogue = catalogue;
     }
 
     /**
-     * A translator over the given key-to-MiniMessage table.
+     * A translator over one English key-to-MiniMessage table, for tests and for a single-language server.
      *
      * @throws MalformedMessageBundleException if a value uses {@code {0}} instead of {@code <arg:0>}
      */
     public static VoyagerTranslator of(Map<String, String> sources) {
-        Map<String, String> copy = new HashMap<>(sources);
-        copy.forEach((key, value) -> {
-            if (MESSAGE_FORMAT_PLACEHOLDER.matcher(value).find()) {
-                throw MalformedMessageBundleException.messageFormatPlaceholder(key, value);
+        return ofLocales(Map.of(LocaleChain.FALLBACK, sources));
+    }
+
+    /**
+     * A translator over several locales' tables, validated by {@link MessageCatalogue#of(Map)}.
+     *
+     * @param tables locale tag to key to MiniMessage source
+     * @throws MalformedMessageBundleException as {@link MessageCatalogue#of(Map)} does
+     */
+    public static VoyagerTranslator ofLocales(Map<String, Map<String, String>> tables) {
+        return new VoyagerTranslator(MessageCatalogue.of(tables));
+    }
+
+    /**
+     * The shipped bundles of one product, read off the classpath: {@code /<bundle>_<tag>.properties} for every tag in
+     * {@link #SHIPPED_TAGS} that is present. The English file is required; a missing other locale is not an error
+     * here, because the build's parity test already refuses it and the fallback still answers.
+     *
+     * <p>Read one file per tag by name rather than through {@code ResourceBundle.getBundle}: that call resolves a
+     * candidate chain against the JVM's default locale, so which file a server loads would depend on the machine it was
+     * started on.
+     *
+     * @param bundle the base name, such as {@link #BUNDLE} or {@code voyager_setup}
+     * @throws MissingMessageBundleException if the English bundle is not on the classpath
+     * @throws MalformedMessageBundleException if a bundle cannot be read, or a value is refused
+     */
+    public static VoyagerTranslator fromClasspath(String bundle) {
+        Map<String, Map<String, String>> tables = new LinkedHashMap<>();
+        for (String tag : SHIPPED_TAGS) {
+            String resource = "/%s_%s.properties".formatted(bundle, tag);
+            Map<String, String> table = readTable(resource);
+            if (table == null) {
+                if (tag.equals(LocaleChain.FALLBACK)) {
+                    throw new MissingMessageBundleException(resource);
+                }
+                continue;
             }
-        });
-        return new VoyagerTranslator(Map.copyOf(copy));
+            tables.put(tag, table);
+        }
+        return ofLocales(tables);
     }
 
-    /**
-     * The shipped bundle, read off the classpath.
-     *
-     * <p>Read as one resource rather than through {@code ResourceBundle.getBundle}: that call
-     * resolves a candidate chain against the JVM's default locale and throws
-     * {@code MissingResourceException} for a locale the chain does not reach, so which file a server
-     * loads would depend on the machine it was started on. One file, named once, loads the same on
-     * every machine.
-     *
-     * @throws MissingMessageBundleException if the bundle is not on the classpath
-     * @throws MalformedMessageBundleException if it cannot be read, or a value uses {@code {0}}
-     */
-    public static VoyagerTranslator fromClasspath() {
-        return fromClasspath(BUNDLE_RESOURCE);
-    }
-
-    /**
-     * Reads one bundle from the classpath by its resource path, so that a server with its own messages, such as the
-     * setup server, loads its own file. Named once, as {@link #fromClasspath()} is.
-     *
-     * @param resource the resource path, starting with {@code /}
-     * @throws MissingMessageBundleException if the bundle is not on the classpath
-     * @throws MalformedMessageBundleException if it cannot be read, or a value uses {@code {0}}
-     */
-    public static VoyagerTranslator fromClasspath(String resource) {
-        try (InputStream bundle = VoyagerTranslator.class.getResourceAsStream(resource)) {
-            if (bundle == null) {
-                throw new MissingMessageBundleException(resource);
+    private static @Nullable Map<String, String> readTable(String resource) {
+        try (InputStream stream = VoyagerTranslator.class.getResourceAsStream(resource)) {
+            if (stream == null) {
+                return null;
             }
             Properties properties = new Properties();
-            properties.load(new java.io.InputStreamReader(bundle, StandardCharsets.UTF_8));
-            Map<String, String> sources = new LinkedHashMap<>();
-            properties.forEach((key, value) -> sources.put(String.valueOf(key), String.valueOf(value)));
-            return of(sources);
+            properties.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
+            Map<String, String> table = new LinkedHashMap<>();
+            properties.forEach((key, value) -> table.put(String.valueOf(key), String.valueOf(value)));
+            return table;
         } catch (IOException exception) {
             throw MalformedMessageBundleException.unreadable(resource, exception);
         }
@@ -150,9 +156,19 @@ public final class VoyagerTranslator implements Translator {
         GlobalTranslator.translator().addSource(this);
     }
 
-    /** How many keys the bundle holds. For a boot log line, and for a test that the file was read at all. */
+    /** How many keys the English bundle holds. For a boot log line, and for a test that the file was read at all. */
     public int size() {
-        return sources.size();
+        return catalogue.size();
+    }
+
+    /** The locale tags this translator holds, sorted. */
+    public Set<String> tags() {
+        return catalogue.tags();
+    }
+
+    /** The English keys each other locale does not translate, by locale tag, for one warning per key at boot. */
+    public Map<String, Set<String>> untranslated() {
+        return catalogue.untranslated();
     }
 
     @Override
@@ -162,11 +178,11 @@ public final class VoyagerTranslator implements Translator {
 
     @Override
     public TriState hasAnyTranslations() {
-        return sources.isEmpty() ? TriState.FALSE : TriState.TRUE;
+        return catalogue.size() == 0 ? TriState.FALSE : TriState.TRUE;
     }
 
     /**
-     * Whether this bundle holds {@code key}, for any locale.
+     * Whether a bundle along the locale's chain holds {@code key}.
      *
      * <p>Overridden rather than inherited, and it is load-bearing: Adventure's renderer asks this
      * <em>before</em> it asks for a component, and the inherited default answers by rendering the key
@@ -175,7 +191,7 @@ public final class VoyagerTranslator implements Translator {
      */
     @Override
     public boolean canTranslate(String key, Locale locale) {
-        return sources.containsKey(key);
+        return catalogue.contains(key, locale);
     }
 
     /**
@@ -189,13 +205,13 @@ public final class VoyagerTranslator implements Translator {
 
     @Override
     public @Nullable Component translate(TranslatableComponent component, Locale locale) {
-        String source = sources.get(component.key());
-        if (source == null) {
+        MessageCatalogue.Answer answer = catalogue.answer(component.key(), locale);
+        if (answer == null) {
             return null;
         }
         List<TranslationArgument> arguments = component.arguments();
         Component rendered = MiniMessage.miniMessage().deserialize(
-                source,
+                answer.source(),
                 Palette.tagResolver(),
                 new ArgumentTag(arguments));
         return component.children().isEmpty() ? rendered : rendered.children(component.children());
