@@ -3,6 +3,8 @@ package net.elytrarace.voyager.platform.text;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Contract;
 
+import java.util.List;
+
 /**
  * Every sentence the setup server says to a builder, as a translation key with its arguments bound. The keys live in
  * {@code voyager_setup_en_US.properties}, shipped by voyager-setup and loaded with
@@ -20,7 +22,8 @@ public abstract class SetupMessages {
     private static final String MAP_NONE = "voyager.setup.map.none";
     private static final String REFUSED = "voyager.setup.refused";
     private static final String PLAYER_ONLY = "voyager.setup.player.only";
-    private static final String WAND_GIVEN = "voyager.setup.wand.given";
+    private static final String WAND_GIVEN_PLACE = "voyager.setup.wand.given.place";
+    private static final String WAND_GIVEN_REMOVE = "voyager.setup.wand.given.remove";
     private static final String SPAWN_SAVED = "voyager.setup.spawn.saved";
     private static final String SPAWN_ELSEWHERE = "voyager.setup.spawn.elsewhere";
     private static final String SAVE_FAILED = "voyager.setup.save.failed";
@@ -73,9 +76,15 @@ public abstract class SetupMessages {
         return Component.translatable(PLAYER_ONLY);
     }
 
-    @Contract(pure = true)
-    public static Component wandGiven() {
-        return Component.translatable(WAND_GIVEN);
+    /**
+     * The setup wand instruction: two short chat lines, in the order a builder reads them. The placing line comes first,
+     * because the wand is used to place before it is used to remove.
+     */
+    @Contract(pure = true, value = "-> new")
+    public static List<Component> wandInstructions() {
+        return List.of(
+                Component.translatable(WAND_GIVEN_PLACE),
+                Component.translatable(WAND_GIVEN_REMOVE));
     }
 
     @Contract(pure = true, value = "_, _, _ -> new")

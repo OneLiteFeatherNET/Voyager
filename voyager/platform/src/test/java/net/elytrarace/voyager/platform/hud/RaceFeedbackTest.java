@@ -145,10 +145,10 @@ class RaceFeedbackTest {
     }
 
     @Test
-    void theResetSoundIsALowNoteOnTheMasterChannelThatIsNotTheRingBell() {
+    void theResetSoundIsAFallingLowNoteOnTheMasterChannelThatIsNotTheRingBell() {
         Sound reset = RaceFeedback.resetSound();
 
-        assertThat(reset.name()).isEqualTo(Key.key("block.note_block.bass"));
+        assertThat(reset.name()).isEqualTo(Key.key("block.note_block.chime"));
         assertThat(reset.source()).isEqualTo(Sound.Source.MASTER);
         assertThat(reset.pitch()).isLessThan(RaceFeedback.pitchFor(0, 35));
         assertThat(reset).isNotEqualTo(RaceFeedback.ringSound(0, 35));

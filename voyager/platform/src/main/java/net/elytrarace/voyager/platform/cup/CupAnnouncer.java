@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.MedalBrackets;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.hud.RaceFeedback;
@@ -11,6 +12,7 @@ import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.MapScore;
+import net.elytrarace.voyager.race.scoring.MedalCountdown;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 
@@ -80,14 +82,24 @@ public final class CupAnnouncer {
         int ringCount = map.rings().size();
         if (score.medal() == MedalTier.DNF) {
             racer.sendMessage(Messages.mapResultDnf(map.name(), ringsPassed, ringCount, score.total()));
-            RaceFeedback.mapResult(racer, MedalTier.DNF,
-                    Messages.mapResultSubtitleDnf(ringsPassed, ringCount, score.total()));
+            RaceFeedback.mapResult(racer, MedalTier.DNF, Messages.mapResultSubtitleDnf(ringsPassed, ringCount));
             return;
         }
+        // The breakdown is in chat only (UX-1): the title and the subtitle carry the medal and the next goal.
         racer.sendMessage(Messages.mapResult(map.name(), score.ringPoints(), score.medalPoints(),
                 score.medal(), score.placementBonus(), score.total()));
-        RaceFeedback.mapResult(racer, score.medal(), Messages.mapResultSubtitle(
-                score.completionTime().orElse(clockLengthOf(map)), score.total()));
+        RaceFeedback.mapResult(racer, score.medal(), nextGoalSubtitle(map, score));
+    }
+
+    /**
+     * The subtitle under a finisher's medal: the seconds to save for the next better medal, or nothing when no better
+     * medal is reachable. The medal boundaries are the default brackets, the same ones {@code MapScorer} classifies with.
+     */
+    private static Component nextGoalSubtitle(MapDefinition map, MapScore score) {
+        Duration completion = score.completionTime().orElse(clockLengthOf(map));
+        return MedalCountdown.nextGoal(score.medal(), completion, map.referenceTime(), MedalBrackets.DEFAULT)
+                .map(goal -> Messages.mapResultNextGoal(goal.saving(), goal.tier()))
+                .orElse(Component.empty());
     }
 
     /**

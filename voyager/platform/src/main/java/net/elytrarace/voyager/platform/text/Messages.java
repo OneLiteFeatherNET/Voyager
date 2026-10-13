@@ -31,6 +31,9 @@ import java.util.OptionalInt;
  * medal word, which is coloured by which medal it is. Those arrive as coloured components, built
  * here from the same palette. A translator can still translate every one of these lines; none of
  * them can recolour anything.
+ *
+ * <p>The colour, wording and channel rules that these lines follow are in
+ * {@code docs/reference/message-style-guide.md}.
  */
 @ApiStatus.Internal
 public abstract class Messages {
@@ -49,6 +52,8 @@ public abstract class Messages {
     private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
+    private static final String LOBBY_PLAYERS_JOINED = "voyager.lobby.player.joined.many";
+    private static final String RING_MISSED = "voyager.race.ring.missed";
     private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting.cup";
     private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown.cup";
     private static final String HANDOFF_DISCONNECT = "voyager.handoff.disconnect";
@@ -60,7 +65,7 @@ public abstract class Messages {
     private static final long MILLIS_PER_SECOND = 1_000L;
     private static final String MAP_RESULT_MEDAL = "voyager.result.map.medal";
     private static final String MAP_RESULT_DNF = "voyager.result.map.dnf";
-    private static final String MAP_RESULT_SUBTITLE = "voyager.result.map.subtitle";
+    private static final String MAP_RESULT_SUBTITLE_NEXT = "voyager.result.map.subtitle.next";
     private static final String MAP_RESULT_SUBTITLE_DNF = "voyager.result.map.subtitle.dnf";
     private static final String CUP_TITLE = "voyager.result.cup.title";
     private static final String CUP_SUBTITLE = "voyager.result.cup.subtitle";
@@ -231,6 +236,18 @@ public abstract class Messages {
     }
 
     /**
+     * Sent to every online racer for a burst of joins told as one line: how many joined in the window, and how many
+     * are online now against the maximum. Used for two or more joins; a single join keeps {@link #playerJoined}.
+     *
+     * @param joined how many racers joined in the window, two or more
+     */
+    @Contract(pure = true)
+    public static Component playersJoined(int joined, int online, int maximum) {
+        return Component.translatable(LOBBY_PLAYERS_JOINED,
+                Component.text(joined), Component.text(online), Component.text(maximum));
+    }
+
+    /**
      * The lobby boss bar while the minimum is not met: the cup a racer waits for, and how many racers are online and needed.
      *
      * @param cup    the cup's name, as the cup shown in the lobby names it
@@ -324,21 +341,35 @@ public abstract class Messages {
                 Component.text(points));
     }
 
-    /** The subtitle under a finisher's medal: the time, and what the map was worth. */
+    /**
+     * The subtitle under a finisher's medal: the next goal, in seconds to save, and the medal it buys.
+     *
+     * @param saving the time to save for {@code next}, one decimal place with a dot
+     * @param next the medal the racer would earn
+     */
     @Contract(pure = true)
-    public static Component mapResultSubtitle(Duration time, int points) {
-        return Component.translatable(MAP_RESULT_SUBTITLE,
-                Component.text(RaceTimeFormat.tenths(time)),
-                Component.text(points));
+    public static Component mapResultNextGoal(Duration saving, MedalTier next) {
+        return Component.translatable(MAP_RESULT_SUBTITLE_NEXT,
+                Component.text(RaceTimeFormat.seconds(saving)),
+                medal(next));
     }
 
-    /** The subtitle under a DNF: how far they got, and what that was worth. */
+    /** The subtitle under a DNF: how many of the rings were reached. No points, which are in chat. */
     @Contract(pure = true)
-    public static Component mapResultSubtitleDnf(int ringsPassed, int ringCount, int points) {
+    public static Component mapResultSubtitleDnf(int ringsPassed, int ringCount) {
         return Component.translatable(MAP_RESULT_SUBTITLE_DNF,
                 Component.text(ringsPassed),
-                Component.text(ringCount),
-                Component.text(points));
+                Component.text(ringCount));
+    }
+
+    /**
+     * The action bar line for a ring that was skipped: the ring's number, counted from one.
+     *
+     * @param ringNumber the missed ring, from one
+     */
+    @Contract(pure = true)
+    public static Component ringMissed(int ringNumber) {
+        return Component.translatable(RING_MISSED, Component.text(ringNumber));
     }
 
     /** The title shown to everybody when the cup's last map has been scored. */

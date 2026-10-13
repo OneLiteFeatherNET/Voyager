@@ -86,10 +86,20 @@ import java.util.Optional;
  *     only after enough of them, so a racer who has only just left the ground is not one.
  * @param resetCooldownTicks the race ticks left before a landing can count again. A reset sets it, each
  *     race tick counts it down, and it stops at zero.
+ * @param justMissed the ring skipped on the tick that produced this run, or {@code null} if that tick
+ *     skipped none. Like {@link #justPassed()} it describes that one tick, and a ring is reported once per run.
  */
 public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integer> passedOnGameTick,
         Optional<RaceClock> finishedAt, @Nullable Ring justPassed, boolean gliding, int airborneTicks,
-        int resetCooldownTicks) {
+        int resetCooldownTicks, @Nullable Ring justMissed) {
+
+    /** A run from a tick that skipped no ring: the state of a run before the missed-ring rule was on record. */
+    public RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integer> passedOnGameTick,
+            Optional<RaceClock> finishedAt, @Nullable Ring justPassed, boolean gliding, int airborneTicks,
+            int resetCooldownTicks) {
+        this(progress, previous, passedOnGameTick, finishedAt, justPassed, gliding, airborneTicks,
+                resetCooldownTicks, null);
+    }
 
     /** The first movement tick of a {@code GAME} phase is tick one; see {@link RaceClock}. */
     private static final int FIRST_GAME_TICK = 1;
@@ -164,7 +174,8 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
         ProgressUpdate update = ProgressTracker.advance(progress, map.rings(), previous, position, gliding);
         Ring passed = update.passed();
         if (passed == null) {
-            return new RaceRun(progress, position, passedOnGameTick, finishedAt, null, gliding, airborne, cooldown);
+            return new RaceRun(update.progress(), position, passedOnGameTick, finishedAt, null, gliding, airborne,
+                    cooldown, update.missed());
         }
 
         List<Integer> ticks = new ArrayList<>(passedOnGameTick);
@@ -172,7 +183,7 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
         Optional<RaceClock> finished = update.progress().passedCount() == map.rings().size()
                 ? Optional.of(clock)
                 : finishedAt;
-        return new RaceRun(update.progress(), position, ticks, finished, passed, gliding, airborne, cooldown);
+        return new RaceRun(update.progress(), position, ticks, finished, passed, gliding, airborne, cooldown, null);
     }
 
     /** Whether every ring of the map has been passed. */

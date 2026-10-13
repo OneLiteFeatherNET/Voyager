@@ -47,12 +47,37 @@ class ProgressTrackerTest {
     }
 
     @Test
-    void ignoresTheSecondRingWhileTheFirstIsStillOpen() {
-        // Flying clean through ring 1's plane changes nothing: only ring 0 is under test.
+    void passingTheSecondRingWhileTheFirstIsStillOpenCountsNothingAndReportsTheFirstAsMissed() {
+        // Flying through ring 1 while ring 0 is next counts nothing, and it is the skip the missed-ring
+        // cue reports: ring 0 is the one the racer missed.
         ProgressUpdate update = flyThrough(START, 199.0, 201.0);
 
         assertThat(update.passed()).isNull();
-        assertThat(update.progress()).isEqualTo(START);
+        assertThat(update.missed()).isEqualTo(FIRST);
+        assertThat(update.progress().passedCount()).isZero();
+    }
+
+    @Test
+    void aNormalRunReportsNoMissedRing() {
+        ProgressUpdate first = flyThrough(START, 99.0, 101.0);
+        ProgressUpdate second = flyThrough(first.progress(), 199.0, 201.0);
+        ProgressUpdate third = flyThrough(second.progress(), 299.0, 301.0);
+
+        assertThat(first.missed()).isNull();
+        assertThat(second.missed()).isNull();
+        assertThat(third.missed()).isNull();
+    }
+
+    /** A skipped ring is reported on the first crossing only, however often the racer flies back over ring 1. */
+    @Test
+    void aMissedRingIsReportedOnceAndNotAgainOnTheNextCrossing() {
+        ProgressUpdate first = flyThrough(START, 199.0, 201.0);
+        ProgressUpdate back = flyThrough(first.progress(), 201.0, 199.0);
+        ProgressUpdate again = flyThrough(back.progress(), 199.0, 201.0);
+
+        assertThat(first.missed()).isEqualTo(FIRST);
+        assertThat(back.missed()).isNull();
+        assertThat(again.missed()).as("ring 0 is reported once per run").isNull();
     }
 
     @Test

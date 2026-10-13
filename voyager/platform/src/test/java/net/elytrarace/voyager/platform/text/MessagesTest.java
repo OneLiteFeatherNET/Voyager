@@ -167,12 +167,31 @@ class MessagesTest {
         assertThat(argumentsOf(result)).containsExactly("skylift", "23", "35", "230");
     }
 
+    /** The subtitle names the seconds to save and the medal they would earn, with the dot as the separator. */
     @Test
-    void theResultSubtitlesCarryTheTimeOrTheProgressAndThePoints() {
-        assertThat(argumentsOf(Messages.mapResultSubtitle(Duration.ofMillis(58_400), 420)))
-                .containsExactly("0:58.4", "420");
-        assertThat(argumentsOf(Messages.mapResultSubtitleDnf(23, 35, 230)))
-                .containsExactly("23", "35", "230");
+    void theNextGoalNamesTheSecondsToSaveAndTheMedalItBuys() {
+        Component goal = Messages.mapResultNextGoal(Duration.ofMillis(800), MedalTier.GOLD);
+
+        assertThat(translatable(goal).key()).isEqualTo("voyager.result.map.subtitle.next");
+        assertThat(argumentsOf(goal)).containsExactly("0.8", "@voyager.medal.gold");
+    }
+
+    /** A DNF's subtitle is the progress fact alone: the rings reached, and no points. */
+    @Test
+    void aDnfSubtitleNamesTheRingsReachedAndNoPoints() {
+        Component subtitle = Messages.mapResultSubtitleDnf(23, 35);
+
+        assertThat(translatable(subtitle).key()).isEqualTo("voyager.result.map.subtitle.dnf");
+        assertThat(argumentsOf(subtitle)).containsExactly("23", "35");
+    }
+
+    /** The missed-ring line names the ring by its number, which counts from one. */
+    @Test
+    void theMissedRingLineNamesTheRingAndIsAWarning() {
+        Component missed = Messages.ringMissed(5);
+
+        assertThat(translatable(missed).key()).isEqualTo("voyager.race.ring.missed");
+        assertThat(argumentsOf(missed)).containsExactly("5");
     }
 
     @Test
@@ -236,8 +255,10 @@ class MessagesTest {
                 Messages.joinedMidCup(),
                 Messages.mapResult("m", 1, 2, MedalTier.GOLD, 3, 6),
                 Messages.mapResultDnf("m", 1, 2, 3),
-                Messages.mapResultSubtitle(Duration.ZERO, 1),
-                Messages.mapResultSubtitleDnf(1, 2, 3),
+                Messages.mapResultNextGoal(Duration.ZERO, MedalTier.GOLD),
+                Messages.mapResultSubtitleDnf(1, 2),
+                Messages.ringMissed(1),
+                Messages.playersJoined(2, 3, 4),
                 Messages.cupTitle(),
                 Messages.cupSubtitle(1, 2),
                 Messages.cupHeading("c"),
