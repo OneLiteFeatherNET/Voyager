@@ -1524,6 +1524,31 @@ class CupSessionTest {
     }
 
     /**
+     * A CHECKPOINT ring leaves no effect: a gliding racer who crosses one is sent no velocity, and the simulation carries
+     * on from the velocity it had. The checkpoint is recorded, and that is all it does.
+     */
+    @Test
+    void aCheckpointRingGivesNoEffect(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, checkpointRidge());
+        fixture.runUntilRacing();
+        fixture.tickOnce();
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+        fixture.tickOnce();
+        FlightTick ringTick = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
+        fixture.tickOnce();
+        FlightTick next = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
+
+        assertThat(ringTick.after().velocity())
+                .describedAs("the racer is flying, so an effect would have a velocity to change")
+                .isNotEqualTo(Vec3.ZERO);
+        assertThat(fixture.racer.getVelocity())
+                .describedAs("no velocity was sent for the checkpoint")
+                .isEqualTo(Vec.ZERO);
+        assertVelocity(next.before().velocity(), ringTick.after().velocity(),
+                "the velocity the simulation starts the next tick from");
+    }
+
+    /**
      * A racer whose last ring is a BOOST ring finishes on it, and a finished run gets no effect. The velocity the
      * simulation starts from is the one it had, not the boosted one.
      */
