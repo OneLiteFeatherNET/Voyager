@@ -81,9 +81,15 @@ import java.util.Optional;
  * @param gliding whether the player was gliding on the tick that produced this run. A landing is the
  *     transition from gliding to standing on the ground, so the next tick needs this, not the one
  *     before it; {@code false} for a run that has played no tick
+ * @param airborneTicks the consecutive race ticks, up to and including the tick that produced this run,
+ *     on which the player was not on the ground; a tick on the ground sets it to zero. A landing counts
+ *     only after enough of them, so a racer who has only just left the ground is not one.
+ * @param resetCooldownTicks the race ticks left before a landing can count again. A reset sets it, each
+ *     race tick counts it down, and it stops at zero.
  */
 public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integer> passedOnGameTick,
-        Optional<RaceClock> finishedAt, @Nullable Ring justPassed, boolean gliding) {
+        Optional<RaceClock> finishedAt, @Nullable Ring justPassed, boolean gliding, int airborneTicks,
+        int resetCooldownTicks) {
 
     /** The first movement tick of a {@code GAME} phase is tick one; see {@link RaceClock}. */
     private static final int FIRST_GAME_TICK = 1;
@@ -97,8 +103,22 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
         this(progress, previous, passedOnGameTick, finishedAt, justPassed, false);
     }
 
+    /** A run with no airborne ticks and no reset cooldown, the state of a run that no reset has touched. */
+    public RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integer> passedOnGameTick,
+            Optional<RaceClock> finishedAt, @Nullable Ring justPassed, boolean gliding) {
+        this(progress, previous, passedOnGameTick, finishedAt, justPassed, gliding, 0, 0);
+    }
+
     public RaceRun {
         passedOnGameTick = List.copyOf(passedOnGameTick);
+        if (airborneTicks < 0) {
+            throw new IllegalArgumentException(
+                    "airborne ticks must not be negative, was %d".formatted(airborneTicks));
+        }
+        if (resetCooldownTicks < 0) {
+            throw new IllegalArgumentException(
+                    "reset cooldown ticks must not be negative, was %d".formatted(resetCooldownTicks));
+        }
         if (passedOnGameTick.size() != progress.passedCount()) {
             throw new IllegalArgumentException(
                     "a run records one tick per ring passed, but has %d ticks for %d rings"
@@ -122,24 +142,29 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
 
     /** A run that has not yet played a movement tick: no progress, no position, nothing passed. */
     public static RaceRun atStart() {
-        return new RaceRun(RingProgress.atStart(), null, List.of(), Optional.empty(), null, false);
+        return new RaceRun(RingProgress.atStart(), null, List.of(), Optional.empty(), null, false, 0, 0);
     }
 
     /**
      * Returns this run after one movement tick: the player moved to {@code position} while
-     * {@code gliding}, on the tick {@code clock} names.
+     * {@code gliding}, {@code onGround} or not, on the tick {@code clock} names.
      *
-     * <p>Pure — nothing here is mutated, and the returned run is the only result.
+     * <p>Pure — nothing here is mutated, and the returned run is the only result. The airborne count
+     * goes up by one on a tick off the ground and starts again from zero on one on it. The reset
+     * cooldown goes down by one, to a minimum of zero.
      *
      * @param map the course being flown; its rings are demanded in list order
      * @param clock the race clock, already advanced, so {@link RaceClock#gameTick()} is the tick
      *     being played
+     * @param onGround whether the player is standing on the ground on this tick
      */
-    public RaceRun advance(MapDefinition map, RaceClock clock, Vec3 position, boolean gliding) {
+    public RaceRun advance(MapDefinition map, RaceClock clock, Vec3 position, boolean gliding, boolean onGround) {
+        int airborne = onGround ? 0 : airborneTicks + 1;
+        int cooldown = Math.max(0, resetCooldownTicks - 1);
         ProgressUpdate update = ProgressTracker.advance(progress, map.rings(), previous, position, gliding);
         Ring passed = update.passed();
         if (passed == null) {
-            return new RaceRun(progress, position, passedOnGameTick, finishedAt, null, gliding);
+            return new RaceRun(progress, position, passedOnGameTick, finishedAt, null, gliding, airborne, cooldown);
         }
 
         List<Integer> ticks = new ArrayList<>(passedOnGameTick);
@@ -147,7 +172,7 @@ public record RaceRun(RingProgress progress, @Nullable Vec3 previous, List<Integ
         Optional<RaceClock> finished = update.progress().passedCount() == map.rings().size()
                 ? Optional.of(clock)
                 : finishedAt;
-        return new RaceRun(update.progress(), position, ticks, finished, passed, gliding);
+        return new RaceRun(update.progress(), position, ticks, finished, passed, gliding, airborne, cooldown);
     }
 
     /** Whether every ring of the map has been passed. */

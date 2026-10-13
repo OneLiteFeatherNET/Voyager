@@ -41,8 +41,8 @@ Race slice (pure; `RunResetTest`, `RaceRunTest`, `ProgressTrackerTest`):
   not a landing.
 - [ ] 2.8 Red: `RunResetTest.aLandingAfterTheGraceAndOutsideTheCooldownIsALanding`: 20 airborne ticks and cooldown 0 is a
   landing. Passes today; keeps the rule honest.
-- [ ] 2.9 Red: `RaceRunTest.airborneTicksCountConsecutiveTicksOffTheGround`: 3 airborne ticks give 3; a grounded tick gives 0.
-- [ ] 2.10 Red: `RaceRunTest.theResetCooldownCountsDownToZeroAndStops`: a cooldown of 2 is 1 after one tick, 0 after two, and
+- [x] 2.9 Red: `RaceRunTest.airborneTicksCountConsecutiveTicksOffTheGround`: 3 airborne ticks give 3; a grounded tick gives 0.
+- [x] 2.10 Red: `RaceRunTest.theResetCooldownCountsDownToZeroAndStops`: a cooldown of 2 is 1 after one tick, 0 after two, and
   stays 0.
 
 Platform (`RacersTest`, `RunResetterTest`):

@@ -329,7 +329,7 @@ class CupPlaythroughTest {
             // The run's previous position is null on the first tick of the phase — the tick after a
             // teleport has no segment to test. No ring sits within one tick of any spawn, so nothing
             // is lost by it.
-            RaceRun advanced = racing.run().advance(map, clock, position, gliding);
+            RaceRun advanced = racing.run().advance(map, clock, position, gliding, false);
             runs.put(racer.name(), racing.after(advanced, EFFECTS));
         }
     }
