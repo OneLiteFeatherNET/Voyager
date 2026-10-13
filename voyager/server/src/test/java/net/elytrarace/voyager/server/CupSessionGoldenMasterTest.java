@@ -22,6 +22,7 @@ import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
+import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.platform.cup.CupSession;
@@ -51,8 +52,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -388,7 +391,7 @@ class CupSessionGoldenMasterTest {
                     new LivePlayerSampler(() -> field, boosts), new FlightTracker(),
                     new MinestomCollisionSpace(blocks));
             this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, timings, STEP,
-                    () -> field);
+                    () -> field, new NoOpRaceRecorder(), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
             this.pipeline = new CupBeans().tickPipeline(session, boosts);
         }
 

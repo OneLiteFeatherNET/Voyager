@@ -18,6 +18,9 @@ import net.elytrarace.voyager.platform.hud.RaceFeedback;
 import net.elytrarace.voyager.platform.hud.RaceHud;
 import net.elytrarace.voyager.platform.hud.StartCountdown;
 import net.elytrarace.voyager.platform.render.GuideLineRenderer;
+import net.elytrarace.voyager.platform.stats.CupCompletions;
+import net.elytrarace.voyager.platform.stats.RaceCompletions;
+import net.elytrarace.voyager.platform.stats.RaceParticipant;
 import net.elytrarace.voyager.platform.stats.RacerTally;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTick;
@@ -38,6 +41,8 @@ import net.elytrarace.voyager.race.reset.ResetCause;
 import net.elytrarace.voyager.race.reset.ResetPlan;
 import net.elytrarace.voyager.race.reset.RunReset;
 import net.elytrarace.voyager.race.run.RaceRun;
+import net.elytrarace.voyager.race.scoring.MapScore;
+import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.Rockets;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
@@ -50,7 +55,10 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -119,6 +127,12 @@ public final class CupSession implements RacePhaseListener {
     /** {@link #preparedMapIndex} when no map of the current cup has been entered yet. */
     private static final int NO_MAP = -1;
 
+    /**
+     * The layout identity written with every completion until the canonical form of a map definition exists
+     * (design D7). Deliberately not a hash: a row stored under it cannot be mistaken for a real layout.
+     */
+    private static final String LAYOUT_NOT_COMPUTED = "not-computed";
+
     private final CatalogHolder catalog;
     private final MapInstances instances;
     private final MapTransition transition;
@@ -135,6 +149,18 @@ public final class CupSession implements RacePhaseListener {
 
     /** What each racer boosted, reset and glided on the map being raced. Cleared when a map is entered. */
     private final RacerTally tally;
+
+    /** Where a finished map and a finished cup are handed for storage. A failure there is logged, never raised. */
+    private final RaceRecorder recorder;
+
+    /** The clock the start of each map and each cup is read from, so a test can fix it. */
+    private final Clock clock;
+
+    /** When the current map's {@code GAME} phase began. Set by {@link #mapStarted}. */
+    private Instant mapStartedAt;
+
+    /** When the current cup started. Set by {@link #start(boolean)}. */
+    private Instant cupStartedAt;
 
     /**
      * The cup being played: the boot cup until a round starts, then the cup of the catalogue that round pinned.
@@ -200,10 +226,14 @@ public final class CupSession implements RacePhaseListener {
      * @param step the wall-clock duration one {@link #tick()} stands for; 50 ms on a 20 TPS server.
      *     It has to match the interval this is actually ticked at or every phase length and every
      *     recorded race time is scaled by the difference.
+     * @param recorder where each finished map and each finished cup is handed; {@code NoOpRaceRecorder} when statistics
+     *     are off
+     * @param clock the clock the start of each map and cup is read from; the system clock in production
      */
     public CupSession(CatalogHolder catalog, MapInstances instances,
             MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
-            FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players) {
+            FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
+            RaceRecorder recorder, Clock clock) {
         this.catalog = catalog;
         this.cup = catalog.current().cup();
         this.instances = instances;
@@ -218,6 +248,10 @@ public final class CupSession implements RacePhaseListener {
         this.announcer = new CupAnnouncer(players);
         this.resetter = new RunResetter(runs, boosts, flight);
         this.tally = new RacerTally(step);
+        this.recorder = recorder;
+        this.clock = clock;
+        this.mapStartedAt = clock.instant();
+        this.cupStartedAt = clock.instant();
     }
 
     /** The cup being played: the one the current round pinned, or the boot cup before the first round. */
@@ -264,6 +298,7 @@ public final class CupSession implements RacePhaseListener {
         cup = pinned.cup();
         round.reset();
         tally.clear();
+        cupStartedAt = clock.instant();
         lastSimulated.clear();
         // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
         // must not still be running when the new first map releases its racers.
@@ -469,6 +504,7 @@ public final class CupSession implements RacePhaseListener {
         if (current.state().cupFinished() && currentMap != null) {
             // mapFinished has already run for the last map by the time cupFinished is set, so every
             // per-map score is in. currentMap is what says this has not been announced yet.
+            recordCup();
             announcer.announceCupResult(cup, round.order());
             currentMap = null;
             blocks.follow(null);
@@ -569,6 +605,7 @@ public final class CupSession implements RacePhaseListener {
     public void mapStarted(int mapIndex, String mapName) {
         MapDefinition map = enterMap(mapIndex, mapName);
         gameStarted = true;
+        mapStartedAt = clock.instant();
 
         // The transition runs again here even when the countdown already made it, and that is
         // deliberate: a player who connected during those three seconds holds no run, and a racer
@@ -762,12 +799,52 @@ public final class CupSession implements RacePhaseListener {
             boosts.forget(id);
         }
         round.closeMap(mapIndex, cup.mode());
+        recordRace(mapIndex, map);
 
         LOGGER.info("Map {}/{} '{}' finished after {} tick(s), {}",
                 mapIndex + 1, cup.mapNames().size(), mapName, clock.gameTick(), CupAnnouncer.seconds(clock.elapsed()));
         for (Player racer : players.get()) {
             announcer.announceMapScore(racer, map, round.scoreOn(racer.getUuid(), mapIndex),
                     ringsPassedOf(racer.getUuid()));
+        }
+    }
+
+    /**
+     * Hands the map that just finished to the recorder: one completion, with every racer who held a run on it.
+     *
+     * <p>Called after the placement bonus is awarded, so each racer's score is the one the board shows. The
+     * recorder is called through a catch: a storage failure is logged here, and the map and the cup go on.
+     */
+    private void recordRace(int mapIndex, MapDefinition map) {
+        try {
+            List<RaceParticipant> racers = new ArrayList<>();
+            for (Player racer : players.get()) {
+                UUID id = racer.getUuid();
+                Optional<RaceRun> held = runs.of(id);
+                MapScore score = round.scoreOn(id, mapIndex);
+                if (held.isEmpty() || score == null) {
+                    continue;
+                }
+                racers.add(new RaceParticipant(id, racer.getUsername(), false, held.get(), score,
+                        tally.boosts(id), tally.resets(id), tally.flightTime(id)));
+            }
+            recorder.recordRace(RaceCompletions.of(map.name(), LAYOUT_NOT_COMPUTED, cup.mode(), cup.name(),
+                    mapStartedAt, clock.instant(), racers));
+        } catch (RuntimeException failure) {
+            LOGGER.warn("Map '{}' was not recorded for statistics: {}", map.name(), failure.getMessage(), failure);
+        }
+    }
+
+    /**
+     * Hands the finished cup to the recorder: one result per standing, best first. Called once, on the tick the cup
+     * finishes, and caught in the same way as {@link #recordRace}.
+     */
+    private void recordCup() {
+        try {
+            recorder.recordCup(CupCompletions.of(cup.name(), cup.mode(), cupStartedAt, clock.instant(),
+                    round.order(), round::of, this::nameOf));
+        } catch (RuntimeException failure) {
+            LOGGER.warn("Cup '{}' was not recorded for statistics: {}", cup.name(), failure.getMessage(), failure);
         }
     }
 

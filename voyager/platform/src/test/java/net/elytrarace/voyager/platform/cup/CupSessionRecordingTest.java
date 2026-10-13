@@ -1,0 +1,276 @@
+package net.elytrarace.voyager.platform.cup;
+
+import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.api.stats.CupCompletion;
+import net.elytrarace.voyager.api.stats.RaceCompletion;
+import net.elytrarace.voyager.api.stats.RaceRecorder;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
+import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
+import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
+import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.tick.FlightTickDriver;
+import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
+import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Player;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.instance.InstanceManager;
+import net.minestom.server.instance.block.Block;
+import net.minestom.server.world.DimensionType;
+import net.minestom.testing.Env;
+import net.minestom.testing.EnvTest;
+import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The cup's hand-off to the race recorder, on a live server and ticked explicitly. A two-map cup is played with
+ * one racer who never reaches a ring; each map is ended by a skip, so the recorder sees a map that did not finish
+ * its rings and a cup that did finish its rotation. The recorder is a fake written here, so every call it receives
+ * is visible to the assertions.
+ *
+ * <p>The clock is fixed. Every instant the recorder receives is therefore a value the test chose, not the time of
+ * the run.
+ */
+@EnvTest
+class CupSessionRecordingTest {
+
+    private static final String FIRST_WORLD = "recording_first";
+    private static final String SECOND_WORLD = "recording_second";
+    private static final String FIRST_MAP = "rec-first";
+    private static final String SECOND_MAP = "rec-second";
+    private static final String CUP = "rec_tour";
+    private static final Vec3 FIRST_SPAWN = new Vec3(3.5, 65.0, 5.5);
+    private static final Vec3 SECOND_SPAWN = new Vec3(-37.5, 71.0, -88.5);
+    private static final Duration STEP = Duration.ofMillis(50);
+    private static final BoostConfig BOOST = new BoostConfig(4, 9);
+    private static final Instant START = Instant.parse("2026-10-13T10:00:00Z");
+    private static final Clock CLOCK = Clock.fixed(START, ZoneOffset.UTC);
+
+    private static final MapDefinition FIRST_RUN = new MapDefinition(FIRST_MAP, FIRST_WORLD, FIRST_SPAWN,
+            List.of(new Ring(0, FIRST_SPAWN.plus(new Vec3(0, 8, 10)), new Vec3(0, 0, 1), 6.0, 7, RingType.STANDARD)),
+            Duration.ofMillis(400), BOOST, new GuideLine(List.of(), 2, 1.0));
+
+    private static final MapDefinition SECOND_RUN = new MapDefinition(SECOND_MAP, SECOND_WORLD, SECOND_SPAWN,
+            List.of(new Ring(0, SECOND_SPAWN.plus(new Vec3(0, 0, 10)), new Vec3(0, 0, 1), 6.0, 13, RingType.STANDARD)),
+            Duration.ofMillis(650), BOOST, new GuideLine(List.of(), 4, 1.5));
+
+    private static final CupDefinition TOUR = new CupDefinition(CUP, List.of(FIRST_MAP, SECOND_MAP), GameMode.RACE);
+
+    /** Lobby zero for the first map, race ten seconds (200 ticks), results 100 ms: a map ends by its skip, never by time. */
+    private static final RaceTimings TIMINGS = new RaceTimings(
+            Duration.ZERO, Duration.ofSeconds(10), Duration.ofMillis(100), Duration.ofMillis(100));
+
+    /** How many ticks a cup may take before the test gives up, so a hang fails instead of running on. */
+    private static final int BUDGET = 2_000;
+
+    @TempDir
+    Path tempDir;
+
+    /** Who is online now: the set the cup reads. */
+    private final List<Player> online = new ArrayList<>();
+
+    private final RecordingRaceRecorder recorder = new RecordingRaceRecorder();
+
+    private MapInstances worlds;
+    private CupSession session;
+
+    @AfterEach
+    void releaseTheWorlds() {
+        online.forEach(racer -> racer.remove(true));
+        online.clear();
+        if (worlds != null) {
+            worlds.close();
+            worlds = null;
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Recording
+    // ------------------------------------------------------------------------------------------
+
+    @Test
+    void aFinishedMapRecordsOneCompletionPerMap(Env env) throws IOException {
+        startTwoMapCup(env, recorder);
+
+        playUntilCupFinishes();
+
+        assertThat(recorder.races).as("completions recorded, one per map").extracting(RaceCompletion::mapKey)
+                .containsExactly(FIRST_MAP, SECOND_MAP);
+    }
+
+    @Test
+    void aMapCompletionIsTimedFromTheInjectedClock(Env env) throws IOException {
+        startTwoMapCup(env, recorder);
+
+        playUntilCupFinishes();
+
+        assertThat(recorder.races.get(0).startedAt()).as("start of the first map").isEqualTo(START);
+        assertThat(recorder.races.get(0).finishedAt()).as("end of the first map").isEqualTo(START);
+    }
+
+    @Test
+    void aFinishedCupRecordsOneCupCompletion(Env env) throws IOException {
+        startTwoMapCup(env, recorder);
+
+        playUntilCupFinishes();
+
+        assertThat(recorder.cups).as("cup completions recorded").hasSize(1);
+        CupCompletion cup = recorder.cups.get(0);
+        assertThat(cup.cupKey()).as("cup key").isEqualTo(CUP);
+        assertThat(cup.racers()).as("racers in the cup completion").hasSize(1);
+        assertThat(cup.racers().get(0).finalPosition()).as("final position of the only racer").isEqualTo(1);
+    }
+
+    @Test
+    void theRecorderIsNeverCalledOnATickThatDoesNotFinishAMap(Env env) throws IOException {
+        startTwoMapCup(env, recorder);
+
+        for (int tick = 1; tick <= 10; tick++) {
+            session.advancePhase();
+            assertThat(recorder.races).as("completions after tick %s, while the map is still racing", tick).isEmpty();
+        }
+        assertThat(recorder.cups).as("cup completions while the map is still racing").isEmpty();
+    }
+
+    @Test
+    void aThrowingRecorderDoesNotStopTheMap(Env env) throws IOException {
+        ThrowingRaceRecorder failing = new ThrowingRaceRecorder();
+        Player racer = startTwoMapCup(env, failing);
+
+        playUntilCupFinishes();
+
+        assertThat(session.cupFinished()).as("the cup finished although the recorder threw").isTrue();
+        assertThat(failing.racesOffered).as("completions offered to the failing recorder").isEqualTo(2);
+        assertThat(session.standings().of(racer.getUuid())).as("both maps were still scored").hasSize(2);
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Fixture
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * Writes both worlds, builds the cup with {@code recorder} and connects one racer to the first map's spawn.
+     * The cup is started at once, with no lobby, so the first map's race begins on the first tick.
+     */
+    private Player startTwoMapCup(Env env, RaceRecorder raceRecorder) throws IOException {
+        writeWorld(env, FIRST_WORLD, FIRST_SPAWN);
+        writeWorld(env, SECOND_WORLD, SECOND_SPAWN);
+        MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
+        this.worlds = instances;
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
+        CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
+                new CatalogSnapshot(Map.of(FIRST_MAP, FIRST_RUN, SECOND_MAP, SECOND_RUN), Map.of(CUP, TOUR)),
+                TOUR, Instant.EPOCH));
+        CurrentMapBlocks blocks = new CurrentMapBlocks();
+        FireworkBoostTracker boosts = new FireworkBoostTracker();
+        FlightTickDriver flight = new FlightTickDriver(
+                new LivePlayerSampler(() -> online, boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
+        this.session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, TIMINGS, STEP,
+                () -> online, raceRecorder, CLOCK);
+
+        Instance first = instances.forWorld(FIRST_WORLD);
+        first.loadChunk(Math.floorDiv((int) Math.floor(FIRST_SPAWN.x()), 16),
+                Math.floorDiv((int) Math.floor(FIRST_SPAWN.z()), 16)).join();
+        Player racer = env.createConnection().connect(first,
+                new Pos(FIRST_SPAWN.x(), FIRST_SPAWN.y(), FIRST_SPAWN.z()));
+        online.add(racer);
+        session.start(true);
+        return racer;
+    }
+
+    /**
+     * Ticks until the cup has finished, asking for the skip on every tick. A skip is only taken while a {@code GAME}
+     * phase is running, so the request is a no-op everywhere else. The budget guards against a hang.
+     */
+    private void playUntilCupFinishes() {
+        for (int tick = 0; tick < BUDGET; tick++) {
+            session.advancePhase();
+            session.requestSkip();
+            if (session.cupFinished()) {
+                return;
+            }
+        }
+        throw new AssertionError("the cup did not finish within %s ticks".formatted(BUDGET));
+    }
+
+    /** Writes a world with one floor block under the spawn, through a Falco loader of its own. */
+    private void writeWorld(Env env, String world, Vec3 spawn) throws IOException {
+        InstanceManager manager = env.process().instance();
+        FalcoAnvilLoader writer = FalcoAnvilLoader.builder()
+                .build(tempDir.resolve("worlds").resolve(world), DimensionType.OVERWORLD.key());
+        InstanceContainer instance = manager.createInstanceContainer(DimensionType.OVERWORLD, writer);
+        int x = (int) Math.floor(spawn.x());
+        int y = (int) Math.floor(spawn.y()) - 1;
+        int z = (int) Math.floor(spawn.z());
+        try {
+            instance.loadChunk(x >> 4, z >> 4).join();
+            instance.setBlock(x, y, z, Block.GOLD_BLOCK);
+            instance.saveChunksToStorage().join();
+        } finally {
+            manager.unregisterInstance(instance);
+            writer.close();
+        }
+    }
+
+    /** A recorder that keeps everything it is offered, in order. */
+    private static final class RecordingRaceRecorder implements RaceRecorder {
+
+        private final List<RaceCompletion> races = new ArrayList<>();
+        private final List<CupCompletion> cups = new ArrayList<>();
+
+        @Override
+        public void recordRace(RaceCompletion completion) {
+            races.add(completion);
+        }
+
+        @Override
+        public void recordCup(CupCompletion completion) {
+            cups.add(completion);
+        }
+    }
+
+    /** A recorder whose storage is down: every offer fails, and the failures are counted. */
+    private static final class ThrowingRaceRecorder implements RaceRecorder {
+
+        private int racesOffered;
+
+        @Override
+        public void recordRace(RaceCompletion completion) {
+            racesOffered++;
+            throw new IllegalStateException("statistics storage is down");
+        }
+
+        @Override
+        public void recordCup(CupCompletion completion) {
+            throw new IllegalStateException("statistics storage is down");
+        }
+    }
+}

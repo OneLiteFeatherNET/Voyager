@@ -16,10 +16,12 @@ import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
+import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -83,8 +85,10 @@ public final class CupBeans {
     @Bean
     CupSession cupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition, RaceRuns runs,
             FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts, RaceTimings timings,
-            Supplier<Collection<Player>> players) {
+            Supplier<Collection<Player>> players, Clock clock) {
+        // Statistics are not stored yet: the recorder of the `off` mode, in every mode. The PostgreSQL recorder is wired
+        // by the persistence change, behind VOYAGER_PERSISTENCE.
         return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                Duration.ofMillis(MinecraftServer.TICK_MS), players);
+                Duration.ofMillis(MinecraftServer.TICK_MS), players, new NoOpRaceRecorder(), clock);
     }
 }
