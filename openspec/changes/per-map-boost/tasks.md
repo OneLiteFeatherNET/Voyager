@@ -7,9 +7,9 @@ ticks, no shared static state.
 
 ## 1. Decisions and owner answers (human checkpoints)
 
-- [ ] 1.1 Owner answers the six open questions in design.md and they are recorded under a "Owner decisions" heading (`docs(openspec)`)
-- [ ] 1.2 Owner accepts ADR-0032; its Status changes from Proposed to Accepted (`docs`)
-- [ ] 1.3 Owner accepts the amendment of the design spec, D8. Tasks 9.4 waits for this; code tasks do not
+- [x] 1.1 Owner answers the six open questions in design.md and they are recorded under a "Owner decisions" heading (`docs(openspec)`)
+- [ ] 1.2 Owner accepts ADR-0032; its Status changes from Proposed to Accepted (`docs`). Deferred by the owner: ADR-0032 stays Proposed until the playtest (task 10.2)
+- [x] 1.3 Owner accepts the amendment of the design spec, D8. Tasks 9.4 waits for this; code tasks do not
 
 ## 2. api: the format records
 
@@ -31,7 +31,7 @@ ticks, no shared static state.
 
 ## 4. platform: the catalogue format
 
-- [ ] 4.1 Red: `MapDefinitionAdapterTest` names "a file without the new fields loads with today's values", "rocketsPerRacer of 65 is refused and the message names the field", "a file with ringEffects loads the factors", and "a version 2 file with the new fields loads" (`feat(race)`)
+- [ ] 4.1 Red: `MapDefinitionAdapterTest` names "a file without the new fields loads with today's values", "rocketsPerRacer of 65 is refused and the message names the field", and "a file with ringEffects loads the factors". No version 2 case: owner decision 2, v1 only (`feat(race)`)
 - [ ] 4.2 Green: optional reads for the new fields in `MapDefinitionAdapter` (through `JsonFields`, which gets optional accessors) (`feat(race)`)
 - [ ] 4.3 Red: `MapDraftJsonRoundTripTest` names "a draft keeps the new fields through a save and a load" and "a default value is not written to the file" (`feat(race)`)
 - [ ] 4.4 Green: `MapDraftAdapter`, `MapDraftJsonWriter` and `DraftEditor` carry the new fields; the writer omits defaults (`feat(race)`)
@@ -67,8 +67,8 @@ ticks, no shared static state.
 
 - [ ] 9.1 Add a reference page under `docs/reference/` for the map file's boost fields and `ringEffects`: type, bounds, default and an example. The first sentence states the cap rule (`docs`)
 - [ ] 9.2 Link the reference page from ADR-0032's "More Information" section (`docs`)
-- [ ] 9.3 Update ADR-0032's Status after task 1.2 (`docs`)
-- [ ] 9.4 After task 1.3: amend the design spec rows (c) and (d) and the paragraph "(c) is source, not configuration", lines 818-828 of `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (`docs`)
+- [ ] 9.3 Update ADR-0032's Status after task 1.2 (`docs`). Deferred with 1.2: the status stays Proposed
+- [ ] 9.4 After task 1.3 (accepted 2026-10-13): amend the design spec rows (c) and (d) and the paragraph "(c) is source, not configuration", lines 818-828 of `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (`docs`)
 
 ## 10. Verification
 

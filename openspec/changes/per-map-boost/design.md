@@ -1,7 +1,8 @@
 # Design: per-map boost and ring effects
 
-Status: planning only. No production code is changed by this change until the owner accepts ADR-0032 and the open
-questions at the end. Every number below is a proposal to be checked by a Red test, not a measurement.
+Status: decisions recorded (see "Owner decisions" at the end, 2026-10-13). Implementation proceeds on `feat/per-map-boost`.
+ADR-0032 stays Proposed until the owner playtests the shipped map. Every number below is a proposal checked by a Red test,
+not a measurement.
 
 ## Why one change
 
@@ -241,11 +242,33 @@ existing slice rules already require.
 - Cap semantics could surprise a designer who expects a cap on speed in general. Mitigation: the reference page states
   the rule in its first sentence.
 
-## Open questions for the owner
+## Owner decisions
 
-1. Accept the amendment of the design spec's "source, not configuration" row (D8)?
-2. A v1 file that carries the new fields: accept them (this proposal) or refuse them until a schemaVersion 2 file?
-3. Strength per map: defer (this proposal) or add a server push per burn tick now, as a fourth `VelocityExit` force?
-4. Cap: option B (proposal) or wait for measurements before any cap at all?
-5. Reset the shipped map's lap records when the BOOST rings start to work?
-6. One PR, or the split in "Why one change"?
+Recorded 2026-10-13 by the owner. These replace the open questions above.
+
+1. **D8 accepted.** Burn, cooldown, rocket count, speed cap and ring factors are per-map content (row (d)). Ring points,
+   medal brackets and plausibility tolerances stay in row (c). Task 9.4 applies the amendment to the design spec.
+2. **v1 files may carry the new optional fields. No v2 is required.** The loader keeps `SchemaVersion.CURRENT` at 1. The
+   version 2 scenarios in the delta specs and task 4.1's version 2 case are dropped; the new fields are read whenever
+   they are present in a version 1 (or unversioned) file. The `add-oval-and-tilted-rings` change still rebases onto this
+   change's `map.schema.json`.
+3. **Rocket strength is deferred.** Rocket impulse stays Vanilla's. There is no fourth `VelocityExit` force.
+4. **Speed cap: option B.** The cap clamps only the velocity that BOOST and SLOW rings write. Rockets are not capped.
+   Option C (measure) is done through the map-start log line (task 7.1) and the playtest in task 10.2.
+5. **No reset of lap records.** No stored lap records exist yet, so there is nothing to reset.
+6. **One pull request.** The split in "Why one change" is not taken.
+7. **ADR-0032 stays Proposed** until the owner playtests the shipped map's BOOST rings (tasks 1.2, 9.3 and 10.2 are
+   therefore open at merge time, and the owner closes them).
+
+### Implementation notes recorded during apply
+
+- `Racers.equip` and `Racers.place` take the map's `BoostConfig`, not a bare count, so the rocket count and the item's
+  flight duration come from the same value. `RunResetter.reset` takes the same `BoostConfig`. (Task 5.2 names a count.)
+- `BoostConfig` carries the cap as a nullable `Double` component (`maxSpeedBlocksPerTick`), and `MapDraft` gains a
+  `ringEffects` component with the seven-argument constructor kept, as `MapDefinition` does.
+- The seam for a ring effect is on `FlightTickDriver`, not `FlightTracker`. `FlightTracker` holds no velocity, and
+  `CupSession` (package `platform.cup`) cannot reach package-private members of `platform.flight`, so the two methods are
+  public: `velocityOf(UUID)` and `replaceVelocity(UUID, Vec3)`. `replaceVelocity` sets the result rather than scaling,
+  because the result is the velocity after the whole effect sequence and the cap.
+- `RaceRun.justPassed()` holds one ring, because `ProgressTracker` passes at most one ring per tick. The sequence fold is
+  therefore tested in `voyager-race` over a list, and the platform folds the one ring it is given.
