@@ -2,10 +2,9 @@
 
 ## Status
 
-Proposed
+Accepted
 
-The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it. The change that
-implements it is `adopt-avaje-config`.
+The project owner accepted this record when approving the change `adopt-avaje-config`, which implements it.
 
 ## Date
 
@@ -86,4 +85,4 @@ Chosen option: **2**.
 - Current call sites: `voyager/server/.../config/ServerSettings.java`, `voyager/server/.../config/ConfigCheck.java`,
   `voyager/server/.../VoyagerServer.java`, `voyager/platform/.../proxy/ProxyForwardingSettings.java`.
 - Velocity secret rule: `openspec/specs/server/proxy-forwarding/spec.md`.
-- Owner questions Q2 and Q3 are open in `openspec/changes/adopt-avaje-config/design.md`.
+- Owner decisions Q1 to Q3 are recorded in `openspec/changes/adopt-avaje-config/design.md`, "Owner decisions".
