@@ -102,8 +102,15 @@ with `server.config` and `server.inject` as the only places that read the settin
 - Bad: one more adapter to keep in step with Minestom's entity and packet API, and a fallback path if the owner playtest finds the body hidden (S2).
 - Bad: bots in the tab list and the results table mean a later persistence change must filter them out with one flag
   (`ComNames.isComputer`). The filter is that change's job, not this one's.
-- Neutral: the speed and turn bounds (cap 1.7 blocks per tick, floor 0.8) are taken from the physics reference's glide
-  figures. Spike 0.3 replaces them with measured values before the implementation is merged.
+- Neutral: the speed and turn bounds were measured from the recorded elytra traces (spike S1, design.md D14). The cap
+  stays at 1.7 blocks per tick, and the floor moves from 0.8 to 0.70 blocks per tick, because a steady glide plateaus at
+  0.715 and never reaches 0.8. The yaw bound is 0.91 degrees per tick, the pitch bound 7.23 degrees per tick, and the
+  downward sink bound 0.134 blocks per tick. The brain does not enforce the yaw, pitch and sink bounds yet, and no test
+  asserts them. A human can dive to 2.35 blocks per tick; a computer racer on the line does not, and the owner must
+  confirm that this is acceptable.
+- Open, owner playtest (S2): whether the client shows a player-type entity without a live connection. This is not
+  testable without a real client. If the body is hidden, the body becomes an armour stand before the change ships, and
+  this record's entity decision changes with it.
 
 ## Confirmation
 
