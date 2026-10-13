@@ -47,10 +47,10 @@ Race slice (pure; `RunResetTest`, `RaceRunTest`, `ProgressTrackerTest`):
 
 Platform (`RacersTest`, `RunResetterTest`):
 
-- [ ] 2.11 Red: `RacersTest.placeSetsTheGlideWithoutAVelocity`: after `Racers.place`, `isFlyingWithElytra()` is true and no
+- [x] 2.11 Red: `RacersTest.placeSetsTheGlideWithoutAVelocity`: after `Racers.place`, `isFlyingWithElytra()` is true and no
   velocity other than the one passed through `VelocityExit` is sent. Fails today: place clears the flag.
-- [ ] 2.12 Red: `RunResetterTest.aResetAddsNoImpulse`: the only velocity sent by `reset` is `Vec3.ZERO`. Passes today; pins it.
-- [ ] 2.13 Red: `RunResetterTest.aResetLeavesTheRacerGliding`: after `reset`, the racer is gliding and holds the equipment.
+- [x] 2.12 Red: `RunResetterTest.aResetAddsNoImpulse`: the only velocity sent by `reset` is `Vec3.ZERO`. Passes today; pins it.
+- [x] 2.13 Red: `RunResetterTest.aResetLeavesTheRacerGliding`: after `reset`, the racer is gliding and holds the equipment.
   Fails today.
 
 Server (`CupSessionTest`, `CupPlaythroughTest`):
@@ -74,9 +74,9 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
   `RaceRunTest`). The secondary constructor keeps its meaning with both counters at zero.
 - [x] 3.3 Green: `RunReset.isLanded` adds the grace (20) and the cooldown check on the previous run (tasks 2.6 to 2.8).
   The out-of-bounds check is unchanged and stays first in `CupSession.sendBackIfLostOrLanded`.
-- [ ] 3.4 Green: `Racers.place` sets `setFlyingWithElytra(true)` and keeps the facing and the equipment; update its javadoc,
+- [x] 3.4 Green: `Racers.place` sets `setFlyingWithElytra(true)` and keeps the facing and the equipment; update its javadoc,
   which says the reset ends the glide (task 2.11).
-- [ ] 3.5 Green: `RunResetter.reset` keeps its order; it passes the checkpoint number to the feedback (task 2.13).
+- [x] 3.5 Green: `RunResetter.reset` keeps its order; it passes the checkpoint number to the feedback (task 2.13).
 - [ ] 3.6 Green: `CupSession` passes the ground state to `advance` and the landing rule (task 2.14).
 - [ ] 3.7 Green: the reset title keys name the checkpoint number or the start. Add the keys to
   `voyager/server/src/main/resources/voyager_en_US.properties` if the wording changes.
