@@ -26,14 +26,14 @@ wall-clock reads, no shared static state, each test builds its own fixture.
 
 Race slice (pure; `RunResetTest`, `RaceRunTest`, `ProgressTrackerTest`):
 
-- [ ] 2.1 Red: `RunResetTest.aResetTargetsTheLastCheckpointPassed`: with rings 0 to 9 passed and checkpoints at 2 and 6,
+- [x] 2.1 Red: `RunResetTest.aResetTargetsTheLastCheckpointPassed`: with rings 0 to 9 passed and checkpoints at 2 and 6,
   the plan's position is ring 6's centre and its facing is one step along ring 6's normal. Fails today: the target is ring 9.
-- [ ] 2.2 Red: `RunResetTest.aResetWithNoCheckpointTargetsTheSpawn`: with rings 0 to 9 passed and no checkpoint, the plan
+- [x] 2.2 Red: `RunResetTest.aResetWithNoCheckpointTargetsTheSpawn`: with rings 0 to 9 passed and no checkpoint, the plan
   targets the spawn and faces ring 0's centre. Fails today: the target is ring 9.
-- [ ] 2.3 Red: `RunResetTest.aCheckpointResetRemovesTheRingsPassedAfterIt`: with progress 10 and checkpoint 6, the planned run
+- [x] 2.3 Red: `RunResetTest.aCheckpointResetRemovesTheRingsPassedAfterIt`: with progress 10 and checkpoint 6, the planned run
   has `passedCount` 7, `lastCheckpointIndex` 6, and as many tick entries as rings passed. Fails today: progress is kept.
-- [ ] 2.4 Red: `RunResetTest.aSpawnResetKeepsNoRing`: the planned run has `passedCount` 0 and no tick entries. Fails today.
-- [ ] 2.5 Red: `RunResetTest.aResetRunIsGlidingWithACooldownAndNoAirborneTicks`: the planned run has `gliding` true,
+- [x] 2.4 Red: `RunResetTest.aSpawnResetKeepsNoRing`: the planned run has `passedCount` 0 and no tick entries. Fails today.
+- [x] 2.5 Red: `RunResetTest.aResetRunIsGlidingWithACooldownAndNoAirborneTicks`: the planned run has `gliding` true,
   `resetCooldownTicks` 40, `airborneTicks` 0. Fails today: the fields do not exist.
 - [ ] 2.6 Red: `RunResetTest.aLandingBeforeTheAirborneGraceIsNotALanding`: a run with 19 airborne ticks, gliding on the
   previous tick, on the ground now, is not a landing. Fails today: `isLanded` has no grace.
@@ -67,7 +67,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
 
 ## 3. Green: make the tests pass
 
-- [ ] 3.1 Green: `RunReset.plan` targets `lastCheckpointIndex` (or the spawn when it is -1), rolls the progress back to the
+- [x] 3.1 Green: `RunReset.plan` targets `lastCheckpointIndex` (or the spawn when it is -1), rolls the progress back to the
   target and truncates `passedOnGameTick`, sets `gliding` true and the cooldown to 40 (tasks 2.1 to 2.5).
 - [ ] 3.2 Green: `RaceRun` gains `airborneTicks` and `resetCooldownTicks`; `advance` takes the racer's ground state and
   maintains both counters (tasks 2.9, 2.10). Update every caller and fixture (`CupSession.raceTick`, `CupPlaythroughTest`,
