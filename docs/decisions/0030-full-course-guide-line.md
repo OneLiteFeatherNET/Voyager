@@ -4,9 +4,10 @@
 
 Proposed
 
-The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it, and after the
-owner has reviewed the open questions in the change's design.md (Q1 to Q7). The change that implements it is
-`full-course-guide-line`. It does not edit ADR-0018 or any D-decision of the greenfield design.
+The project owner answered the open questions in the change's design.md (Q1 to Q7) on 2026-10-13. The record stays
+Proposed until the owner has playtested the shipped course; the owner decided on the playtest in place of a Pulse review.
+The change that implements it is `full-course-guide-line`. It does not edit ADR-0018 or any D-decision of the greenfield
+design.
 
 ## Date
 
@@ -65,13 +66,13 @@ Chosen option: **3**, with these rules.
 - A map's `guideLine` may name `mode` (`FULL`, the default, or `WINDOW`), `particle` (`END_ROD`, the default, or `DUST`) and
   `dustColor` (`#RRGGBB`, default `#FFC800`, valid only with `DUST`). All three are optional. A file with none of them
   loads to the same course as before, drawn as a whole line.
-- `FULL` draws the whole line from the first ring to the last, including the part already flown. `WINDOW` keeps today's
-  policy.
+- `FULL` draws the line from the ring the racer is heading for to the last ring. The part already flown is not drawn
+  (owner decision, 2026-10-13). `WINDOW` keeps today's policy.
 - A racer is sent only the points within 160 blocks of them. The cut-off is a server constant.
 - The line is redrawn at most every half of the particle's shortest life: every 4 ticks for DUST, and for END_ROD every
   10 ticks if its shortest life is at least 20 ticks, which the change verifies before the value is fixed.
-- The spacing between points, which already exists in the file, is the density. The shipped course proposes 2.0 blocks
-  (from 1.0).
+- The spacing between points, which already exists in the file, is the density. The shipped course uses 2.0 blocks
+  (from 1.0), the owner's decision.
 - Budget: at most 30,000 particle packets per second in total and 2,000 for any one racer, at sixteen racers on the
   35-ring map.
 - No `schemaVersion` change. An older server ignores the new fields, as it ignores every unknown field, and draws the
@@ -91,8 +92,8 @@ Chosen option: **3**, with these rules.
 - Bad: the rationale in `GuideLine`'s and `GuideLineRenderer`'s Javadoc is reversed, which is a change of record, not of code.
 - Neutral: `lookAheadRings` is still required in a `FULL` file, though it has no effect there. Making it optional would
   change a refusal the owner has not asked to change.
-- Neutral: the `map.schema.json` edit conflicts in form with the oval change's byte-identical claim; the two changes are
-  coordinated in the design (D7).
+- Neutral: the `map.schema.json` edit adds optional properties only. The oval change is not on main and is not
+  coordinated with this record (owner decision, 2026-10-13).
 
 ## Confirmation
 
@@ -103,8 +104,8 @@ Chosen option: **3**, with these rules.
 - `GuideLineRendererTest` covers the whole line, the window, the cut-off, the colour, the refresh per particle, and the
   budget for sixteen racers on the shipped course.
 - `CupSessionGoldenMasterTest` stays byte-identical, since no transcript records a particle.
-- Before acceptance, the owner reviews a rendered screenshot of the shipped course, and Pulse reviews the whole-course
-  decision for player retention and information load (design Q6).
+- Before acceptance, the owner plays the shipped course and decides whether the whole-course line is usable and the
+  dotted END_ROD line reads as a line. This replaces the Pulse review and the render spike (owner decision, 2026-10-13).
 
 ## More information
 

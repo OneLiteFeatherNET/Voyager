@@ -16,18 +16,21 @@ is the window and its look is fixed, so the owner's request needs a policy chang
 
 ## What Changes
 
-- A racer is shown the whole racing line of the map, from the first ring to the last, instead of the window ahead.
+- A racer is shown the racing line of the map from the ring they are heading for to the last ring, instead of the
+  window ahead. The part of the line already flown is not drawn (owner decision, 2026-10-13).
 - The window stays available as a per-map choice, `mode: "WINDOW"`, with today's behaviour.
-- Racers are shown only the points within a fixed distance of them, so the packet count is bounded by local density
-  and not by course length.
+- Racers are shown only the points within 160 blocks of them, so the packet count is bounded by local density and not
+  by course length.
 - The line is drawn with END_ROD by default. A map may choose DUST and a colour instead.
 - The map file's `guideLine` gains three optional fields: `mode`, `particle` and `dustColor`. Absent fields give the
   behaviour above, so every existing map file loads to the same course and the shipped map needs no edit to load.
-- The shipped map sets `mode`, `particle` explicitly and proposes a new `particleSpacing` (2.0, from 1.0). The value is
-  an owner decision; the budget in `design.md` is why it is proposed.
+- The shipped map sets `particleSpacing` to 2.0 (from 1.0), the owner's decision. It names no `mode` or `particle`:
+  the defaults give the course's behaviour.
 - The refresh interval is no longer one constant for every particle: it is set by the particle's shortest lifetime.
+- The packet budget is set by the owner: 30,000 packets per second in total and 2,000 per racer, at sixteen racers on
+  the 35-ring map. A test enforces it.
 - ADR-0030 (Proposed) records the decision and reverses the rationale in `GuideLine`'s Javadoc that argued against
-  drawing the whole course.
+  drawing the whole course. It stays Proposed until the owner playtests the shipped course.
 
 **BREAKING**: none for loading. A racer sees a different line on every map that does not set `mode: "WINDOW"`, which is
 the intended change.
@@ -38,11 +41,11 @@ stay byte-identical; `CupSessionGoldenMasterTest` is the check.
 
 **Out of scope:**
 - Particle types other than END_ROD and DUST. The map file names a fixed list, not any Minecraft particle.
-- Hiding the part of the line already flown. The whole course is shown, as requested; trimming is a later decision.
+- Trimming the line by anything other than the racer's progress, such as distance behind the racer.
 - The tree being replaced (`legacy/`, which gets no new features).
 - Any change to the greenfield design's D-decisions, including D10.
-- The oval and tilted-ring change (`add-oval-and-tilted-rings`, local branch). It is coordinated in `design.md` (D7),
-  not changed by this proposal.
+- The oval and tilted-ring change (`add-oval-and-tilted-rings`, local branch). It is not on main and is ignored here
+  (owner decision, 2026-10-13).
 - A spectator or builder preview of the line. The renderer stays per racer.
 
 ## Capabilities
@@ -59,15 +62,15 @@ stay byte-identical; `CupSessionGoldenMasterTest` is the check.
 
 - **voyager-api** (`net.elytrarace.voyager.api.race`): `GuideLine` gains the style; new enums `GuideLineMode` and
   `GuideParticle`; `InvalidGuideLineException` gains factories for the two new refusals.
-- **voyager-race** (`net.elytrarace.voyager.race.line`): `RacingLine` gains one accessor for the whole line. The shape of
-  the line does not change.
+- **voyager-race** (`net.elytrarace.voyager.race.line`): no change. The racer's stretch uses the existing
+  `RacingLine.between`.
 - **voyager-platform**: `render.GuideLineRenderer` reads the map's style, applies the distance cutoff and the per-particle
   refresh interval; `catalog.adapter.MapDefinitionAdapter` and `MapDraftAdapter` read and write the optional fields;
   `map.schema.json` lists them as optional properties.
 - **voyager-setup**: the draft round trip keeps the new fields, so a builder who opens and saves a draft does not lose
   them (`DraftEditor`, `MapDraftJsonWriter`).
-- **voyager-server**: the shipped map file, `elytraraceblueandred.json`, gets explicit `mode`, `particle` and the spacing
-  decision, and its `notes` seed text is updated.
+- **voyager-server**: the shipped map file, `elytraraceblueandred.json`, gets `particleSpacing` 2.0, and its `notes` seed
+  text is updated.
 - **docs**: `docs/reference/map-and-cup-files.md`, ADR-0030.
 - **Dependencies**: none. No new library, no new module, no change to `voyager-fitness`'s module list.
 - **Fitness**: `ApiPurityTest`, `NullabilityConventionTest` and `DesignRuleTest` cover the new api types; the

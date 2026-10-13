@@ -2,24 +2,30 @@
 
 ## Purpose
 
-What a racer is shown of the racing line of the map being raced: the whole course by default, the look-ahead window as
+What a racer is shown of the racing line of the map being raced: the course ahead by default, the look-ahead window as
 a per-map option, how the line is drawn, how often it is redrawn, and how far from the racer it is sent. The shape of
 the line, the rings and the scoring are owned by the course and are not described here.
 
 ## ADDED Requirements
 
-### Requirement: A racer is shown the whole racing line by default
+### Requirement: A racer is shown the racing line from the next ring to the last by default
 **MoSCoW:** Must. WHILE a racer is on a map whose guide line mode is `FULL`, THE SYSTEM SHALL draw the racing line of
-that map from its first ring to its last, including the part the racer has already flown.
+that map from the ring the racer is heading for to the last ring. The part of the line the racer has already flown SHALL
+NOT be drawn.
 
 #### Scenario: Whole course at the start
 - **WHEN** a racer is at the first ring of a map that has no `mode` set, and every point of the line is within the
   view distance
 - **THEN** the racer is sent the particles of the whole line, from the first ring's centre to the last
 
-#### Scenario: Passed stretch stays drawn
+#### Scenario: Flown stretch is not drawn
 - **WHEN** a racer has passed the first ten rings of a `FULL` map and is heading for the eleventh
-- **THEN** the racer is still sent the particles of the line behind the eleventh ring, within the view distance
+- **THEN** the racer is sent the particles from the eleventh ring's centre to the last ring's centre, and none behind the
+  eleventh ring
+
+#### Scenario: Last ring
+- **WHEN** a racer is heading for the last ring of a `FULL` map
+- **THEN** the racer is sent no particles, because nothing lies ahead of the last ring to draw
 
 ### Requirement: A window mode shows only the stretch ahead
 **MoSCoW:** Must. WHILE a map's guide line mode is `WINDOW`, THE SYSTEM SHALL draw the stretch of the line from the ring
@@ -56,7 +62,7 @@ life of the particle the map uses, so that the line shows no gap between two red
 
 #### Scenario: End rod redrawn inside its shortest life
 - **WHEN** a map uses `END_ROD`
-- **THEN** the line is redrawn at least every 10 ticks, subject to the verification in the design (D4)
+- **THEN** the line is redrawn at least every 10 ticks, subject to the lifetime check in the design (D4, task 1.2)
 
 ### Requirement: The line is drawn with the map's particle and colour
 **MoSCoW:** Must. THE SYSTEM SHALL draw the racing line with the particle the map names, `END_ROD` when none is named,
@@ -79,9 +85,13 @@ mode, particle, colour, spacing or cut-off. The racing line is presentation for 
 - **THEN** the run result, the scored rings and the finish time are the same
 
 ### Requirement: Budget is stated for the shipped course
-**MoSCoW:** Should. THE SYSTEM SHALL keep, for the shipped map with sixteen racers, at most 30,000 particle packets per
-second in total and 2,000 per racer, as set out in the design (D6).
+**MoSCoW:** Must. THE SYSTEM SHALL keep, for the shipped map with sixteen racers, at most 30,000 particle packets per
+second in total and at most 2,000 per racer, as set out in the design (D6). The owner set these limits on 2026-10-13.
 
 #### Scenario: Shipped course at full race size
-- **WHEN** sixteen racers are on the shipped 35-ring map with no cut-off
-- **THEN** the total particle packets per second do not exceed 30,000
+- **WHEN** sixteen racers are on the shipped 35-ring map at the first ring, with no cut-off
+- **THEN** the total particle packets per second do not exceed 30,000, and no racer is sent more than 2,000 per second
+
+#### Scenario: Shipped course at full race size with the cut-off
+- **WHEN** the same sixteen racers are on the shipped map with the 160-block cut-off applied
+- **THEN** the total and the per-racer packets per second are no more than in the scenario without the cut-off
