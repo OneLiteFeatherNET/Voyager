@@ -18,6 +18,9 @@ import java.util.concurrent.CompletableFuture;
  * <p>The body is not a {@code Player}. It has no connection, is never in the online players, and never takes part in a
  * join, a handoff or a permission check. Its tab-list entry is the business of {@code ComTabList}, not this class.
  *
+ * <p>The body takes no gravity. Nothing on the server moves it between the field's own moves, so a body that is left
+ * alone, a finished racer for example, stays at the height it was last put at instead of falling through the course.
+ *
  * <p>This is the one seam for the body's shape. If a playtest finds the client hiding a player-type entity without a
  * connection, the armour-stand fallback replaces the entity inside this class and nothing else changes.
  */
@@ -33,6 +36,7 @@ public final class ComBody {
      */
     public ComBody(UUID id, Component name) {
         this.entity = new Entity(EntityType.PLAYER, id);
+        entity.setNoGravity(true);
         PlayerMeta meta = (PlayerMeta) entity.getEntityMeta();
         meta.setCapeEnabled(true);
         meta.setJacketEnabled(true);
