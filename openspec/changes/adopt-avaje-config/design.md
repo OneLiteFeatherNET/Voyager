@@ -157,8 +157,19 @@ whether a simpler "effective value only" report is acceptable.
 4. Deploy: nothing to change in any CloudNet task. Operators may now use the working-directory file. No deploy step is needed.
 5. Rollback: revert the squash commit. No data, no schema.
 
-## Owner questions
+## Owner decisions
 
-- **Q1.** Accept ADR-0036 as Proposed (task 1.1)?
-- **Q2.** Keep "environment before property" for the velocity secret only (recommended, it is the spec), or unify on "property wins"?
-- **Q3.** Keep the config-check report with sources (recommended, the report is operator-facing), or print effective values only?
+The owner approved this change. The answers below were given with the approval and are binding for the implementation.
+
+- **Q1. Accepted.** ADR-0036 moves from Proposed to Accepted (task 1.1). Introduce avaje-config now, following the Titan pattern.
+- **Q2. Velocity secret keeps environment before property.** `VOYAGER_VELOCITY_SECRET` wins over `voyager.velocity.secret`,
+  as `server/proxy-forwarding` says. Every other key uses avaje-config's order (system property, then environment). Unifying
+  on "property wins" is not done; the exception stays in `ConfigLoader.velocitySecret()` only.
+- **Q3. Config-check report keeps its sources.** The golden matrix must produce a report identical to the release before this
+  change, for every input the matrix holds. Effective-values-only output is not adopted.
+- **Compatibility.** Fully backward compatible. Every existing `-D` property and environment variable keeps its name and its
+  effect. The live CloudNet task sets `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH`, `VOYAGER_WORLDS_PATH`,
+  `VOYAGER_LOBBY_WORLD`, `VOYAGER_LOBBY_SPAWN`, `voyager.velocity.secret` and `service.bind.*`; all of them keep working.
+- **Verification.** The golden config-check diff between the release jar and the new jar is empty. The server is smoke-booted
+  twice, once with `-D` flags and once with the same values as environment variables; both runs print identical
+  "Voyager (rebuild)" settings lines.

@@ -10,8 +10,8 @@ a test contract, `high` for the spike and the golden comparison, where a wrong r
 
 ## 1. Decisions
 
-- [ ] 1.1 Owner accepts ADR-0036 (Q1) and its status changes from Proposed to Accepted (`docs`). Haiku effort: low.
-- [ ] 1.2 Owner answers Q2 (velocity secret order) and Q3 (report with sources); the answers are recorded in design.md, "Owner questions" (`docs(openspec)`). Haiku effort: low.
+- [x] 1.1 Owner accepts ADR-0036 (Q1) and its status changes from Proposed to Accepted (`docs`). Haiku effort: low.
+- [x] 1.2 Owner answers Q2 (velocity secret order) and Q3 (report with sources); the answers are recorded in design.md, "Owner questions" (`docs(openspec)`). Haiku effort: low.
 
 ## 2. Spike and characterisation (before any production change)
 
