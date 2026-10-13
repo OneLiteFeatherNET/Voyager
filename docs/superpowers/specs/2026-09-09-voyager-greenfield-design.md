@@ -44,6 +44,7 @@ These were decided with the project owner before this document was written.
 | D12 | `CLAUDE.md` is superseded by this specification | It describes a tree that no longer matches reality; the design rules live here now |
 | D13 | Permission port in `voyager-api`, LuckPerms as an optional adapter in `voyager-platform`, and a fail-closed level-based fallback (ADR-0024) | Command code asks one question and never names a backend; a jar without the loader fails closed, so a lost loader never widens access on a public network |
 | D14 | Velocity modern forwarding with the secret from `VOYAGER_VELOCITY_SECRET` or `voyager.velocity.secret`; a blank secret refuses to start (ADR-0025) | A proxied player keeps the real UUID that LuckPerms keys on, and a misconfigured secret cannot silently turn signature checking off |
+| D16 | The layered resolver of "Configuration" is implemented by avaje-config 5.2 (instance API, built in `voyager-platform`), not by a hand-written `ConfigResolver`; the four ranks are kept (ADR-0036) | The library already implements these ranks, and Titan runs it in production. One loader owns every key; the velocity secret keeps environment before property as a documented exception |
 
 ### Non-goals
 
@@ -863,6 +864,14 @@ for this specific process. The same ordering holds under Kubernetes, where layer
 Keys map mechanically between layers 2–4: `/db/url` ↔ `VOYAGER_DB_URL` ↔ `voyager.db.url`
 (`VOYAGER_A_B` → `voyager.a.b`). The only exceptions are the two keys CloudNet defines and we do not
 control.
+
+**Amendment (ADR-0036, change `adopt-avaje-config`).** The hand-written `ConfigResolver` and `ConfigSource` described
+below are not built. avaje-config 5.2 provides the same layers, in the same order, and is the library Titan runs in
+production. `platform.config.ConfigLoader` builds one avaje-config `Configuration` in the composition root. The four ranks
+above are unchanged, with `application.yaml` in the working directory as layer 2 and the file named by `CONFIG_FILE` between
+layers 2 and 3. The velocity secret keeps environment before property (`server/proxy-forwarding`). The mapping of keys to
+environment names is avaje-config's: `VOYAGER_A_B` is the upper-case form of `voyager.a.b` with dots and dashes replaced.
+The key list is in `docs/reference/configuration.md`.
 
 | Concern | Types | Loader |
 |---|---|---|
