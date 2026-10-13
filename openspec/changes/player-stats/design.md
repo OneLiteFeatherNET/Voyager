@@ -90,15 +90,18 @@ finish position is).
 |---|---|---|
 | Rings passed, split ticks, finish time | `RaceRun` (`passedOnGameTick`, `finishedAt`, `progress`) | no |
 | Ring points, placement bonus, medal | `MapScorer` / `MapScore` | no |
-| Boosts | `FireworkBoostTracker` accepts a boost | a per-racer counter, cleared with `forget` at map end |
-| Resets | `RunResetter.reset` | a per-racer counter, cleared at map start |
-| Flight millis | gliding flag of each `FlightTick` | a per-racer counter of gliding ticks, times 50 ms |
-| Map finished, one `RaceCompletion` | `CupSession.mapFinished` | the call to `RaceRecorder.recordRace` |
-| Cup finished, one `CupCompletion` | `CupSession`, where `cupFinished()` becomes true (line ~451; task 2.1 pins it) | the call to `RaceRecorder.recordCup` |
+| Boosts | `FireworkBoostTracker.requestBoost(UUID, BoostConfig, boolean)` returns `true` when it accepts (`platform/.../flight/FireworkBoostTracker.java:63`; called from `CupSession.requestBoost(Player)`, `CupSession.java:516-522`) | a per-racer counter, incremented where `requestBoost` returns `true`; cleared at map end with `forget` (`CupSession.java:750`) |
+| Resets | `RunResetter.reset(Player, ResetPlan, BoostConfig)` (`platform/.../cup/RunResetter.java:71`, the only caller `CupSession.java:680`) returns void, so the counter is incremented at the call site after `reset` returns normally | a per-racer counter, cleared at map start |
+| Flight millis | `CupSession.raceTick` passes `racer.isFlyingWithElytra()` to `runs.advance` (`CupSession.java:635`); `RaceRun.advance` stores `gliding` (`voyager/race/.../run/RaceRun.java:161-175`) | a per-racer counter incremented when `advanced.gliding()` is true, times 50 ms; the sampler `LivePlayerSampler` is not changed |
+| Map finished, one `RaceCompletion` | `CupSession.mapFinished(int, String, RaceClock)` (`CupSession.java:730-760`), reached from `XerusPhaseDriver.java:116-118` when GAME ends | the call to `RaceRecorder.recordRace`, after the per-racer loop and `closeMap` (line 752) |
+| Cup finished, one `CupCompletion` | `RaceStateMachine.java:104-110` returns `cupFinished = true` on the last map's END; `XerusPhaseDriver.java:119-121` calls `CupSession.finish()`, and `CupSession.advancePhase()` (`CupSession.java:457-470`) announces the result | the call to `RaceRecorder.recordCup` in the cup-finished branch of `CupSession` (`cupFinished()`, `CupSession.java:239-241`) |
 
 The three counters live in `platform.stats.RacerTally`, a plain class with one instance per cup, so tests need no Minestom. The
 mapping from race values to `RaceCompletion` is a pure static function in `platform.stats.RaceCompletions`, unit-tested with
 hand-built `RaceRun`s.
+
+**Pinned by spike 2.1 (2026-10-13).** The line numbers above were read from the tree at `3617b6f`; the implementer re-checks them
+before editing, because the lines move with each change.
 
 ### D4. Schema outline (PostgreSQL, schema `voyager`, one migration `V1__baseline.sql`)
 
@@ -197,6 +200,12 @@ a racer kind can be added without a migration of these tables.
   back in the schema's canonical field order, so whitespace and key order do not change it). A change of a ring or a spawn changes it,
   and the leaderboard shows only the current layout. Old rows stay and stop appearing (design, "Records are scoped by `layout_version`").
   Owner decision Q6 (2026-10-13) accepts the canonical form as the boundary.
+- **Pinned by spike 2.2 (2026-10-13): no canonical writer exists.** `MapDefinition` (`voyager/api/.../api/race/MapDefinition.java:40-41`)
+  has no serializer. The only writer, `platform/.../catalog/writer/MapDraftJsonWriter.java`, serializes `MapDraft`, not
+  `MapDefinition`; `MapDefinitionAdapter` is a deserializer only. Therefore the change adds `platform.catalog.writer` (or
+  `platform.stats`) class `MapDefinitionCanonicalWriter`: fixed field order written by hand (no map iteration), lists in list order,
+  doubles through one formatter, durations as integer milliseconds. Its test names: "the canonical bytes of one definition do not
+  change between two writes" and "a changed ring changes the layout version". Task 2.2 is closed by this text.
 - Every mode is stored (`RACE` and `PRACTICE`). Profile statistics and leaderboards count only modes where `GameMode.ranked()` is true,
   so practice runs are recorded for later analysis without changing a player's numbers (owner decision Q7, 2026-10-13).
 
@@ -219,6 +228,11 @@ public outside `persistence` and the composition root (design rule "no class out
 **Rule for invalid settings (Q1, 2026-10-13).** An unknown switch value, a missing URL, user or password while `on`, or a pool
 size or queue capacity outside its range logs one WARN that names the setting and runs with stats off. None of these refuses the
 start. The password is never printed, in the WARN or anywhere else.
+
+**Boot path (spike 2026-10-13).** Today `VoyagerServer` runs `ConfigCheck.settingsProblems(...)` on every boot and `refuse(...)`
+exits with code 1 on any problem (`voyager/server/.../VoyagerServer.java:143-148`, `327-331`). The database keys must be excluded
+from that refusal: their problems are logged as WARN by a separate `persistenceSettings` step that returns the effective mode
+(`off` or `on`). The `voyager.config.check` validate-and-exit path may still report them as errors, because it is a check, not a start.
 
 ### D9. Hibernate and pool settings
 
