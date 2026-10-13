@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.api.race;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.api.race.exception.InvalidMapException;
 
 import java.time.Duration;
@@ -31,9 +32,21 @@ import java.util.List;
  * here rather than in {@link GuideLine}, for the reason {@link BoostConfig}'s cooldown rule is
  * checked in {@code BoostConfig}: this is the only type that can see both the guides and the rings
  * they claim to sit between.
+ *
+ * <p>{@link #ringEffects()} holds the velocity factors of this course's {@code BOOST} and {@code SLOW}
+ * rings. A map that states none has {@link RingEffectTuning#DEFAULT}, the factors every course used
+ * before they were per map.
  */
 public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
-        BoostConfig boostConfig, GuideLine guideLine) {
+        BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects) {
+
+    /**
+     * The map as it was built before ring effects were per map: the {@link RingEffectTuning#DEFAULT} factors.
+     */
+    public MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
+            BoostConfig boostConfig, GuideLine guideLine) {
+        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, RingEffectTuning.DEFAULT);
+    }
 
     public MapDefinition {
         if (name == null || name.isBlank()) {

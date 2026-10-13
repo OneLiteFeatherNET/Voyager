@@ -2,6 +2,8 @@ package net.elytrarace.voyager.api.race;
 
 import net.elytrarace.voyager.api.race.exception.InvalidBoostConfigException;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * How a firework boost behaves on one racecourse: how long a rocket burns, and how long a racer
  * waits before the next one.
@@ -41,11 +43,26 @@ import net.elytrarace.voyager.api.race.exception.InvalidBoostConfigException;
  * burn ended at {@code start + burnDurationTicks}. Measured from the end instead, any positive
  * cooldown would satisfy the rule and the comparison here would mean nothing.
  *
+ * <h2>Optional fields and their defaults</h2>
+ *
+ * <p>{@code rocketsPerRacer} is how many rockets a racer is given when a map begins, and it cannot
+ * exceed {@link #MAX_ROCKETS_PER_RACER}, the item stack limit. {@code maxSpeedBlocksPerTick} caps the
+ * velocity a {@code BOOST} or {@code SLOW} ring writes, and only that: normal flight and rockets are
+ * never capped, because the server writes nothing for either. A map that states neither keeps 64
+ * rockets and no cap, which is how it played before the fields existed.
+ *
  * @param burnDurationTicks how many ticks one rocket boosts for; the rocket entity is removed after
  *     exactly this many, with nothing random in it
  * @param cooldownTicks how many ticks after a boost <em>starts</em> before another may be used
+ * @param rocketsPerRacer how many rockets a racer is given, from 1 to {@link #MAX_ROCKETS_PER_RACER}
+ * @param maxSpeedBlocksPerTick the largest speed, in blocks per tick, a ring effect may leave a racer
+ *     with, or {@code null} for no cap; when present it is finite and greater than zero
  */
-public record BoostConfig(int burnDurationTicks, int cooldownTicks) {
+public record BoostConfig(int burnDurationTicks, int cooldownTicks, int rocketsPerRacer,
+        @Nullable Double maxSpeedBlocksPerTick) {
+
+    /** The stack limit of the rocket item, and the count a map gets when it states none. */
+    public static final int MAX_ROCKETS_PER_RACER = 64;
 
     /**
      * Vanilla's deterministic burn for a three-gunpowder firework rocket: {@code 10 * flightDuration}
@@ -63,12 +80,24 @@ public record BoostConfig(int burnDurationTicks, int cooldownTicks) {
      */
     public static final int VANILLA_BURN_TICKS = 30;
 
+    /** The two required fields alone: a stack of {@link #MAX_ROCKETS_PER_RACER} and no speed cap. */
+    public BoostConfig(int burnDurationTicks, int cooldownTicks) {
+        this(burnDurationTicks, cooldownTicks, MAX_ROCKETS_PER_RACER, null);
+    }
+
     public BoostConfig {
         if (burnDurationTicks <= 0) {
             throw InvalidBoostConfigException.nonPositiveBurn(burnDurationTicks);
         }
         if (cooldownTicks <= burnDurationTicks) {
             throw InvalidBoostConfigException.cooldownNotLongerThanBurn(burnDurationTicks, cooldownTicks);
+        }
+        if (rocketsPerRacer < 1 || rocketsPerRacer > MAX_ROCKETS_PER_RACER) {
+            throw InvalidBoostConfigException.rocketsOutOfRange(rocketsPerRacer);
+        }
+        if (maxSpeedBlocksPerTick != null
+                && (!Double.isFinite(maxSpeedBlocksPerTick) || maxSpeedBlocksPerTick <= 0.0)) {
+            throw InvalidBoostConfigException.nonPositiveSpeedCap(maxSpeedBlocksPerTick);
         }
     }
 }

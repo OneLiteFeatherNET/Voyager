@@ -259,6 +259,44 @@ class FlightTickDriverTest {
                 .hasMessageContaining(PLAYER.toString());
     }
 
+    /**
+     * A ring effect writes its result into the simulation, so the next tick starts from the boosted velocity and
+     * not from the one the ring found the racer with. The position is untouched.
+     */
+    @Test
+    void replacingTheVelocityChangesTheVelocityTheNextTickStartsFrom() {
+        FlightTickDriver driver = new FlightTickDriver(
+                ScriptedSampler.of(flying(0), flying(1)), new FlightTracker(), OPEN_SKY);
+        FlightTick first = driver.tick().getFirst();
+        Vec3 boosted = new Vec3(0.0, 0.0, 3.0);
+
+        driver.replaceVelocity(PLAYER, boosted);
+        FlightTick second = driver.tick().getFirst();
+
+        assertThat(second.before().velocity()).isEqualTo(boosted);
+        assertThat(second.before().position()).isEqualTo(first.after().position());
+    }
+
+    @Test
+    void velocityOfReadsTheVelocityTheSimulationHoldsForAFlyingPlayer() {
+        FlightTickDriver driver = new FlightTickDriver(
+                ScriptedSampler.of(flying(0)), new FlightTracker(), OPEN_SKY);
+        FlightTick first = driver.tick().getFirst();
+
+        assertThat(driver.velocityOf(PLAYER)).contains(first.after().velocity());
+        assertThat(driver.velocityOf(OTHER_PLAYER)).isEmpty();
+    }
+
+    @Test
+    void replacingTheVelocityOfAPlayerWithNoSimulatedStateIsRefused() {
+        FlightTickDriver driver = new FlightTickDriver(
+                ScriptedSampler.of(), new FlightTracker(), OPEN_SKY);
+
+        assertThatThrownBy(() -> driver.replaceVelocity(PLAYER, Vec3.ZERO))
+                .isInstanceOf(UntrackedFlightException.class)
+                .hasMessageContaining(PLAYER.toString());
+    }
+
     // ----------------------------------------------------------------------------------------
     // Fixture
     // ----------------------------------------------------------------------------------------

@@ -3,10 +3,15 @@ package net.elytrarace.voyager.platform.catalog.writer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.elytrarace.voyager.api.math.Vec3;
+import com.google.gson.JsonParser;
+import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.platform.catalog.DraftFixtures;
 import net.elytrarace.voyager.platform.catalog.adapter.MapDefinitionAdapter;
+import net.elytrarace.voyager.platform.catalog.adapter.MapDraftAdapter;
 import net.elytrarace.voyager.platform.catalog.adapter.Vec3Adapter;
 import org.junit.jupiter.api.Test;
 
@@ -35,5 +40,26 @@ class MapDraftJsonRoundTripTest {
         assertThat(map.referenceTime()).isEqualTo(Duration.ofSeconds(60));
         assertThat(map.boostConfig()).isEqualTo(draft.boostConfig());
         assertThat(map.guideLine()).isEqualTo(draft.guideLine());
+    }
+
+    /**
+     * Setup must not drop a designer's tuning on a save: the optional fields come back out of the file the
+     * setup server wrote, through the draft reader and through the game reader, unchanged.
+     */
+    @Test
+    void aDraftKeepsTheNewFieldsThroughASaveAndALoad() {
+        MapDraft base = DraftFixtures.complete(new MapId("skyfortress"));
+        MapDraft draft = new MapDraft(base.id(), base.world(), base.spawn(), base.rings(),
+                base.referenceTimeSeconds(), new BoostConfig(30, 40, 12, 3.5), base.guideLine(),
+                new RingEffectTuning(2.0, 0.25));
+        String saved = MapDraftJsonWriter.toJson(draft);
+
+        MapDraft reloaded = MapDraftAdapter.read("skyfortress.json", JsonParser.parseString(saved));
+        MapDefinition map = GAME_GSON.fromJson(saved, MapDefinition.class);
+
+        assertThat(reloaded.boostConfig()).isEqualTo(new BoostConfig(30, 40, 12, 3.5));
+        assertThat(reloaded.ringEffects()).isEqualTo(new RingEffectTuning(2.0, 0.25));
+        assertThat(map.boostConfig()).isEqualTo(new BoostConfig(30, 40, 12, 3.5));
+        assertThat(map.ringEffects()).isEqualTo(new RingEffectTuning(2.0, 0.25));
     }
 }

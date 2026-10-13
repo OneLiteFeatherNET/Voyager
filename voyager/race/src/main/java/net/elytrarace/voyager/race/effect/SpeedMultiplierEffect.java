@@ -5,7 +5,8 @@ import net.elytrarace.voyager.api.race.effect.BaseRingEffect;
 
 /**
  * Scales every component of a velocity by a fixed factor. {@link RingEffectRegistry} wires this up
- * with 1.5 for {@code BOOST} rings and 0.5 for {@code SLOW} rings.
+ * with the factors of the map being raced: 1.5 for {@code BOOST} rings and 0.5 for {@code SLOW} rings
+ * unless the map states others.
  *
  * <p>The factor must be finite and non-negative. A negative one does not slow a player down, it
  * reverses them mid-flight; a non-finite one produces a velocity {@link Vec3} would reject anyway,

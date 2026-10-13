@@ -7,6 +7,8 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.GuidePoint;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
+import net.elytrarace.voyager.api.race.effect.exception.InvalidRingEffectException;
 import net.elytrarace.voyager.api.race.exception.InvalidBoostConfigException;
 import net.elytrarace.voyager.api.race.exception.InvalidGuideLineException;
 import net.elytrarace.voyager.api.race.exception.InvalidMapException;
@@ -58,6 +60,74 @@ class MapDefinitionAdapterTest {
               "notes": [ "PROVISIONAL seed", "another line" ]
             }
             """;
+
+    /** The fixture's boost block with the optional fields added, so each test states only what it changes. */
+    private static String withBoost(String boostFields) {
+        return MAP.replace("\"boostConfig\": { \"burnDurationTicks\": 18, \"cooldownTicks\": 41 }",
+                "\"boostConfig\": { \"burnDurationTicks\": 18, \"cooldownTicks\": 41" + boostFields + " }");
+    }
+
+    /** A file that states none of the new fields loads with the values it always had. */
+    @Test
+    void aFileWithoutTheNewFieldsLoadsWithTodaysValues() {
+        MapDefinition map = Adapters.GSON.fromJson(MAP, MapDefinition.class);
+
+        assertThat(map.boostConfig().rocketsPerRacer()).isEqualTo(64);
+        assertThat(map.boostConfig().maxSpeedBlocksPerTick()).isNull();
+        assertThat(map.ringEffects()).isEqualTo(RingEffectTuning.DEFAULT);
+    }
+
+    @Test
+    void rocketsPerRacerIsReadFromTheBoostConfig() {
+        MapDefinition map = Adapters.GSON.fromJson(withBoost(", \"rocketsPerRacer\": 12"), MapDefinition.class);
+
+        assertThat(map.boostConfig().rocketsPerRacer()).isEqualTo(12);
+    }
+
+    @Test
+    void rocketsPerRacerOf65IsRefusedAndTheMessageNamesTheField() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withBoost(", \"rocketsPerRacer\": 65"), MapDefinition.class))
+                .isInstanceOf(InvalidBoostConfigException.class)
+                .hasMessageContaining("rocketsPerRacer");
+    }
+
+    @Test
+    void theSpeedCapIsReadWhenTheMapStatesOne() {
+        MapDefinition map = Adapters.GSON.fromJson(withBoost(", \"maxSpeedBlocksPerTick\": 3.5"), MapDefinition.class);
+
+        assertThat(map.boostConfig().maxSpeedBlocksPerTick()).isEqualTo(3.5);
+    }
+
+    @Test
+    void aFileWithRingEffectsLoadsItsFactors() {
+        String withEffects = MAP.replace("\"guideLine\"",
+                "\"ringEffects\": { \"boostMultiplier\": 2.0, \"slowMultiplier\": 0.25 },\n  \"guideLine\"");
+
+        MapDefinition map = Adapters.GSON.fromJson(withEffects, MapDefinition.class);
+
+        assertThat(map.ringEffects()).isEqualTo(new RingEffectTuning(2.0, 0.25));
+    }
+
+    /** A factor a map leaves out keeps its own default, so a file may state only the one it changes. */
+    @Test
+    void aFactorLeftOutOfRingEffectsKeepsItsDefault() {
+        String onlyBoost = MAP.replace("\"guideLine\"",
+                "\"ringEffects\": { \"boostMultiplier\": 2.0 },\n  \"guideLine\"");
+
+        MapDefinition map = Adapters.GSON.fromJson(onlyBoost, MapDefinition.class);
+
+        assertThat(map.ringEffects()).isEqualTo(new RingEffectTuning(2.0, RingEffectTuning.DEFAULT.slowMultiplier()));
+    }
+
+    @Test
+    void aNegativeRingEffectFactorIsRefusedAndTheMessageNamesTheField() {
+        String negative = MAP.replace("\"guideLine\"",
+                "\"ringEffects\": { \"boostMultiplier\": -1 },\n  \"guideLine\"");
+
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(negative, MapDefinition.class))
+                .isInstanceOf(InvalidRingEffectException.class)
+                .hasMessageContaining("boostMultiplier");
+    }
 
     @Test
     void readsTheNameWorldSpawnAndReferenceTime() {

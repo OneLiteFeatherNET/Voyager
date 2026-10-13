@@ -61,6 +61,7 @@ public final class MapDraftAdapter {
                 rings,
                 JsonFields.number(json, "referenceTimeSeconds", what),
                 MapDefinitionAdapter.boostConfig(json, what),
-                MapDefinitionAdapter.guideLine(json, what));
+                MapDefinitionAdapter.guideLine(json, what),
+                MapDefinitionAdapter.ringEffects(json, what));
     }
 }

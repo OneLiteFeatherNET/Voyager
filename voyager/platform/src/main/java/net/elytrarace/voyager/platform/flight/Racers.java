@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.flight;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.convert.VelocityExit;
 import net.elytrarace.voyager.platform.convert.Vectors;
@@ -37,25 +38,15 @@ import org.jetbrains.annotations.ApiStatus;
  * map ends) and {@code RunResetter} (a zero, when a racer is reset); both go through
  * {@code VelocityExit}, the only door a velocity may leave by
  * ({@code ApiPurityTest.onlyVelocityExitSendsAVelocityToMinestom}). The ring {@code BOOST}/{@code SLOW}
- * effects are the one velocity that is not a zero, and they are not built yet; when they are, they go through
- * {@code VelocityExit} for the same reason a zero does: the server is deliberately overriding a
- * client-authoritative flight at one named moment, rather than steering it.
+ * effects are the one velocity that is not a zero. They are written by the cup's ring step through the same
+ * {@code VelocityExit}, for the same reason a zero is: the server overrides a client-authoritative flight at one
+ * named moment, rather than steering it.
  *
  * <p>The firework boost is <em>not</em> one of them. A rocket is a real entity the client boosts itself
  * with — see {@link Rockets} — so nothing about it passes through {@code VelocityExit}.
  */
 @ApiStatus.Internal
 public abstract class Racers {
-
-    /**
-     * How many rockets a racer carries. The committed course climbs from y = -62 to y = 319, so a
-     * boost is not a luxury on it; it is the only way up.
-     *
-     * <p>A full stack rather than a budget, and it is never spent — see {@link Rockets#item(int)}.
-     * What limits a racer is the map's cooldown, which is a rule the game states, rather than a count
-     * that runs out at a moment nothing announced.
-     */
-    private static final int ROCKETS = 64;
 
     private Racers() {
     }
@@ -78,10 +69,14 @@ public abstract class Racers {
 
     /**
      * Gives the racer the elytra and the rockets of a map, in place of the nothing {@link #prepare} left them.
+     *
+     * <p>The count is the map's {@code rocketsPerRacer}, which the stack is never spent from; see {@link Rockets#item}.
+     *
+     * @param config the tuning of the map being raced
      */
-    public static void equip(Player player) {
+    public static void equip(Player player, BoostConfig config) {
         player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
-        player.getInventory().setItemStack(0, Rockets.item(ROCKETS));
+        player.getInventory().setItemStack(0, Rockets.item(config));
     }
 
     /**
@@ -103,7 +98,7 @@ public abstract class Racers {
      * count, and it is in hand at GO, when the racer is released.
      */
     public static void faceCourse(Player player, MapDefinition map) {
-        equip(player);
+        equip(player, map.boostConfig());
         player.lookAt(Vectors.toMinestom(map.rings().getFirst().center()));
     }
 
@@ -117,9 +112,10 @@ public abstract class Racers {
      * through {@code VelocityExit}.
      *
      * @param toward a point the racer faces, one step along the flow normal of the ring they are placed at
+     * @param config the tuning of the map being raced, so a reset gives the map's count of rockets again
      */
-    public static void place(Player player, Vec3 toward) {
-        equip(player);
+    public static void place(Player player, Vec3 toward, BoostConfig config) {
+        equip(player, config);
         player.lookAt(Vectors.toMinestom(toward));
         player.setFlyingWithElytra(false);
     }

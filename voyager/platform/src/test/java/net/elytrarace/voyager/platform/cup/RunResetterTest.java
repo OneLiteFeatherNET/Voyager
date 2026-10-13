@@ -45,6 +45,9 @@ import static org.assertj.core.api.Assertions.within;
 @EnvTest
 class RunResetterTest {
 
+    /** The tuning the reset racer is given their rockets back under: the default count, a 30-tick burn. */
+    private static final BoostConfig TUNING = new BoostConfig(30, 40);
+
     /** The ring the racer last passed: its centre is where a reset puts them, and its normal is where they face. */
     private static final Ring LAST = new Ring(0, new Vec3(0.5, 70.0, 0.5), new Vec3(0.0, 0.0, 1.0), 5.0, 7,
             RingType.STANDARD);
@@ -95,7 +98,7 @@ class RunResetterTest {
     void theRacerIsPlacedAtTheCentreOfTheLastRingPassed(Env env) {
         Fixture f = fixture(env);
 
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         assertThat(f.racer().getPosition().samePoint(new Pos(0.5, 70.0, 0.5)))
                 .describedAs("the centre of ring 0, the last one passed")
@@ -106,7 +109,7 @@ class RunResetterTest {
     void theRacerIsNotGlidingAfterAReset(Env env) {
         Fixture f = fixture(env);
 
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         assertThat(f.racer().isFlyingWithElytra())
                 .describedAs("the racer takes off by deploying the elytra, the reset does not start the glide")
@@ -118,7 +121,7 @@ class RunResetterTest {
     void aResetPlacesTheRacerWithoutAnImpulse(Env env) {
         Fixture f = fixture(env);
 
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         assertThat(f.racer().getEquipment(EquipmentSlot.CHESTPLATE).material())
                 .describedAs("the elytra is in hand")
@@ -136,7 +139,7 @@ class RunResetterTest {
         Fixture f = fixture(env);
         f.racer().setVelocity(new Vec(0, -20, 0));
 
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         assertThat(f.racer().getVelocity())
                 .describedAs("the fall is not carried into the target")
@@ -148,7 +151,7 @@ class RunResetterTest {
     void aResetRacerIsNotALanding(Env env) {
         Fixture f = fixture(env);
 
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         RaceRun afterReset = f.runs().of(f.racer().getUuid()).orElseThrow();
         assertThat(RunReset.isLanded(afterReset, f.racer().isFlyingWithElytra(), true))
@@ -160,7 +163,7 @@ class RunResetterTest {
     void theRacerFacesAlongTheFlowNormalOfTheTargetRing(Env env) {
         Fixture f = fixture(env);
 
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         assertThat(f.racer().getPosition().direction().z())
                 .describedAs("the normal of ring 0 is +z, so the racer looks along +z")
@@ -172,7 +175,7 @@ class RunResetterTest {
         Fixture f = fixture(env);
         ResetPlan plan = planFor(passedFirstRing());
 
-        f.resetter().reset(f.racer(), plan);
+        f.resetter().reset(f.racer(), plan, TUNING);
 
         assertThat(f.runs().of(f.racer().getUuid())).contains(plan.run());
     }
@@ -182,7 +185,7 @@ class RunResetterTest {
         Fixture f = fixture(env);
         f.boosts().requestBoost(f.racer().getUuid(), new BoostConfig(4, 9), true);
 
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         assertThat(f.boosts().burning(f.racer().getUuid())).isFalse();
         assertThat(f.boosts().cooldownTicksRemaining(f.racer().getUuid())).isEqualTo(9);
@@ -198,7 +201,7 @@ class RunResetterTest {
         Collector<SetTitleTextPacket> titles = connection.trackIncoming(SetTitleTextPacket.class);
         Collector<SoundEffectPacket> sounds = connection.trackIncoming(SoundEffectPacket.class);
 
-        f.resetter().reset(racer, planFor(passedFirstRing()));
+        f.resetter().reset(racer, planFor(passedFirstRing()), TUNING);
         env.tick();
 
         assertThat(titles.collect())

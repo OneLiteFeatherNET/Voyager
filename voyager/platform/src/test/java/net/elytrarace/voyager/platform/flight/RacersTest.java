@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.flight;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.platform.hud.RaceFeedback;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
@@ -28,6 +29,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnvTest
 class RacersTest {
 
+    /** The tuning of a map that states nothing new: 64 rockets, a 30-tick burn. */
+    private static final BoostConfig DEFAULT = new BoostConfig(30, 40);
+
+    /** A count that is not the default, so a racer given 64 by accident fails the stack check. */
+    private static final BoostConfig TWELVE_ROCKETS = new BoostConfig(30, 40, 12, null);
+
+    @Test
+    void aMapsCountIsTheStackARacerIsGiven(Env env) {
+        Player racer = waitingRacer(env);
+        Racers.prepare(racer);
+
+        Racers.equip(racer, TWELVE_ROCKETS);
+
+        assertThat(racer.getInventory().getItemStack(0).amount()).isEqualTo(12);
+    }
+
+    /** A reset is a fresh loadout, so the racer gets the map's count back after a stack was spent. */
+    @Test
+    void aResetGivesTheMapsCountAgain(Env env) {
+        Player racer = waitingRacer(env);
+        Racers.prepare(racer);
+        racer.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, 2));
+
+        Racers.place(racer, new Vec3(0, 60, 10), TWELVE_ROCKETS);
+
+        assertThat(racer.getInventory().getItemStack(0).amount()).isEqualTo(12);
+    }
+
     @Test
     void prepareLeavesTheElytraAndTheRocketsOff(Env env) {
         Player racer = waitingRacer(env);
@@ -45,7 +74,7 @@ class RacersTest {
         Player racer = waitingRacer(env);
         Racers.prepare(racer);
 
-        Racers.equip(racer);
+        Racers.equip(racer, DEFAULT);
 
         assertThat(racer.getEquipment(EquipmentSlot.CHESTPLATE).material()).isEqualTo(Material.ELYTRA);
         assertThat(racer.getInventory().getItemStack(0).material()).isEqualTo(Material.FIREWORK_ROCKET);
@@ -55,7 +84,7 @@ class RacersTest {
     void holdRemovesTheElytraAndRockets(Env env) {
         Player racer = waitingRacer(env);
         Racers.prepare(racer);
-        Racers.equip(racer);
+        Racers.equip(racer, DEFAULT);
 
         Racers.hold(racer);
 
@@ -70,7 +99,7 @@ class RacersTest {
         Racers.prepare(racer);
         racer.setFlyingWithElytra(true);
 
-        Racers.place(racer, new Vec3(0, 60, 10));
+        Racers.place(racer, new Vec3(0, 60, 10), DEFAULT);
 
         assertThat(racer.getEquipment(EquipmentSlot.CHESTPLATE).material()).isEqualTo(Material.ELYTRA);
         assertThat(racer.isFlyingWithElytra())

@@ -2,6 +2,7 @@ package net.elytrarace.voyager.race.effect;
 
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.race.effect.RingEffect;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Unmodifiable;
@@ -17,22 +18,30 @@ import java.util.Optional;
  * {@code voyager.race.scoring} and {@code voyager.race.progress} — so {@link
  * #effectFor(RingType)} reports their absence rather than handing back a no-op effect.
  *
- * <p><strong>The mapping is fixed, and there is no {@code register}.</strong> Design rule 3 asks a
- * registry to be backed by a {@code ConcurrentHashMap}; this one was, and nothing could ever write
- * to it, which made the concurrent map decoration and the unmodifiable view a wrapper around a map
- * nobody mutates. Adding a {@code register} instead would have been an extension point with no
- * caller — every ring type this game has is known here, and a new effect arrives as a new
- * {@link RingType} plus a line in {@code DefaultRingEffectRegistry}, in the one place the whole
- * type-to-effect mapping can be read at once. If a later stage genuinely needs to register an
- * effect it does not own — {@code voyager-platform} is the candidate — that is the point to reopen
- * this, with the caller in hand.
+ * <p><strong>There is still no {@code register}, but the registry is built per map.</strong> The
+ * factors a {@code BOOST} or {@code SLOW} ring applies used to be constants here, and the only
+ * callers were this class's own tests. A map now states them in its {@code ringEffects}, so the
+ * platform builds one registry for each course from that map's {@link RingEffectTuning}: the
+ * caller this class was waiting for. Each registry is still fixed once built. Nothing registers an
+ * effect at runtime, and a new effect arrives as a new {@link RingType} plus a line in
+ * {@code DefaultRingEffectRegistry}.
  */
 public sealed interface RingEffectRegistry permits RingEffectRegistry.DefaultRingEffectRegistry {
 
-    /** Creates a new registry, pre-populated with the standard {@code BOOST}/{@code SLOW} effects. */
+    /** Creates a registry with the default factors, the ones every map used before they were per map. */
     @Contract(value = " -> new", pure = true)
     static RingEffectRegistry create() {
-        return new DefaultRingEffectRegistry();
+        return create(RingEffectTuning.DEFAULT);
+    }
+
+    /**
+     * Creates a registry whose {@code BOOST} and {@code SLOW} effects apply the factors of {@code tuning}.
+     *
+     * @param tuning the factors of one map's {@code BOOST} and {@code SLOW} rings
+     */
+    @Contract(value = "_ -> new", pure = true)
+    static RingEffectRegistry create(RingEffectTuning tuning) {
+        return new DefaultRingEffectRegistry(tuning);
     }
 
     /** Returns the effect registered for {@code type}, or empty if that type carries none. */
@@ -49,17 +58,12 @@ public sealed interface RingEffectRegistry permits RingEffectRegistry.DefaultRin
      */
     final class DefaultRingEffectRegistry implements RingEffectRegistry {
 
-        /** Velocity multiplier a {@code BOOST} ring leaves behind. */
-        static final double BOOST_MULTIPLIER = 1.5;
+        private final Map<RingType, RingEffect> effects;
 
-        /** Velocity multiplier a {@code SLOW} ring leaves behind. */
-        static final double SLOW_MULTIPLIER = 0.5;
-
-        private final Map<RingType, RingEffect> effects = Map.of(
-                RingType.BOOST, new SpeedMultiplierEffect(BOOST_MULTIPLIER),
-                RingType.SLOW, new SpeedMultiplierEffect(SLOW_MULTIPLIER));
-
-        DefaultRingEffectRegistry() {
+        DefaultRingEffectRegistry(RingEffectTuning tuning) {
+            this.effects = Map.of(
+                    RingType.BOOST, new SpeedMultiplierEffect(tuning.boostMultiplier()),
+                    RingType.SLOW, new SpeedMultiplierEffect(tuning.slowMultiplier()));
         }
 
         @Override

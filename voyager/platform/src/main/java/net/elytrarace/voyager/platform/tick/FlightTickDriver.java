@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.tick;
 
+import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.physics.CollisionSpace;
 import net.elytrarace.voyager.api.physics.FlightState;
 import net.elytrarace.voyager.physics.ElytraSimulator;
@@ -48,8 +49,10 @@ import java.util.UUID;
  * Later observations of position and velocity are ignored: normal elytra flight is
  * client-authoritative, matching Vanilla, and the server tracks its own copy silently alongside for
  * ring collision and boost math. Nothing here calls {@code Player#setVelocity} — that is
- * {@code VelocityExit}'s and only {@code VelocityExit}'s, for the three external forces that
- * legitimately override the client, and {@code ApiPurityTest} now enforces it.
+ * {@code VelocityExit}'s and only {@code VelocityExit}'s, for the two external forces that
+ * legitimately override the client (a zero, and a ring effect), and {@code ApiPurityTest} enforces it.
+ * A ring effect reaches this class only through {@link #replaceVelocity}, which changes the simulated
+ * state and sends nothing.
  *
  * <p>Not thread-safe, like the {@link FlightTracker} it wraps: every method must be called from the
  * single thread driving the tick loop.
@@ -97,6 +100,30 @@ public final class FlightTickDriver {
     public void forget(UUID playerId) {
         tracker.forget(playerId);
         stateByPlayer.remove(playerId);
+    }
+
+    /**
+     * The velocity the server's simulation holds for {@code playerId} right now: the one the next tick starts from.
+     *
+     * @return the velocity, or empty when no flight is simulated for the player
+     */
+    public Optional<Vec3> velocityOf(UUID playerId) {
+        FlightState state = stateByPlayer.get(playerId);
+        return state == null ? Optional.empty() : Optional.of(state.velocity());
+    }
+
+    /**
+     * Replaces the velocity the next tick starts from, keeping the position, rotation and ground flag. This is the
+     * one way a ring effect reaches the simulation: the velocity the racer was sent is the one the simulation
+     * continues from, so the two agree on the next tick.
+     *
+     * @param velocity the velocity after the ring effect, in blocks per tick
+     * @throws UntrackedFlightException if no flight is simulated for {@code playerId}
+     */
+    public void replaceVelocity(UUID playerId, Vec3 velocity) {
+        FlightState state = tracked(playerId);
+        stateByPlayer.put(playerId,
+                new FlightState(state.position(), velocity, state.yaw(), state.pitch(), state.onGround()));
     }
 
     /**

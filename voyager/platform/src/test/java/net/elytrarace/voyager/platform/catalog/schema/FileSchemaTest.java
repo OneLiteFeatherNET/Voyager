@@ -139,6 +139,36 @@ class FileSchemaTest {
     }
 
     @Test
+    void theMapSchemaAcceptsRingEffectsAndTheOptionalBoostFields() {
+        String tuned = VALID_MAP
+                .replace("\"boostConfig\": { \"burnDurationTicks\": 30, \"cooldownTicks\": 40 }",
+                        "\"boostConfig\": { \"burnDurationTicks\": 30, \"cooldownTicks\": 40, "
+                                + "\"rocketsPerRacer\": 12, \"maxSpeedBlocksPerTick\": 3.5 }")
+                .replace("\"guideLine\"", "\"ringEffects\": { \"boostMultiplier\": 2.0, \"slowMultiplier\": 0.25 },\n"
+                        + "  \"guideLine\"");
+
+        assertThat(errors(mapSchema(), JSON.readTree(tuned))).isEmpty();
+    }
+
+    @Test
+    void theMapSchemaRefusesZeroRocketsNamingTheField() {
+        String noRockets = VALID_MAP.replace("\"cooldownTicks\": 40 }",
+                "\"cooldownTicks\": 40, \"rocketsPerRacer\": 0 }");
+
+        assertThat(errors(mapSchema(), JSON.readTree(noRockets))).anySatisfy(
+                error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/boostConfig/rocketsPerRacer"));
+    }
+
+    @Test
+    void theMapSchemaRefusesANegativeRingEffectFactor() {
+        String negative = VALID_MAP.replace("\"guideLine\"",
+                "\"ringEffects\": { \"slowMultiplier\": -0.5 },\n  \"guideLine\"");
+
+        assertThat(errors(mapSchema(), JSON.readTree(negative))).anySatisfy(
+                error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/ringEffects/slowMultiplier"));
+    }
+
+    @Test
     void cupModeOutsideTheEnumerationIsRejected() {
         String tournament = VALID_CUP.replace("\"mode\": \"RACE\"", "\"mode\": \"TOURNAMENT\"");
 

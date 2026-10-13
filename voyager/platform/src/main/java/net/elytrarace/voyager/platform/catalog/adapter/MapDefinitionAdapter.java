@@ -13,6 +13,7 @@ import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 
 import org.jetbrains.annotations.ApiStatus;
 
@@ -75,7 +76,8 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
                 rings,
                 Duration.ofMillis(Math.round(seconds * 1000.0)),
                 boostConfig(json, what),
-                guideLine(json, what));
+                guideLine(json, what),
+                ringEffects(json, what));
     }
 
     /**
@@ -141,6 +143,25 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
         String where = "%s boost config".formatted(what);
         return new BoostConfig(
                 JsonFields.integer(boost, "burnDurationTicks", where),
-                JsonFields.integer(boost, "cooldownTicks", where));
+                JsonFields.integer(boost, "cooldownTicks", where),
+                JsonFields.integerOr(boost, "rocketsPerRacer", where, BoostConfig.MAX_ROCKETS_PER_RACER),
+                JsonFields.numberOrNull(boost, "maxSpeedBlocksPerTick", where));
+    }
+
+    /**
+     * Reads the map's velocity factors for its {@code BOOST} and {@code SLOW} rings. Optional as a whole: a
+     * map that states no {@code ringEffects} gets {@link RingEffectTuning#DEFAULT}. A factor stated alone keeps
+     * the other at its default, so a file may change one number and say nothing about the other.
+     */
+    static RingEffectTuning ringEffects(JsonObject json, String what) {
+        if (!JsonFields.present(json, "ringEffects")) {
+            return RingEffectTuning.DEFAULT;
+        }
+        JsonObject effects = JsonFields.object(
+                JsonFields.required(json, "ringEffects", what), "%s field 'ringEffects'".formatted(what));
+        String where = "%s ring effects".formatted(what);
+        return new RingEffectTuning(
+                JsonFields.numberOr(effects, "boostMultiplier", where, RingEffectTuning.DEFAULT.boostMultiplier()),
+                JsonFields.numberOr(effects, "slowMultiplier", where, RingEffectTuning.DEFAULT.slowMultiplier()));
     }
 }
