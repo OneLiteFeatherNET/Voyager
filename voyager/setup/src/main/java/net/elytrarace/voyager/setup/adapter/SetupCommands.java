@@ -2,6 +2,7 @@ package net.elytrarace.voyager.setup.adapter;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.permission.PermissionNode;
+import net.kyori.adventure.text.Component;
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
@@ -189,7 +190,9 @@ public final class SetupCommands extends Command {
         Pos at = draft.spawn() == null ? START : Vectors.toMinestom(draft.spawn()).asPos();
         builder.setInstance(world, at);
         if (Wand.giveIfMissing(builder)) {
-            builder.sendMessage(SetupMessages.wandGiven());
+            for (Component line : SetupMessages.wandInstructions()) {
+                builder.sendMessage(line);
+            }
         }
     }
 }
