@@ -310,19 +310,19 @@ class MessagesTest {
     }
 
     @Test
-    void theWaitingBossBarReadsTheCountOfTheMinimum() {
-        Component waiting = Messages.lobbyBossBarWaiting(1, 2);
+    void theWaitingBossBarNamesTheCupTheCountAndTheMinimum() {
+        Component waiting = Messages.lobbyBossBarWaiting("Grand Tour", 1, 2);
 
-        assertThat(translatable(waiting).key()).isEqualTo("voyager.lobby.bossbar.waiting");
-        assertThat(argumentsOf(waiting)).containsExactly("1", "2");
+        assertThat(translatable(waiting).key()).isEqualTo("voyager.lobby.bossbar.waiting.cup");
+        assertThat(argumentsOf(waiting)).containsExactly("Grand Tour", "1", "2");
     }
 
     @Test
-    void theCountdownBossBarReadsTheSecondsLeft() {
-        Component countdown = Messages.lobbyBossBarCountdown(Duration.ofSeconds(10));
+    void theCountdownBossBarNamesTheCupAndTheSecondsLeft() {
+        Component countdown = Messages.lobbyBossBarCountdown("Grand Tour", Duration.ofSeconds(10));
 
-        assertThat(translatable(countdown).key()).isEqualTo("voyager.lobby.bossbar.countdown");
-        assertThat(argumentsOf(countdown)).containsExactly("10");
+        assertThat(translatable(countdown).key()).isEqualTo("voyager.lobby.bossbar.countdown.cup");
+        assertThat(argumentsOf(countdown)).containsExactly("Grand Tour", "10");
     }
 
     @Test

@@ -49,8 +49,10 @@ public abstract class Messages {
     private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
-    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting";
-    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown";
+    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting.cup";
+    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown.cup";
+    private static final String HANDOFF_DISCONNECT = "voyager.handoff.disconnect";
+    private static final String LOBBY_BOARD_MORE = "voyager.lobby.board.more";
     private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
     private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
     private static final String RESET_TARGET_CHECKPOINT = "voyager.reset.target.checkpoint";
@@ -228,17 +230,27 @@ public abstract class Messages {
                 Component.text(name), Component.text(online), Component.text(maximum));
     }
 
-    /** The lobby boss bar while the minimum is not met: how many racers are online and how many are needed. */
+    /**
+     * The lobby boss bar while the minimum is not met: the cup a racer waits for, and how many racers are online and needed.
+     *
+     * @param cup    the cup's name, as the cup shown in the lobby names it
+     * @param online how many racers are online
+     * @param needed how many racers the cup needs to start
+     */
     @Contract(pure = true)
-    public static Component lobbyBossBarWaiting(int online, int needed) {
-        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(online), Component.text(needed));
+    public static Component lobbyBossBarWaiting(String cup, int online, int needed) {
+        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(cup), Component.text(online),
+                Component.text(needed));
     }
 
-    /** The lobby boss bar during the start countdown: the whole seconds left, rounded up, as the action bar had them. */
+    /**
+     * The lobby boss bar during the start countdown: the cup, and the whole seconds left, rounded up, as the action bar had
+     * them.
+     */
     @Contract(pure = true)
-    public static Component lobbyBossBarCountdown(Duration remaining) {
+    public static Component lobbyBossBarCountdown(String cup, Duration remaining) {
         long millis = Math.max(0L, remaining.toMillis());
-        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN,
+        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN, Component.text(cup),
                 Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
     }
 
@@ -246,6 +258,47 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component lobbyCancelled(int online, int needed) {
         return Component.translatable(LOBBY_CANCELLED, Component.text(online), Component.text(needed));
+    }
+
+    /**
+     * The title of the lobby's cup board: the cup's name. The name is the cup's own, not a sentence the game wrote.
+     *
+     * @param cup the cup's name
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardTitle(String cup) {
+        return Component.text(cup);
+    }
+
+    /**
+     * One map line of the lobby's cup board: its place in the cup and its name. The numbering and the name are data, so the
+     * line is not translated.
+     *
+     * @param position the map's place in play order, from one
+     * @param map      the map's name
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardMap(int position, String map) {
+        return Component.text("%d. %s".formatted(position, map));
+    }
+
+    /**
+     * The last line of the lobby's cup board when the cup has more maps than the board holds: how many follow.
+     *
+     * @param more how many maps the board does not list
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardMore(int more) {
+        return Component.translatable(LOBBY_BOARD_MORE, Component.text(more));
+    }
+
+    /**
+     * The disconnect a racer gets when no hub handoff runs (a local run without the bridge) or the handoff refuses. The
+     * refusal is not retried; the racer reconnects (ADR-0033).
+     */
+    @Contract(pure = true)
+    public static Component handoffDisconnect() {
+        return Component.translatable(HANDOFF_DISCONNECT);
     }
 
     /** A finisher's map result, in one chat line that is still there when the next map starts. */

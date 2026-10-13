@@ -29,9 +29,14 @@ dependencies {
     compileOnly(libs.cloudnet.bridge.impl)
     compileOnly(libs.cloudnet.driver.api)
 
+    // The hub handoff port is the one Voyager package the bridge names (ADR-0026, amended 2026-10-13; ADR-0033). It is
+    // compileOnly like everything else: the server loads it, and it is never bundled into the bridge jar (verifyNoVoyagerApiInBridgeJar).
+    compileOnly(project(":voyager:api"))
+
     // The unit tests use Minestom's and Adventure's types for the pointer, and nothing from CloudNet.
     testImplementation(platform(libs.aonyx.bom))
     testImplementation("net.minestom:minestom")
+    testImplementation(project(":voyager:api"))
 }
 
 // The extension processor reads the project version, which subprojects do not inherit from the root (as Cygnus does).

@@ -120,6 +120,16 @@ with status 0.
 
 Repeat the three steps for a setup service. The acceptance results are recorded in the change's design.md, Risk R8.
 
+## The hub handoff needs a fallback on the proxy
+
+When a cup's results have lingered, the server sends every racer to the network hub. It does that by asking CloudNet to connect
+the racer to the best matching fallback (`connectToFallback`, bridge-api 4.0.0-RC17). CloudNet chooses the target from the proxy's
+fallback configuration, not from Voyager. Voyager names no group and no task.
+
+- Configure a fallback for the game's proxy group, so that a fallback exists for the racers to go to. Without one, CloudNet has
+  no target, and what a racer sees is the proxy's behaviour, not Voyager's. Voyager does not detect it and does not retry.
+- A node without the bridge disconnects the racers with the translated message instead. That is the local-development path.
+
 ## Known limits
 
 - The bridge builds against CloudNet 4.0.0-RC17, which the node runs. Whether it works on Minecraft 26.2 on the node is what the

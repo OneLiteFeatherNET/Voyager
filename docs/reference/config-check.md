@@ -19,7 +19,7 @@ play does not stop it. The catalogue-wide checks (JSON, schema, references) stil
 
 The same check runs without Gradle as `java -Dvoyager.config.check=true -jar <server jar>`, with
 `-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH`, `-DVOYAGER_CUP`, `-DVOYAGER_MIN_PLAYERS`, `-DVOYAGER_LOBBY_WORLD`,
-`-DVOYAGER_LOBBY_SPAWN` and `-DVOYAGER_MAX_PLAYERS` as needed. Each key also reads its environment variable of the same name,
+`-DVOYAGER_LOBBY_SPAWN`, `-DVOYAGER_LOBBY_HOLOGRAM` and `-DVOYAGER_MAX_PLAYERS` as needed. Each key also reads its environment variable of the same name,
 and the report names the source of each problem (see `docs/reference/configuration.md`).
 
 A normal boot runs the same check before it builds the object graph, and refuses with the same report.
@@ -64,6 +64,9 @@ Standard output carries the report. A normal boot logs the same lines at error l
   racers at the first map's spawn. The lobby world must not be a map's world, and it is checked like a map's world:
   it must be a folder with region data, and it must be sound. A missing or unreadable lobby is an error that
   names its folder.
+- The lobby hologram, `VOYAGER_LOBBY_HOLOGRAM`: optional. When it is set, it is three numbers, `x,y,z`, in block coordinates,
+  and anything else is an error under this key that prints the text it read. It needs `VOYAGER_LOBBY_WORLD`: set without a lobby
+  world it is an error that names both keys. When it is not set there is no problem and no warning.
 - The maximum racer count, `VOYAGER_MAX_PLAYERS`: when set, it is a whole number that is not below the minimum.
   It defaults to 16, in production and under `voyager.dev`. It is soft: it sets the join line and the full-lobby
   countdown, and it never refuses a racer. A value that is not a number, or one below `VOYAGER_MIN_PLAYERS`, is an

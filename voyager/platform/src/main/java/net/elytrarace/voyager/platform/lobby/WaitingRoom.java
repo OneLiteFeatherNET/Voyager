@@ -1,7 +1,9 @@
 package net.elytrarace.voyager.platform.lobby;
 
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.kyori.adventure.text.Component;
@@ -13,7 +15,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -28,9 +33,9 @@ import java.util.function.Supplier;
  *
  * <h2>Where waiting racers stand</h2>
  *
- * <p>With a lobby world configured ({@link LobbyTransition}) a finished cup returns its racers there. Without one, the
- * first map's spawn is where they stand, as before ADR-0029. The boss bar is shown there too, until the start is
- * committed; the server says at boot that no lobby is set.
+ * <p>With a lobby world configured ({@link LobbyTransition}) a racer who joins waits there. Without one, the first map's
+ * spawn is where they stand, as before ADR-0029. The boss bar is shown there too, until the start is committed; the
+ * server says at boot that no lobby is set.
  *
  * <h2>Two rules the gate does not know about</h2>
  *
@@ -38,49 +43,61 @@ import java.util.function.Supplier;
  * which is not what {@code /race start} promises, so the room holds an abort until a racer has been online since the
  * cup started.
  *
- * <p>A cup that finishes is not an abort. Its racers are handed back their waiting loadout and placed in the lobby (or,
- * with no lobby, at the first map's spawn), and only then does the gate look at the room again, so a finished cup with
- * enough racers starts the next countdown on the same tick.
+ * <p>A cup that finishes is not an abort, and the room does not move its racers to the lobby. Its results stay up for
+ * {@link #RESULTS_LINGER_TICKS} ticks, and then every racer online is handed to the network hub (ADR-0033). The racers
+ * the room has sent away are not counted again, so a finished cup starts no countdown for them; a racer who joins
+ * afterwards starts the room as the minimum rule says.
  */
 @NotNullByDefault
 public final class WaitingRoom {
 
-    /** Places a racer at the first map's spawn, where a waiting racer stands when no lobby world is configured. */
-    @FunctionalInterface
-    public interface WaitingSpawn {
+    /**
+     * How many ticks the results of a finished cup stay up before every racer online is handed to the hub: 200 ticks,
+     * which is 10 s at 20 TPS (ADR-0033). A constant, not a setting, and counted in ticks, so it needs no clock.
+     */
+    public static final int RESULTS_LINGER_TICKS = 200;
 
-        /**
-         * @param racer the racer to place
-         */
-        void place(Player racer);
-    }
+    /** The linger counter when no result is waiting to be handed off. */
+    private static final int NO_RESULT = -1;
 
     private final CupSession session;
+    private final CatalogHolder catalog;
     private final Supplier<Collection<Player>> players;
     private final int minimum;
     private final int maximum;
     private final @Nullable LobbyTransition lobby;
-    private final WaitingSpawn spawn;
+    private final HubHandoff hub;
     private final LobbyHud hud;
+    private final LobbySidebar sidebar;
+    private final @Nullable LobbyHologram hologram;
     private final Supplier<Instance> firstMapInstance;
+    /** The racers the room has handed to the hub. They stay connected until the move, so the room does not count them. */
+    private final Set<UUID> handedOff = new HashSet<>();
     private boolean racersSinceStart;
     private boolean running;
+    /** Ticks since the cup's results were announced, or {@link #NO_RESULT}. */
+    private int lingerTicks = NO_RESULT;
 
     /**
      * @param session the cup the room starts, cancels and aborts
+     * @param catalog the catalogue holder; the lobby names the cup it currently holds (a pending reload shows only once a round
+     *     promotes it, ADR-0033)
      * @param players everyone online, read on every tick
      * @param minimum how many racers a cup needs to start; at least one
      * @param maximum how many racers make a full server; at least one. It sets the join line and the full-lobby
      *     countdown, and it never refuses a racer
-     * @param lobby   the lobby world finished racers return to, or {@code null} when none is configured
-     * @param spawn   where a racer is placed when a finished cup returns the room to waiting and there is no lobby
+     * @param lobby   the lobby world racers who join wait in, or {@code null} when none is configured
+     * @param hub     moves the racers of a finished cup to the network hub after the results linger
      * @param hud     the boss bar, one per racer
+     * @param sidebar the sidebar that names the cup, one per racer
+     * @param hologram the cup as a text display in the lobby, or {@code null} when the server has none
      * @param firstMapInstance the instance of the first map of the current catalogue. With no lobby the racers wait in
      *     it, so the bar is shown there; it is read only in that case
      * @throws IllegalArgumentException if {@code minimum} or {@code maximum} is below one
      */
-    public WaitingRoom(CupSession session, Supplier<Collection<Player>> players, int minimum, int maximum,
-            @Nullable LobbyTransition lobby, WaitingSpawn spawn, LobbyHud hud, Supplier<Instance> firstMapInstance) {
+    public WaitingRoom(CupSession session, CatalogHolder catalog, Supplier<Collection<Player>> players, int minimum,
+            int maximum, @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, LobbySidebar sidebar,
+            @Nullable LobbyHologram hologram, Supplier<Instance> firstMapInstance) {
         if (minimum < 1) {
             throw new IllegalArgumentException("the minimum racer count must be at least 1, was %s".formatted(minimum));
         }
@@ -88,12 +105,15 @@ public final class WaitingRoom {
             throw new IllegalArgumentException("the maximum racer count must be at least 1, was %s".formatted(maximum));
         }
         this.session = session;
+        this.catalog = catalog;
         this.players = players;
         this.minimum = minimum;
         this.maximum = maximum;
         this.lobby = lobby;
-        this.spawn = spawn;
+        this.hub = hub;
         this.hud = hud;
+        this.sidebar = sidebar;
+        this.hologram = hologram;
         this.firstMapInstance = firstMapInstance;
     }
 
@@ -114,7 +134,7 @@ public final class WaitingRoom {
      */
     public String describe() {
         return "room: %s of %s racer(s) online, %s".formatted(
-                players.get().size(), minimum, switch (session.situation(StartGate.COMMIT_WINDOW)) {
+                racers().size(), minimum, switch (session.situation(StartGate.COMMIT_WINDOW)) {
                     case WAITING -> "waiting";
                     case COUNTDOWN -> "counting down";
                     case COMMITTED -> "committed to the start";
@@ -132,7 +152,7 @@ public final class WaitingRoom {
      * @param racer the racer who joined
      */
     public void joined(Player racer) {
-        Collection<Player> online = players.get();
+        Collection<Player> online = racers();
         online.forEach(other -> other.sendMessage(Messages.playerJoined(racer.getUsername(), online.size(), maximum)));
         if (session.situation(StartGate.COMMIT_WINDOW) == StartGate.Situation.RUNNING) {
             racer.sendMessage(Messages.joinedMidCup());
@@ -146,30 +166,36 @@ public final class WaitingRoom {
      */
     public void left(UUID playerId) {
         hud.forget(playerId);
+        sidebar.forget(playerId);
+        handedOff.remove(playerId);
     }
 
     /**
      * One room tick, after the cup's own tick has run.
+     *
+     * <p>A cup that has just finished starts the linger on this tick. A cup that starts again during the linger drops it,
+     * because the results it would have handed off are no longer the ones on screen. The hand-off is decided before the
+     * count, so a racer who joined during the linger is counted only if they were not handed away.
      */
     public void tick() {
-        Collection<Player> online = players.get();
+        if (running && !session.running() && session.cupFinished()) {
+            lingerTicks = 0;
+        } else if (lingerTicks != NO_RESULT) {
+            advanceLinger();
+        }
+
+        Collection<Player> online = racers();
         int count = online.size();
         if (count > 0) {
             racersSinceStart = true;
         }
-        if (running && !session.running() && session.cupFinished()) {
-            for (Player racer : online) {
-                Racers.hold(racer);
-            }
-            if (lobby != null) {
-                lobby.returnTo(online);
-            } else {
-                online.forEach(spawn::place);
-            }
-        }
 
         StartGate.Situation situation = session.situation(StartGate.COMMIT_WINDOW);
-        StartGate.Verdict verdict = StartGate.decide(situation, count, minimum);
+        // While the results linger no countdown starts: the racers on the server are about to be sent to the hub, so a
+        // start now would race the hand-off and cancel the linger.
+        StartGate.Verdict verdict = lingerTicks != NO_RESULT
+                ? StartGate.Verdict.HOLD
+                : StartGate.decide(situation, count, minimum);
         if (verdict == StartGate.Verdict.ABORT_CUP && !racersSinceStart) {
             verdict = StartGate.Verdict.HOLD;
         }
@@ -195,6 +221,49 @@ public final class WaitingRoom {
         announce(session.situation(StartGate.COMMIT_WINDOW), online, count);
     }
 
+    /**
+     * One tick of the linger. The results stay up until the counter reaches {@link #RESULTS_LINGER_TICKS}, and then every
+     * racer online is handed to the hub. A cup that starts again during the linger ends it without a hand-off.
+     */
+    private void advanceLinger() {
+        if (session.running()) {
+            lingerTicks = NO_RESULT;
+            return;
+        }
+        lingerTicks++;
+        if (lingerTicks == RESULTS_LINGER_TICKS) {
+            lingerTicks = NO_RESULT;
+            handOff(racers());
+        }
+    }
+
+    /**
+     * Sends the racers to the hub and stops counting them. The hub decides where they land, so the room keeps no record of
+     * the target.
+     *
+     * <p>TODO(com-bots): bots are excluded here, in the list the room sends. No bot exists yet (see {@link HubHandoff}).
+     */
+    private void handOff(List<Player> racers) {
+        if (racers.isEmpty()) {
+            return;
+        }
+        for (Player racer : racers) {
+            Racers.hold(racer);
+        }
+        hub.send(racers);
+        racers.forEach(racer -> handedOff.add(racer.getUuid()));
+    }
+
+    /**
+     * The racers the room counts: everyone online, except the racers it has already handed to the hub. A handed-off racer
+     * stays connected until the move, so the count has to skip them.
+     */
+    private List<Player> racers() {
+        return players.get().stream()
+                .filter(racer -> !handedOff.contains(racer.getUuid()))
+                .toList();
+    }
+
     /** A full server shortens a countdown that has more than the full-lobby length left; see {@link StartGate}. */
     private void shortenIfFull(StartGate.Situation situation, int count) {
         StartGate.shortenedCountdown(situation, session.lobbyRemaining(), count, maximum)
@@ -208,24 +277,32 @@ public final class WaitingRoom {
      * lobby once the racer has entered the first map. A racing cup shows no waiting bar.
      */
     private void announce(StartGate.Situation situation, Collection<Player> online, int count) {
-        Component title = waitingTitle(situation, count);
+        // Every lobby display reads this one board, so the sidebar, the hologram and the boss bar name the same cup.
+        LobbyBoard board = LobbyBoard.of(catalog.current().cup());
+        Component title = waitingTitle(situation, count, board);
         Instance waitingPlace = lobby != null ? lobby.instance() : firstMapInstance.get();
         float progress = situation == StartGate.Situation.WAITING ? 1.0f : countdownFraction();
+        boolean waiting = situation != StartGate.Situation.RUNNING;
         for (Player racer : online) {
+            sidebar.update(racer, waitingPlace, board, waiting);
             if (title == null) {
                 hud.hide(racer);
             } else {
                 hud.update(racer, waitingPlace, title, progress);
             }
         }
+        if (hologram != null) {
+            hologram.update(board);
+        }
     }
 
     /** The line the bar reads in this situation, or {@code null} when no waiting bar is shown. */
-    private @Nullable Component waitingTitle(StartGate.Situation situation, int count) {
+    private @Nullable Component waitingTitle(StartGate.Situation situation, int count, LobbyBoard board) {
+        String cup = board.cupName();
         return switch (situation) {
-            case WAITING -> Messages.lobbyBossBarWaiting(count, minimum);
-            case COUNTDOWN -> Messages.lobbyBossBarCountdown(session.lobbyRemaining());
-            case COMMITTED -> lobby != null ? Messages.lobbyBossBarCountdown(session.lobbyRemaining()) : null;
+            case WAITING -> Messages.lobbyBossBarWaiting(cup, count, minimum);
+            case COUNTDOWN -> Messages.lobbyBossBarCountdown(cup, session.lobbyRemaining());
+            case COMMITTED -> lobby != null ? Messages.lobbyBossBarCountdown(cup, session.lobbyRemaining()) : null;
             case RUNNING -> null;
         };
     }
