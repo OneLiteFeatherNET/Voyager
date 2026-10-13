@@ -7,15 +7,15 @@ test follows F.I.R.S.T.: no sleeps, no clock reads, explicit ticks, a fresh Mine
 
 ## 1. Decisions and owner answers
 
-- [ ] 1.1 Record the owner's answers to design.md Q1 to Q9 in design.md, "Owner decisions" (`docs(openspec)`)
-- [ ] 1.2 Owner accepts ADR-0033; its Status changes from Proposed to Accepted (`docs`)
+- [x] 1.1 Record the owner's answers to design.md Q1 to Q9 in design.md, "Owner decisions" (`docs(openspec)`)
+- [ ] 1.2 Owner accepts ADR-0033; its Status changes from Proposed to Accepted (`docs`). **Not done: the owner keeps ADR-0033 Proposed until the change is playtested.**
 - [ ] 1.3 After 1.2, mark ADR-0029 "Amended by ADR-0033" (its return rule is replaced; its Status stays Proposed) and add an amendment note to ADR-0026 (the bridge names `api.handoff`) (`docs`)
 - [ ] 1.4 After 1.2 and only with the owner's approval of Q1, amend the greenfield design paragraph "the extension names no Voyager type" in `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` (`docs`)
 
 ## 2. Spikes on the owner's node (no commit; results go into design.md section 2)
 
-- [ ] 2.1 Spike: a throwaway extension in the node's `extensions/` logs `PlayerHandoffs.class` identity against the root's, from `ExtensionClassLoader` parent-first delegation. Record the result in design.md section 2.2. If the identity differs, stop and reopen Q1.
-- [ ] 2.2 Spike: call `connectToFallback()` for a test racer with a configured `ProxyFallback` and without one. Record in design.md Q4 what the racer sees and what the log shows.
+- [ ] 2.1 (owner-run on the node; not part of this implementation) Spike: a throwaway extension in the node's `extensions/` logs `PlayerHandoffs.class` identity against the root's, from `ExtensionClassLoader` parent-first delegation. Record the result in design.md section 2.2. If the identity differs, stop and reopen Q1.
+- [ ] 2.2 (owner-run on the node; not part of this implementation) Spike: call `connectToFallback()` for a test racer with a configured `ProxyFallback` and without one. Record in design.md Q4 what the racer sees and what the log shows.
 
 ## 3. api: the handoff port
 

@@ -1,11 +1,11 @@
 # Design
 
-Status: planning only. No production code is changed by this change until the owner answers the open questions in
-section 10. Every file and class named here is a proposal.
+Status: approved on 2026-10-13. Section 10 records the owner's answers, which govern where the text above differs from them.
+Every file and class named here is part of this change.
 
 ## 1. Owner decisions (2026-10-12)
 
-The owner's two decisions are in `proposal.md`. The answers to the questions in section 10 are recorded here by task 1.1.
+The owner's two decisions are in `proposal.md`. The answers to the questions in section 10 are recorded there by task 1.1.
 
 ## 2. Investigation
 
@@ -73,8 +73,8 @@ Read from `minestom-extensions-2.2.0-sources.jar` (`net.onelitefeather:minestom-
 ### 2.6 The catalogue at start
 
 - `CatalogHolder.promoteForNewRound()` promotes a pending catalogue to current at a round start. The owner's reload rule
-  (`voyager.command.reload.pending`) says changed cups play from the next round. So while a racer waits, the cup "the next round
-  will play" is the pending catalogue's cup if there is one, otherwise the current one (decision D7).
+  (`voyager.command.reload.pending`) says changed cups play from the next round. The lobby shows `CatalogHolder.current()`
+  (decision D7, owner answer Q6): a pending reload is not shown until a round promotes it, and a countdown keeps its cup.
 
 ## 3. The rendezvous: how the extension gives the server a handoff
 
@@ -88,8 +88,8 @@ value must cross the extension boundary. The options:
 | C. `ServiceLoader` from the extension's loader | The bridge jar ships `META-INF/services/…PlayerHandoff`. The root finds the extension with `MinecraftServer.getExtensionManager().getExtension("VoyagerCloudNetPermissions")` and loads the service with that extension's class loader. | Needs the root to know an extension name and reach its loader. The service interface still has to be in `voyager-api`, so it is A with more moving parts. Rejected. |
 | D. Minestom event | The root calls `MinecraftServer.getGlobalEventHandler().call(event)`, and the bridge handles it. | The event type has to be named by both sides, which again means a shared Voyager type, and it is an event the server would fire at cup end. Rejected. |
 
-Decision D1: option A. The bridge names exactly one Voyager package, `net.elytrarace.voyager.api.handoff`, and the fitness rule
-in section 6 enforces it. Option B is the fallback if the owner keeps "the extension names no Voyager type" unchanged.
+Decision D1: option A, confirmed by the owner (Q1). The bridge names exactly one Voyager package, `net.elytrarace.voyager.api.handoff`,
+and the fitness rule in section 6 enforces it.
 
 ## 4. Types, modules and the dependency direction
 
@@ -110,7 +110,7 @@ in section 6 enforces it. Option B is the fallback if the owner keeps "the exten
 | New type | Module | Package | Notes |
 |---|---|---|---|
 | `PlayerHandoff` (interface) | api | `net.elytrarace.voyager.api.handoff` | `void toHub(UUID playerId) throws HandoffUnavailableException`. Pure. |
-| `PlayerHandoffs` (holder) | api | `net.elytrarace.voyager.api.handoff` | Static slot for one `PlayerHandoff`: `install`, `uninstall`, `current()` returning `Optional`. An `AtomicReference`. It is an exception to the api rule "no implementation", and the design rule 3 sealed-registry shape does not fit a single slot. Owner to confirm (section 10, Q1). |
+| `PlayerHandoffs` (holder) | api | `net.elytrarace.voyager.api.handoff` | Static slot for one `PlayerHandoff`: `install`, `uninstall`, `current()` returning `Optional`. An `AtomicReference`. It is an exception to the api rule "no implementation", and the design rule 3 sealed-registry shape does not fit a single slot. Confirmed by the owner (section 10, Q1). |
 | `HandoffUnavailableException` | api | `net.elytrarace.voyager.api.handoff.exception` | Extends `RuntimeException`, `Exception` suffix (design rule 9); has its own `package-info.java`. |
 | `HubHandoff` | platform | `net.elytrarace.voyager.platform.handoff` | Sends each racer: through `PlayerHandoffs.current()` when present; otherwise, or on a refusal, disconnects with `voyager.handoff.disconnect`. |
 | `LobbyBoard` | platform | `net.elytrarace.voyager.platform.lobby` | Pure view model: the cup name and the ordered map lines for a cup, plus the count line. Shared by the sidebar and the hologram. |
@@ -128,17 +128,17 @@ The bridge's `FallbackConnector` is a bridge-package type. The platform never na
 
 - **D1. The port is in `voyager-api` and installed by the bridge.** See section 3.
 - **D2. Local fallback is a disconnect.** With no installed handoff, `HubHandoff` disconnects the racer with `voyager.handoff.disconnect`
-  (translated, English). This is also the refusal path until the owner answers Q2.
+  (translated, English). This is also the refusal path (Q2: no retry).
 - **D3. Everyone online at the handoff tick is handed off.** Racers who join during the linger are handed off with the rest,
   because the owner said "every player". Racers who join after the handoff start a new lobby as before.
 - **D4. `RESULTS_LINGER` = 200 ticks (10 s at 20 TPS).** A constant in `WaitingRoom`, counted in ticks and not measured with a
-  clock, so the test is explicit-tick and Repeatable. Not a setting. Q3 asks whether 10 s is right.
+  clock, so the test is explicit-tick and Repeatable. Not a setting. The owner answered Q3 with 10 s.
 - **D5. The room does not start a countdown for the racers it sent away.** After the handoff the lobby is empty. A later join
   starts the room as it does today.
 - **D6. One source for the lobby text.** `LobbyBoard` builds the cup name and the map lines. The sidebar and the hologram both read
   it. The boss bar reads the cup name from it too. A test asserts that the three agree.
-- **D7. The cup shown while waiting is the pending cup if one is pending, else the current one.** Once a round starts the pinned cup
-  is shown. This matches the reload rule that a changed cup plays from the next round (section 2.6). Q6.
+- **D7. The cup shown while waiting is the cup currently loaded.** The lobby reads `CatalogHolder.current()`. A pending reload
+  shows only once a round starts and promotes it, and a countdown keeps the cup it began with (section 10, Q6).
 - **D8. The sidebar shows only while a racer waits.** It is hidden at `RUNNING` and removed when a racer enters a map. It follows
   the same situation rule as the boss bar.
 - **D9. The hologram is optional and needs a lobby.** It is spawned once at boot in the lobby instance, after the lobby world is
@@ -201,26 +201,39 @@ These are the places where the parallel changes touch the same code. None of the
 - Node (owner only, not CI): spike 2.1 (the class identity across the boundary) and spike 2.2 (`connectToFallback` with and without a
   configured fallback). Then a real cup end on a two-racer test: both racers reach the hub, and the standings are readable first.
 
-## 10. Open questions for the owner
+## 10. Owner decisions (2026-10-13)
 
-- **Q1. Greenfield design and ADR-0026.** Option A (chosen) has the extension name one Voyager package, `api.handoff`. The in-flight
-  `add-cloudnet-deployment` spec already allows `voyager-api` types across the boundary. The older texts do not: the greenfield design
-  paragraph says the extension names no Voyager type, and ADR-0026 says the bridge depends on nothing else of Voyager. Accept the
-  amendment of those two texts (A), or keep them and use option B, a JDK-only rendezvous with an untyped slot?
-- **Q2. A refused handoff.** If CloudNet throws, does the racer get the translated disconnect (recommended, so nobody is stuck in an
-  empty lobby), or stay in the lobby with a retry?
-- **Q3. The linger.** 10 s after the standings (recommended), or none, or 20 s? A constant, or a setting?
-- **Q4. Does `connectToFallback` report failure?** RC17's method returns `void`. What happens when the proxy has no fallback configured:
-  nothing, a log line on the proxy, or a failure on the service? The spike (2.2) answers it, but the owner's proxy configuration decides
-  what a racer sees.
-- **Q5. Racers who join during the linger.** Handed off with the rest (decision D3, recommended), or kept in the lobby?
-- **Q6. The cup shown while waiting after a reload.** The pending cup (D7, recommended), or the current one until the next start?
-- **Q7. The sidebar limit.** The sidebar holds a title and a fixed number of lines. Show the first twelve maps and a "+N more" line
-  (recommended), or abbreviate every map name to fit all of them?
-- **Q8. ADR numbering.** `origin/main` has ADRs up to 0029. There are no files 0027, 0030, 0031 or 0032 in this tree (0027 appears only in a
-  commit message on another ref). The ADR is `0033` as instructed; say if another number is meant.
-- **Q9. Scope and split.** One change, one `feat` type, a `feat(race)` PR title, and `feat(cloudnet)` on the bridge commits (recommended), or two
-  changes: the lobby display and the handoff, the handoff opened after the bridge is verified on the node.
+The owner approved the change and answered its questions. Each answer is binding; where a section above still reads as
+the recommendation it replaces, the answer below governs.
+
+- **Q1. Greenfield design and ADR-0026: option A.** The bridge may name `net.elytrarace.voyager.api.handoff..` and nothing
+  else of Voyager. ADR-0026 gets an amendment note dated 2026-10-13, and the greenfield design paragraph "the extension names
+  no Voyager type" is amended to say the same. `CloudNetBoundaryTest` is changed deliberately in its own `test(fitness)`
+  commit. Option B is not used.
+- **Q2. A refused handoff: disconnect, no retry.** When no handoff is installed, or the installed one throws
+  `HandoffUnavailableException`, the racer is disconnected with the translated `voyager.handoff.disconnect` and a refused
+  handoff logs a warning that names the racer. Nothing is retried, and the racer is not left in the lobby.
+- **Q3. The linger: 10 s (200 ticks) after the standings, then the handoff.** `RESULTS_LINGER_TICKS` is a constant in
+  `WaitingRoom`, not a setting (D4).
+- **Q4. The proxy needs a fallback.** `connectToFallback` reports nothing back, so what a racer sees with no fallback
+  configured is the proxy's behaviour, not Voyager's. This is an operator note in `docs/guides/how-to-deploy-on-cloudnet.md`
+  (task 9.4), with no code. The spike on the owner's node (task 2.2) is still the owner's to run.
+- **Q5. Racers who join during the linger are handed off too (D3).** Every racer online on the handoff tick is handed off.
+- **Q6. The cup shown while waiting is the cup that is currently loaded or pinned.** The lobby shows the cup the holder
+  currently holds (`CatalogHolder.current()`). A reload that is pending is not shown: it becomes current when the next round
+  starts, and the lobby shows it from then on. A countdown keeps the cup it began with, because the holder changes only at a
+  round start. Decision D7 states this rule; the scenario "A reloaded cup shows before the next round" is replaced in the delta spec.
+- **Bots (COM racers).** Not implemented yet. The handoff selects racers in one place, `WaitingRoom.handoffCandidates()`,
+  which carries a TODO that a bot is excluded there. Until the bot change lands, no bot exists, so no bot is handed off.
+- **Display.** A sidebar with the cup name and the maps in play order; a `TextDisplay` hologram at the optional
+  `VOYAGER_LOBBY_HOLOGRAM=x,y,z`, read through the avaje `ConfigLoader`; the cup name in the lobby boss bar. All text is in
+  both bundles, `voyager_en_US.properties` and `voyager_de_DE.properties`.
+- **Sidebar limit (Q7), ADR number (Q8) and scope (Q9).** Approved as recommended: twelve map lines and a "+N more" line; ADR-0033;
+  one change with one `feat(race)` title and `feat(cloudnet)` on the bridge commits.
+- **ADR-0033 stays Proposed** until the owner has playtested the change. Task 1.2 is therefore not done by this change, and
+  ADR-0029 is not marked as amended until that happens (task 1.3, the ADR-0029 part).
+- **Spikes 2.1 and 2.2** run on the owner's node and are not part of the implementation. The handoff must not be enabled
+  on the owner's network before both results are recorded here.
 
 ## Scope and split
 

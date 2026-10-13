@@ -60,7 +60,7 @@ shown only while a racer waits, because the race HUD has none. The hologram is o
 ## Decision outcome
 
 Chosen: option 1 for the port, with the design's decisions D1 to D10 (`lobby-cup-display-and-hub-handoff`/design.md), which fix the
-linger (200 ticks, 10 s), the empty room after the handoff, the cup shown while waiting (the pending cup after a reload), and the
+linger (200 ticks, 10 s, owner answer Q3), the empty room after the handoff, a refused handoff that disconnects with no retry (Q2), the cup shown while waiting (the cup currently loaded; a pending reload shows from the round that promotes it), and the
 configuration rules (`VOYAGER_LOBBY_HOLOGRAM` needs `VOYAGER_LOBBY_WORLD`).
 
 Verified and pending: the class identity across the boundary is read from the fork's source and is to be confirmed by a spike on the

@@ -40,17 +40,18 @@ SYSTEM SHALL show the first twelve and one line that states how many maps follow
 - **WHEN** the cup has five maps
 - **THEN** the sidebar shows all five and no "more" line
 
-### Requirement: The cup shown while waiting is the cup the next round plays
-**MoSCoW:** Must. WHILE the room is WAITING, THE SYSTEM SHALL show the cup of the pending catalogue when a reload is pending, and
-the current cup otherwise. WHILE a countdown or a committed start runs, THE SYSTEM SHALL show the cup that round has pinned.
+### Requirement: The lobby shows the cup that is currently loaded
+**MoSCoW:** Must. THE SYSTEM SHALL show the cup the catalogue holder currently holds, which is the cup a racer waits for. A
+pending reload SHALL NOT change what the lobby shows until a round starts and promotes it; from that round on the lobby shows
+the promoted cup. A countdown SHALL keep the cup it began with.
 
-#### Scenario: A reloaded cup shows before the next round
-- **WHEN** a reload changes the cup "Grand Tour" to "Grand Tour II" while the room is waiting
-- **THEN** the lobby displays name "Grand Tour II" before the next round begins, and the round that starts plays "Grand Tour II"
+#### Scenario: A reload waits for the next round
+- **WHEN** a reload changes the cup "Grand Tour" to "Grand Tour II" while the room is waiting and no round has started
+- **THEN** the lobby still displays "Grand Tour", and the next round that starts plays and displays "Grand Tour II"
 
 #### Scenario: The countdown keeps its cup
 - **WHEN** a countdown for "Grand Tour" is running and a reload is applied
-- **THEN** the lobby displays keep "Grand Tour" until the round ends
+- **THEN** the lobby displays keep "Grand Tour" until the round starts
 
 ### Requirement: A hologram shows the cup at a fixed position in the lobby world
 **MoSCoW:** Should. WHERE the setting `VOYAGER_LOBBY_HOLOGRAM` names a position, THE SYSTEM SHALL keep one text display entity at that
