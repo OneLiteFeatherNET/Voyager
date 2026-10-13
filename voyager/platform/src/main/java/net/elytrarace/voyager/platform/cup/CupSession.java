@@ -133,6 +133,9 @@ public final class CupSession implements RacePhaseListener {
     private final RunResetter resetter;
     private final CompetitorField competitors;
 
+    /** The computer racers' finishes, kept for the results only: they are never in {@link #round}. */
+    private final ComStandings computerRacers = new ComStandings();
+
     /**
      * The cup being played: the boot cup until a round starts, then the cup of the catalogue that round pinned.
      * Written only by {@link #start}.
@@ -275,6 +278,7 @@ public final class CupSession implements RacePhaseListener {
         pinned = catalog.promoteForNewRound();
         cup = pinned.cup();
         round.reset();
+        computerRacers.clear();
         lastSimulated.clear();
         // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
         // must not still be running when the new first map releases its racers.
@@ -428,6 +432,7 @@ public final class CupSession implements RacePhaseListener {
         }
         competitors.dismiss();
         round.reset();
+        computerRacers.clear();
     }
 
     /** Drops everything a started or armed cup holds for its current lobby, so that {@link #describe()} reads not started. */
@@ -481,7 +486,7 @@ public final class CupSession implements RacePhaseListener {
         if (current.state().cupFinished() && currentMap != null) {
             // mapFinished has already run for the last map by the time cupFinished is set, so every
             // per-map score is in. currentMap is what says this has not been announced yet.
-            announcer.announceCupResult(cup, round.order());
+            announcer.announceCupResult(cup, round.order(), computerRacers.order());
             currentMap = null;
             blocks.follow(null);
             competitors.dismiss();
@@ -590,7 +595,9 @@ public final class CupSession implements RacePhaseListener {
         List<Player> racers = List.copyOf(players.get());
         transition.advanceTo(map, racers);
         // After the transition, which empties every run: a competitor's run is started here and not carried over.
-        for (UUID competitor : competitors.prepare(mapIndex, map)) {
+        List<UUID> prepared = competitors.prepare(mapIndex, map);
+        computerRacers.seat(prepared);
+        for (UUID competitor : prepared) {
             runs.startFresh(competitor);
         }
         for (Player racer : racers) {
@@ -678,10 +685,15 @@ public final class CupSession implements RacePhaseListener {
         // Competitors are advanced after the human loop: they are not in the players supplier, and nothing
         // above reads their runs. A competitor the cup holds no run for is not on this course, and is skipped.
         for (Competitor competitor : competitors.advance(clock)) {
-            if (runs.of(competitor.id()).isEmpty()) {
+            Optional<RaceRun> before = runs.of(competitor.id());
+            if (before.isEmpty()) {
                 continue;
             }
-            runs.advance(competitor.id(), map, clock, competitor.position(), competitor.gliding(), false);
+            RaceRun advanced = runs.advance(competitor.id(), map, clock, competitor.position(), competitor.gliding(),
+                    false);
+            if (!before.get().finished() && advanced.finished()) {
+                computerRacers.finished(competitor.id(), advanced.timeOnCourse(timings.race()));
+            }
         }
     }
 

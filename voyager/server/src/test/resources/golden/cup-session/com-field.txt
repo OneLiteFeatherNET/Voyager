@@ -2408,6 +2408,12 @@ messages
   Ada title-times 10 80 20
   Ada subtitle {"translate":"voyager.result.cup.subtitle","with":["1","20"]}
   Ada title {"translate":"voyager.result.cup.title"}
+  Ada chat {"translate":"voyager.result.cup.row","with":["2",{"translate":"voyager.com.racer.name","with":["1"]},"0","2","2","0:00.9"]}
+  Ada chat {"translate":"voyager.result.cup.row","with":["3",{"translate":"voyager.com.racer.name","with":["2"]},"0","2","2","0:00.9"]}
+  Ada chat {"translate":"voyager.result.cup.row","with":["4",{"translate":"voyager.com.racer.name","with":["3"]},"0","2","2","0:00.9"]}
 logs
-  INFO Cup 'com_tour' finished with 1 classified racer(s)
+  INFO Cup 'com_tour' finished with 4 classified racer(s)
   INFO   1. 1a382809-b7c0-3f68-ae12-dd15677c5497 — 20 point(s), 0 map(s) finished, best -
+  INFO   2. COM 1 — 2 map(s) finished, best 0,900 s
+  INFO   3. COM 2 — 2 map(s) finished, best 0,900 s
+  INFO   4. COM 3 — 2 map(s) finished, best 0,900 s

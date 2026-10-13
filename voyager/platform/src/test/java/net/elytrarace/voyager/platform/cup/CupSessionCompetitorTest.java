@@ -102,8 +102,14 @@ class CupSessionCompetitorTest {
 
     private MapInstances worlds;
 
+    /** The humans a test puts in a world, removed before the worlds are closed. */
+    private final List<Player> humans = new ArrayList<>();
+
     @AfterEach
     void releaseTheWorlds() {
+        // The players go first: the instance manager refuses to unregister a world that still holds one.
+        humans.forEach(human -> human.remove(true));
+        humans.clear();
         if (worlds != null) {
             worlds.close();
             worlds = null;
@@ -199,6 +205,7 @@ class CupSessionCompetitorTest {
         ScriptedField field = new ScriptedField(RIVAL, List.of(SPAWN, PAST_RING_ZERO, PAST_RING_ONE));
         TestConnection connection = env.createConnection();
         Player human = connection.connect(env.createFlatInstance(), new Pos(0, 41, 0));
+        humans.add(human);
         CupSession session = openSession(env, new RaceRuns(), field, FIVE_TICK_RACE, List.of(human));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
 
@@ -209,10 +216,10 @@ class CupSessionCompetitorTest {
         assertThat(rows)
                 .as("the final standings list the computer racer and the human")
                 .hasSize(2);
-        TranslatableComponent com = rows.get(0);
+        TranslatableComponent com = rows.get(1);
         assertThat(describe(com.arguments().get(0).asComponent()))
-                .as("the computer racer is placed first: a human with no time and no points comes after it")
-                .isEqualTo("1");
+                .as("the computer racer is placed after the human, whose points for the map come first")
+                .isEqualTo("2");
         assertThat(describe(com.arguments().get(1).asComponent()))
                 .as("the computer racer is named COM 1, the number of its seat")
                 .isEqualTo("voyager.com.racer.name(1)");

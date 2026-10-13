@@ -23,7 +23,9 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -37,6 +39,14 @@ import java.util.function.Supplier;
 public final class CupAnnouncer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CupAnnouncer.class);
+
+    /** The sort key standing in for "no finish time": the same stand-in {@code CupStandings} sorts with. */
+    private static final Duration NO_TIME_SORTS_LAST = Duration.ofDays(1);
+
+    /** The order of the final standings: most points first, then the faster best time. */
+    private static final Comparator<Entry> STANDING_ORDER = Comparator
+            .comparingInt(Entry::points).reversed()
+            .thenComparing(entry -> entry.bestTime() == null ? NO_TIME_SORTS_LAST : entry.bestTime());
 
     private final Supplier<Collection<Player>> players;
 
@@ -103,24 +113,59 @@ public final class CupAnnouncer {
     }
 
     /**
-     * The cup's final standings: the block everybody sees, and one title each saying where they
-     * came.
+     * The cup's final standings: the block everybody sees, and one title each saying where they came.
+     *
+     * <p>The computer racers are in the block too, as {@code COM n} with their fastest finish and no points. Humans
+     * and computer racers are placed by one order: points first, then the faster best time. A computer racer never has
+     * points, so it comes after every human who has some, and among the humans with none it is placed by its time.
+     *
+     * @param order the humans' standings, best first, as the cup round reads them
+     * @param computerRacers the computer racers that finished a map, in seat order
      */
-    public void announceCupResult(CupDefinition cup, List<CupStanding> order) {
-        LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.name(), order.size());
+    public void announceCupResult(CupDefinition cup, List<CupStanding> order,
+            List<ComStandings.Standing> computerRacers) {
+        List<Entry> entries = new ArrayList<>(order.size() + computerRacers.size());
+        for (CupStanding standing : order) {
+            CupScore score = standing.score();
+            entries.add(new Entry(standing.playerId(), null, score.totalPoints(), score.mapsFinished(),
+                    score.bestTime().orElse(null)));
+        }
+        for (ComStandings.Standing computer : computerRacers) {
+            entries.add(new Entry(null, computer, 0, computer.mapsFinished(), computer.bestTime()));
+        }
+        entries.sort(STANDING_ORDER);
+        LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.name(), entries.size());
         broadcast(Messages.cupHeading(cup.name()));
         int mapCount = cup.mapNames().size();
         int place = 1;
-        for (CupStanding standing : order) {
-            CupScore score = standing.score();
-            LOGGER.info("  {}. {} — {} point(s), {} map(s) finished, best {}",
-                    place, standing.playerId(), score.totalPoints(), score.mapsFinished(),
-                    score.bestTime().map(CupAnnouncer::seconds).orElse("-"));
-            broadcast(Messages.cupRow(place, displayName(standing.playerId()), score.totalPoints(),
-                    score.mapsFinished(), mapCount, score.bestTime()));
-            announceCupPlace(standing.playerId(), place, score.totalPoints());
+        for (Entry entry : entries) {
+            if (entry.human() != null) {
+                LOGGER.info("  {}. {} — {} point(s), {} map(s) finished, best {}",
+                        place, entry.human(), entry.points(), entry.mapsFinished(),
+                        Optional.ofNullable(entry.bestTime()).map(CupAnnouncer::seconds).orElse("-"));
+                broadcast(Messages.cupRow(place, displayName(entry.human()), entry.points(), entry.mapsFinished(),
+                        mapCount, Optional.ofNullable(entry.bestTime())));
+                announceCupPlace(entry.human(), place, entry.points());
+            } else {
+                ComStandings.Standing computer = entry.computer();
+                LOGGER.info("  {}. COM {} — {} map(s) finished, best {}",
+                        place, computer.number(), entry.mapsFinished(),
+                        Optional.ofNullable(entry.bestTime()).map(CupAnnouncer::seconds).orElse("-"));
+                broadcast(Messages.cupRow(place, Messages.computerRacerName(computer.number()), 0,
+                        entry.mapsFinished(), mapCount, Optional.ofNullable(entry.bestTime())));
+            }
             place++;
         }
+    }
+
+    /**
+     * One line of the final standings: a human from the cup round, or a computer racer from the field's results.
+     *
+     * @param human the human's id, or {@code null} for a computer racer
+     * @param computer the computer racer's standing, or {@code null} for a human
+     */
+    private record Entry(@Nullable UUID human, @Nullable ComStandings.Standing computer, int points, int mapsFinished,
+            @Nullable Duration bestTime) {
     }
 
     /** The cup title, to the one racer it names, if they are still online to see it. */
