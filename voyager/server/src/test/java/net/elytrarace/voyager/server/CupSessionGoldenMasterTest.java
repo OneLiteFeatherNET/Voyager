@@ -420,7 +420,7 @@ class CupSessionGoldenMasterTest {
                     message -> {
                         throw new AssertionError("no refused handoff was expected, but got: " + message);
                     });
-            room = new WaitingRoom(session, () -> field, 1, 16, lobby, hub, new LobbyHud(),
+            room = new WaitingRoom(session, holder, () -> field, 1, 16, lobby, hub, new LobbyHud(),
                     () -> worlds.forWorld(RIDGE));
         }
 

@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.lobby;
 
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
@@ -60,6 +61,7 @@ public final class WaitingRoom {
     private static final int NO_RESULT = -1;
 
     private final CupSession session;
+    private final CatalogHolder catalog;
     private final Supplier<Collection<Player>> players;
     private final int minimum;
     private final int maximum;
@@ -76,6 +78,8 @@ public final class WaitingRoom {
 
     /**
      * @param session the cup the room starts, cancels and aborts
+     * @param catalog the catalogue holder; the lobby names the cup it currently holds (a pending reload shows only once a round
+     *     promotes it, ADR-0033)
      * @param players everyone online, read on every tick
      * @param minimum how many racers a cup needs to start; at least one
      * @param maximum how many racers make a full server; at least one. It sets the join line and the full-lobby
@@ -87,8 +91,8 @@ public final class WaitingRoom {
      *     it, so the bar is shown there; it is read only in that case
      * @throws IllegalArgumentException if {@code minimum} or {@code maximum} is below one
      */
-    public WaitingRoom(CupSession session, Supplier<Collection<Player>> players, int minimum, int maximum,
-            @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, Supplier<Instance> firstMapInstance) {
+    public WaitingRoom(CupSession session, CatalogHolder catalog, Supplier<Collection<Player>> players, int minimum,
+            int maximum, @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, Supplier<Instance> firstMapInstance) {
         if (minimum < 1) {
             throw new IllegalArgumentException("the minimum racer count must be at least 1, was %s".formatted(minimum));
         }
@@ -96,6 +100,7 @@ public final class WaitingRoom {
             throw new IllegalArgumentException("the maximum racer count must be at least 1, was %s".formatted(maximum));
         }
         this.session = session;
+        this.catalog = catalog;
         this.players = players;
         this.minimum = minimum;
         this.maximum = maximum;
@@ -278,10 +283,11 @@ public final class WaitingRoom {
 
     /** The line the bar reads in this situation, or {@code null} when no waiting bar is shown. */
     private @Nullable Component waitingTitle(StartGate.Situation situation, int count) {
+        String cup = catalog.current().cup().name();
         return switch (situation) {
-            case WAITING -> Messages.lobbyBossBarWaiting(count, minimum);
-            case COUNTDOWN -> Messages.lobbyBossBarCountdown(session.lobbyRemaining());
-            case COMMITTED -> lobby != null ? Messages.lobbyBossBarCountdown(session.lobbyRemaining()) : null;
+            case WAITING -> Messages.lobbyBossBarWaiting(cup, count, minimum);
+            case COUNTDOWN -> Messages.lobbyBossBarCountdown(cup, session.lobbyRemaining());
+            case COMMITTED -> lobby != null ? Messages.lobbyBossBarCountdown(cup, session.lobbyRemaining()) : null;
             case RUNNING -> null;
         };
     }

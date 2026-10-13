@@ -187,7 +187,7 @@ class RaceCommandReloadTest {
         CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
                 blocks, boosts, TIMINGS, STEP, List::of);
         HubHandoff hub = new HubHandoff(Optional::empty, (racer, reason) -> { }, message -> { });
-        WaitingRoom room = new WaitingRoom(session, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
+        WaitingRoom room = new WaitingRoom(session, holder, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
                 ServerSettings.DEFAULT_MAXIMUM_RACERS, null, hub, new LobbyHud(), () -> {
                     throw new AssertionError("the room is never ticked in this test");
                 });

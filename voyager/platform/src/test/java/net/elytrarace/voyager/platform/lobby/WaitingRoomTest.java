@@ -508,7 +508,7 @@ class WaitingRoomTest {
                 .isPresent()
                 .get()
                 .satisfies(bar -> assertThat(((TranslatableComponent) bar.name()).key())
-                        .isEqualTo("voyager.lobby.bossbar.waiting"));
+                        .isEqualTo("voyager.lobby.bossbar.waiting.cup"));
     }
 
     /**
@@ -522,7 +522,7 @@ class WaitingRoomTest {
         fixture.join();
         fixture.tick();
         assertThat(((TranslatableComponent) fixture.hud.barOf(racer.getUuid()).orElseThrow().name()).key())
-                .isEqualTo("voyager.lobby.bossbar.countdown");
+                .isEqualTo("voyager.lobby.bossbar.countdown.cup");
 
         for (int tick = 0; tick < BUDGET && fixture.session.situation(StartGate.COMMIT_WINDOW) != Situation.COMMITTED;
                 tick++) {
@@ -574,7 +574,7 @@ class WaitingRoomTest {
                 message -> {
                     throw new AssertionError("no refused handoff was expected, but got: " + message);
                 });
-        WaitingRoom room = new WaitingRoom(session, () -> online, MINIMUM, maximum, lobby, hub, hud,
+        WaitingRoom room = new WaitingRoom(session, holder, () -> online, MINIMUM, maximum, lobby, hub, hud,
                 () -> instances.forWorld(ARENA));
         return new Fixture(session, pipeline, room, hud, runs, instances, env, handedToHub, kicked);
     }

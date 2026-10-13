@@ -146,8 +146,8 @@ public final class ServerBeans {
                 .map(definition -> new LobbyTransition(instances, definition))
                 .orElse(null);
         HubHandoff hub = HubHandoff.fromSlot((racer, reason) -> racer.kick(reason), LOGGER::warn);
-        return new WaitingRoom(session, players, settings.minimumRacers(), settings.maximumRacers(), lobby, hub,
-                new LobbyHud(), () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
+        return new WaitingRoom(session, catalog, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
+                hub, new LobbyHud(), () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
     }
 
     @Bean

@@ -49,8 +49,8 @@ public abstract class Messages {
     private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
-    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting";
-    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown";
+    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting.cup";
+    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown.cup";
     private static final String HANDOFF_DISCONNECT = "voyager.handoff.disconnect";
     private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
     private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
@@ -229,17 +229,27 @@ public abstract class Messages {
                 Component.text(name), Component.text(online), Component.text(maximum));
     }
 
-    /** The lobby boss bar while the minimum is not met: how many racers are online and how many are needed. */
+    /**
+     * The lobby boss bar while the minimum is not met: the cup a racer waits for, and how many racers are online and needed.
+     *
+     * @param cup    the cup's name, as the cup shown in the lobby names it
+     * @param online how many racers are online
+     * @param needed how many racers the cup needs to start
+     */
     @Contract(pure = true)
-    public static Component lobbyBossBarWaiting(int online, int needed) {
-        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(online), Component.text(needed));
+    public static Component lobbyBossBarWaiting(String cup, int online, int needed) {
+        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(cup), Component.text(online),
+                Component.text(needed));
     }
 
-    /** The lobby boss bar during the start countdown: the whole seconds left, rounded up, as the action bar had them. */
+    /**
+     * The lobby boss bar during the start countdown: the cup, and the whole seconds left, rounded up, as the action bar had
+     * them.
+     */
     @Contract(pure = true)
-    public static Component lobbyBossBarCountdown(Duration remaining) {
+    public static Component lobbyBossBarCountdown(String cup, Duration remaining) {
         long millis = Math.max(0L, remaining.toMillis());
-        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN,
+        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN, Component.text(cup),
                 Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
     }
 
