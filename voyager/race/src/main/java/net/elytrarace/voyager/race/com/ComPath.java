@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.race.com;
 
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.race.line.RacingLine;
 
 import org.jetbrains.annotations.ApiStatus;
@@ -29,20 +30,45 @@ public final class ComPath {
     /** {@code cumulative[i]} is the arc length from the first point to {@code points.get(i)}. */
     private final double[] cumulative;
 
-    private ComPath(List<Vec3> points, double[] cumulative) {
+    private final List<Ring> rings;
+
+    /** {@code ringDistances[k]} is the arc length from the first point to the centre of ring {@code k}. */
+    private final double[] ringDistances;
+
+    private ComPath(List<Vec3> points, double[] cumulative, List<Ring> rings, double[] ringDistances) {
         this.points = points;
         this.cumulative = cumulative;
+        this.rings = rings;
+        this.ringDistances = ringDistances;
     }
 
     /**
-     * Builds the arc-length path of one racing line.
+     * Builds the arc-length path of one racing line, with the rings the line runs through.
+     *
+     * <p>The ring distances are measured on the line as it was given, before repeated neighbours are dropped.
+     * A dropped neighbour has no length, so the distances are the same on either list.
      *
      * @param line the line a computer racer follows
+     * @param rings the rings of the course, in ring order, one for each ring anchor of {@code line}
      * @return the path, shared by every racer on that map
      * @throws IllegalArgumentException if the line has fewer than two distinct points, since a direction is
-     *     undefined without a segment
+     *     undefined without a segment, or if the ring count does not match the line's ring anchors
      */
-    public static ComPath of(RacingLine line) {
+    public static ComPath of(RacingLine line, List<Ring> rings) {
+        if (rings.size() != line.ringCount()) {
+            throw new IllegalArgumentException(
+                    "a computer racer's path needs one ring for each of the line's %s ring anchors, was %s"
+                            .formatted(line.ringCount(), rings.size()));
+        }
+        double[] originalDistance = new double[line.points().size()];
+        for (int i = 1; i < originalDistance.length; i++) {
+            originalDistance[i] = originalDistance[i - 1]
+                    + line.points().get(i - 1).distanceTo(line.points().get(i));
+        }
+        double[] ringDistances = new double[rings.size()];
+        for (int ring = 0; ring < ringDistances.length; ring++) {
+            ringDistances[ring] = originalDistance[line.ringPoints().get(ring)];
+        }
         List<Vec3> distinct = new ArrayList<>(line.points().size());
         for (Vec3 point : line.points()) {
             if (distinct.isEmpty() || point.distanceTo(distinct.getLast()) > MINIMUM_SEGMENT) {
@@ -58,12 +84,42 @@ public final class ComPath {
         for (int i = 1; i < distinct.size(); i++) {
             cumulative[i] = cumulative[i - 1] + distinct.get(i - 1).distanceTo(distinct.get(i));
         }
-        return new ComPath(List.copyOf(distinct), cumulative);
+        return new ComPath(List.copyOf(distinct), cumulative, List.copyOf(rings), ringDistances);
     }
 
     /** The total arc length of the course, in blocks. */
     public double length() {
         return cumulative[cumulative.length - 1];
+    }
+
+    /** The rings of the course, in ring order. */
+    public List<Ring> rings() {
+        return rings;
+    }
+
+    /**
+     * One ring of the course.
+     *
+     * @param index the ring, counted from zero
+     * @return the ring
+     */
+    public Ring ring(int index) {
+        return rings.get(index);
+    }
+
+    /** How many rings the course runs through. */
+    public int ringCount() {
+        return rings.size();
+    }
+
+    /**
+     * The arc length from the first point to the centre of a ring, in blocks.
+     *
+     * @param index the ring, counted from zero
+     * @return the distance along the course at which that ring sits
+     */
+    public double ringDistance(int index) {
+        return ringDistances[index];
     }
 
     /**

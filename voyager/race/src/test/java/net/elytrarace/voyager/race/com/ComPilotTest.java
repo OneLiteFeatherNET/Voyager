@@ -31,11 +31,14 @@ class ComPilotTest {
     private static final double RING_RADIUS = 3.0;
     private static final long TICK_LIMIT = 2_000L;
 
-    /** Three rings on the z axis at 20, 50 and 80 blocks, each facing {@code normal}. */
-    private static ComPath course(Vec3 normal, RingType firstType) {
+    /**
+     * Three rings on the z axis at 20, 50 and 80 blocks, each facing {@code normal}. Only the middle ring takes
+     * {@code middleType}: a boost on the first ring would land before the racer has reached its target speed.
+     */
+    private static ComPath course(Vec3 normal, RingType middleType) {
         List<Ring> rings = List.of(
-                new Ring(0, new Vec3(0.0, 64.0, 20.0), normal, RING_RADIUS, 8, firstType),
-                new Ring(1, new Vec3(0.0, 64.0, 50.0), normal, RING_RADIUS, 8, RingType.STANDARD),
+                new Ring(0, new Vec3(0.0, 64.0, 20.0), normal, RING_RADIUS, 8, RingType.STANDARD),
+                new Ring(1, new Vec3(0.0, 64.0, 50.0), normal, RING_RADIUS, 8, middleType),
                 new Ring(2, new Vec3(0.0, 64.0, 80.0), normal, RING_RADIUS, 8, RingType.STANDARD));
         MapDefinition map = new MapDefinition("fixture", "fixture", new Vec3(0.0, 64.0, 0.0), rings,
                 Duration.ofSeconds(30), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
@@ -43,8 +46,8 @@ class ComPilotTest {
     }
 
     /** The straight course with rings that face down the course, so a racer can pass them. */
-    private static ComPath straightCourse(RingType firstType) {
-        return course(new Vec3(0.0, 0.0, 1.0), firstType);
+    private static ComPath straightCourse(RingType middleType) {
+        return course(new Vec3(0.0, 0.0, 1.0), middleType);
     }
 
     /** A course whose rings face straight up: a racer that stays at one height never crosses one. */
@@ -190,6 +193,7 @@ class ComPilotTest {
     @Test
     void aBoostTakesEffectAfterTheReactionDelayWithAFakeRingEffect() {
         ComPath path = straightCourse(RingType.BOOST);
+        // The boost ring is the middle one, so the racer has reached its target speed before the boost lands.
         ComTuning medium = ComTuning.of(ComDifficulty.MEDIUM, SEED);
         ComSpeedEffect fakeBoost = target -> target + 0.5;
         ComState plain = ComState.start(SEAT);
@@ -199,7 +203,7 @@ class ComPilotTest {
         for (long tick = 1L; tick <= TICK_LIMIT && divergedAt < 0L; tick++) {
             ComState nextPlain = ComPilot.step(plain, medium, path, tick);
             ComState nextBoosted = ComPilot.step(boosted, medium, path, tick, fakeBoost);
-            if (passedAt < 0L && nextBoosted.progress().passedCount() == 1) {
+            if (passedAt < 0L && nextBoosted.progress().passedCount() == 2) {
                 passedAt = tick;
             }
             if (nextBoosted.speed() != nextPlain.speed()) {
@@ -210,7 +214,7 @@ class ComPilotTest {
         }
 
         assertThat(passedAt)
-                .as("the boost ring is passed")
+                .as("the boost ring, the second ring, is passed")
                 .isPositive();
         assertThat(divergedAt)
                 .as("the boost changes the speed on the tick its reaction delay ends, after a pass on tick %s",
