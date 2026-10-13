@@ -459,7 +459,7 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
         InFlightChunkLoads loads = new InFlightChunkLoads();
         TrackingInstance instance = new TrackingInstance(UUID.randomUUID(), DimensionType.OVERWORLD, loads);
         instanceManager.registerInstance(instance);
-        instance.setChunkLoader(loader);
+        instance.setChunkLoader(WorldLight.markingLoader(loader));
         instance.enableAutoChunkLoad(true);
         return new LoadedWorld(instance, loader, diagnostics, new AtomicBoolean(),
                 regionFingerprint(loader.regionDirectory()), loads);
