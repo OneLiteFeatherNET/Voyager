@@ -24,10 +24,14 @@ import org.jetbrains.annotations.ApiStatus;
  * joins with no elytra, or who has one and never jumps and holds, produces a flight that never
  * starts and a race in which nothing happens. So the racer is given the elytra and the rockets
  * before the count ({@link #faceCourse}), and the flight starts when they deploy the elytra
- * themselves, as they did in the tree being replaced. The server does not start the glide and does
+ * themselves, as they did in the tree being replaced. The server does not start the glide at GO and does
  * not push the racer off the spawn: the gliding flag and the velocity are the client's, as in
  * Vanilla. The flag is server-side entity metadata and the client honours it for its own player, so
  * the server sees the deployment through {@code isFlyingWithElytra()} and the race counts it.
+ *
+ * <p>A checkpoint reset is the one place the server sets the flag itself: {@link #place} starts the glide
+ * of a racer it puts back behind a checkpoint, with no impulse, so the racer does not have to jump and
+ * deploy again. A spawn reset does not glide, and the racer takes off as at GO.
  *
  * <p>The firework itself stays — {@link Rockets} is what it does now — and it is used once the
  * elytra is deployed, because a boost is refused while the racer is not gliding.

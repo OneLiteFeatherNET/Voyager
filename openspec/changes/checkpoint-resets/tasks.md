@@ -85,7 +85,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
 
 ## 4. Refactor
 
-- [ ] 4.1 Refactor: remove the now-unused code paths (the `gliding=false` reset run, the comments that say a reset ends the
+- [x] 4.1 Refactor: remove the now-unused code paths (the `gliding=false` reset run, the comments that say a reset ends the
   glide), and update the javadoc of `RunReset`, `RunResetter` and `Racers` to describe the new rules. No behaviour change.
   Run `./gradlew :voyager:race:test :voyager:platform:test :voyager:server:test`.
 
