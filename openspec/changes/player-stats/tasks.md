@@ -30,8 +30,8 @@ or blocks the tick.
 
 ## 4. platform: observation
 
-- [ ] 4.1 Red: `RaceCompletionsTest` (pure, hand-built `RaceRun`s and `MapScore`s) names "a finished racer's splits are the ring ticks in ring order", "a racer who did not finish has no finish time and the DNF medal", "a computer racer is not in the completion", and "the medal and points come from the map score" (`feat(stats)`). Haiku effort: medium.
-- [ ] 4.2 Green: `platform.stats.RaceCompletions` as a pure static mapping (`feat(stats)`). Haiku effort: medium.
+- [x] 4.1 Red: `RaceCompletionsTest` (pure, hand-built `RaceRun`s and `MapScore`s) names "a finished racer's splits are the ring ticks in ring order", "a racer who did not finish has no finish time and the DNF medal", "a computer racer is not in the completion", and "the medal and points come from the map score" (`feat(stats)`). Haiku effort: medium.
+- [x] 4.2 Green: `platform.stats.RaceCompletions` as a pure static mapping (`feat(stats)`). Haiku effort: medium.
 - [ ] 4.3 Red: `RacerTallyTest` names "a boost is counted once per accepted boost", "a reset is counted per reset", "flight time is the gliding ticks times fifty milliseconds", and "the tally is cleared at the start of the next map" (`feat(stats)`). Haiku effort: medium.
 - [ ] 4.4 Green: `platform.stats.RacerTally`, one per cup, with the three counters; wire the accept of `FireworkBoostTracker`, the reset of `RunResetter` and the gliding ticks of the flight sampler to it, without changing their behaviour (`feat(stats)`). Haiku effort: high.
 - [ ] 4.5 Red: `CupSessionRecordingTest` with a fake `RaceRecorder` and explicit ticks names "a finished map records one completion per map", "a finished cup records one cup completion", "the recorder is never called on a tick that does not finish a map", and "a throwing recorder does not stop the map" (`feat(stats)`). Haiku effort: high.
