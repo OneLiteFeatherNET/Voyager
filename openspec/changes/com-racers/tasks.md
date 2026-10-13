@@ -89,10 +89,10 @@ Effort for this group: medium (Haiku) for each task. Each task is written Red fi
 previous commit), then Green. The golden transcript `com-field.txt` is regenerated once, after 7b.4, in its own commit
 (`feat(race)`), and the other five transcripts must stay byte-identical.
 
-- [ ] 7b.1 Red then green: a finished computer racer's body stays where it finished and does not fall after the finish (`feat(race)`). Effort: medium (Haiku).
-- [ ] 7b.2 Red then green: a computer racer's first position is its seat's grid position, the map's spawn, not a point on the line at the height of the first ring (`feat(race)`). Effort: medium (Haiku).
-- [ ] 7b.3 Red then green: `ComField.prepare` accepts a one-ring map with no guide points whose spawn is on the ring, and builds a straight line through the ring centre (`feat(race)`). Effort: medium (Haiku).
-- [ ] 7b.4 Red then green: the round seed is read from the injected `Clock` when a cup's first map starts, not when the server boots (`feat(race)`). Effort: medium (Haiku).
+- [x] 7b.1 Red then green: a finished computer racer's body stays where it finished and does not fall after the finish (`feat(race)`). Effort: medium (Haiku).
+- [x] 7b.2 Red then green: a computer racer's first position is its seat's grid position, the map's spawn, not a point on the line at the height of the first ring (`feat(race)`). Effort: medium (Haiku).
+- [x] 7b.3 Red then green: `ComField.prepare` accepts a one-ring map with no guide points whose spawn is on the ring, and builds a straight line through the ring centre (`feat(race)`). Effort: medium (Haiku).
+- [x] 7b.4 Red then green: the round seed is read from the injected `Clock` when a cup's first map starts, not when the server boots (`feat(race)`). Effort: medium (Haiku).
 
 ## 7c. Results and chat
 
