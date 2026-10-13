@@ -83,6 +83,21 @@ because `allowEmptyShould(false)` makes an empty match a failure.
 - [x] 7.2 Green: write `voyager/server/src/test/resources/golden/cup-session/com-field.txt` from the harness, and a human reviews the transcript before it is committed (`feat(race)`). Effort: medium (Haiku).
 - [x] 7.3 Verify that `lobby-and-start.txt`, `lobby-world-start.txt`, `racing-boost-disconnect.txt`, `restart-pending-reload.txt` and `skip-finish.txt` are byte-identical to `main` (`git diff --exit-code` on the five files, verification, no commit). Effort: low (Haiku).
 
+## 7b. Fixes from the golden review
+
+Effort for this group: medium (Haiku) for each task. Each task is written Red first (its test fails on the code of the
+previous commit), then Green. The golden transcript `com-field.txt` is regenerated once, after 7b.4, in its own commit
+(`feat(race)`), and the other five transcripts must stay byte-identical.
+
+- [ ] 7b.1 Red then green: a finished computer racer's body stays where it finished and does not fall after the finish (`feat(race)`). Effort: medium (Haiku).
+- [ ] 7b.2 Red then green: a computer racer's first position is its seat's grid position, the map's spawn, not a point on the line at the height of the first ring (`feat(race)`). Effort: medium (Haiku).
+- [ ] 7b.3 Red then green: `ComField.prepare` accepts a one-ring map with no guide points whose spawn is on the ring, and builds a straight line through the ring centre (`feat(race)`). Effort: medium (Haiku).
+- [ ] 7b.4 Red then green: the round seed is read from the injected `Clock` when a cup's first map starts, not when the server boots (`feat(race)`). Effort: medium (Haiku).
+
+## 7c. Results and chat
+
+The tasks of this group are added when the ranking table and the chat line are specified.
+
 ## 8. docs (Diátaxis Framework)
 
 Effort for this group: low (Haiku), except 8.4, which is research and takes medium.
