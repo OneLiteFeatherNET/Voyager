@@ -9,10 +9,12 @@ import net.elytrarace.voyager.api.race.LobbyDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.api.race.com.ComDifficulty;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
+import net.elytrarace.voyager.platform.com.ComField;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
@@ -24,7 +26,9 @@ import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.platform.cup.CompetitorField;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.cup.NoCompetitors;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
@@ -152,6 +156,24 @@ class CupSessionGoldenMasterTest {
 
     /** Every scenario ends well before this; it guards against a hang, and is not a length anything asserts. */
     private static final int BUDGET = 400;
+
+    /**
+     * The ridge course of the computer scenario. It has two rings, because a line through one ring and no guide point
+     * is a single point, and a computer racer needs a direction.
+     */
+    private static final MapDefinition COM_RIDGE_RUN = new MapDefinition("com-ridge", RIDGE, RIDGE_SPAWN,
+            List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7),
+                    ring(1, RIDGE_SPAWN.plus(new Vec3(0, 8, 20)), 9)),
+            Duration.ofMillis(400), RIDGE_BOOST, new GuideLine(List.of(), 2, 1.0));
+
+    private static final CupDefinition COM_CUP =
+            new CupDefinition("com_tour", List.of("com-ridge", "dune-run"), GameMode.RACE);
+
+    /** The round seed of the computer racers, fixed so that the field plays the same race on every run. */
+    private static final long COM_ROUND_SEED = 20261014L;
+
+    /** The grid of the computer scenario: one human and three computer racers, the grid size counting the human. */
+    private static final int COM_GRID = 4;
 
     @TempDir
     Path tempDir;
@@ -300,6 +322,20 @@ class CupSessionGoldenMasterTest {
         assertGolden("checkpoint-reset", harness.transcript);
     }
 
+    /**
+     * A cup on a grid of {@link #COM_GRID} with one human: three computer racers at MEDIUM, on a fixed round seed.
+     * The human races the ridge course, and the transcript records the computer racers on every tick, until the cup ends.
+     */
+    @Test
+    void comField(Env env) throws IOException {
+        harness = Harness.open(env, tempDir, Harness.comCatalog(), TIMINGS, COM_GRID);
+        harness.connect(ADA, COM_RIDGE_RUN);
+        harness.act("start", () -> harness.session.start(false));
+        harness.runUntil(() -> harness.session.cupFinished(), () -> { });
+
+        assertGolden("com-field", harness.transcript);
+    }
+
     // ------------------------------------------------------------------------------------------
     // Comparison
     // ------------------------------------------------------------------------------------------
@@ -380,7 +416,7 @@ class CupSessionGoldenMasterTest {
         /** The racers the room handed to the hub, in order. */
         private final List<UUID> handedToHub = new ArrayList<>();
 
-        private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings) {
+        private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings, int comGrid) {
             this.env = env;
             this.worlds = worlds;
             this.holder = new CatalogHolder(catalog);
@@ -390,8 +426,10 @@ class CupSessionGoldenMasterTest {
             FlightTickDriver flight = new FlightTickDriver(
                     new LivePlayerSampler(() -> field, boosts), new FlightTracker(),
                     new MinestomCollisionSpace(blocks));
+            CompetitorField competitors = comGrid == 0 ? NoCompetitors.INSTANCE
+                    : new ComField(() -> field, comGrid, ComDifficulty.MEDIUM, COM_ROUND_SEED, worlds::forWorld);
             this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, timings, STEP,
-                    () -> field);
+                    () -> field, competitors);
             this.pipeline = new CupBeans().tickPipeline(session, boosts);
         }
 
@@ -400,10 +438,16 @@ class CupSessionGoldenMasterTest {
         }
 
         static Harness open(Env env, Path tempDir, LoadedCatalog catalog, RaceTimings timings) throws IOException {
+            return open(env, tempDir, catalog, timings, 0);
+        }
+
+        /** Opens a cup whose grid holds {@code comGrid} racers, humans included; zero means no computer racers. */
+        static Harness open(Env env, Path tempDir, LoadedCatalog catalog, RaceTimings timings, int comGrid)
+                throws IOException {
             writeWorld(env, tempDir, RIDGE, RIDGE_SPAWN, RIDGE_FLOOR);
             writeWorld(env, tempDir, DUNE, DUNE_SPAWN, DUNE_FLOOR);
             MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
-            return new Harness(env, instances, catalog, timings);
+            return new Harness(env, instances, catalog, timings, comGrid);
         }
 
         /** Connects a racer on the spawn of {@code map}, prepared as the join handler prepares one. */
@@ -511,6 +555,11 @@ class CupSessionGoldenMasterTest {
 
         private static LoadedCatalog bootCatalog() {
             return new LoadedCatalog(snapshot(CUP), CUP, Instant.EPOCH);
+        }
+
+        private static LoadedCatalog comCatalog() {
+            return new LoadedCatalog(new CatalogSnapshot(Map.of(COM_RIDGE_RUN.name(), COM_RIDGE_RUN, DUNE_RUN.name(), DUNE_RUN),
+                    Map.of(COM_CUP.name(), COM_CUP)), COM_CUP, Instant.EPOCH);
         }
 
         private static LoadedCatalog checkpointCatalog() {
