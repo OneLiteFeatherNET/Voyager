@@ -55,9 +55,9 @@ Platform (`RacersTest`, `RunResetterTest`):
 
 Server (`CupSessionTest`, `CupPlaythroughTest`):
 
-- [ ] 2.14 Red: `CupSessionTest.aLandingAfterAResetIsNotCountedBeforeTheGrace`: a racer reset to a checkpoint who touches the
+- [x] 2.14 Red: `CupSessionTest.aLandingAfterAResetIsNotCountedBeforeTheGrace`: a racer reset to a checkpoint who touches the
   ground after 5 airborne ticks is not reset again. Fails today: the racer is reset again.
-- [ ] 2.15 Red: `CupSessionTest.aRacerBelowTheFloorDuringACooldownIsStillReset`: out-of-bounds is not gated by the cooldown.
+- [x] 2.15 Red: `CupSessionTest.aRacerBelowTheFloorDuringACooldownIsStillReset`: out-of-bounds is not gated by the cooldown.
   Passes today; pins it.
 - [ ] 2.16 Red: `CupPlaythroughTest.aCheckpointResetKeepsTheScoreOfTheRingsBeforeIt`: the score after a reset to checkpoint 6
   holds the points of rings 0 to 6 only, and passing ring 7 again scores once. Fails today.
@@ -77,7 +77,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
 - [x] 3.4 Green: `Racers.place` sets `setFlyingWithElytra(true)` and keeps the facing and the equipment; update its javadoc,
   which says the reset ends the glide (task 2.11).
 - [x] 3.5 Green: `RunResetter.reset` keeps its order; it passes the checkpoint number to the feedback (task 2.13).
-- [ ] 3.6 Green: `CupSession` passes the ground state to `advance` and the landing rule (task 2.14).
+- [x] 3.6 Green: `CupSession` passes the ground state to `advance` and the landing rule (task 2.14).
 - [ ] 3.7 Green: the reset title keys name the checkpoint number or the start. Add the keys to
   `voyager/server/src/main/resources/voyager_en_US.properties` if the wording changes.
 - [ ] 3.8 Green: generate `checkpoint-reset.txt` from the Green run and diff it with the hand-written expectation (task 2.17).
