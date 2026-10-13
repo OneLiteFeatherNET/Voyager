@@ -717,14 +717,15 @@ describe
     Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.07, 73.00, 8.20, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.96, 73.00, 8.20, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.46, 73.00, 8.20, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 4.15, 65.44, 6.05, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.22, 65.44, 6.05, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.15, 65.44, 6.05, rings 0, racing
 messages
   Ada title-times 0 20 5
   Ada subtitle {"translate":"voyager.race.go.jump"}
   Ada title {"translate":"voyager.countdown.go"}
 logs
+  INFO Computer racers round seed 20261014 at map index 0
   INFO Map 1/2 'com-ridge' started on world 'ridge_arena' with 1 racer(s) — world 'ridge_arena': 360 chunk(s) skipped for want of data
 ## tick 71
 describe
@@ -734,9 +735,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.5087674400844575] v=Vec3[x=0.0, y=0.0, z=0.008767440084457399]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.10, 72.92, 8.95, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.00, 72.92, 8.95, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.42, 72.92, 8.95, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 4.14, 65.91, 6.63, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.22, 65.91, 6.63, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.14, 65.91, 6.63, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.1",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -748,9 +749,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.519229205868849] v=Vec3[x=0.0, y=0.0, z=0.010461765784391787]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.12, 72.84, 9.75, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.03, 72.84, 9.75, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.38, 72.84, 9.75, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 4.12, 66.41, 7.26, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.22, 66.41, 7.26, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.13, 66.41, 7.26, rings 0, racing
 messages
 logs
 ## tick 73
@@ -761,9 +762,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.531368354112335] v=Vec3[x=0.0, y=0.0, z=0.01213914824348518]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.14, 72.77, 10.60, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.07, 72.77, 10.60, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.34, 72.77, 10.60, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 4.10, 66.94, 7.92, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.22, 66.94, 7.92, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.13, 66.94, 7.92, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.2",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -775,9 +776,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.545168111006319] v=Vec3[x=0.0, y=0.0, z=0.013799756893984405]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.16, 72.70, 11.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.11, 72.70, 11.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 72.70, 11.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 4.07, 67.50, 8.62, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.21, 67.50, 8.62, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.13, 67.50, 8.62, rings 0, racing
 messages
 logs
 ## tick 75
@@ -788,9 +789,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.560611870480135] v=Vec3[x=0.0, y=0.0, z=0.015443759473815436]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.17, 72.62, 12.45, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.14, 72.62, 12.45, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.26, 72.62, 12.45, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 4.03, 68.09, 9.37, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.19, 68.09, 9.37, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.14, 68.09, 9.37, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -802,9 +803,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.577683192523661] v=Vec3[x=0.0, y=0.0, z=0.017071322043526585]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.17, 72.55, 13.45, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.17, 72.55, 13.45, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.22, 72.55, 13.45, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.99, 68.72, 10.15, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.17, 68.72, 10.15, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.15, 68.72, 10.15, rings 0, racing
 messages
 logs
 ## tick 77
@@ -815,9 +816,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.596365801526724] v=Vec3[x=0.0, y=0.0, z=0.018682609003062272]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.17, 72.48, 14.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.19, 72.48, 14.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.19, 72.48, 14.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.94, 69.37, 10.97, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.14, 69.37, 10.97, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.17, 69.37, 10.97, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.4",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -829,9 +830,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.616643584635093] v=Vec3[x=0.0, y=0.0, z=0.02027778310836903]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.16, 72.41, 15.60, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.21, 72.41, 15.60, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.16, 72.41, 15.60, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.89, 70.06, 11.83, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.10, 70.06, 11.83, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.20, 70.06, 11.83, rings 0, racing
 messages
 logs
 ## tick 79
@@ -842,9 +843,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.638500590122929] v=Vec3[x=0.0, y=0.0, z=0.02185700548783549]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.15, 72.35, 16.75, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.22, 72.35, 16.75, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.14, 72.35, 16.75, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.82, 70.78, 12.72, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.06, 70.78, 12.72, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.24, 70.78, 12.72, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.5",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -856,9 +857,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.6619210257814965] v=Vec3[x=0.0, y=0.0, z=0.02342043565856792]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.12, 72.28, 17.95, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.22, 72.28, 17.95, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.13, 72.28, 17.95, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.75, 71.53, 13.66, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 4.00, 71.53, 13.66, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.29, 71.53, 13.66, rings 0, racing
 messages
 logs
 ## tick 81
@@ -869,9 +870,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.686889257323999] v=Vec3[x=0.0, y=0.0, z=0.02496823154250306]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.08, 72.22, 19.20, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.21, 72.22, 19.20, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.13, 72.22, 19.20, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.67, 72.31, 14.64, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.94, 72.31, 14.64, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.35, 72.31, 14.64, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.6",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -883,9 +884,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.713389806806359] v=Vec3[x=0.0, y=0.0, z=0.02650054948235978]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 4.03, 72.16, 20.50, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.19, 72.16, 20.50, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.14, 72.16, 20.50, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.59, 73.00, 15.69, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.87, 73.00, 15.69, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.41, 73.00, 15.69, rings 1, racing
 messages
 logs
 ## tick 83
@@ -896,9 +897,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.74140735106379] v=Vec3[x=0.0, y=0.0, z=0.028017544257431252]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.97, 72.09, 21.85, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.16, 72.09, 21.85, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.16, 72.09, 21.85, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.51, 73.00, 17.04, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.79, 73.00, 17.04, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.49, 73.00, 17.04, rings 1, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.7",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -910,9 +911,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.7709267201630094] v=Vec3[x=0.0, y=0.0, z=0.0295193690992192]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.90, 72.03, 23.25, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.12, 72.03, 23.25, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.19, 72.03, 23.25, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.42, 73.00, 18.44, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.70, 73.00, 18.44, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.57, 73.00, 18.44, rings 1, racing
 messages
 logs
 ## tick 85
@@ -923,9 +924,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.801932895869921] v=Vec3[x=0.0, y=0.0, z=0.03100617570691179]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.82, 71.98, 24.70, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at 4.06, 71.98, 24.70, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.24, 71.98, 24.70, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.34, 73.00, 19.89, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.61, 73.00, 19.89, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.66, 73.00, 19.89, rings 1, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.8",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -937,9 +938,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.834411010132628] v=Vec3[x=0.0, y=0.0, z=0.03247811426270675]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 71.92, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 71.92, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 71.92, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.25, 73.00, 21.39, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.52, 73.00, 21.39, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.75, 73.00, 21.39, rings 1, racing
 messages
 logs
 ## tick 87
@@ -950,9 +951,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.86834634357961] v=Vec3[x=0.0, y=0.0, z=0.033935333446981256]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 70.78, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 70.78, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 70.78, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.18, 73.00, 22.94, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.42, 73.00, 22.94, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.85, 73.00, 22.94, rings 1, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.9",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -964,9 +965,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.90372432403292] v=Vec3[x=0.0, y=0.0, z=0.03537798045331014]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 69.58, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 69.58, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 69.58, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.11, 73.00, 24.52, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.33, 73.00, 24.53, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at 3.94, 73.00, 24.51, rings 1, racing
 messages
 logs
 ## tick 89
@@ -977,9 +978,9 @@ describe
     Ada: ring 0, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=65.0, z=5.940530525036254] v=Vec3[x=0.0, y=0.0, z=0.03680620100333389]
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 68.33, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 68.33, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 68.33, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:01.0",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -992,9 +993,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 67.03, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 67.03, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 67.03, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
   Ada actionbar ""
   Ada chat {"translate":"voyager.result.map.dnf","with":["com-ridge","0","2","10"]}
@@ -1012,9 +1013,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 65.67, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 65.67, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 65.67, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 92
@@ -1026,9 +1027,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 64.27, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 64.27, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 64.27, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 93
@@ -1040,9 +1041,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 62.81, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 62.81, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 62.81, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 94
@@ -1054,9 +1055,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 61.31, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 61.31, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 61.31, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 95
@@ -1068,9 +1069,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 59.75, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 59.75, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 59.75, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 96
@@ -1082,9 +1083,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 58.15, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 58.15, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 58.15, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 97
@@ -1096,9 +1097,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 56.50, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 56.50, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 56.50, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 98
@@ -1110,9 +1111,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 54.81, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 54.81, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 54.81, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 99
@@ -1124,9 +1125,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 53.07, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 53.07, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 53.07, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 100
@@ -1138,9 +1139,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 51.29, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 51.29, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 51.29, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 101
@@ -1152,9 +1153,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 49.46, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 49.46, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 49.46, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 102
@@ -1166,9 +1167,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 47.60, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 47.60, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 47.60, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 103
@@ -1180,9 +1181,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 45.69, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 45.69, 25.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 45.69, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, rings 2, finished
 messages
 logs
 ## tick 104
@@ -1194,9 +1195,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 43.74, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 43.74, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 43.74, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
   Ada chat {"translate":"voyager.map.banner","with":["2","2","dune-run","2","0:00"]}
   Ada title-times 0 15 5
@@ -1213,9 +1214,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 41.75, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 41.75, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 41.75, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 106
@@ -1227,9 +1228,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 39.73, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 39.73, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 39.73, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 107
@@ -1241,9 +1242,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 37.67, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 37.67, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 37.67, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 108
@@ -1255,9 +1256,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 35.56, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 35.56, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 35.56, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 109
@@ -1269,9 +1270,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 33.43, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 33.43, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 33.43, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 110
@@ -1283,9 +1284,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 31.25, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 31.25, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 31.25, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 111
@@ -1297,9 +1298,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 29.05, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 29.05, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 29.05, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 112
@@ -1311,9 +1312,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 26.80, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 26.80, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 26.80, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 113
@@ -1325,9 +1326,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 24.53, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 24.53, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 24.53, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 114
@@ -1339,9 +1340,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 22.22, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 22.22, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 22.22, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 115
@@ -1353,9 +1354,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 19.88, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 19.88, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 19.88, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 116
@@ -1367,9 +1368,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 17.51, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 17.51, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 17.51, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 117
@@ -1381,9 +1382,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 15.10, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 15.10, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 15.10, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 118
@@ -1395,9 +1396,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 12.67, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 12.67, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 12.67, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 119
@@ -1409,9 +1410,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 10.21, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 10.21, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 10.21, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 120
@@ -1423,9 +1424,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 7.71, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 7.71, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 7.71, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 121
@@ -1437,9 +1438,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 5.19, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 5.19, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 5.19, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 122
@@ -1451,9 +1452,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 2.64, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 2.64, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 2.64, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 123
@@ -1465,9 +1466,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, 0.07, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, 0.07, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, 0.07, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 124
@@ -1479,9 +1480,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -2.53, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -2.53, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -2.53, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
   Ada title-times 0 15 5
   Ada subtitle {"translate":"voyager.countdown.subtitle","with":["dune-run","2","0:00"]}
@@ -1496,9 +1497,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -5.16, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -5.16, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -5.16, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 126
@@ -1510,9 +1511,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -7.82, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -7.82, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -7.82, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 127
@@ -1524,9 +1525,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -10.50, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -10.50, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -10.50, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 128
@@ -1538,9 +1539,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -13.21, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -13.21, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -13.21, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 129
@@ -1552,9 +1553,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -15.94, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -15.94, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -15.94, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 130
@@ -1566,9 +1567,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -18.69, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -18.69, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -18.69, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 131
@@ -1580,9 +1581,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -21.47, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -21.47, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -21.47, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 132
@@ -1594,9 +1595,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -24.27, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -24.27, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -24.27, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 133
@@ -1608,9 +1609,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -27.09, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -27.09, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -27.09, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 134
@@ -1622,9 +1623,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -29.93, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -29.93, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -29.93, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 135
@@ -1636,9 +1637,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -32.80, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -32.80, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -32.80, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 136
@@ -1650,9 +1651,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -35.68, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -35.68, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -35.68, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 137
@@ -1664,9 +1665,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -38.59, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -38.59, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -38.59, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 138
@@ -1678,9 +1679,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -41.52, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -41.52, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -41.52, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 139
@@ -1692,9 +1693,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -44.47, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -44.47, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -44.47, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 140
@@ -1706,9 +1707,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -47.43, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -47.43, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -47.43, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 141
@@ -1720,9 +1721,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -50.42, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -50.42, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -50.42, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 142
@@ -1734,9 +1735,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -53.43, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -53.43, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -53.43, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 143
@@ -1748,9 +1749,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -56.45, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -56.45, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -56.45, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 144
@@ -1762,9 +1763,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -59.49, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -59.49, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -59.49, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
   Ada title-times 0 15 5
   Ada subtitle {"translate":"voyager.countdown.subtitle","with":["dune-run","2","0:00"]}
@@ -1779,9 +1780,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -62.55, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -62.55, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -62.55, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 146
@@ -1793,9 +1794,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -65.62, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -65.62, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -65.62, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 147
@@ -1807,9 +1808,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -68.72, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -68.72, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -68.72, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 148
@@ -1821,9 +1822,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -71.83, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -71.83, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -71.83, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 149
@@ -1835,9 +1836,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -74.95, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -74.95, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -74.95, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 150
@@ -1849,9 +1850,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -78.09, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -78.09, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -78.09, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 151
@@ -1863,9 +1864,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -81.25, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -81.25, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -81.25, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 152
@@ -1877,9 +1878,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -84.42, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -84.42, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -84.42, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 153
@@ -1891,9 +1892,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -87.61, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -87.61, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -87.61, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 154
@@ -1905,9 +1906,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -90.81, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -90.81, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -90.81, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 155
@@ -1919,9 +1920,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -94.03, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -94.03, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -94.03, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 156
@@ -1933,9 +1934,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -97.26, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -97.26, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -97.26, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 157
@@ -1947,9 +1948,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -100.50, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -100.50, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -100.50, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 158
@@ -1961,9 +1962,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -103.76, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -103.76, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -103.76, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 159
@@ -1975,9 +1976,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -107.03, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -107.03, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -107.03, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 160
@@ -1989,9 +1990,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -110.31, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -110.31, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -110.31, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 161
@@ -2003,9 +2004,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -113.61, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -113.61, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -113.61, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 162
@@ -2017,9 +2018,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -116.92, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -116.92, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -116.92, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 163
@@ -2031,9 +2032,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at 3.74, -120.24, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["2"]} at 3.99, -120.24, 25.50, not on the course
-    {"translate":"voyager.com.racer.name","with":["3"]} at 3.30, -120.24, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["1"]} at 3.05, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
+    {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
 logs
 ## tick 164
@@ -2045,9 +2046,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.93, 67.67, -85.80, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.04, 67.67, -85.80, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.54, 67.67, -85.80, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -36.85, 71.00, -87.80, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.78, 71.00, -87.80, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.85, 71.00, -87.80, rings 0, racing
 messages
   Ada title-times 0 20 5
   Ada subtitle {"translate":"voyager.race.go.jump"}
@@ -2063,9 +2064,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.90, 67.66, -85.05, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.00, 67.66, -85.05, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.58, 67.66, -85.05, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -36.86, 71.00, -87.05, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.78, 71.00, -87.05, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.86, 71.00, -87.05, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.1",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2078,9 +2079,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.88, 67.64, -84.25, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.97, 67.64, -84.25, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.62, 67.64, -84.25, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -36.88, 71.00, -86.25, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.78, 71.00, -86.25, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.87, 71.00, -86.25, rings 0, racing
 messages
 logs
 ## tick 167
@@ -2092,9 +2093,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.86, 67.63, -83.40, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.93, 67.63, -83.40, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.66, 67.63, -83.40, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -36.90, 71.00, -85.40, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.78, 71.00, -85.40, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.87, 71.00, -85.40, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.2",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2107,9 +2108,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.84, 67.62, -82.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.89, 67.62, -82.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 67.62, -82.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -36.93, 71.00, -84.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.79, 71.00, -84.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.87, 71.00, -84.50, rings 0, racing
 messages
 logs
 ## tick 169
@@ -2121,9 +2122,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.83, 67.61, -81.55, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.86, 67.61, -81.55, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.74, 67.61, -81.55, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -36.97, 71.00, -83.55, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.81, 71.00, -83.55, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.86, 71.00, -83.55, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.3",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2136,9 +2137,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.83, 67.60, -80.55, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.83, 67.60, -80.55, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.78, 67.60, -80.55, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.01, 71.00, -82.55, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.83, 71.00, -82.55, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.85, 71.00, -82.55, rings 0, racing
 messages
 logs
 ## tick 171
@@ -2150,9 +2151,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.83, 67.59, -79.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.81, 67.59, -79.50, rings 0, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.81, 67.59, -79.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.06, 71.00, -81.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.86, 71.00, -81.50, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.83, 71.00, -81.50, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.4",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2165,9 +2166,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.84, 67.58, -78.40, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.79, 67.58, -78.40, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.84, 67.58, -78.40, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.11, 71.00, -80.40, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.90, 71.00, -80.40, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.80, 71.00, -80.40, rings 0, racing
 messages
 logs
 ## tick 173
@@ -2179,9 +2180,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.85, 67.57, -77.25, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.78, 67.57, -77.25, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.86, 67.57, -77.25, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.18, 71.00, -79.25, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -36.94, 71.00, -79.25, rings 0, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.76, 71.00, -79.25, rings 0, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.5",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2194,9 +2195,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.88, 67.56, -76.05, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.78, 67.56, -76.05, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.87, 67.56, -76.05, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.25, 71.00, -78.05, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.00, 71.00, -78.05, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.71, 71.00, -78.05, rings 1, racing
 messages
 logs
 ## tick 175
@@ -2208,9 +2209,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.92, 67.55, -74.80, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.79, 67.55, -74.80, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.87, 67.55, -74.80, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.33, 71.00, -76.80, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.06, 71.00, -76.80, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.65, 71.00, -76.80, rings 1, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.6",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2223,9 +2224,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -36.97, 67.54, -73.50, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.81, 67.54, -73.50, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.86, 67.54, -73.50, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.41, 71.00, -75.50, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.13, 71.00, -75.50, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.59, 71.00, -75.50, rings 1, racing
 messages
 logs
 ## tick 177
@@ -2237,9 +2238,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.03, 67.53, -72.15, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.84, 67.53, -72.15, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.84, 67.53, -72.15, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.49, 71.00, -74.15, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.21, 71.00, -74.15, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.51, 71.00, -74.15, rings 1, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.7",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2252,9 +2253,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.10, 67.52, -70.75, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.88, 67.52, -70.75, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.81, 67.52, -70.75, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.58, 71.00, -72.75, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.30, 71.00, -72.75, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.43, 71.00, -72.75, rings 1, racing
 messages
 logs
 ## tick 179
@@ -2266,9 +2267,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.18, 67.51, -69.30, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["2"]} at -36.94, 67.51, -69.30, rings 1, racing
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.76, 67.51, -69.30, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.66, 71.00, -71.30, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.39, 71.00, -71.30, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.34, 71.00, -71.30, rings 1, racing
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.8",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2281,9 +2282,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 67.50, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 67.50, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 67.50, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.75, 71.00, -69.80, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.48, 71.00, -69.80, rings 1, racing
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.25, 71.00, -69.80, rings 1, racing
 messages
 logs
 ## tick 181
@@ -2295,9 +2296,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 64.00, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 64.00, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 64.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.82, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.58, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:00.9",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2310,9 +2311,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 60.49, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 60.49, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 60.49, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.82, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.58, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
 logs
 ## tick 183
@@ -2324,9 +2325,9 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 56.97, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 56.97, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 56.97, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.82, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.58, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
   Ada actionbar {"translate":"voyager.hud.flight","with":["0:01.0",{"color":"white","text":"0"},"2","      "]}
 logs
@@ -2339,9 +2340,9 @@ describe
     cup: Ada — 20 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 53.44, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 53.44, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 53.44, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.82, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.58, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
   Ada actionbar ""
   Ada chat {"translate":"voyager.result.map.dnf","with":["dune-run","0","2","10"]}
@@ -2359,9 +2360,9 @@ describe
     cup: Ada — 20 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 49.90, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 49.90, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 49.90, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.82, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.58, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
 logs
 ## tick 186
@@ -2373,9 +2374,9 @@ describe
     cup: Ada — 20 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 46.36, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 46.36, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 46.36, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.82, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.58, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
 logs
 ## tick 187
@@ -2387,9 +2388,9 @@ describe
     cup: Ada — 20 point(s), 0 map(s) finished, best -
   
   computer racers
-    {"translate":"voyager.com.racer.name","with":["1"]} at -37.26, 42.81, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["2"]} at -37.01, 42.81, -68.50, rings 2, finished
-    {"translate":"voyager.com.racer.name","with":["3"]} at -37.70, 42.81, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["1"]} at -37.82, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["2"]} at -37.58, 71.00, -68.50, rings 2, finished
+    {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, rings 2, finished
 messages
 logs
 ## tick 188
