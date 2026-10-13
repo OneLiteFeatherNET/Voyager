@@ -373,7 +373,7 @@ describe
     Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
 messages
   Ada chat {"translate":"voyager.map.banner","with":["1","2","ridge-run","1","0:00"]}
-  Ada title-times 0 10 5
+  Ada title-times 0 20 5
   Ada subtitle {"translate":"voyager.race.go.jump"}
   Ada title {"translate":"voyager.countdown.go"}
 logs
@@ -543,7 +543,7 @@ messages
   Ada actionbar ""
   Ada chat {"translate":"voyager.result.map.dnf","with":["ridge-run","0","1","10"]}
   Ada title-times 5 60 10
-  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","1","10"]}
+  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","1"]}
   Ada title {"translate":"voyager.medal.dnf"}
 logs
   INFO Map 1/2 'ridge-run' finished after 19 tick(s), 0,950 s
@@ -592,7 +592,7 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
 messages
   Ada chat {"translate":"voyager.map.banner","with":["2","2","dune-run","2","0:00"]}
-  Ada title-times 0 10 5
+  Ada title-times 0 20 5
   Ada subtitle {"translate":"voyager.race.go.jump"}
   Ada title {"translate":"voyager.countdown.go"}
 logs
@@ -780,7 +780,7 @@ messages
   Ada actionbar ""
   Ada chat {"translate":"voyager.result.map.dnf","with":["dune-run","0","2","10"]}
   Ada title-times 5 60 10
-  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2","10"]}
+  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2"]}
   Ada title {"translate":"voyager.medal.dnf"}
 logs
   INFO Map 2/2 'dune-run' finished after 19 tick(s), 0,950 s
