@@ -39,7 +39,7 @@ class ComBodyTest {
         Instance instance = flatInstance(env);
         ComBody body = new ComBody(ID, "COM 1");
         body.spawn(instance, new Pos(4, 41, 9)).join();
-        Pos target = new Pos(20, 41, 30);
+        Pos target = new Pos(12, 41, 7); // inside chunk 0,0, the only chunk the fixture loads
 
         body.teleport(target);
         env.tick();
