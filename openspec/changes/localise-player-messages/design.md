@@ -61,6 +61,11 @@ Minestom returns its default, which comes from `MinestomAdventure.getDefaultLoca
 that default can be set to `en_US` at boot. If it can, a German host no longer sends German to a player whose settings
 have not arrived yet. If it cannot, that is recorded as a known limit in ADR-0038.
 
+**Findings (task 2.5, Minestom 2026.08.28-26.2 sources).** `MinestomAdventure.setDefaultLocale(Locale)` exists, so the
+default is set to `en_US` at boot in both composition roots. Minestom's command package builds its messages as plain text
+and names no translation key, so its own command errors are not client-translated (OQ-4). `CommandSender` has `String`
+overloads of `sendMessage`, which the third rule in `ApiPurityTest` covers.
+
 **Placeholder convention.** Unchanged: `<arg:N>`, zero-indexed, MiniMessage. `{N}` stays refused at load by
 `VoyagerTranslator.of`. Two additions:
 
