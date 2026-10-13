@@ -6,7 +6,10 @@ import io.avaje.inject.Factory;
 
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
+import net.elytrarace.voyager.platform.lobby.LobbyBoard;
+import net.elytrarace.voyager.platform.lobby.LobbyHologram;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
@@ -147,8 +150,13 @@ public final class ServerBeans {
                 .map(definition -> new LobbyTransition(instances, definition))
                 .orElse(null);
         HubHandoff hub = HubHandoff.fromSlot((racer, reason) -> racer.kick(reason), LOGGER::warn);
+        // The hologram stands in the lobby world, which the lobby transition has just loaded, so it is spawned here, once
+        // at boot. It is an entity and not part of the world, so the lobby is never written with it.
+        LobbyHologram hologram = lobby == null ? null : LobbyHologram.spawnAt(
+                settings.lobbyHologram().map(at -> Vectors.toMinestom(at).asPos()), lobby.instance(),
+                LobbyBoard.of(catalog.current().cup())).orElse(null);
         return new WaitingRoom(session, catalog, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
-                hub, new LobbyHud(), new LobbySidebar(), null,
+                hub, new LobbyHud(), new LobbySidebar(), hologram,
                 () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
     }
 

@@ -353,6 +353,12 @@ public final class ConfigCheck {
         } catch (InvalidSettingException exception) {
             problems.add(error(exception.setting(), sources.apply(exception.setting()), exception.getMessage()));
         }
+        try {
+            ServerSettings.parseHologram(blankToNull(properties.get(ServerSettings.LOBBY_HOLOGRAM_PROPERTY)),
+                    blankToNull(properties.get(ServerSettings.LOBBY_WORLD_PROPERTY)));
+        } catch (InvalidSettingException exception) {
+            problems.add(error(exception.setting(), sources.apply(exception.setting()), exception.getMessage()));
+        }
         int maximum;
         try {
             maximum = ServerSettings.parseMaximumRacers(blankToNull(properties.get(ServerSettings.MAX_PLAYERS_PROPERTY)));
