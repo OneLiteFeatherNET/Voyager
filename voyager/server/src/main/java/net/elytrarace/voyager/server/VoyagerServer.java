@@ -60,7 +60,7 @@ import java.util.function.Supplier;
  *
  * <p>Usage: {@code java -jar voyager-server.jar [host] [port]}, or {@code ./gradlew
  * :voyager:server:runServerDev} / {@code :voyager:server:runServer}. Configuration is
- * {@link ServerSettings}; there is no configuration file, and everything it reads is named there.
+ * {@link ServerSettings}, read through {@code ConfigLoader} (ADR-0036); every key it reads is named in {@code ServerSettings}.
  *
  * <h2>The order, which is the only interesting thing in this file</h2>
  *
