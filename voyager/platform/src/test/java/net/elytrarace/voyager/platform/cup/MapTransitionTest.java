@@ -295,7 +295,7 @@ class MapTransitionTest {
         Player racer = connectTo(env, instances, RIDGE_START);
         transition.advanceTo(RIDGE_START, List.of(racer));
         runs.advance(racer.getUuid(), RIDGE_START, RaceClock.startingAt(TICK).advanced(),
-                RIDGE_START_SPAWN, true);
+                RIDGE_START_SPAWN, true, false);
         assertThat(runs.of(racer.getUuid())).isNotEqualTo(Optional.of(RaceRun.atStart()));
 
         transition.advanceTo(DUNE_RUN, List.of(racer));
@@ -366,7 +366,7 @@ class MapTransitionTest {
         Player racer = connectTo(env, instances, RIDGE_START);
         transition.advanceTo(RIDGE_START, List.of(racer));
         RaceRun inProgress = runs.advance(racer.getUuid(), RIDGE_START,
-                RaceClock.startingAt(TICK).advanced(), RIDGE_START_SPAWN, true);
+                RaceClock.startingAt(TICK).advanced(), RIDGE_START_SPAWN, true, false);
         MapDefinition missing = map("ghost-run", "no_such_world", DUNE_SPAWN);
 
         assertThatThrownBy(() -> transition.advanceTo(missing, List.of(racer)))

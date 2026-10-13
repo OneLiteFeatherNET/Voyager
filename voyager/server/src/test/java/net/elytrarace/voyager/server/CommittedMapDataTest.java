@@ -44,6 +44,12 @@ class CommittedMapDataTest {
     /** The BOOST rings of the shipped course: the three longest straight segments, see the map's notes. */
     private static final Set<Integer> BOOST_RINGS = Set.of(0, 18, 27);
 
+    /**
+     * The CHECKPOINT rings of the shipped course. Owner decision, 2026-10-13: roughly every eighth ring, counted
+     * by 0-based index; no BOOST ring sits on a chosen index, so none moved.
+     */
+    private static final Set<Integer> CHECKPOINT_RINGS = Set.of(7, 15, 23, 31);
+
     @Test
     void theCommittedRacecourseLoadsThroughTheRealCatalogue() {
         MapDefinition map = CatalogLoader.load(RESOURCES)
@@ -70,8 +76,15 @@ class CommittedMapDataTest {
                     .isCloseTo(Math.sqrt(13), Offset.offset(1e-12));
             assertThat(ring.type())
                     .as("type of ring %s", ring.index())
-                    .isEqualTo(BOOST_RINGS.contains(ring.index()) ? RingType.BOOST : RingType.STANDARD);
+                    .isEqualTo(expectedType(ring.index()));
         }
+    }
+
+    private static RingType expectedType(int index) {
+        if (BOOST_RINGS.contains(index)) {
+            return RingType.BOOST;
+        }
+        return CHECKPOINT_RINGS.contains(index) ? RingType.CHECKPOINT : RingType.STANDARD;
     }
 
     @Test

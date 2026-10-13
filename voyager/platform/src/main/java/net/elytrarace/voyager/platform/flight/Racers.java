@@ -24,10 +24,14 @@ import org.jetbrains.annotations.ApiStatus;
  * joins with no elytra, or who has one and never jumps and holds, produces a flight that never
  * starts and a race in which nothing happens. So the racer is given the elytra and the rockets
  * before the count ({@link #faceCourse}), and the flight starts when they deploy the elytra
- * themselves, as they did in the tree being replaced. The server does not start the glide and does
+ * themselves, as they did in the tree being replaced. The server does not start the glide at GO and does
  * not push the racer off the spawn: the gliding flag and the velocity are the client's, as in
  * Vanilla. The flag is server-side entity metadata and the client honours it for its own player, so
  * the server sees the deployment through {@code isFlyingWithElytra()} and the race counts it.
+ *
+ * <p>A checkpoint reset is the one place the server sets the flag itself: {@link #place} starts the glide
+ * of a racer it puts back behind a checkpoint, with no impulse, so the racer does not have to jump and
+ * deploy again. A spawn reset does not glide, and the racer takes off as at GO.
  *
  * <p>The firework itself stays — {@link Rockets} is what it does now — and it is used once the
  * elytra is deployed, because a boost is refused while the racer is not gliding.
@@ -103,21 +107,23 @@ public abstract class Racers {
     }
 
     /**
-     * Places a reset racer: gives them their equipment, turns them toward {@code toward}, and ends any glide
-     * they were in.
+     * Places a reset racer: gives them their equipment, turns them toward {@code toward}, and sets whether they
+     * are gliding.
      *
-     * <p>Called by a course reset after the racer has been moved to the target. The racer is not gliding
-     * afterwards, whatever they were doing before: a reset out of bounds in mid-flight ends the glide, and
-     * the racer deploys the elytra again to take off. No velocity is sent here; {@code RunResetter} zeroes it
-     * through {@code VelocityExit}.
+     * <p>Called by a course reset after the racer has been moved to the target. A checkpoint reset places the
+     * racer gliding, with no impulse: the glide is the server's flag, which the client honours for its own
+     * player. A spawn reset places the racer on foot, as GO does, so the racer deploys the elytra to take off.
+     * No velocity is sent here; {@code RunResetter} zeroes it through {@code VelocityExit}.
      *
-     * @param toward a point the racer faces, one step along the flow normal of the ring they are placed at
+     * @param toward a point the racer faces, one step along the flow normal of the checkpoint they are placed
+     *     at, or the first ring's centre for a spawn
      * @param config the tuning of the map being raced, so a reset gives the map's count of rockets again
+     * @param gliding whether the racer is placed gliding
      */
-    public static void place(Player player, Vec3 toward, BoostConfig config) {
+    public static void place(Player player, Vec3 toward, BoostConfig config, boolean gliding) {
         equip(player, config);
         player.lookAt(Vectors.toMinestom(toward));
-        player.setFlyingWithElytra(false);
+        player.setFlyingWithElytra(gliding);
     }
 
     /**

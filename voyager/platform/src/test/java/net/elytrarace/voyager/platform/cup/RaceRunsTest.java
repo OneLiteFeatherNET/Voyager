@@ -132,7 +132,7 @@ class RaceRunsTest {
         RaceClock clock = RaceClock.startingAt(TICK);
         for (int tick = 1; tick <= LAST_RING_TICK; tick++) {
             clock = clock.advanced();
-            runs.advance(FLYER, COURSE, clock, positionAt(tick), false);
+            runs.advance(FLYER, COURSE, clock, positionAt(tick), false, false);
         }
 
         assertThat(runs.of(FLYER).orElseThrow().passedOnGameTick()).isEmpty();
@@ -143,7 +143,7 @@ class RaceRunsTest {
         RaceRuns runs = new RaceRuns();
         RaceClock clock = RaceClock.startingAt(TICK).advanced();
 
-        assertThatThrownBy(() -> runs.advance(FLYER, COURSE, clock, positionAt(1), true))
+        assertThatThrownBy(() -> runs.advance(FLYER, COURSE, clock, positionAt(1), true, false))
                 .isInstanceOf(UnstartedRunException.class)
                 .hasMessageContaining(FLYER.toString())
                 .hasMessageContaining("moving the player to that map's spawn");
@@ -285,7 +285,7 @@ class RaceRunsTest {
         RaceRun flown = runs.of(playerId).orElseThrow();
         for (int tick = 1; tick <= throughTick; tick++) {
             clock = clock.advanced();
-            flown = runs.advance(playerId, COURSE, clock, positionAt(tick), true);
+            flown = runs.advance(playerId, COURSE, clock, positionAt(tick), true, false);
         }
         return flown;
     }

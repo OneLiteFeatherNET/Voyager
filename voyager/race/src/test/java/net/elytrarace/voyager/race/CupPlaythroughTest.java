@@ -22,6 +22,9 @@ import net.elytrarace.voyager.race.flow.RaceStateMachine;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.line.RacingLine;
 import net.elytrarace.voyager.race.progress.RingProgress;
+import net.elytrarace.voyager.race.reset.ResetCause;
+import net.elytrarace.voyager.race.reset.ResetPlan;
+import net.elytrarace.voyager.race.reset.RunReset;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.CupScorer;
@@ -329,7 +332,7 @@ class CupPlaythroughTest {
             // The run's previous position is null on the first tick of the phase — the tick after a
             // teleport has no segment to test. No ring sits within one tick of any spawn, so nothing
             // is lost by it.
-            RaceRun advanced = racing.run().advance(map, clock, position, gliding);
+            RaceRun advanced = racing.run().advance(map, clock, position, gliding, false);
             runs.put(racer.name(), racing.after(advanced, EFFECTS));
         }
     }
@@ -669,6 +672,69 @@ class CupPlaythroughTest {
         assertThat(resultFor(1, "Rook").progress().lastCheckpointIndex()).isZero();
         assertThat(resultFor(1, "Pike").progress().lastCheckpointIndex()).isZero();
         assertThat(resultFor(1, "Wren").progress().lastCheckpointIndex()).isZero();
+    }
+
+    /**
+     * A reset to a checkpoint keeps the points of the rings up to it and takes back the points of the rings after it,
+     * and a ring the reset took back scores once when it is passed again.
+     *
+     * <p>The course is ten rings along +z, ring 6 a checkpoint, and each ring scores {@code 2 * index + 1}. The racer
+     * passes ring 7 and lands, so the reset goes back to ring 6 and ring 7 is taken back. Flown again, ring 7 scores
+     * once. The course and the lane are built here, so the test does not depend on the cup played in
+     * {@link #playTheWholeCup()}.
+     */
+    @Test
+    void aCheckpointResetKeepsTheScoreOfTheRingsBeforeIt() {
+        MapDefinition course = checkpointCourse();
+        RaceClock clock = RaceClock.startingAt(TICK);
+        RaceRun run = RaceRun.atStart();
+        for (int z = 0; z <= 85; z += 5) {
+            clock = clock.advanced();
+            run = run.advance(course, clock, new Vec3(0.0, 64.0, z), true, false);
+        }
+        assertThat(MapScorer.score(run.progress(), course, COURSE_LENGTH).ringPoints())
+                .describedAs("rings 0 to 7 before the reset")
+                .isEqualTo(pointsOfRings(0, 7));
+
+        ResetPlan plan = RunReset.plan(course, run, ResetCause.LANDED);
+
+        assertThat(plan.run().progress().passedCount()).describedAs("the rings up to checkpoint 6").isEqualTo(7);
+        assertThat(MapScorer.score(plan.run().progress(), course, COURSE_LENGTH).ringPoints())
+                .describedAs("the score after the reset holds rings 0 to 6 only")
+                .isEqualTo(pointsOfRings(0, 6));
+
+        RaceRun resumed = plan.run();
+        for (double z : List.of(65.0, 70.0, 75.0, 80.0)) {
+            clock = clock.advanced();
+            resumed = resumed.advance(course, clock, new Vec3(0.0, 64.0, z), true, false);
+        }
+        assertThat(MapScorer.score(resumed.progress(), course, COURSE_LENGTH).ringPoints())
+                .describedAs("ring 7 scores once, when it is passed again")
+                .isEqualTo(pointsOfRings(0, 7));
+    }
+
+    /** The race length used to score the unfinished runs of the checkpoint course: the score does not depend on it. */
+    private static final Duration COURSE_LENGTH = Duration.ofSeconds(60);
+
+    /** Ten rings along +z, ring 6 a checkpoint; ring {@code i} scores {@code 2 * i + 1} and sits at {@code z = 7.5 + 10 i}. */
+    private static MapDefinition checkpointCourse() {
+        List<Ring> rings = new ArrayList<>();
+        for (int index = 0; index < 10; index++) {
+            RingType type = index == 6 ? RingType.CHECKPOINT : RingType.STANDARD;
+            rings.add(new Ring(index, new Vec3(0.0, 64.0, 7.5 + 10 * index), new Vec3(0.0, 0.0, 1.0), 6.0,
+                    2 * index + 1, type));
+        }
+        return new MapDefinition("checkpoint-course", "checkpoint_arena", new Vec3(0.0, 64.0, 0.0), rings,
+                Duration.ofSeconds(60), new BoostConfig(4, 9), new GuideLine(List.of(), 2, 1.0));
+    }
+
+    /** The points of rings {@code first} to {@code last}, both included, on {@link #checkpointCourse()}. */
+    private static int pointsOfRings(int first, int last) {
+        int points = 0;
+        for (int index = first; index <= last; index++) {
+            points += 2 * index + 1;
+        }
+        return points;
     }
 
     /**

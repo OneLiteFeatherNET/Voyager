@@ -274,7 +274,7 @@
       },
       "radius": 3.605551275463989,
       "points": 10,
-      "type": "STANDARD"
+      "type": "CHECKPOINT"
     },
     {
       "index": 8,
@@ -402,7 +402,7 @@
       },
       "radius": 3.605551275463989,
       "points": 10,
-      "type": "STANDARD"
+      "type": "CHECKPOINT"
     },
     {
       "index": 16,
@@ -530,7 +530,7 @@
       },
       "radius": 3.605551275463989,
       "points": 10,
-      "type": "STANDARD"
+      "type": "CHECKPOINT"
     },
     {
       "index": 24,
@@ -658,7 +658,7 @@
       },
       "radius": 3.605551275463989,
       "points": 10,
-      "type": "STANDARD"
+      "type": "CHECKPOINT"
     },
     {
       "index": 32,
@@ -721,6 +721,7 @@
     "guideLine.particleSpacing — PROVISIONAL seed of 1.0 block(s) between particles, the value the tree being replaced used for the same partial-line mode. Halving it doubles what one racer\u0027s stretch costs to send every refresh.",
     "This file is data, not code: edit the seeds above here rather than in the server.",
     "35 rings, indexed 0..34.",
-    "rings 0, 18 and 27 — PROVISIONAL BOOST rings, chosen from the map's geometry, not by taste. Rule: take each straight segment (centre to centre, ring i to ring i+1, with no guide point in the gap, since a guide bends the drawn line off the direct run), rank them by length, and take the rings above the largest gap in that ranking. The largest gap falls between 72.95 and 56.80 blocks, so the rings are 27 (96.99 blocks), 0 (87.42) and 18 (72.95). The final ring is never a BOOST ring. The BOOST speed multiplier (1.5) is a code constant in RingEffectRegistry, not a per-map value. Tune after playtest."
+    "rings 0, 18 and 27 — PROVISIONAL BOOST rings, chosen from the map's geometry, not by taste. Rule: take each straight segment (centre to centre, ring i to ring i+1, with no guide point in the gap, since a guide bends the drawn line off the direct run), rank them by length, and take the rings above the largest gap in that ranking. The largest gap falls between 72.95 and 56.80 blocks, so the rings are 27 (96.99 blocks), 0 (87.42) and 18 (72.95). The final ring is never a BOOST ring. The BOOST speed multiplier (1.5) is a code constant in RingEffectRegistry, not a per-map value. Tune after playtest.",
+    "Checkpoint rings (owner decision, 2026-10-13): CHECKPOINT at ring indices 7, 15, 23, 31. Index is the 0-based position in the rings array, so the 8th, 16th, 24th ring ... are 7, 15, 23 ... . No BOOST ring moved. The last ring is never marked. Only the type field changed; geometry, points and effects are as committed."
   ]
 }

@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.platform.hud.RaceFeedback;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -52,7 +53,7 @@ class RacersTest {
         Racers.prepare(racer);
         racer.getInventory().setItemStack(0, ItemStack.of(Material.FIREWORK_ROCKET, 2));
 
-        Racers.place(racer, new Vec3(0, 60, 10), TWELVE_ROCKETS);
+        Racers.place(racer, new Vec3(0, 60, 10), TWELVE_ROCKETS, true);
 
         assertThat(racer.getInventory().getItemStack(0).amount()).isEqualTo(12);
     }
@@ -92,18 +93,35 @@ class RacersTest {
         assertThat(racer.getInventory().getItemStack(0).isAir()).isTrue();
     }
 
-    /** A reset places the racer facing the target and ends any glide they were in; it starts none. */
+    /** A checkpoint placement leaves the racer gliding, and sends no velocity of its own: the velocity is untouched. */
     @Test
-    void placeEquipsTheRacerAndEndsTheGlideWithoutStartingOne(Env env) {
+    void placeSetsTheGlideWithoutAVelocity(Env env) {
+        Player racer = waitingRacer(env);
+        Racers.prepare(racer);
+        racer.setVelocity(new Vec(0, -20, 0));
+
+        Racers.place(racer, new Vec3(0, 60, 10), DEFAULT, true);
+
+        assertThat(racer.isFlyingWithElytra())
+                .describedAs("a checkpoint reset places the racer gliding, with no impulse")
+                .isTrue();
+        assertThat(racer.getVelocity())
+                .describedAs("place sends no velocity: the one velocity a reset sends is zeroed by RunResetter")
+                .isEqualTo(new Vec(0, -20, 0));
+    }
+
+    /** A spawn placement is grounded, as at GO: the racer is equipped, facing the target, and not gliding. */
+    @Test
+    void placeWithoutAGlideEndsAnyGlide(Env env) {
         Player racer = waitingRacer(env);
         Racers.prepare(racer);
         racer.setFlyingWithElytra(true);
 
-        Racers.place(racer, new Vec3(0, 60, 10), DEFAULT);
+        Racers.place(racer, new Vec3(0, 60, 10), DEFAULT, false);
 
         assertThat(racer.getEquipment(EquipmentSlot.CHESTPLATE).material()).isEqualTo(Material.ELYTRA);
         assertThat(racer.isFlyingWithElytra())
-                .describedAs("a reset out of bounds in mid-flight ends the glide; the racer deploys again to fly")
+                .describedAs("a spawn reset ends the glide; the racer deploys the elytra again to take off")
                 .isFalse();
     }
 

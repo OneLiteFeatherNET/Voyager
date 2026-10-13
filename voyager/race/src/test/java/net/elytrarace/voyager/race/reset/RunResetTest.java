@@ -14,6 +14,7 @@ import net.elytrarace.voyager.race.run.RaceRun;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -34,6 +35,12 @@ class RunResetTest {
     private static final Duration STEP = Duration.ofMillis(50);
 
     private static final Vec3 SPAWN = new Vec3(0.0, 65.0, 0.0);
+
+    /** Airborne race ticks a racer needs before a landing counts (design D4). */
+    private static final int LANDING_GRACE_TICKS = 20;
+
+    /** Ten movement ticks, one for each ring of {@link #LONG_COURSE}. */
+    private static final List<Integer> TEN_TICKS = List.of(5, 9, 12, 15, 18, 21, 24, 27, 30, 33);
 
     /** Checkpoint at ring 0: a plain flow along +z. */
     private static final Ring CHECKPOINT = new Ring(0, new Vec3(0.0, 64.0, 10.0), new Vec3(0.0, 0.0, 1.0), 5.0, 7,
@@ -131,48 +138,67 @@ class RunResetTest {
         assertThat(RunReset.isLanded(RaceRun.atStart(), false, true)).isFalse();
     }
 
+    @Test
+    void aLandingBeforeTheAirborneGraceIsNotALanding() {
+        RaceRun glidingNineteenTicks = airborneGliding(LANDING_GRACE_TICKS - 1, 0);
+
+        assertThat(RunReset.isLanded(glidingNineteenTicks, false, true)).isFalse();
+    }
+
+    @Test
+    void aLandingDuringTheCooldownIsNotALanding() {
+        RaceRun cooling = airborneGliding(LANDING_GRACE_TICKS, 1);
+
+        assertThat(RunReset.isLanded(cooling, false, true)).isFalse();
+    }
+
+    @Test
+    void aLandingAfterTheGraceAndOutsideTheCooldownIsALanding() {
+        RaceRun pastTheGrace = airborneGliding(LANDING_GRACE_TICKS, 0);
+
+        assertThat(RunReset.isLanded(pastTheGrace, false, true)).isTrue();
+    }
+
     // ------------------------------------------------------------------------------------------
     // The reset plan: target
     // ------------------------------------------------------------------------------------------
 
     @Test
-    void theTargetOfAResetIsTheCentreOfTheLastRingPassed() {
-        RaceRun run = gliding(progress(2), List.of(5, 9));
+    void aResetTargetsTheLastCheckpointPassed() {
+        RaceRun run = gliding(new RingProgress(10, 6), TEN_TICKS);
 
-        ResetPlan plan = RunReset.plan(COURSE, run, ResetCause.OUT_OF_BOUNDS);
+        ResetPlan plan = RunReset.plan(LONG_COURSE, run, ResetCause.OUT_OF_BOUNDS);
+
+        Ring checkpoint = LONG_COURSE.rings().get(6);
+        assertThat(plan.position())
+                .describedAs("ring 6 is the last checkpoint passed, so it is the target and not ring 9")
+                .isEqualTo(checkpoint.center());
+        assertThat(plan.toward())
+                .describedAs("one step along the normal of ring 6, which is tilted and so tells it apart")
+                .isEqualTo(checkpoint.center().plus(checkpoint.normal()));
+    }
+
+    @Test
+    void aResetWithNoCheckpointTargetsTheSpawn() {
+        RaceRun run = gliding(new RingProgress(10, -1), TEN_TICKS);
+
+        ResetPlan plan = RunReset.plan(LONG_COURSE, run, ResetCause.OUT_OF_BOUNDS);
 
         assertThat(plan.position())
-                .describedAs("the last ring passed is ring 1, a standard ring, not the checkpoint")
-                .isEqualTo(STANDARD.center());
-    }
-
-    @Test
-    void theRacerFacesAlongTheFlowNormalOfTheTargetRing() {
-        RaceRun run = gliding(progress(2), List.of(5, 9));
-
-        ResetPlan plan = RunReset.plan(COURSE, run, ResetCause.OUT_OF_BOUNDS);
-
+                .describedAs("no checkpoint was passed, so the target is the spawn and not ring 9")
+                .isEqualTo(LONG_COURSE.spawn());
         assertThat(plan.toward())
-                .describedAs("a point one step along the normal from the ring's centre")
-                .isEqualTo(STANDARD.center().plus(STANDARD_NORMAL));
+                .describedAs("the spawn faces the centre of the first ring, as a map start does")
+                .isEqualTo(LONG_COURSE.rings().getFirst().center());
     }
 
     @Test
-    void aCheckpointIsATargetLikeAnyOtherRing() {
-        RaceRun run = gliding(progress(1), List.of(5));
+    void theTargetRingNumberIsTheOneBasedNumberOfTheCheckpoint() {
+        RaceRun run = gliding(new RingProgress(10, 6), TEN_TICKS);
 
-        ResetPlan plan = RunReset.plan(COURSE, run, ResetCause.LANDED);
+        ResetPlan plan = RunReset.plan(LONG_COURSE, run, ResetCause.LANDED);
 
-        assertThat(plan.position()).isEqualTo(CHECKPOINT.center());
-    }
-
-    @Test
-    void theTargetRingNumberIsTheOneBasedNumberOfTheLastRingPassed() {
-        RaceRun run = gliding(progress(2), List.of(5, 9));
-
-        ResetPlan plan = RunReset.plan(COURSE, run, ResetCause.LANDED);
-
-        assertThat(plan.targetRing()).isEqualTo(OptionalInt.of(2));
+        assertThat(plan.targetRing()).isEqualTo(OptionalInt.of(7));
     }
 
     @Test
@@ -201,13 +227,38 @@ class RunResetTest {
     // ------------------------------------------------------------------------------------------
 
     @Test
-    void everyRingAlreadyPassedStaysPassed() {
-        RaceRun run = gliding(progress(2), List.of(5, 9));
+    void aCheckpointResetRemovesTheRingsPassedAfterIt() {
+        RaceRun run = gliding(new RingProgress(10, 6), TEN_TICKS);
 
-        ResetPlan plan = RunReset.plan(COURSE, run, ResetCause.OUT_OF_BOUNDS);
+        ResetPlan plan = RunReset.plan(LONG_COURSE, run, ResetCause.OUT_OF_BOUNDS);
 
-        assertThat(plan.run().progress()).isEqualTo(new RingProgress(2, -1));
-        assertThat(plan.run().passedOnGameTick()).containsExactly(5, 9);
+        assertThat(plan.run().progress())
+                .describedAs("rings 0 to 6 stay passed, and the checkpoint stays the last one passed")
+                .isEqualTo(new RingProgress(7, 6));
+        assertThat(plan.run().passedOnGameTick())
+                .describedAs("one tick per ring kept, and the ticks of rings 7 to 9 are gone")
+                .containsExactly(5, 9, 12, 15, 18, 21, 24);
+    }
+
+    @Test
+    void aSpawnResetKeepsNoRing() {
+        RaceRun run = gliding(new RingProgress(10, -1), TEN_TICKS);
+
+        ResetPlan plan = RunReset.plan(LONG_COURSE, run, ResetCause.OUT_OF_BOUNDS);
+
+        assertThat(plan.run().progress().passedCount()).isZero();
+        assertThat(plan.run().passedOnGameTick()).isEmpty();
+    }
+
+    @Test
+    void aResetRunIsGlidingWithACooldownAndNoAirborneTicks() {
+        RaceRun run = gliding(new RingProgress(10, 6), TEN_TICKS);
+
+        ResetPlan plan = RunReset.plan(LONG_COURSE, run, ResetCause.LANDED);
+
+        assertThat(plan.run().gliding()).describedAs("the racer is placed gliding").isTrue();
+        assertThat(plan.run().resetCooldownTicks()).describedAs("the cooldown after a reset").isEqualTo(40);
+        assertThat(plan.run().airborneTicks()).describedAs("no tick airborne yet").isZero();
     }
 
     @Test
@@ -226,15 +277,6 @@ class RunResetTest {
         ResetPlan plan = RunReset.plan(COURSE, run, ResetCause.OUT_OF_BOUNDS);
 
         assertThat(plan.run().previous()).isNull();
-    }
-
-    @Test
-    void theRunLosesItsGlideSoTheRelaunchIsNotALanding() {
-        RaceRun run = gliding(progress(2), List.of(5, 9));
-
-        ResetPlan plan = RunReset.plan(COURSE, run, ResetCause.LANDED);
-
-        assertThat(plan.run().gliding()).isFalse();
     }
 
     @Test
@@ -278,8 +320,29 @@ class RunResetTest {
         return new RingProgress(passed, -1);
     }
 
-    /** A run that is gliding on the tick it produced, with one tick per ring passed. */
+    /**
+     * A run that is gliding on the tick it produced, past the landing grace and outside any cooldown, so
+     * that only the ground can make a landing of it.
+     */
     private static RaceRun gliding(RingProgress progress, List<Integer> ticks) {
-        return new RaceRun(progress, SPAWN, ticks, Optional.empty(), null, true);
+        return new RaceRun(progress, SPAWN, ticks, Optional.empty(), null, true, LANDING_GRACE_TICKS, 0);
+    }
+
+    /** A run that glided on the tick before, with {@code airborne} airborne ticks and {@code cooldown} ticks left. */
+    private static RaceRun airborneGliding(int airborne, int cooldown) {
+        return new RaceRun(progress(1), SPAWN, List.of(5), Optional.empty(), null, true, airborne, cooldown);
+    }
+
+    /** A course of ten rings with checkpoints at 2 and 6, every normal tilted the same way. */
+    private static final MapDefinition LONG_COURSE = longCourse();
+
+    private static MapDefinition longCourse() {
+        List<Ring> rings = new ArrayList<>();
+        for (int index = 0; index < TEN_TICKS.size(); index++) {
+            RingType type = index == 2 || index == 6 ? RingType.CHECKPOINT : RingType.STANDARD;
+            rings.add(new Ring(index, new Vec3(0.0, 64.0, 10.0 + 10.0 * index), STANDARD_NORMAL, 5.0, 9, type));
+        }
+        return new MapDefinition("long-reset-course", "reset_arena", SPAWN, rings, Duration.ofSeconds(4),
+                new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
     }
 }

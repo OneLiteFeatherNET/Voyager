@@ -217,7 +217,7 @@ class RaceRunTest {
     void theFirstTickHasNoSegmentToTestAndPassesNothing() {
         RaceClock clock = RaceClock.startingAt(TICK).advanced();
 
-        RaceRun afterTeleport = RaceRun.atStart().advance(START_LINE, clock, positionAt(1), true);
+        RaceRun afterTeleport = RaceRun.atStart().advance(START_LINE, clock, positionAt(1), true, false);
 
         assertThat(afterTeleport.progress().passedCount()).isZero();
         assertThat(afterTeleport.passedOnGameTick()).isEmpty();
@@ -225,7 +225,7 @@ class RaceRunTest {
         assertThat(afterTeleport.previous()).isEqualTo(positionAt(1));
 
         RaceRun alreadyOnCourse = new RaceRun(RingProgress.atStart(), SPAWN, List.of(), Optional.empty(), null)
-                .advance(START_LINE, clock, positionAt(1), true);
+                .advance(START_LINE, clock, positionAt(1), true, false);
 
         assertThat(alreadyOnCourse.passedOnGameTick()).containsExactly(1);
         assertThat(alreadyOnCourse.finishedAt()).contains(new RaceClock(1, TICK));
@@ -335,6 +335,48 @@ class RaceRunTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // Airborne ticks and the reset cooldown
+    // ------------------------------------------------------------------------------------------
+
+    @Test
+    void airborneTicksCountConsecutiveTicksOffTheGround() {
+        RaceClock clock = RaceClock.startingAt(TICK);
+        RaceRun run = RaceRun.atStart();
+        for (int tick = 1; tick <= 3; tick++) {
+            clock = clock.advanced();
+            run = run.advance(COURSE, clock, positionAt(tick), true, false);
+        }
+        assertThat(run.airborneTicks()).isEqualTo(3);
+
+        clock = clock.advanced();
+        run = run.advance(COURSE, clock, positionAt(4), true, true);
+        assertThat(run.airborneTicks()).isZero();
+    }
+
+    @Test
+    void theResetCooldownCountsDownToZeroAndStops() {
+        RaceClock clock = RaceClock.startingAt(TICK);
+        RaceRun run = runWithCooldown(2);
+
+        clock = clock.advanced();
+        run = run.advance(COURSE, clock, positionAt(1), false, false);
+        assertThat(run.resetCooldownTicks()).isEqualTo(1);
+
+        clock = clock.advanced();
+        run = run.advance(COURSE, clock, positionAt(2), false, false);
+        assertThat(run.resetCooldownTicks()).isZero();
+
+        clock = clock.advanced();
+        run = run.advance(COURSE, clock, positionAt(3), false, false);
+        assertThat(run.resetCooldownTicks()).isZero();
+    }
+
+    /** A run that has passed no ring, with {@code cooldown} race ticks of reset cooldown left. */
+    private static RaceRun runWithCooldown(int cooldown) {
+        return new RaceRun(RingProgress.atStart(), SPAWN, List.of(), Optional.empty(), null, false, 0, cooldown);
+    }
+
+    // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
 
@@ -349,7 +391,7 @@ class RaceRunTest {
         for (int tick = 1; tick <= throughTick; tick++) {
             clock = clock.advanced();
             boolean gliding = flown.progress().passedCount() < glidesUntilRingCount;
-            flown = flown.advance(map, clock, positionAt(tick), gliding);
+            flown = flown.advance(map, clock, positionAt(tick), gliding, false);
         }
         return flown;
     }
@@ -374,7 +416,7 @@ class RaceRunTest {
     void advanceRecordsTheGlidingFlagOfTheTickItPlayed() {
         RaceClock clock = RaceClock.startingAt(TICK).advanced();
 
-        RaceRun run = RaceRun.atStart().advance(COURSE, clock, positionAt(1), true);
+        RaceRun run = RaceRun.atStart().advance(COURSE, clock, positionAt(1), true, false);
 
         assertThat(run.gliding()).isTrue();
     }
@@ -383,7 +425,7 @@ class RaceRunTest {
     void advanceRecordsNotGlidingWhenThePlayerIsNotGliding() {
         RaceClock clock = RaceClock.startingAt(TICK).advanced();
 
-        RaceRun run = RaceRun.atStart().advance(COURSE, clock, positionAt(1), false);
+        RaceRun run = RaceRun.atStart().advance(COURSE, clock, positionAt(1), false, false);
 
         assertThat(run.gliding()).isFalse();
     }
@@ -394,7 +436,7 @@ class RaceRunTest {
         RaceClock clock = RaceClock.startingAt(TICK);
         for (int tick = 1; tick <= 5; tick++) {
             clock = clock.advanced();
-            run = run.advance(COURSE, clock, positionAt(tick), true);
+            run = run.advance(COURSE, clock, positionAt(tick), true, false);
         }
 
         assertThat(run.justPassed())

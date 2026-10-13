@@ -69,6 +69,36 @@ class ShippedCatalogueTest {
                 .containsExactlyElementsOf(IntStream.range(0, map.rings().size()).boxed().toList());
     }
 
+    /**
+     * Owner decision, 2026-10-13: the shipped maps mark roughly every 8th ring as CHECKPOINT. The index is the
+     * 0-based position in the ring array, so the 8th, 16th and 24th rings are indices 7, 15 and 23. A chosen index
+     * that is a BOOST ring moves to the nearest STANDARD ring; no shipped map needed that move.
+     */
+    @Test
+    void theShippedMapsMarkTheCheckpointRingsAtTheChosenIndices() {
+        CatalogSnapshot catalog = CatalogLoader.load(RESOURCES);
+
+        assertThat(checkpointIndices(catalog.mapByName(ALPHA_MAP).orElseThrow()))
+                .as("the CHECKPOINT ring indices of %s", ALPHA_MAP)
+                .containsExactly(7, 15, 23, 31);
+        assertThat(checkpointIndices(catalog.mapByName("palmbeach").orElseThrow()))
+                .as("the CHECKPOINT ring indices of palmbeach")
+                .containsExactly(7, 15, 23);
+        assertThat(checkpointIndices(catalog.mapByName("dragonlobby").orElseThrow()))
+                .as("the CHECKPOINT ring indices of dragonlobby")
+                .containsExactly(7, 15, 23);
+        assertThat(checkpointIndices(catalog.mapByName("memoria").orElseThrow()))
+                .as("the CHECKPOINT ring indices of memoria")
+                .containsExactly(7, 15, 23);
+    }
+
+    private static List<Integer> checkpointIndices(MapDefinition map) {
+        return map.rings().stream()
+                .filter(ring -> ring.type() == RingType.CHECKPOINT)
+                .map(Ring::index)
+                .toList();
+    }
+
     @Test
     void theShippedMapCarriesAtLeastTwoBoostRings() {
         MapDefinition map = CatalogLoader.load(RESOURCES).mapByName(ALPHA_MAP).orElseThrow();

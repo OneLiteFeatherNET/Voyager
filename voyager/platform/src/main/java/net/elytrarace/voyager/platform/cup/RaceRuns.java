@@ -70,15 +70,19 @@ public final class RaceRuns {
      *
      * @param map the course being flown; the same map every run in this object is over
      * @param clock the race clock, already advanced, so it names the tick being played
+     * @param gliding whether the player is gliding on this tick
+     * @param onGround whether the player is standing on the ground on this tick; it counts the airborne ticks a
+     *     landing needs
      * @return the run after the tick
      * @throws UnstartedRunException if {@code playerId} holds no run on this map
      */
-    public RaceRun advance(UUID playerId, MapDefinition map, RaceClock clock, Vec3 position, boolean gliding) {
+    public RaceRun advance(UUID playerId, MapDefinition map, RaceClock clock, Vec3 position, boolean gliding,
+            boolean onGround) {
         RaceRun run = byPlayer.get(playerId);
         if (run == null) {
             throw new UnstartedRunException(playerId);
         }
-        RaceRun advanced = run.advance(map, clock, position, gliding);
+        RaceRun advanced = run.advance(map, clock, position, gliding, onGround);
         byPlayer.put(playerId, advanced);
         return advanced;
     }

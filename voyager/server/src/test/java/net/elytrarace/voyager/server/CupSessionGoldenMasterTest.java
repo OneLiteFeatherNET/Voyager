@@ -118,6 +118,22 @@ class CupSessionGoldenMasterTest {
     private static final CupDefinition RESTARTED_CUP =
             new CupDefinition("grand_tour_two", List.of("ridge-run", "dune-run"), GameMode.RACE);
 
+    /** A ridge course whose first ring is a CHECKPOINT, which a reset targets, and whose second ring is never reached. */
+    private static final MapDefinition CHECKPOINT_RUN = new MapDefinition("checkpoint-run", RIDGE, RIDGE_SPAWN,
+            List.of(new Ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), new Vec3(0, 0, 1), 6.0, 7, RingType.CHECKPOINT),
+                    ring(1, RIDGE_SPAWN.plus(new Vec3(0, 8, 30)), 9)),
+            Duration.ofMillis(400), RIDGE_BOOST, new GuideLine(List.of(), 2, 1.0));
+
+    private static final CupDefinition CHECKPOINT_CUP =
+            new CupDefinition("checkpoint_cup", List.of("checkpoint-run"), GameMode.RACE);
+
+    /**
+     * Lobby 0.1 s, so the transcript starts close to the race; a race of ten seconds, so the reset can come after the
+     * airborne grace of twenty race ticks.
+     */
+    private static final RaceTimings CHECKPOINT_TIMINGS = new RaceTimings(
+            Duration.ofMillis(100), Duration.ofSeconds(10), Duration.ofMillis(200), Duration.ofMillis(200));
+
     /** Lobby 3.5 s, so the countdown runs; race 1 s; results 0.2 s each. */
     private static final RaceTimings TIMINGS = new RaceTimings(
             Duration.ofMillis(3500), Duration.ofSeconds(1), Duration.ofMillis(200), Duration.ofMillis(200));
@@ -246,6 +262,43 @@ class CupSessionGoldenMasterTest {
         assertGolden("restart-pending-reload", harness.transcript);
     }
 
+    /**
+     * A landing after a checkpoint is a reset back to the checkpoint, and it is the only reset in the transcript.
+     *
+     * <p>The racer crosses the CHECKPOINT ring on the third race tick and is airborne for the twenty race ticks after it,
+     * so the touchdown on the next tick counts. The reset places them behind and above the checkpoint, gliding, with the
+     * landing title and the checkpoint subtitle. The velocity sent is zero, which the transcript does not show; the
+     * velocity is pinned by {@code RunResetterTest}. The transcript ends a few race ticks after the reset, while the map
+     * is still in its GAME phase.
+     *
+     * <p>The race-tick counter in the lambda reads the ticks already played, so {@code case n} acts on the tick after the
+     * n-th. The cases are kept as they are because the golden file records the sequence they produce.
+     */
+    @Test
+    void checkpointReset(Env env) throws IOException {
+        harness = Harness.open(env, tempDir, Harness.checkpointCatalog(), CHECKPOINT_TIMINGS);
+        harness.connect(ADA, CHECKPOINT_RUN);
+        harness.act("start", () -> harness.session.start(false));
+
+        int[] raceTick = {0};
+        harness.runUntil(() -> raceTick[0] >= 25, () -> {
+            if (harness.session.describe().contains("phase GAME")) {
+                raceTick[0]++;
+            }
+            Player racer = harness.racer(ADA);
+            switch (raceTick[0]) {
+                case 2 -> {
+                    racer.refreshOnGround(false);
+                    racer.teleport(new Pos(RIDGE_SPAWN.x(), RIDGE_SPAWN.y() + 8, RIDGE_SPAWN.z() + 20)).join();
+                }
+                case 22 -> racer.refreshOnGround(true);
+                default -> racer.refreshOnGround(false);
+            }
+        });
+
+        assertGolden("checkpoint-reset", harness.transcript);
+    }
+
     // ------------------------------------------------------------------------------------------
     // Comparison
     // ------------------------------------------------------------------------------------------
@@ -307,7 +360,7 @@ class CupSessionGoldenMasterTest {
         private final MapInstances worlds;
         private int ticks;
         private final RaceRuns runs = new RaceRuns();
-        private final CatalogHolder holder = new CatalogHolder(bootCatalog());
+        private final CatalogHolder holder;
         private final List<Player> field = new ArrayList<>();
         private String deployedFor;
 
@@ -324,25 +377,30 @@ class CupSessionGoldenMasterTest {
         private LobbyTransition lobby;
         private WaitingRoom room;
 
-        private Harness(Env env, MapInstances worlds) {
+        private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings) {
             this.env = env;
             this.worlds = worlds;
+            this.holder = new CatalogHolder(catalog);
             MapTransition transition = new MapTransition(worlds, runs);
             CurrentMapBlocks blocks = new CurrentMapBlocks();
             FireworkBoostTracker boosts = new FireworkBoostTracker();
             FlightTickDriver flight = new FlightTickDriver(
                     new LivePlayerSampler(() -> field, boosts), new FlightTracker(),
                     new MinestomCollisionSpace(blocks));
-            this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, TIMINGS, STEP,
+            this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, timings, STEP,
                     () -> field);
             this.pipeline = new CupBeans().tickPipeline(session, boosts);
         }
 
         static Harness open(Env env, Path tempDir) throws IOException {
+            return open(env, tempDir, bootCatalog(), TIMINGS);
+        }
+
+        static Harness open(Env env, Path tempDir, LoadedCatalog catalog, RaceTimings timings) throws IOException {
             writeWorld(env, tempDir, RIDGE, RIDGE_SPAWN, RIDGE_FLOOR);
             writeWorld(env, tempDir, DUNE, DUNE_SPAWN, DUNE_FLOOR);
             MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
-            return new Harness(env, instances);
+            return new Harness(env, instances, catalog, timings);
         }
 
         /** Connects a racer on the spawn of {@code map}, prepared as the join handler prepares one. */
@@ -443,6 +501,11 @@ class CupSessionGoldenMasterTest {
 
         private static LoadedCatalog bootCatalog() {
             return new LoadedCatalog(snapshot(CUP), CUP, Instant.EPOCH);
+        }
+
+        private static LoadedCatalog checkpointCatalog() {
+            return new LoadedCatalog(new CatalogSnapshot(Map.of(CHECKPOINT_RUN.name(), CHECKPOINT_RUN),
+                    Map.of(CHECKPOINT_CUP.name(), CHECKPOINT_CUP)), CHECKPOINT_CUP, Instant.EPOCH);
         }
 
         private static LoadedCatalog restartedCatalog() {

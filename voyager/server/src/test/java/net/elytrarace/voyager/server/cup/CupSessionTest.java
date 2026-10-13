@@ -1027,48 +1027,84 @@ class CupSessionTest {
                 .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isZero());
     }
 
-    /** The centre of {@link #DUNE_RUN}'s first ring, which the second map's racer passes and then lands from. */
-    private static final Pos DUNE_RING_ZERO_CENTRE = new Pos(-37.5, 71.0, -78.5);
-
     /**
-     * A racer who lands after passing a ring goes back to that ring's centre, and the ring stays passed.
-     *
-     * <p>The first map of the cup has one ring, and passing it finishes the map, so the landing is played on the
-     * second map, which has two. The racer passes ring 0 on the second game tick, lands on the tick after, and is
-     * sent back to the ring's centre with the ring still passed.
+     * A racer who lands after passing a checkpoint is sent back to it, placed behind and above its centre and gliding,
+     * and the checkpoint stays passed. The landing counts once the racer has been airborne for twenty race ticks: the
+     * crossing tick and nineteen more.
      */
     @Test
-    void aRacerWhoLandsAfterPassingARingIsSentBackToItsCentreAndKeepsIt(Env env) throws IOException {
-        Fixture fixture = start(env);
-        int[] duneGameTicks = {0};
+    void aRacerWhoLandsAfterPassingACheckpointIsSentBackBehindIt(Env env) throws IOException {
+        Fixture fixture = start(env, LONG_RACE, checkpointRidge());
+        fixture.runUntilRacing();
+        crossCheckpoint(fixture);
+        glideFor(fixture, 19);
 
-        fixture.runUntil(tick -> {
-            if (!fixture.session.describe().contains("'dune-run', phase GAME")) {
-                return false;
-            }
-            duneGameTicks[0]++;
-            if (duneGameTicks[0] == 2) {
-                // Crosses ring 0's plane (z -78.5) at its centre, from the spawn at z -88.5.
-                fixture.teleport(new Vec3(DUNE_SPAWN.x(), DUNE_SPAWN.y(), DUNE_SPAWN.z() + 15.0));
-            }
-            if (duneGameTicks[0] == 3) {
-                assertThat(fixture.runs.of(fixture.racer.getUuid()))
-                        .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isEqualTo(1));
-                fixture.racer.setFlyingWithElytra(false);
-                fixture.racer.refreshOnGround(true);
-            }
-            return duneGameTicks[0] == 4;
-        });
+        fixture.racer.refreshOnGround(true);
+        fixture.tickOnce();
 
-        assertThat(fixture.racer.getPosition().samePoint(DUNE_RING_ZERO_CENTRE))
-                .describedAs("the centre of the ring passed last")
+        assertThat(fixture.racer.getPosition().samePoint(CHECKPOINT_PLACEMENT))
+                .describedAs("behind and above the centre of the checkpoint passed last")
                 .isTrue();
         assertThat(fixture.runs.of(fixture.racer.getUuid()))
-                .describedAs("the ring passed before the landing stays passed")
+                .describedAs("the checkpoint passed before the landing stays passed")
                 .hasValueSatisfying(run -> assertThat(run.progress().passedCount()).isEqualTo(1));
         assertThat(fixture.racer.isFlyingWithElytra())
-                .describedAs("placed and not gliding: the racer deploys the elytra again to take off")
-                .isFalse();
+                .describedAs("placed gliding, so the next landing is a real one")
+                .isTrue();
+    }
+
+    /**
+     * A landing after the cooldown of a reset does not count until the racer has been airborne for twenty race ticks
+     * since they last touched the ground. The racer touches down once during the cooldown, which clears the count, is
+     * airborne again once the cooldown has run out, and touches down after fifteen airborne ticks: not a landing, so the
+     * racer stays where they landed. The cooldown is not what holds this landing back, the grace is.
+     */
+    @Test
+    void aLandingAfterAResetIsNotCountedBeforeTheGrace(Env env) throws IOException {
+        Fixture fixture = start(env, LONG_RACE, checkpointRidge());
+        fixture.runUntilRacing();
+        crossCheckpoint(fixture);
+        fixture.teleport(BELOW_THE_WORLD);
+        fixture.tickOnce();
+        assertThat(fixture.racer.getPosition().samePoint(CHECKPOINT_PLACEMENT))
+                .describedAs("the out-of-bounds reset put the racer at the checkpoint")
+                .isTrue();
+
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+        glideFor(fixture, 29);
+        fixture.racer.refreshOnGround(true);
+        fixture.tickOnce();
+        fixture.racer.setFlyingWithElytra(true);
+        glideFor(fixture, 15);
+        Pos touchdown = fixture.racer.getPosition();
+        fixture.racer.refreshOnGround(true);
+        fixture.tickOnce();
+
+        assertThat(fixture.racer.getPosition().samePoint(touchdown))
+                .describedAs("fifteen airborne ticks are fewer than the grace of twenty, so this is not a landing")
+                .isTrue();
+    }
+
+    /**
+     * Out-of-bounds is not gated by the cooldown: a racer who falls out of the world again during the cooldown of a
+     * reset is sent back to the checkpoint.
+     */
+    @Test
+    void aRacerBelowTheFloorDuringACooldownIsStillReset(Env env) throws IOException {
+        Fixture fixture = start(env, LONG_RACE, checkpointRidge());
+        fixture.runUntilRacing();
+        crossCheckpoint(fixture);
+        fixture.teleport(BELOW_THE_WORLD);
+        fixture.tickOnce();
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+        fixture.tickOnce();
+
+        fixture.teleport(BELOW_THE_WORLD);
+        fixture.tickOnce();
+
+        assertThat(fixture.racer.getPosition().samePoint(CHECKPOINT_PLACEMENT))
+                .describedAs("sent back to the checkpoint, during the cooldown of the first reset")
+                .isTrue();
     }
 
     /**
@@ -1361,11 +1397,57 @@ class CupSessionTest {
                 Duration.ofMillis(400), boost, new GuideLine(List.of(), 2, 1.0), effects);
     }
 
+    /**
+     * The ridge course with a CHECKPOINT ring 10 blocks down +z, which a reset targets, and a STANDARD ring 30 blocks
+     * down. The checkpoint's centre is {@code RIDGE_SPAWN + (0, 8, 10)} and its normal is +z.
+     */
+    private static MapDefinition checkpointRidge() {
+        return new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN,
+                List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7, RingType.CHECKPOINT),
+                        ring(1, RIDGE_SPAWN.plus(new Vec3(0, 8, 30)), 7, RingType.STANDARD)),
+                Duration.ofMillis(400), RIDGE_BOOST, new GuideLine(List.of(), 2, 1.0));
+    }
+
     /** The ridge course with the BOOST ring as its only ring, so crossing it finishes the run. */
     private static MapDefinition finishingBoostRidge(BoostConfig boost) {
         return new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN,
                 List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7, RingType.BOOST)),
                 Duration.ofMillis(400), boost, new GuideLine(List.of(), 2, 1.0));
+    }
+
+    /**
+     * Where a reset to {@link #checkpointRidge()}'s checkpoint places the racer: one block back along its normal and one
+     * block up from the centre, {@code RIDGE_SPAWN + (0, 9, 9)}.
+     */
+    private static final Pos CHECKPOINT_PLACEMENT = new Pos(3.5, 74.0, 14.5);
+
+    /**
+     * The standard timings with a race of ten seconds: the landing tests play more than the one second of
+     * {@link #TIMINGS}, and a map that ends mid-test would stand the racer down and move them on.
+     */
+    private static final RaceTimings LONG_RACE = new RaceTimings(
+            Duration.ofMillis(100), Duration.ofSeconds(10), Duration.ofMillis(100), Duration.ofMillis(100));
+
+    /**
+     * Plays one race tick, then moves the racer across the checkpoint of {@link #checkpointRidge()} and ticks once
+     * more. The caller has already reached the race with {@link Fixture#runUntilRacing()}.
+     */
+    private static void crossCheckpoint(Fixture fixture) {
+        fixture.racer.refreshOnGround(false);
+        fixture.tickOnce();
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+        fixture.tickOnce();
+    }
+
+    /**
+     * Ticks {@code ticks} times with the racer off the ground, as a glide does. A landing counts only after the
+     * racer has been airborne for twenty race ticks, so the airborne ticks are stated, not assumed from the default.
+     */
+    private static void glideFor(Fixture fixture, int ticks) {
+        for (int tick = 0; tick < ticks; tick++) {
+            fixture.racer.refreshOnGround(false);
+            fixture.tickOnce();
+        }
     }
 
     /** The velocity the client is sent is the simulated one times the factor, in blocks per second. */
@@ -1445,6 +1527,31 @@ class CupSessionTest {
                 .describedAs("no boosted velocity was sent to a racer who was not gliding")
                 .isNotCloseTo(ringTick.after().velocity().z() * 1.5 * ServerFlag.SERVER_TICKS_PER_SECOND,
                         within(TOLERANCE));
+    }
+
+    /**
+     * A CHECKPOINT ring leaves no effect: a gliding racer who crosses one is sent no velocity, and the simulation carries
+     * on from the velocity it had. The checkpoint is recorded, and that is all it does.
+     */
+    @Test
+    void aCheckpointRingGivesNoEffect(Env env) throws IOException {
+        Fixture fixture = start(env, TIMINGS, checkpointRidge());
+        fixture.runUntilRacing();
+        fixture.tickOnce();
+        fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+        fixture.tickOnce();
+        FlightTick ringTick = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
+        fixture.tickOnce();
+        FlightTick next = fixture.session.lastSimulated(fixture.racer.getUuid()).orElseThrow();
+
+        assertThat(ringTick.after().velocity())
+                .describedAs("the racer is flying, so an effect would have a velocity to change")
+                .isNotEqualTo(Vec3.ZERO);
+        assertThat(fixture.racer.getVelocity())
+                .describedAs("no velocity was sent for the checkpoint")
+                .isEqualTo(Vec.ZERO);
+        assertVelocity(next.before().velocity(), ringTick.after().velocity(),
+                "the velocity the simulation starts the next tick from");
     }
 
     /**

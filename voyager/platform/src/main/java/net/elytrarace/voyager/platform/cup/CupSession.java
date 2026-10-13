@@ -632,7 +632,7 @@ public final class CupSession implements RacePhaseListener {
             }
             boolean wasFinished = held.get().finished();
             Vec3 position = Vectors.toDomain(racer.getPosition());
-            RaceRun advanced = runs.advance(id, map, clock, position, racer.isFlyingWithElytra());
+            RaceRun advanced = runs.advance(id, map, clock, position, racer.isFlyingWithElytra(), racer.isOnGround());
             announcer.report(racer, map, advanced, wasFinished, clock);
             RaceRun shown = sendBackIfLostOrLanded(racer, map, held.get(), advanced, position);
             // sendBackIfLostOrLanded hands back the run it was given unless it reset the racer, so a reset

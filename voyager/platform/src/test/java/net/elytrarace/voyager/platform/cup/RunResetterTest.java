@@ -48,9 +48,12 @@ class RunResetterTest {
     /** The tuning the reset racer is given their rockets back under: the default count, a 30-tick burn. */
     private static final BoostConfig TUNING = new BoostConfig(30, 40);
 
-    /** The ring the racer last passed: its centre is where a reset puts them, and its normal is where they face. */
+    /**
+     * The checkpoint the racer last passed: its centre is where a reset puts them, and its normal is where they face.
+     * A reset targets the last checkpoint, not the last ring of any type.
+     */
     private static final Ring LAST = new Ring(0, new Vec3(0.5, 70.0, 0.5), new Vec3(0.0, 0.0, 1.0), 5.0, 7,
-            RingType.STANDARD);
+            RingType.CHECKPOINT);
 
     /** The ring after it, not yet passed, so a reset target is never the next ring. */
     private static final Ring NEXT = new Ring(1, new Vec3(0.5, 70.0, 20.5), new Vec3(0.0, 0.0, 1.0), 5.0, 9,
@@ -86,7 +89,7 @@ class RunResetterTest {
 
     /** A run that has passed the first ring, on the tick after it, and is still gliding. */
     private static RaceRun passedFirstRing() {
-        return new RaceRun(new RingProgress(1, -1), new Vec3(0.5, 70.0, 0.4), List.of(3), Optional.empty(),
+        return new RaceRun(new RingProgress(1, 0), new Vec3(0.5, 70.0, 0.4), List.of(3), Optional.empty(),
                 LAST, true);
     }
 
@@ -95,42 +98,63 @@ class RunResetterTest {
     }
 
     @Test
-    void theRacerIsPlacedAtTheCentreOfTheLastRingPassed(Env env) {
+    void theRacerIsPlacedBehindAndAboveTheCheckpointPassed(Env env) {
         Fixture f = fixture(env);
 
         f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
-        assertThat(f.racer().getPosition().samePoint(new Pos(0.5, 70.0, 0.5)))
-                .describedAs("the centre of ring 0, the last one passed")
+        // The centre of the checkpoint is (0.5, 70, 0.5) and its normal is +z: one block back, one block up.
+        assertThat(f.racer().getPosition().samePoint(new Pos(0.5, 71.0, -0.5)))
+                .describedAs("behind and above the centre of the checkpoint, so the racer is airborne")
                 .isTrue();
     }
 
+    /** A checkpoint reset leaves the racer gliding, with the equipment in hand. */
     @Test
-    void theRacerIsNotGlidingAfterAReset(Env env) {
+    void aResetLeavesTheRacerGliding(Env env) {
         Fixture f = fixture(env);
 
         f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         assertThat(f.racer().isFlyingWithElytra())
-                .describedAs("the racer takes off by deploying the elytra, the reset does not start the glide")
-                .isFalse();
-    }
-
-    /** No impulse: the racer is placed with the equipment, not gliding, and at rest. */
-    @Test
-    void aResetPlacesTheRacerWithoutAnImpulse(Env env) {
-        Fixture f = fixture(env);
-
-        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
-
+                .describedAs("the racer is placed gliding, with no impulse")
+                .isTrue();
         assertThat(f.racer().getEquipment(EquipmentSlot.CHESTPLATE).material())
                 .describedAs("the elytra is in hand")
                 .isEqualTo(Material.ELYTRA);
         assertThat(f.racer().getInventory().getItemStack(0).material())
                 .describedAs("the rockets are in the hotbar")
                 .isEqualTo(Material.FIREWORK_ROCKET);
-        assertThat(f.racer().isFlyingWithElytra()).isFalse();
-        assertThat(f.racer().getVelocity()).isEqualTo(Vec.ZERO);
+    }
+
+    /** A reset to the spawn is grounded, as at GO: the racer is not gliding and stands at the spawn. */
+    @Test
+    void aResetToTheSpawnLeavesTheRacerOnFootAtTheSpawn(Env env) {
+        Fixture f = fixture(env);
+        RaceRun passedNoCheckpoint = new RaceRun(new RingProgress(1, -1), new Vec3(0.5, 70.0, 0.4),
+                List.of(3), Optional.empty(), LAST, true);
+
+        f.resetter().reset(f.racer(), planFor(passedNoCheckpoint), TUNING);
+
+        assertThat(f.racer().getPosition().samePoint(new Pos(0.5, 60.0, 0.5)))
+                .describedAs("the map's spawn")
+                .isTrue();
+        assertThat(f.racer().isFlyingWithElytra())
+                .describedAs("grounded at the spawn: the racer takes off by deploying the elytra")
+                .isFalse();
+    }
+
+    /** No impulse: the reset sends a zero velocity and nothing else, so the racer is at rest while gliding. */
+    @Test
+    void aResetAddsNoImpulse(Env env) {
+        Fixture f = fixture(env);
+
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
+
+        assertThat(f.racer().getVelocity())
+                .describedAs("the only velocity a reset sends is zero")
+                .isEqualTo(Vec.ZERO);
+        assertThat(f.racer().isFlyingWithElytra()).isTrue();
     }
 
     /** A racer who falls into a reset must not carry the fall into the target: the reset zeroes the velocity. */
@@ -146,16 +170,19 @@ class RunResetterTest {
                 .isEqualTo(Vec.ZERO);
     }
 
-    /** The relaunch is not a landing: a racer who has not glided cannot land, so the next tick does not reset them. */
+    /**
+     * A racer who touches the ground straight after a reset is not landing: they have no airborne grace yet, and the
+     * reset cooldown is running.
+     */
     @Test
-    void aResetRacerIsNotALanding(Env env) {
+    void aResetRacerTouchingTheGroundIsNotALanding(Env env) {
         Fixture f = fixture(env);
 
         f.resetter().reset(f.racer(), planFor(passedFirstRing()), TUNING);
 
         RaceRun afterReset = f.runs().of(f.racer().getUuid()).orElseThrow();
-        assertThat(RunReset.isLanded(afterReset, f.racer().isFlyingWithElytra(), true))
-                .describedAs("on the ground, not gliding, but never having glided since the reset")
+        assertThat(RunReset.isLanded(afterReset, false, true))
+                .describedAs("on the ground and no longer gliding, one tick after the reset")
                 .isFalse();
     }
 

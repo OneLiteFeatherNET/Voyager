@@ -484,7 +484,7 @@ class XerusPhaseDriverTest {
         @Override
         public void raceTick(RaceClock clock) {
             super.raceTick(clock);
-            run = run.advance(course, clock, positionAt(clock.gameTick()), true);
+            run = run.advance(course, clock, positionAt(clock.gameTick()), true, false);
         }
 
         @Override

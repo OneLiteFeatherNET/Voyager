@@ -61,6 +61,8 @@ Rings are read in array order. The position of a ring in `rings` is its index: t
 | `points` | integer | Yes | None. | Missing, not a whole number, or negative. |
 | `type` | string | Yes | None. | Missing, or not one of `STANDARD`, `BOOST`, `SLOW`, `CHECKPOINT`. A misspelt type is refused rather than read as `STANDARD`. |
 
+A ring of type `CHECKPOINT` is the reset target. When a racer is reset, the racer returns to the last `CHECKPOINT` ring they passed, and the rings passed after it are removed from their run (see [course reset](course-reset.md)). A map with no `CHECKPOINT` ring resets every racer to the map's spawn. A `CHECKPOINT` ring applies no velocity effect; only `BOOST` and `SLOW` do.
+
 ### Vectors
 
 A vector is an object with `x`, `y` and `z`, each a number. All three are required.
