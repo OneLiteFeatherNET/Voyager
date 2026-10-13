@@ -62,7 +62,8 @@ life of the particle the map uses, so that the line shows no gap between two red
 
 #### Scenario: End rod redrawn inside its shortest life
 - **WHEN** a map uses `END_ROD`
-- **THEN** the line is redrawn at least every 10 ticks, subject to the lifetime check in the design (D4, task 1.2)
+- **THEN** the line is redrawn at least every 6 ticks. The owner proposed 10, which needs END_ROD's shortest life to be at
+  least 20 ticks; that life could not be read, so 6 is used (design D4)
 
 ### Requirement: The line is drawn with the map's particle and colour
 **MoSCoW:** Must. THE SYSTEM SHALL draw the racing line with the particle the map names, `END_ROD` when none is named,
@@ -89,9 +90,10 @@ mode, particle, colour, spacing or cut-off. The racing line is presentation for 
 second in total and at most 2,000 per racer, as set out in the design (D6). The owner set these limits on 2026-10-13.
 
 #### Scenario: Shipped course at full race size
-- **WHEN** sixteen racers are on the shipped 35-ring map at the first ring, with no cut-off
+- **WHEN** sixteen racers are spread along the shipped 35-ring map, each in FULL mode, with the 160-block reach applied
 - **THEN** the total particle packets per second do not exceed 30,000, and no racer is sent more than 2,000 per second
 
-#### Scenario: Shipped course at full race size with the cut-off
-- **WHEN** the same sixteen racers are on the shipped map with the 160-block cut-off applied
-- **THEN** the total and the per-racer packets per second are no more than in the scenario without the cut-off
+#### Scenario: The reach carries the per-racer limit
+- **WHEN** a racer stands at the first ring of the shipped map in FULL mode, and the reach is not applied
+- **THEN** that racer would be sent more than 2,000 packets per second at a 6-tick END_ROD refresh, which is why the
+  reach is part of the budget and is not removed (design D6, measured)

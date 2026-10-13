@@ -99,13 +99,13 @@ shortest life, so one redraw always lands before the previous points die:
 
 - DUST: 4 ticks. Its shortest life is 8 ticks (vanilla `8 / (random * 0.8 + 0.2)`, from the existing renderer's
   rationale), and 8 / 2 = 4.
-- END_ROD: **10 ticks, owner's value, subject to the lifetime check in task 1.2.** The check needs END_ROD's shortest
-  life to be at least 20 ticks. If the shortest life is 12 to 19 ticks, the refresh is 6 ticks and D6's fallback
-  applies. Under 12 ticks, no refresh in the budget works at spacing 2.0, and the owner decides on spacing 4.0 or a
-  reopened design.
+- END_ROD: **6 ticks, as built.** The owner proposed 10, which needs END_ROD's shortest life to be at least 20 ticks.
+  Task 1.2 could not establish that. The decompiled 26.2 source is not reachable from this change, and a search for the
+  vanilla `EndRodParticle` lifetime found no published source, so the life is unverified. The safe value is used: six
+  ticks is at most half of any life of twelve ticks or more. If the life is later read as at least twenty ticks, ten
+  is the owner's value, and it lowers the END_ROD packet rate by 40 per cent (D6, measured).
 
-The check is recorded in the spike notes in D6 with the source it came from. If no source can be reached, the fallback
-of 6 ticks is used and the choice is documented there, as the owner asked.
+The owner asked that the choice be documented, and it is: here, in ADR-0030, and in `GuideLineRenderer`'s Javadoc.
 
 It is not a map field. The refresh rate is a budget decision about the server, and a map author has nothing to say
 about it, as the current Javadoc already argues.
@@ -142,8 +142,31 @@ numbers for everyone else. The spike measures the cut-off's share.
 | 4.0 | 425 | 4 (DUST) | 2,125 | 34,000 | about 1.7 MB/s |
 
 **Budget (owner's decision):** at 16 racers on the 35-ring map, at most **30,000 packets/s** in total and **2,000
-packets/s** for any one racer. The shipped default (2.0, END_ROD, 10 ticks) is 27,200 in total and 1,700 for one racer
-at the first ring, with no cut-off: inside both limits.
+packets/s** for any one racer.
+
+**Measured (task 1.2, 2026-10-13).** Whole-line points from `RacingLine.of` on the shipped course: **1,669** at spacing
+1.0, **836** at 2.0 and **556** at 3.0. Sixteen racers are placed at rings 0, 2, 4, ..., 30, each sent its FULL stretch.
+At spacing 2.0 the sixteen stretches hold 7,084 points uncut, of which **4,525 (63.9 per cent) are within the 160-block
+reach**. The rates use END_ROD's 6-tick refresh and the steady rate of 20 / 6 redraws a second:
+
+- Total with reach: 4,525 × 20 / 6 = **15,083 packets/s**, inside 30,000.
+- Worst racer with reach: 510 × 20 / 6 = **1,700 packets/s**, inside 2,000 (the racer at ring 4).
+- Uncut, the same field would be 23,613 in total, inside the total, but a racer at the first ring alone would be
+  836 × 20 / 6 = 2,787, over the per-racer limit. The reach is therefore what keeps every racer inside 2,000, and the
+  budget test enforces it with the reach applied.
+- At the owner's 10-tick value, if the lifetime is verified: total 9,050 and worst racer 1,020 packets/s.
+
+The budget test (`GuideLineRendererTest.sixteenRacersOnTheShippedCourseStayWithinTheBudget`) measures these figures
+from the renderer's own output over three seconds of ticks, which is a multiple of every refresh interval. Its first run
+at 20 ticks counted four redraws instead of 3.33 a second and reported a false 2,040; the window was widened for that
+reason.
+
+**Not measured here.** The live-particle cap of the vanilla client and the wire size of one `ParticlePacket` are not
+measured: the first needs a client and the second a capture. The 50-byte packet estimate stands. The owner's playtest is
+where a visible problem with a 2.0 dotted END_ROD line would show.
+
+The shipped spacing is 2.0 (owner decision). The fallback spacing of 3.0 that D6 once named is not needed: the budget
+holds at 2.0 with the reach and a 6-tick refresh.
 
 **Why DUST costs more:** its refresh is 4 ticks, so the same course costs 2.5 times the packets of END_ROD at 10. A
 DUST map therefore needs spacing 4.0 to fit the budget without a cut-off, and it is the reason DUST is an option and
