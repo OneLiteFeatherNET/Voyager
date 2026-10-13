@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.world;
 
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceManager;
+import net.minestom.server.instance.LightingChunk;
 import net.minestom.testing.Env;
 import net.minestom.testing.EnvTest;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
@@ -30,6 +31,22 @@ class MapInstancesWorldOpenerTest {
 
     @TempDir
     Path tempDir;
+
+    @Test
+    void everyWorldMapInstancesOpensIsBuiltWithTheLightingChunk(Env env) throws IOException {
+        writeRegionFile(TRACK, "r.0.0.mca", 0);
+        MapInstances instances = new MapInstances(env.process().instance(), worldsRoot());
+
+        try {
+            Instance track = instances.forWorld(TRACK);
+
+            assertThat(track.getChunkSupplier().createChunk(track, 0, 0))
+                    .as("every world opened here is lit by Minestom's LightingChunk")
+                    .isInstanceOf(LightingChunk.class);
+        } finally {
+            instances.close();
+        }
+    }
 
     @Test
     void holdsRegionDataIsTrueForAWorldWithARegionFile(Env env) throws IOException {

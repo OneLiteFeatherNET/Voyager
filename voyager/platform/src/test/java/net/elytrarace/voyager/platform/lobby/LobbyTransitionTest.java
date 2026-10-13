@@ -11,6 +11,7 @@ import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.minestom.server.instance.LightingChunk;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -63,6 +64,18 @@ class LobbyTransitionTest {
             worlds.close();
             worlds = null;
         }
+    }
+
+    @Test
+    void theLobbyWorldOpenedThroughTheTransitionIsBuiltWithTheLightingChunk(Env env) throws IOException {
+        writeWorlds(env);
+        MapInstances instances = openWorlds(env);
+
+        LobbyTransition lobby = new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN));
+
+        assertThat(lobby.instance().getChunkSupplier().createChunk(lobby.instance(), 0, 0))
+                .as("the lobby is lit by the same engine as a map, so its chunks are LightingChunks")
+                .isInstanceOf(LightingChunk.class);
     }
 
     @Test
