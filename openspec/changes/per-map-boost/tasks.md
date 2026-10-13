@@ -72,7 +72,7 @@ ticks, no shared static state.
 
 ## 10. Verification
 
-- [ ] 10.1 `./gradlew build` (both trees) is green, and `./gradlew :voyager:fitness:test` passes with no new rule needed
+- [x] 10.1 `./gradlew build` (both trees) is green, and `./gradlew :voyager:fitness:test` passes with no new rule needed
 - [ ] 10.2 Playtest checkpoint with the owner: the shipped map's BOOST rings are flown, the feel is recorded, and the maximum shadow speed from the new log is read (design D6, option C). Any decision to add a hard cap goes back to the owner (human-in-the-loop)
 - [x] 10.3 Confirm the golden diffs are only the map-start line (task 7.3)
 
