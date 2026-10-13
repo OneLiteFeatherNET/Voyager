@@ -18,8 +18,11 @@ import net.elytrarace.voyager.race.reset.ResetPlan;
 import net.elytrarace.voyager.race.reset.RunReset;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.server.play.SetTitleTextPacket;
 import net.minestom.server.network.packet.server.play.SoundEffectPacket;
 import net.minestom.testing.Collector;
@@ -100,12 +103,57 @@ class RunResetterTest {
     }
 
     @Test
-    void theRacerIsGlidingAgain(Env env) {
+    void theRacerIsNotGlidingAfterAReset(Env env) {
         Fixture f = fixture(env);
 
         f.resetter().reset(f.racer(), planFor(passedFirstRing()));
 
-        assertThat(f.racer().isFlyingWithElytra()).isTrue();
+        assertThat(f.racer().isFlyingWithElytra())
+                .describedAs("the racer takes off by deploying the elytra, the reset does not start the glide")
+                .isFalse();
+    }
+
+    /** No impulse: the racer is placed with the equipment, not gliding, and at rest. */
+    @Test
+    void aResetPlacesTheRacerWithoutAnImpulse(Env env) {
+        Fixture f = fixture(env);
+
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+
+        assertThat(f.racer().getEquipment(EquipmentSlot.CHESTPLATE).material())
+                .describedAs("the elytra is in hand")
+                .isEqualTo(Material.ELYTRA);
+        assertThat(f.racer().getInventory().getItemStack(0).material())
+                .describedAs("the rockets are in the hotbar")
+                .isEqualTo(Material.FIREWORK_ROCKET);
+        assertThat(f.racer().isFlyingWithElytra()).isFalse();
+        assertThat(f.racer().getVelocity()).isEqualTo(Vec.ZERO);
+    }
+
+    /** A racer who falls into a reset must not carry the fall into the target: the reset zeroes the velocity. */
+    @Test
+    void aResetZeroesTheRacersVelocity(Env env) {
+        Fixture f = fixture(env);
+        f.racer().setVelocity(new Vec(0, -20, 0));
+
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+
+        assertThat(f.racer().getVelocity())
+                .describedAs("the fall is not carried into the target")
+                .isEqualTo(Vec.ZERO);
+    }
+
+    /** The relaunch is not a landing: a racer who has not glided cannot land, so the next tick does not reset them. */
+    @Test
+    void aResetRacerIsNotALanding(Env env) {
+        Fixture f = fixture(env);
+
+        f.resetter().reset(f.racer(), planFor(passedFirstRing()));
+
+        RaceRun afterReset = f.runs().of(f.racer().getUuid()).orElseThrow();
+        assertThat(RunReset.isLanded(afterReset, f.racer().isFlyingWithElytra(), true))
+                .describedAs("on the ground, not gliding, but never having glided since the reset")
+                .isFalse();
     }
 
     @Test

@@ -1,5 +1,7 @@
 package net.elytrarace.voyager.platform.cup;
 
+import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.platform.convert.VelocityExit;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.Racers;
@@ -23,7 +25,8 @@ import java.util.UUID;
  *   <li>an active firework burn is cancelled, and its cooldown kept, so a reset cannot refresh a rocket;</li>
  *   <li>the racer's shadow flight is forgotten, so the next flight sample re-seeds from the client;</li>
  *   <li>the racer is moved to the target, with the chunks around it loaded and a confirmed teleport;</li>
- *   <li>the racer is launched from the target, toward the planned point, with the map start's impulse;</li>
+ *   <li>the racer is placed at the target, facing the planned point, with the equipment and no glide;</li>
+ *   <li>the velocity is zeroed, so a fall is not carried into the target, and nothing else is sent;</li>
  *   <li>the title and the sound are sent, in this same tick.</li>
  * </ol>
  */
@@ -55,7 +58,8 @@ public final class RunResetter {
         boosts.cancelBurn(id);
         flight.forget(id);
         MapTransition.reposition(racer, Vectors.toMinestom(plan.position()).asPos());
-        Racers.launch(racer, plan.position(), plan.toward());
+        Racers.place(racer, plan.toward());
+        VelocityExit.send(racer, Vec3.ZERO);
         RaceFeedback.reset(
                 racer,
                 Messages.resetTitle(plan.cause() == ResetCause.OUT_OF_BOUNDS),

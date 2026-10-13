@@ -12,7 +12,8 @@ Slices touched: the deployment of the game and setup services (new), a new bridg
 (the ninth module in the greenfield design, D15), and the distribution of `voyager-setup` (a fat jar, like
 `voyager-server`). The race, ring and cup slices are not touched.
 
-Decided by the owner (2026-10-10): CloudNet 4.0.0-RC16, the version Cygnus pins; Velocity as the proxy; application JARs copied
+Decided by the owner (2026-10-10): CloudNet 4.0.0-RC16, the version Cygnus pins. **Superseded 2026-10-11: CloudNet 4.0.0-RC17, the
+version the owner's network runs (design.md Decision 6).** Velocity as the proxy; application JARs copied
 by hand into the CloudNet template, as Cygnus does. Out of scope: PostgreSQL
 storage for LuckPerms (the persistence stage), the broken `docker/server/Dockerfile` (it copies `*-all.jar` from the
 legacy tree, so it is not part of this change), and any change to the tree being replaced.

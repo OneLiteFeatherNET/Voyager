@@ -9,9 +9,9 @@ import java.util.function.Function;
 /**
  * Settings of the setup server. There is no configuration file; everything it reads is named here.
  *
- * <p>The two directories default to {@code run-setup/data} and {@code run-setup/worlds} under the project root, so the
- * setup server and the game server never share a directory by default. The game server's defaults are under
- * {@code run/}.
+ * <p>The two directories default to {@code catalog} and {@code worlds} under the working directory: the layout of a
+ * CloudNet service directory (openspec change {@code add-cloudnet-deployment}, Decision 9). The developer run task
+ * passes {@code run-setup/data} and {@code run-setup/worlds} explicitly, so a checkout never shares them with a service.
  *
  * @param host       the interface to bind
  * @param port       the port to bind; 25566 by default, so both servers can run on one developer machine
@@ -31,8 +31,8 @@ public record SetupSettings(String host, int port, Path dataPath, Path worldsPat
 
     static final String DEFAULT_HOST = "0.0.0.0";
     static final int DEFAULT_PORT = 25566;
-    static final String DEFAULT_DATA_PATH = "run-setup/data";
-    static final String DEFAULT_WORLDS_PATH = "run-setup/worlds";
+    static final String DEFAULT_DATA_PATH = "catalog";
+    static final String DEFAULT_WORLDS_PATH = "worlds";
 
     public SetupSettings {
         if (host.isBlank()) {

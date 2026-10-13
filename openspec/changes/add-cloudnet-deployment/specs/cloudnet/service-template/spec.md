@@ -59,12 +59,12 @@ sets, as defined in `server/service-lifecycle`.
 - **WHEN** the node starts the service with its bind properties
 - **THEN** the service listens on that address and port
 
-### Requirement: The deployment targets CloudNet 4.0.0-RC16
+### Requirement: The deployment targets CloudNet 4.0.0-RC17
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL build the bridge and document the deployment against CloudNet `4.0.0-RC16`, the release the owner's network
-runs with Cygnus. Its release notes name Minecraft 1.21.11 as the newest supported version, so THE SYSTEM SHALL record the
-result of running on Minecraft 26.2 in design.md before the change is archived.
+THE SYSTEM SHALL build the bridge and document the deployment against CloudNet `4.0.0-RC17`, the release the owner's network
+runs (decided 2026-10-11, superseding RC16; design.md Decision 6). RC16's release notes name Minecraft 1.21.11 as the newest supported
+version, and RC17 adds 26.X, so THE SYSTEM SHALL record the result of running on Minecraft 26.2 in design.md before the change is archived.
 
 #### Scenario: Acceptance on Minecraft 26.2
 - **WHEN** the node acceptance group starts

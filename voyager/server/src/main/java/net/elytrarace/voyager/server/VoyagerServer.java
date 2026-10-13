@@ -7,7 +7,6 @@ import net.elytrarace.voyager.api.permission.PermissionNode;
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
-import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
@@ -15,16 +14,19 @@ import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
 import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
 import net.elytrarace.voyager.platform.lifecycle.StopCommand;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
+import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
 import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.ServerFlag;
@@ -112,7 +114,19 @@ public final class VoyagerServer {
     private VoyagerServer() {
     }
 
+    /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
+    static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
+
+    /**
+     * Turns on Minestom's automatic component translation. It has to run before anything touches
+     * {@code ServerFlag}, which is why {@link #main} calls it as its first statement.
+     */
+    static void enableAutomaticComponentTranslation() {
+        System.setProperty(AUTOMATIC_TRANSLATION_PROPERTY, "true");
+    }
+
     public static void main(String[] args) {
+        enableAutomaticComponentTranslation();
         // The validate-and-exit run returns before any game-server state is touched. See configCheck.
         if (Boolean.getBoolean(ConfigCheck.CHECK_PROPERTY)) {
             System.exit(configCheck(args, ConfigCheck.systemProperties(), VoyagerServer::initialisedInstances, System.out));
@@ -128,25 +142,16 @@ public final class VoyagerServer {
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
 
-        // Before anything can say anything — and the flag is checked before the bundle is even read,
-        // because without it reading the bundle is pointless.
-        //
-        // Registering the bundle is NOT the whole of the wiring, contrary to what this comment used
-        // to claim. PlayerSocketConnection.writePacketSync gates the entire translation path on
-        // ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which reads the system property
-        // `minestom.automatic-component-translation` and defaults to FALSE. With it off, every
-        // translatable goes to the client untranslated and the player reads `voyager.map.banner`
-        // instead of a sentence — which is exactly what shipped, and what a screenshot found rather
-        // than a test.
-        //
-        // The flag is `static final`, read once when ServerFlag first loads, so System.setProperty
-        // here would be a race against class loading rather than a fix. It belongs in the JVM's own
-        // arguments, and the run tasks set it. Refusing to start is the point: the failure is
-        // otherwise silent, cosmetic-looking and permanent.
+        // Before anything can say anything. PlayerSocketConnection.writePacketSync gates the entire
+        // translation path on ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which is read once, when
+        // ServerFlag first loads. Without it every translatable reaches the client untranslated and the
+        // player reads `voyager.map.banner` instead of a sentence. main() set the property before any
+        // Minestom class loaded, so the JVM argument is not needed. This guard refuses to start if that
+        // ordering was ever broken, because the failure would otherwise be silent and permanent.
         if (!ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION) {
             LOGGER.error("Voyager refused to start: Minestom's automatic component translation is off, "
-                    + "so every message would reach players as a raw translation key. Start the JVM with "
-                    + "-Dminestom.automatic-component-translation=true (the Gradle run tasks do).");
+                    + "so every message would reach players as a raw translation key. ServerFlag loaded "
+                    + "before %s was set.".formatted(AUTOMATIC_TRANSLATION_PROPERTY));
             System.exit(1);
             return;
         }
@@ -178,7 +183,9 @@ public final class VoyagerServer {
             System.exit(1);
             return;
         }
-        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+        // The extension bootstrap initialises Minestom as MinecraftServer.init did, and at start it loads extensions/ and binds
+        // the port (ADR-0026). A root without extensions/ runs as before, with no bridge.
+        ExtensionBootstrap bootstrap = auth == null ? ExtensionBootstrap.init() : ExtensionBootstrap.init(auth);
 
         // LuckPerms is started only when its loader is on the class path, and before the port binds. A start that
         // throws refuses to listen; it never falls back to the level-based policy (ADR-0024).
@@ -218,6 +225,11 @@ public final class VoyagerServer {
         CupSession session = graph.get(CupSession.class);
         TickPipeline pipeline = graph.get(TickPipeline.class);
         WaitingRoom waitingRoom = graph.get(WaitingRoom.class);
+        if (settings.lobby().isEmpty()) {
+            LOGGER.warn(("No lobby world is set (%s and %s): waiting racers stand at the first map's spawn. "
+                    + "Set both to give them the lobby world (ADR-0029).")
+                    .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, ServerSettings.LOBBY_SPAWN_PROPERTY));
+        }
 
         try {
             openEveryWorld(catalog.current().rotation(), instances);
@@ -228,6 +240,9 @@ public final class VoyagerServer {
             return;
         }
 
+        // Every player is created with the permission pointer, through the one policy bean (ADR-0026, the CloudNet bridge
+        // reads it). Installed before the port binds, so no connection can arrive as a plain Minestom player.
+        MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         registerEvents(session, waitingRoom, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         LOGGER.info("/race reload is registered: gated by {}", PermissionNode.VOYAGER_COMMAND_RACE_RELOAD.value());
@@ -251,7 +266,7 @@ public final class VoyagerServer {
         registerShutdownTask(graph, instances, catalog, console);
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
-        server.start(settings.host(), settings.port());
+        bootstrap.start(settings.host(), settings.port());
         console.start();
         LOGGER.info("Voyager started. {}", session.describe().trim());
     }
@@ -341,13 +356,13 @@ public final class VoyagerServer {
         GlobalEventHandler events = MinecraftServer.getGlobalEventHandler();
 
         events.addListener(AsyncPlayerConfigurationEvent.class, event -> {
-            // Players spawn straight into the first map's world of the current catalogue. There is no lobby
-            // world in the rebuild: there is no lobby map data, and generating a flat one would be a second world
-            // nobody asked for standing between a tester and the thing being tested. The current catalogue, not
-            // the boot one, so a reload that was promoted at a round start is the one a new joiner sees.
-            MapDefinition first = catalog.current().rotation().getFirst();
-            event.setSpawningInstance(instances.forWorld(first.world()));
-            event.getPlayer().setRespawnPoint(Vectors.toMinestom(first.spawn()).asPos());
+            // A joining racer spawns in the lobby world when one is configured, and in the first map's world of the
+            // current catalogue when not. The current catalogue, not the boot one, so a reload that was promoted at a
+            // round start is the one a new joiner sees.
+            JoinArrival.Arrival arrival = JoinArrival.of(waitingRoom.lobby(), catalog.current().rotation().getFirst(),
+                    instances);
+            event.setSpawningInstance(arrival.instance());
+            event.getPlayer().setRespawnPoint(arrival.position());
         });
 
         events.addListener(PlayerSpawnEvent.class, event -> {
@@ -376,6 +391,7 @@ public final class VoyagerServer {
 
         events.addListener(PlayerDisconnectEvent.class, event -> {
             session.forget(event.getPlayer().getUuid());
+            waitingRoom.left(event.getPlayer().getUuid());
             LOGGER.info("{} left", event.getPlayer().getUsername());
         });
 

@@ -1,6 +1,9 @@
 package net.elytrarace.voyager.server.config;
 
+import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.LobbyDefinition;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.server.config.exception.InvalidSettingException;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
 
 import org.jetbrains.annotations.Nullable;
@@ -17,13 +20,14 @@ import java.util.function.Function;
  *
  * <h2>Where the data lives</h2>
  *
- * <p>Two system properties, {@code VOYAGER_DATA_PATH} and {@code VOYAGER_WORLDS_PATH}, defaulting to
- * the relative paths {@code run/data} and {@code run/worlds} — the same two names and the same two
- * defaults the tree being replaced uses. The Gradle run tasks set {@code workingDir} to the
- * repository's {@code run/} directory, so those relative defaults resolve to {@code run/run/data}
- * and {@code run/run/worlds}. <strong>The doubling is not a typo</strong>; it is where the one real
- * world already sits on a developer checkout, and a second convention in the same repository would
- * be worse than an inherited wart.
+ * <p>Two system properties, {@code VOYAGER_DATA_PATH} and {@code VOYAGER_WORLDS_PATH}, default to the
+ * relative paths {@code catalog} and {@code worlds}: the layout of a CloudNet service directory
+ * (openspec change {@code add-cloudnet-deployment}, Decision 9). A service started from its template
+ * therefore needs no property, as Cygnus's fixed relative paths need none. The Gradle run tasks set
+ * {@code workingDir} to the repository's {@code run/} directory and pass {@code run/data} and
+ * {@code run/worlds} explicitly, so a developer checkout resolves to {@code run/run/data} and
+ * {@code run/run/worlds}. <strong>The doubling is not a typo</strong>; it is where the one real world
+ * already sits on a developer checkout.
  *
  * <p>The catalogue is a directory of {@code .json} files, not jar entries:
  * {@code CatalogLoader} takes a {@link Path} and reads a directory, which
@@ -49,9 +53,14 @@ import java.util.function.Function;
  *     operator subcommands
  * @param minimumRacers how many racers must be online before a cup starts; at least one. Defaults
  *     to {@link #PRODUCTION_MINIMUM_RACERS}, or {@link #DEV_MINIMUM_RACERS} under dev mode
+ * @param lobby         the world waiting racers stand in and its spawn, or empty when no lobby is configured, in
+ *     which case waiting racers stand at the first map's spawn and the server warns at boot (ADR-0029)
+ * @param maximumRacers how many racers make a full server; at least {@link #minimumRacers}. Defaults to
+ *     {@link #DEFAULT_MAXIMUM_RACERS}. It is soft: it sets the join line and the full-lobby countdown, and refuses no one
  */
 public record ServerSettings(String host, int port, Path dataPath, Path worldsPath,
-        Optional<String> cupName, boolean devMode, int minimumRacers) {
+        Optional<String> cupName, boolean devMode, int minimumRacers, Optional<LobbyDefinition> lobby,
+        int maximumRacers) {
 
     /** The property naming the directory holding {@code maps/} and {@code cups/}. */
     public static final String DATA_PATH_PROPERTY = "VOYAGER_DATA_PATH";
@@ -67,6 +76,18 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
 
     /** The property naming how many racers must be online before a cup starts; absent means the mode's default. */
     public static final String MIN_RACERS_PROPERTY = "VOYAGER_MIN_PLAYERS";
+
+    /** The property naming the world directory waiting racers stand in; set together with {@link #LOBBY_SPAWN_PROPERTY}. */
+    public static final String LOBBY_WORLD_PROPERTY = "VOYAGER_LOBBY_WORLD";
+
+    /** The property naming the lobby's spawn as {@code x,y,z} in block coordinates; set together with {@link #LOBBY_WORLD_PROPERTY}. */
+    public static final String LOBBY_SPAWN_PROPERTY = "VOYAGER_LOBBY_SPAWN";
+
+    /** The property naming how many racers make a full server; absent means {@link #DEFAULT_MAXIMUM_RACERS}. */
+    public static final String MAX_PLAYERS_PROPERTY = "VOYAGER_MAX_PLAYERS";
+
+    /** The maximum racer count when {@link #MAX_PLAYERS_PROPERTY} is not set, in production and in dev mode (ADR-0029). */
+    public static final int DEFAULT_MAXIMUM_RACERS = 16;
 
     /** The system property naming the interface to bind; read when no positional host is given. */
     public static final String BIND_HOST_PROPERTY = "service.bind.host";
@@ -85,9 +106,9 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The port bound when none is given. */
     static final int DEFAULT_PORT = 25565;
     /** The data directory when {@link #DATA_PATH_PROPERTY} is not set. */
-    static final String DEFAULT_DATA_PATH = "run/data";
+    static final String DEFAULT_DATA_PATH = "catalog";
     /** The worlds directory when {@link #WORLDS_PATH_PROPERTY} is not set. */
-    static final String DEFAULT_WORLDS_PATH = "run/worlds";
+    static final String DEFAULT_WORLDS_PATH = "worlds";
 
     /**
      * The lobby, race and results lengths a production run uses: {@link RaceTimings#DEFAULT} — a
@@ -114,12 +135,22 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
                 devMode ? DEV_MINIMUM_RACERS : PRODUCTION_MINIMUM_RACERS);
     }
 
+    /**
+     * The settings with no lobby and the default maximum, for callers that do not configure either.
+     */
+    public ServerSettings(String host, int port, Path dataPath, Path worldsPath, Optional<String> cupName,
+            boolean devMode, int minimumRacers) {
+        this(host, port, dataPath, worldsPath, cupName, devMode, minimumRacers, Optional.empty(),
+                DEFAULT_MAXIMUM_RACERS);
+    }
+
     public ServerSettings {
         if (host.isBlank()) {
             throw new IllegalArgumentException("host must not be blank");
         }
         requirePort(port);
         requireMinimumRacers(minimumRacers);
+        requireMaximumRacers(maximumRacers, minimumRacers);
         requireDirectory(dataPath, MissingServerDirectoryException.DATA);
         requireDirectory(worldsPath, MissingServerDirectoryException.WORLDS);
     }
@@ -148,7 +179,7 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
         String host = args.length > 0 ? args[0] : blankToDefault(property.apply(BIND_HOST_PROPERTY), DEFAULT_HOST);
         int port = args.length > 1 ? parsePort(args[1]) : bindPort(property.apply(BIND_PORT_PROPERTY));
         boolean devMode = Boolean.parseBoolean(property.apply(DEV_MODE_PROPERTY));
-        String minimum = blankToNull(property.apply(MIN_RACERS_PROPERTY));
+        int minimum = minimumRacersFrom(blankToNull(property.apply(MIN_RACERS_PROPERTY)), devMode);
         return new ServerSettings(
                 host,
                 port,
@@ -156,9 +187,101 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
                 Path.of(valueOr(property.apply(WORLDS_PATH_PROPERTY), DEFAULT_WORLDS_PATH)),
                 Optional.ofNullable(blankToNull(property.apply(CUP_PROPERTY))),
                 devMode,
-                minimum == null
-                        ? (devMode ? DEV_MINIMUM_RACERS : PRODUCTION_MINIMUM_RACERS)
-                        : parseMinimumRacers(minimum));
+                minimum,
+                parseLobby(blankToNull(property.apply(LOBBY_WORLD_PROPERTY)),
+                        blankToNull(property.apply(LOBBY_SPAWN_PROPERTY))),
+                parseMaximumRacers(blankToNull(property.apply(MAX_PLAYERS_PROPERTY))));
+    }
+
+    /**
+     * The minimum racer count a setting names, or the run's mode default when the setting is absent.
+     *
+     * @throws IllegalArgumentException if the text is not a whole number
+     */
+    static int minimumRacersFrom(@Nullable String raw, boolean devMode) {
+        if (raw == null) {
+            return devMode ? DEV_MINIMUM_RACERS : PRODUCTION_MINIMUM_RACERS;
+        }
+        return parseMinimumRacers(raw);
+    }
+
+    /**
+     * The lobby a pair of settings names: both or neither. A world without a spawn, or a spawn without a world, is
+     * refused naming the setting that is missing, because either one alone is a typo and not a fallback.
+     *
+     * @param world the world directory name, or {@code null} when the setting is absent
+     * @param spawn the spawn as {@code x,y,z}, or {@code null} when the setting is absent
+     * @return the lobby, or empty when neither setting is set
+     * @throws InvalidSettingException if exactly one is set, or the spawn is not three finite numbers
+     */
+    static Optional<LobbyDefinition> parseLobby(@Nullable String world, @Nullable String spawn) {
+        if (world == null && spawn == null) {
+            return Optional.empty();
+        }
+        if (world == null) {
+            throw new InvalidSettingException(LOBBY_WORLD_PROPERTY,
+                    "%s is not set, but %s is: a lobby spawn needs the lobby world it stands in"
+                            .formatted(LOBBY_WORLD_PROPERTY, LOBBY_SPAWN_PROPERTY));
+        }
+        if (spawn == null) {
+            throw new InvalidSettingException(LOBBY_SPAWN_PROPERTY,
+                    "%s is not set, but %s is: a lobby world needs the spawn racers stand on"
+                            .formatted(LOBBY_SPAWN_PROPERTY, LOBBY_WORLD_PROPERTY));
+        }
+        return Optional.of(new LobbyDefinition(world.strip(), parseSpawn(spawn)));
+    }
+
+    /**
+     * The spawn a setting names: three finite numbers, {@code x,y,z}, in block coordinates.
+     *
+     * @throws InvalidSettingException if the text is not three finite numbers; the message names the text read
+     */
+    static Vec3 parseSpawn(String raw) {
+        String[] parts = raw.split(",", -1);
+        if (parts.length == 3) {
+            try {
+                double x = Double.parseDouble(parts[0].strip());
+                double y = Double.parseDouble(parts[1].strip());
+                double z = Double.parseDouble(parts[2].strip());
+                if (Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z)) {
+                    return new Vec3(x, y, z);
+                }
+            } catch (NumberFormatException ignored) {
+                // Reported below, once, with the text that was read.
+            }
+        }
+        throw new InvalidSettingException(LOBBY_SPAWN_PROPERTY,
+                "%s must be three numbers x,y,z in block coordinates, was '%s'".formatted(LOBBY_SPAWN_PROPERTY, raw));
+    }
+
+    /**
+     * The maximum racer count a setting names, or {@link #DEFAULT_MAXIMUM_RACERS} when it is absent.
+     *
+     * @throws InvalidSettingException if the text is not a whole number
+     */
+    static int parseMaximumRacers(@Nullable String raw) {
+        if (raw == null) {
+            return DEFAULT_MAXIMUM_RACERS;
+        }
+        try {
+            return Integer.parseInt(raw.strip());
+        } catch (NumberFormatException exception) {
+            throw new InvalidSettingException(MAX_PLAYERS_PROPERTY,
+                    "%s must be a whole number, was '%s'".formatted(MAX_PLAYERS_PROPERTY, raw));
+        }
+    }
+
+    /**
+     * The one rule for the maximum racer count: it is not below the minimum. The refusal names both settings.
+     *
+     * @throws InvalidSettingException if {@code maximumRacers} is below {@code minimumRacers}
+     */
+    static void requireMaximumRacers(int maximumRacers, int minimumRacers) {
+        if (maximumRacers < minimumRacers) {
+            throw new InvalidSettingException(MAX_PLAYERS_PROPERTY,
+                    "%s (%s) must not be below %s (%s)".formatted(
+                            MAX_PLAYERS_PROPERTY, maximumRacers, MIN_RACERS_PROPERTY, minimumRacers));
+        }
     }
 
     /**
@@ -171,9 +294,11 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
 
     /** One line naming every resolved value, for the boot log. Absolute paths, deliberately. */
     public String describe() {
-        return "host=%s port=%s data=%s worlds=%s cup=%s dev=%s minimum=%s".formatted(
+        return "host=%s port=%s data=%s worlds=%s cup=%s dev=%s minimum=%s maximum=%s lobby=%s".formatted(
                 host, port, dataPath.toAbsolutePath(), worldsPath.toAbsolutePath(),
-                cupName.orElse("<the only one>"), devMode, minimumRacers);
+                cupName.orElse("<the only one>"), devMode, minimumRacers, maximumRacers,
+                lobby.map(definition -> "%s@%s,%s,%s".formatted(definition.world(), definition.spawn().x(),
+                        definition.spawn().y(), definition.spawn().z())).orElse("none"));
     }
 
     /**

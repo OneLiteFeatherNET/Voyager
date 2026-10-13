@@ -5,7 +5,7 @@ import net.elytrarace.voyager.race.flow.RaceClock;
 import java.time.Duration;
 
 /**
- * What {@link XerusPhaseDriver} reports as it drives a cup: a map starting, a movement tick to play,
+ * What {@code platform.cup.XerusPhaseDriver} reports as it drives a cup: a map starting, a movement tick to play,
  * a map ending.
  *
  * <p>A movement tick is handed the {@link RaceClock}, never {@code RaceState.inPhase()}, because the

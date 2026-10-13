@@ -1,6 +1,8 @@
 package net.elytrarace.voyager.platform.world;
 
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
+import net.minestom.server.instance.Chunk;
+import net.minestom.server.instance.ChunkLoader;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -21,6 +23,7 @@ import net.onelitefeather.falco.anvil.RegionFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
@@ -28,9 +31,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -263,6 +272,65 @@ class MapInstancesTest {
         }
     }
 
+    /**
+     * The walk releases what it reads: once readEveryChunk has passed a region, none of that region's chunks
+     * stays resident. Keeping them all would hold a whole world in the heap for the length of the check, and the
+     * boot check reads every world of the cup it plays. The counters survive the release; the health still reads.
+     */
+    @Test
+    void readEveryChunkLeavesNoChunkResidentAfterTheWalk(Env env) throws IOException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+
+        try (MapInstances instances = new MapInstances(env.process().instance(), worldsRoot())) {
+            Instance instance = instances.forWorld(TRACK);
+
+            instances.readEveryChunk(TRACK);
+
+            assertThat(instance.getChunks()).isEmpty();
+            assertThat(instances.healthOf(TRACK).chunksLoaded()).isEqualTo(3L);
+        }
+    }
+
+    /**
+     * checkWorld is the step the boot check runs per world: it reads, reports, and closes the world before it
+     * returns, so nothing of that world is registered or open afterwards.
+     */
+    @Test
+    void checkWorldReportsTheHealthAndClosesTheWorldBeforeItReturns(Env env) throws IOException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+        InstanceManager manager = env.process().instance();
+
+        try (MapInstances instances = new MapInstances(manager, worldsRoot())) {
+            WorldHealth health = instances.checkWorld(TRACK);
+
+            assertThat(health.isSound()).isTrue();
+            assertThat(health.chunksLoaded()).isEqualTo(3L);
+            assertThat(instances.isOpen(TRACK)).isFalse();
+            assertThat(manager.getInstances()).isEmpty();
+        }
+    }
+
+    /**
+     * Checking two worlds one after the other: the second is started with the first already closed, so the
+     * check never holds more than one world at a time. The size is read before each call, as the check starts.
+     */
+    @Test
+    void checkingWorldsInTurnStartsEachWithNoWorldStillOpen(Env env) throws IOException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+        writeWorld(env, OTHER_TRACK, OTHER_TRACK_BLOCKS);
+        InstanceManager manager = env.process().instance();
+        List<Integer> registeredAtStart = new ArrayList<>();
+
+        try (MapInstances instances = new MapInstances(manager, worldsRoot())) {
+            for (String world : List.of(TRACK, OTHER_TRACK)) {
+                registeredAtStart.add(manager.getInstances().size());
+                instances.checkWorld(world);
+            }
+        }
+
+        assertThat(registeredAtStart).containsExactly(0, 0);
+    }
+
     @Test
     void diagnosticsForHandsOutTheLoadersOwnCounters(Env env) throws IOException {
         writeWorld(env, TRACK, TRACK_BLOCKS);
@@ -443,6 +511,89 @@ class MapInstancesTest {
     }
 
     @Test
+    void closeUnregistersAWorldOnlyAfterItsInFlightChunkLoadHasFinished(Env env) throws Exception {
+        assertUnregistersOnlyAfterTheLoadFinishes(env, MapInstances::close);
+    }
+
+    @Test
+    void discardUnregistersAWorldOnlyAfterItsInFlightChunkLoadHasFinished(Env env) throws Exception {
+        // discard is the path a catalogue reload takes to drop one world while players may still be
+        // loading its chunks, so it waits for the same reason close does.
+        assertUnregistersOnlyAfterTheLoadFinishes(env, instances -> instances.discard(TRACK));
+    }
+
+    @Test
+    void closeGivesUpWaitingForAHungChunkLoadAfterItsBoundAndUnregistersAnyway(Env env) throws Exception {
+        // A zero bound is the bound already passed: the wait returns at once, so the test never waits on the
+        // load it holds. The unregister still happens, and a shutdown is not hung by a load that never ends.
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+        InstanceManager instanceManager = env.process().instance();
+        MapInstances instances = new MapInstances(instanceManager, worldsRoot(), Duration.ZERO);
+        InstanceContainer instance = (InstanceContainer) instances.forWorld(TRACK);
+        GateLoader gate = new GateLoader();
+        instance.setChunkLoader(gate);
+        CompletableFuture<Chunk> load = instance.loadChunk(0, 0);
+        gate.awaitEntered();
+
+        try {
+            instances.close();
+
+            assertThat(instanceManager.getInstances())
+                    .describedAs("the world after the bound passed with its load still running")
+                    .doesNotContain(instance);
+        } finally {
+            gate.release();
+        }
+        assertThat(load).succeedsWithin(Duration.ofMinutes(1));
+    }
+
+    /**
+     * Holds one chunk load in flight, unregisters the world on another thread, and checks the world stays
+     * registered until the load has finished.
+     *
+     * <p>No sleeps. The gate parks the load on a latch the test releases, and the test waits for the
+     * unregistering thread to either park or return, which it does in one of two observable states. Parked
+     * means the unregister is waiting on the load, which is correct. Terminated means it ran straight through
+     * with the load still in flight, which is the bug, and the assertion on the thread state reports it.
+     */
+    private void assertUnregistersOnlyAfterTheLoadFinishes(Env env, Consumer<MapInstances> unregisterTheWorld)
+            throws IOException, InterruptedException {
+        writeWorld(env, TRACK, TRACK_BLOCKS);
+        InstanceManager instanceManager = env.process().instance();
+        MapInstances instances = new MapInstances(instanceManager, worldsRoot());
+        InstanceContainer instance = (InstanceContainer) instances.forWorld(TRACK);
+        GateLoader gate = new GateLoader();
+        instance.setChunkLoader(gate);
+        CompletableFuture<Chunk> load = instance.loadChunk(0, 0);
+        gate.awaitEntered();
+
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Thread unregistering = new Thread(() -> unregisterTheWorld.accept(instances), "unregister-under-test");
+        unregistering.setUncaughtExceptionHandler((_, exception) -> failure.set(exception));
+        try {
+            unregistering.start();
+            while (unregistering.getState() == Thread.State.NEW
+                    || unregistering.getState() == Thread.State.RUNNABLE) {
+                Thread.onSpinWait();
+            }
+
+            assertThat(unregistering.getState())
+                    .describedAs("the unregister returned while a chunk load was still in flight")
+                    .isIn(Thread.State.WAITING, Thread.State.TIMED_WAITING);
+            assertThat(instanceManager.getInstances())
+                    .describedAs("the world unregistered while its chunk load was still in flight")
+                    .contains(instance);
+        } finally {
+            gate.release();
+            unregistering.join();
+        }
+
+        assertThat(failure.get()).isNull();
+        assertThat(load).isCompleted();
+        assertThat(instanceManager.getInstances()).doesNotContain(instance);
+    }
+
+    @Test
     void closeClosesEveryLoaderEvenWhenOneWorldRefusesToBeUnregistered(Env env) throws IOException {
         // InstanceManager refuses an instance that still has a player in it, and a shutdown is
         // exactly when one still does. A close that stopped there would leave every loader after it
@@ -562,6 +713,50 @@ class MapInstancesTest {
             assertThat(instance.getBlock(placed.x(), placed.y(), placed.z()))
                     .describedAs("block at (%d, %d, %d)", placed.x(), placed.y(), placed.z())
                     .isEqualTo(placed.block());
+        }
+    }
+
+    /**
+     * A chunk loader whose loads park until the test releases them, so one load stays in flight for exactly as
+     * long as the test needs it to. It loads on a virtual thread, as Falco does, and returns no chunk, so Minestom
+     * generates an empty one and caches it the way it does a real load.
+     */
+    private static final class GateLoader implements ChunkLoader {
+
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch released = new CountDownLatch(1);
+
+        @Override
+        public @Nullable Chunk loadChunk(Instance instance, int chunkX, int chunkZ) {
+            entered.countDown();
+            awaitUninterruptibly(released);
+            return null;
+        }
+
+        @Override
+        public void saveChunk(Chunk chunk) {
+            // Never saved: the race server does not write maps.
+        }
+
+        @Override
+        public boolean supportsParallelLoading() {
+            return true;
+        }
+
+        void awaitEntered() throws InterruptedException {
+            entered.await();
+        }
+
+        void release() {
+            released.countDown();
+        }
+
+        private static void awaitUninterruptibly(CountDownLatch latch) {
+            try {
+                latch.await();
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

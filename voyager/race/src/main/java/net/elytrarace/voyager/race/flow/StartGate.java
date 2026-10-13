@@ -4,6 +4,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * When a cup may start, and what happens to a start that is already counting down when racers leave.
@@ -27,6 +28,12 @@ public abstract class StartGate {
 
     /** The last three seconds of the first map's lobby, in which the start can no longer be cancelled. */
     public static final Duration COMMIT_WINDOW = Duration.ofSeconds(3);
+
+    /**
+     * What a countdown is shortened to once the server is full: ten seconds from the moment it is full. A constant
+     * and not a setting, by the owner's decision (ADR-0029).
+     */
+    public static final Duration FULL_LOBBY_COUNTDOWN = Duration.ofSeconds(10);
 
     private StartGate() {
     }
@@ -82,5 +89,33 @@ public abstract class StartGate {
             case COUNTDOWN -> enough ? Verdict.HOLD : Verdict.CANCEL_COUNTDOWN;
             case COMMITTED, RUNNING -> online == 0 ? Verdict.ABORT_CUP : Verdict.HOLD;
         };
+    }
+
+    /**
+     * The length a countdown is shortened to when the server is full, or nothing when it is left as it is.
+     *
+     * <p>A full server ({@code online} at or above {@code maximum}) shortens a countdown that is counting down and has
+     * more than {@link #FULL_LOBBY_COUNTDOWN} left, to exactly that length. Nothing else shortens: a committed start
+     * keeps its commit window, a countdown already at or below ten seconds is not lengthened, and a lobby below the
+     * maximum is not touched. Nothing here reads a clock, so the answer depends on the arguments alone.
+     *
+     * @param situation where the cup stands
+     * @param remaining how much of the lobby is left
+     * @param online    how many racers are online
+     * @param maximum   how many racers make a full server; at least one
+     * @return the new remaining length, or empty to leave the countdown as it is
+     * @throws IllegalArgumentException if {@code maximum} is below one
+     */
+    @Contract(pure = true)
+    public static Optional<Duration> shortenedCountdown(Situation situation, Duration remaining, int online,
+            int maximum) {
+        if (maximum < 1) {
+            throw new IllegalArgumentException("the maximum racer count must be at least 1, was %s".formatted(maximum));
+        }
+        if (situation != Situation.COUNTDOWN || online < maximum
+                || remaining.compareTo(FULL_LOBBY_COUNTDOWN) <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(FULL_LOBBY_COUNTDOWN);
     }
 }

@@ -26,15 +26,16 @@ class ShippedCatalogueTest {
 
     private static final Path RESOURCES = Path.of("src", "main", "resources");
     private static final String ALPHA_CUP = "alpha_cup";
+    private static final String LEGACY_CUP = "legacy_cup";
     private static final String ALPHA_MAP = "elytraraceblueandred";
 
     @Test
-    void theShippedCatalogueHoldsExactlyOneCupNamedAlphaCup() {
+    void theShippedCatalogueHoldsExactlyTheAlphaCupAndTheLegacyCup() {
         CatalogSnapshot catalog = CatalogLoader.load(RESOURCES);
 
         assertThat(catalog.cupNames())
                 .as("the cups the shipped catalogue holds")
-                .containsExactly(ALPHA_CUP);
+                .containsExactlyInAnyOrder(ALPHA_CUP, LEGACY_CUP);
     }
 
     @Test
@@ -44,6 +45,15 @@ class ShippedCatalogueTest {
         assertThat(cup.mapNames())
                 .as("the maps alpha_cup plays, in order")
                 .containsExactly(ALPHA_MAP);
+    }
+
+    @Test
+    void theLegacyCupPlaysThePalmBeachDragonLobbyAndMemoriaMapsInOrder() {
+        CupDefinition cup = CatalogLoader.load(RESOURCES).cupByName(LEGACY_CUP).orElseThrow();
+
+        assertThat(cup.mapNames())
+                .as("the maps legacy_cup plays, in order")
+                .containsExactly("palmbeach", "dragonlobby", "memoria");
     }
 
     @Test

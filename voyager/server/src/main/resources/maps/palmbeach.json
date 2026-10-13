@@ -1,0 +1,429 @@
+{
+  "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
+  "schemaVersion": 1,
+  "name": "palmbeach",
+  "world": "PalmBeach",
+  "spawn": {
+    "x": 19.0,
+    "y": 122.0,
+    "z": -49.0
+  },
+  "referenceTimeSeconds": 80.0,
+  "boostConfig": {
+    "burnDurationTicks": 30,
+    "cooldownTicks": 40
+  },
+  "guideLine": {
+    "lookAheadRings": 2,
+    "particleSpacing": 1.0,
+    "points": []
+  },
+  "rings": [
+    {
+      "index": 0,
+      "center": {
+        "x": 20.0,
+        "y": 122.0,
+        "z": 7.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 5.59889709177878,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 1,
+      "center": {
+        "x": -5.0,
+        "y": 107.0,
+        "z": 96.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 5.4655059127538586,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 2,
+      "center": {
+        "x": -13.0,
+        "y": 125.0,
+        "z": 216.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 5.6674367807715065,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 3,
+      "center": {
+        "x": -120.0,
+        "y": 103.0,
+        "z": 200.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 5.59889709177878,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 4,
+      "center": {
+        "x": -168.0,
+        "y": 103.0,
+        "z": 171.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 5,
+      "center": {
+        "x": -208.0,
+        "y": 118.0,
+        "z": 117.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 6,
+      "center": {
+        "x": -226.0,
+        "y": 118.0,
+        "z": 70.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 7,
+      "center": {
+        "x": -169.0,
+        "y": 114.0,
+        "z": 31.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 8,
+      "center": {
+        "x": -96.0,
+        "y": 108.0,
+        "z": 33.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 5.385164807134504,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 9,
+      "center": {
+        "x": -73.0,
+        "y": 116.0,
+        "z": 3.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 10,
+      "center": {
+        "x": -73.0,
+        "y": 122.0,
+        "z": -17.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 11,
+      "center": {
+        "x": -88.0,
+        "y": 140.0,
+        "z": -51.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 12,
+      "center": {
+        "x": -39.0,
+        "y": 150.0,
+        "z": -100.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 5.4655059127538586,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 13,
+      "center": {
+        "x": -42.0,
+        "y": 161.0,
+        "z": -151.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.707106781187,
+        "z": -0.707106781187
+      },
+      "radius": 6.1829880608427,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 14,
+      "center": {
+        "x": -35.0,
+        "y": 174.0,
+        "z": -190.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 15,
+      "center": {
+        "x": 44.0,
+        "y": 214.0,
+        "z": -220.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 16,
+      "center": {
+        "x": 71.0,
+        "y": 249.0,
+        "z": -223.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 17,
+      "center": {
+        "x": 73.0,
+        "y": 241.0,
+        "z": -158.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": -0.707106781187,
+        "z": 0.707106781187
+      },
+      "radius": 6.1829880608427,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 18,
+      "center": {
+        "x": 70.0,
+        "y": 203.0,
+        "z": -124.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": -0.707106781187,
+        "z": 0.707106781187
+      },
+      "radius": 6.1829880608427,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 19,
+      "center": {
+        "x": 69.0,
+        "y": 197.0,
+        "z": -39.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 20,
+      "center": {
+        "x": 20.0,
+        "y": 205.0,
+        "z": 11.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 21,
+      "center": {
+        "x": 42.0,
+        "y": 214.0,
+        "z": 55.0
+      },
+      "normal": {
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 22,
+      "center": {
+        "x": 153.0,
+        "y": 220.0,
+        "z": 42.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 23,
+      "center": {
+        "x": 156.0,
+        "y": 259.0,
+        "z": 45.0
+      },
+      "normal": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    },
+    {
+      "index": 24,
+      "center": {
+        "x": 82.0,
+        "y": 252.0,
+        "z": 52.0
+      },
+      "normal": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "radius": 6.324555320336759,
+      "points": 10,
+      "type": "STANDARD"
+    }
+  ],
+  "notes": [
+    "Converted from the legacy Voyager plugin H2 database (map 'PalmBeach', author Seelenretterin, display name <rainbow>PalmBeach</rainbow>) by tools/convert_rings.py + tools/write_maps.py.",
+    "Ring centre = the legacy CENTER point (integer block coords, no +0.5). Radius = mean centre-to-rim distance. Normal = least-squares plane normal of the rim, signed along the flight direction; normals are snapped to an axis only when the ring lies exactly in an axis plane; tilted rings keep the best-fit normal.",
+    "Placeholders: spawn is the old level.dat spawn (19, 122, -49); referenceTimeSeconds 80.0 is a guess (path length 1594 blocks / 20 blocks per second); points 10 per ring; all rings STANDARD; boostConfig 30/40; guideLine has no points.",
+    "Rings to check in game (index: reason): 0: spread, 1: spread, 2: spread, 3: spread, 12: spread"
+  ]
+}

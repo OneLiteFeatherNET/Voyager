@@ -12,18 +12,18 @@ fails the alpha.
 
 ## Requirements
 
-### Requirement: Exactly one cup ships, named alpha_cup
+### Requirement: Exactly two cups ship, alpha_cup and legacy_cup
 Priority: Must.
 
-THE shipped catalogue SHALL provide exactly one cup, named `alpha_cup`, and SHALL NOT ship `test_cup` or any other cup file.
+THE shipped catalogue SHALL provide exactly two cups, `alpha_cup` and `legacy_cup`, and SHALL NOT ship `test_cup` or any other cup file.
 
-#### Scenario: the catalogue lists one cup
+#### Scenario: the catalogue lists two cups
 - **WHEN** the shipped data directory is loaded through the catalogue loader
-- **THEN** the snapshot lists exactly one cup, named `alpha_cup`
+- **THEN** the snapshot lists exactly two cups, `alpha_cup` and `legacy_cup`
 
 #### Scenario: no other cup file is shipped
 - **WHEN** the shipped `cups/` directory is listed
-- **THEN** it contains `alpha_cup.json` and no other cup file
+- **THEN** it contains `alpha_cup.json` and `legacy_cup.json` and no other cup file
 
 ### Requirement: The alpha cup plays the one shipped map
 Priority: Must.
@@ -39,15 +39,20 @@ the shipped map file.
 - **WHEN** a map name of `alpha_cup` has no shipped map file
 - **THEN** the catalogue reports a problem naming the cup and the missing map, and the shipped catalogue does not load cleanly
 
-### Requirement: A server with no cup named plays the alpha cup
+### Requirement: A server with no cup named refuses boot as ambiguous
 Priority: Must.
 
-WHILE the shipped catalogue holds exactly one cup, WHEN the server boots from the shipped data directory without a cup
-name, THE server SHALL select `alpha_cup` and SHALL NOT refuse boot as ambiguous.
+WHILE the shipped catalogue holds two cups, WHEN the server boots from the shipped data directory without a cup name,
+THE server SHALL refuse boot with the ambiguous-cup error of `cup-validation`, naming both cup files, and SHALL select a
+cup only when `-Pcup` or `VOYAGER_CUP` names one.
 
 #### Scenario: boot without a cup name
 - **WHEN** the server boots from the shipped data directory without a cup name and without `-Pcup` or `VOYAGER_CUP`
-- **THEN** it selects `alpha_cup` and does not refuse boot as ambiguous
+- **THEN** boot is refused as ambiguous, and the message names `alpha_cup.json` and `legacy_cup.json`
+
+#### Scenario: boot with a cup named
+- **WHEN** the server boots from the shipped data directory with `VOYAGER_CUP=legacy_cup`
+- **THEN** it plays `legacy_cup` and does not refuse boot as ambiguous
 
 ### Requirement: The shipped map has at least eight rings in sequence
 Priority: Must.
@@ -155,12 +160,17 @@ missing world directory.
 - **WHEN** `validateCatalog` runs and `ElytraraceBlueAndRed` is not under the worlds path
 - **THEN** it exits with code 1 and names the missing world directory
 
-### Requirement: The three converted maps are not shipped
+### Requirement: The legacy cup plays the three converted legacy maps
 Priority: Must.
 
-THE shipped data directory SHALL NOT contain `nether_sprint`, `frozen_cathedral` or `skyward_drift` map files until their
-worlds exist under the worlds path.
+THE shipped data directory SHALL contain `palmbeach.json`, `dragonlobby.json` and `memoria.json` in `maps/`, and
+`legacy_cup` SHALL name exactly those three maps in that order in its `mapNames`. The `nether_sprint`, `frozen_cathedral`
+and `skyward_drift` map files SHALL NOT be shipped until their worlds exist under the worlds path.
 
-#### Scenario: the converted maps stay out
+#### Scenario: the legacy maps ship and the cup plays them
+- **WHEN** the shipped `maps/` directory is listed and `legacy_cup` is resolved
+- **THEN** it contains `palmbeach.json`, `dragonlobby.json` and `memoria.json`, and `legacy_cup` plays exactly those three maps in order
+
+#### Scenario: the converted maps without a world stay out
 - **WHEN** the shipped `maps/` directory is listed
-- **THEN** it contains `elytraraceblueandred.json` and none of the three converted map files
+- **THEN** it contains none of `nether_sprint.json`, `frozen_cathedral.json` or `skyward_drift.json`

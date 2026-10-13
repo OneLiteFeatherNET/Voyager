@@ -9,6 +9,11 @@ dependencies {
     implementation(project(":voyager:api"))
     implementation(project(":voyager:platform"))
 
+    // The Minestom extension bootstrap, the OneLiteFeather fork Cygnus pins (ADR-0026). The root starts it itself, because
+    // the fork's init must replace MinecraftServer.init before anything else touches Minestom.
+    implementation(platform(libs.minestom.extensions.bom))
+    implementation(libs.minestom.extensions)
+
     // avaje-inject generates the wiring for SetupBeans at compile time, as it does for voyager-server.
     // DI annotations stay in net.elytrarace.voyager.setup.inject and in SetupServer, see ApiPurityTest.
     implementation(libs.avaje.inject.runtime)
@@ -33,7 +38,7 @@ dependencies {
 
     // Pinned to the rebuild's Minestom version, as voyager-platform pins it: the test environment and
     // the Minestom this module compiles against must never be two different versions.
-    testImplementation("net.minestom:testing:2026.09.12-26.2")
+    testImplementation("net.minestom:testing:2026.10.07-26.2")
     testImplementation(libs.log4j2.core)
 }
 
@@ -72,10 +77,10 @@ tasks.register<JavaExec>("runSetupDev") {
     mainClass.set("net.elytrarace.voyager.setup.SetupServer")
     workingDir = rootProject.projectDir
     jvmArgs("-XX:+UseZGC", "-XX:+UseCompactObjectHeaders", "-Xms256M", "-Xmx1G")
-    // Automatic component translation is a JVM flag: ServerFlag reads it once, as voyager-server's run tasks note.
-    systemProperty("minestom.automatic-component-translation", "true")
-    providers.gradleProperty("dataPath").orNull?.let { systemProperty("VOYAGER_DATA_PATH", it) }
-    providers.gradleProperty("worldsPath").orNull?.let { systemProperty("VOYAGER_WORLDS_PATH", it) }
+    // Automatic component translation is switched on by SetupServer.main, not by this task.
+    // The developer layout, passed explicitly because the setup server's own defaults are the service layout (SetupSettings).
+    systemProperty("VOYAGER_DATA_PATH", providers.gradleProperty("dataPath").getOrElse("run-setup/data"))
+    systemProperty("VOYAGER_WORLDS_PATH", providers.gradleProperty("worldsPath").getOrElse("run-setup/worlds"))
     doFirst {
         // The server refuses a missing directory, so a first run creates the two defaults here.
         if (!providers.gradleProperty("dataPath").isPresent) runSetupDataDir.mkdirs()
@@ -109,8 +114,8 @@ tasks.register<Test>("spike") {
 }
 
 // Production-like fat jar, as voyager-server builds one: a CloudNet service starts it with `java -jar`.
-// Run it with the automatic-translation flag as a JVM argument (ServerFlag reads it once, see runSetupDev above):
-//   java -Dminestom.automatic-component-translation=true -jar voyager-setup-<version>.jar 0.0.0.0 25566
+// No JVM flag is needed: SetupServer.main enables automatic component translation itself.
+//   java -jar voyager-setup-<version>.jar 0.0.0.0 25566
 tasks.shadowJar {
     archiveClassifier.set("")
     // Keeps every META-INF/services file, including avaje's generated wiring, merged rather than overwritten.

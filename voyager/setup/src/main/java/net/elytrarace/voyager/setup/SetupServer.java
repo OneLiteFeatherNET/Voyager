@@ -4,10 +4,12 @@ import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.platform.lifecycle.ConsoleCommandReader;
 import net.elytrarace.voyager.platform.lifecycle.ServiceShutdown;
 import net.elytrarace.voyager.platform.lifecycle.StopCommand;
+import net.elytrarace.voyager.platform.player.VoyagerPlayerProvider;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.exception.PermissionBackendStartException;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
+import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import io.avaje.inject.BeanScope;
 
@@ -25,6 +27,7 @@ import net.minestom.server.ServerFlag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,15 +45,39 @@ public final class SetupServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SetupServer.class);
     private static final String SOURCE = "setup settings";
 
+    /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
+    static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
+
     private SetupServer() {
     }
 
+    /**
+     * Turns on Minestom's automatic component translation. It has to run before anything touches
+     * {@code ServerFlag}, which is why {@link #main} calls it as its first statement.
+     */
+    static void enableAutomaticComponentTranslation() {
+        System.setProperty(AUTOMATIC_TRANSLATION_PROPERTY, "true");
+    }
+
     public static void main(String[] args) {
+        enableAutomaticComponentTranslation();
         SetupSettings settings;
         try {
             settings = SetupSettings.fromEnvironment(args);
         } catch (IllegalArgumentException exception) {
             LOGGER.error("Setup server refused to start: {}", exception.getMessage());
+            System.exit(1);
+            return;
+        }
+        // The authoring server owns its data and worlds directories, so it creates them rather than refusing.
+        // The game server does not do this; it refuses a missing directory (VoyagerServer, ServerSettings).
+        try {
+            for (Path created : createMissingDirectories(settings)) {
+                LOGGER.info("Setup server created the missing directory {}", created.toAbsolutePath());
+            }
+        } catch (IOException exception) {
+            LOGGER.error("Setup server refused to start: could not create a setup directory: {}",
+                    exception.toString());
             System.exit(1);
             return;
         }
@@ -62,10 +89,10 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
-        // Without the JVM flag every message reaches the builder as a raw key; the run task sets it, and a missing flag is
-        // refused here rather than read as cosmetic (see VoyagerServer.main).
+        // Without the translation flag every message reaches the builder as a raw key. main() sets the property before
+        // any Minestom class loads, so this guard only fires if that ordering was ever broken (see VoyagerServer.main).
         if (!ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION) {
-            LOGGER.error("Setup server refused to start: -Dminestom.automatic-component-translation=true is not set");
+            LOGGER.error("Setup server refused to start: ServerFlag loaded before {} was set", AUTOMATIC_TRANSLATION_PROPERTY);
             System.exit(1);
             return;
         }
@@ -94,7 +121,8 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
-        MinecraftServer server = auth == null ? MinecraftServer.init() : MinecraftServer.init(auth);
+        // As in VoyagerServer: the extension bootstrap initialises Minestom, and at start loads extensions/ and binds the port.
+        ExtensionBootstrap bootstrap = auth == null ? ExtensionBootstrap.init() : ExtensionBootstrap.init(auth);
         // LuckPerms starts before the port binds, and a failed start refuses to listen (ADR-0024).
         if (LuckPermsBootstrap.isPresent()) {
             try {
@@ -113,6 +141,9 @@ public final class SetupServer {
             System.exit(1);
             return;
         }
+        // Every builder is created with the permission pointer, through the one policy bean (ADR-0026). Installed before the
+        // port binds, as in VoyagerServer.
+        MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         MinecraftServer.getCommandManager().register(graph.get(SetupCommands.class));
         graph.get(WandListener.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(TerrainGuard.class).register(MinecraftServer.getGlobalEventHandler());
@@ -131,7 +162,7 @@ public final class SetupServer {
                 line -> MinecraftServer.getCommandManager().getConsoleSender().sendMessage(line));
 
         LOGGER.info("Listening on {}:{}", settings.host(), settings.port());
-        server.start(settings.host(), settings.port());
+        bootstrap.start(settings.host(), settings.port());
         console.start();
     }
 
@@ -140,6 +171,24 @@ public final class SetupServer {
      *
      * @return one problem per missing directory, naming its absolute path; empty when both exist
      */
+    /**
+     * Creates the data and worlds directories when they are missing. The catalogue tolerates a missing
+     * {@code maps/} and the draft store creates it on the first save, so only the two roots are made here.
+     *
+     * @return the directories this call created, in the order data, worlds; empty when both existed
+     * @throws IOException if a directory cannot be created, for example because a file is in its place
+     */
+    static List<Path> createMissingDirectories(SetupSettings settings) throws IOException {
+        List<Path> created = new ArrayList<>(2);
+        for (Path directory : List.of(settings.dataPath(), settings.worldsPath())) {
+            if (!Files.isDirectory(directory)) {
+                Files.createDirectories(directory);
+                created.add(directory);
+            }
+        }
+        return List.copyOf(created);
+    }
+
     static List<ConfigProblem> directoryProblems(SetupSettings settings) {
         List<ConfigProblem> problems = new ArrayList<>(2);
         if (!Files.isDirectory(settings.dataPath())) {

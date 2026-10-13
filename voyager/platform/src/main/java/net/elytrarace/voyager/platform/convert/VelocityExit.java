@@ -16,15 +16,17 @@ import org.jetbrains.annotations.ApiStatus;
  * velocity; that restriction is the entire reason this is one class instead of an inline call at
  * each site — a single place to look when a velocity turns up that should not have.
  *
- * <p><strong>The list of those forces has changed twice and is written here rather than guessed.</strong>
- * It is currently three:
+ * <p><strong>The list of those forces has changed three times and is written here rather than guessed.</strong>
+ * It is currently two:
  *
  * <ol>
- *   <li>the launch that starts a map, which turns a standing racer into a gliding one
- *       ({@code Racers.launch}), and the relaunch of a racer after a reset, which is the same launch;</li>
- *   <li>a ring {@code BOOST}/{@code SLOW} effect;</li>
- *   <li>an out-of-bounds reset.</li>
+ *   <li>a zero, which ends a racer's velocity: when a map ends ({@code Racers.standDown}) and when a racer is
+ *       reset ({@code RunResetter}), so a fall is not carried into the target;</li>
+ *   <li>a ring {@code BOOST}/{@code SLOW} effect, which is not built yet.</li>
  * </ol>
+ *
+ * <p>The launch that used to start a map, and the impulse a reset gave, are gone: a racer takes off by deploying
+ * the elytra, and the client flies from there.
  *
  * <p>The <strong>firework boost is deliberately not on that list</strong>, and it used to be. The
  * tree being replaced computed the boost server-side and pushed it with {@code setVelocity}; the

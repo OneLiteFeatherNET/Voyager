@@ -23,10 +23,12 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -257,6 +259,80 @@ class ConfigCheckRunTest {
         assertThat(refusals).extracting(ConfigProblem::key)
                 .containsExactlyInAnyOrder("file", ServerSettings.CUP_PROPERTY);
         assertThat(refusals).extracting(ConfigProblem::source).contains(broken.toAbsolutePath().toString());
+    }
+
+    /**
+     * A server pinned to one cup does not open the world of another cup's map. The other cup's world holds a
+     * region file cut short, so opening and reading it would refuse boot; the pinned server must not open it.
+     */
+    @Test
+    void aServerPinnedToOneCupDoesNotOpenTheWorldOfAnotherCupsMap(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        addBetaCupOnItsOwnWorld(env, data, worlds);
+
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings(data, worlds, "alpha_cup"),
+                env.process().instance());
+
+        assertThat(refusals).isEmpty();
+    }
+
+    /** The positive side of the same rule: the world of the cup that is played is still checked. */
+    @Test
+    void aServerPinnedToACupRefusesBootForABrokenWorldOfThatCup(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        truncateFirstRegionFile(worlds.resolve(SHIPPED_WORLD));
+
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings(data, worlds, "alpha_cup"),
+                env.process().instance());
+
+        assertThat(refusals).anySatisfy(problem -> assertThat(problem.message() + " " + problem.source())
+                .contains("r.0.0.mca"));
+    }
+
+    /** With no cup named and one cup in the catalogue, that cup is the one played, so its world is checked. */
+    @Test
+    void anUnnamedServerWithOneCupRefusesBootForABrokenWorldOfThatCup(Env env) throws IOException {
+        Path data = root.resolve("data");
+        Path worlds = root.resolve("worlds");
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        writeRacetrack(env, worlds, SHIPPED_WORLD);
+        truncateFirstRegionFile(worlds.resolve(SHIPPED_WORLD));
+        ServerSettings unnamed = new ServerSettings("127.0.0.1", 25572, data, worlds, Optional.empty(), false);
+
+        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(unnamed, env.process().instance());
+
+        assertThat(refusals).anySatisfy(problem -> assertThat(problem.message() + " " + problem.source())
+                .contains("r.0.0.mca"));
+    }
+
+    /** Adds a second cup, beta_cup, that plays a copy of the shipped map on a world of its own, cut short on disk. */
+    private static void addBetaCupOnItsOwnWorld(Env env, Path data, Path worlds) throws IOException {
+        Path shipped = data.resolve("maps").resolve("elytraraceblueandred.json");
+        Files.writeString(data.resolve("maps").resolve("beta.json"), Files.readString(shipped)
+                .replace("\"elytraraceblueandred\"", "\"beta-map\"")
+                .replace("\"ElytraraceBlueAndRed\"", "\"BetaWorld\""));
+        Files.writeString(data.resolve("cups").resolve("beta_cup.json"), """
+                {"name": "beta_cup", "mode": "RACE", "mapNames": ["beta-map"]}
+                """);
+        writeRacetrack(env, worlds, "BetaWorld");
+        truncateFirstRegionFile(worlds.resolve("BetaWorld"));
+    }
+
+    /** Cuts the first region file under a world down to 1000 bytes, the way a half-written copy looks. */
+    private static void truncateFirstRegionFile(Path world) throws IOException {
+        try (Stream<Path> files = Files.walk(world)) {
+            Path region = files.filter(file -> file.toString().endsWith(".mca")).findFirst().orElseThrow();
+            Files.write(region, Arrays.copyOf(Files.readAllBytes(region), 1000));
+        }
     }
 
     private static Map<String, String> properties(Path data, Path worlds) {

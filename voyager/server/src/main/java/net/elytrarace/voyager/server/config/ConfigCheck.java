@@ -3,14 +3,21 @@ package net.elytrarace.voyager.server.config;
 import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.api.config.ConfigProblem.Severity;
 import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.LobbyDefinition;
+import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
 import net.elytrarace.voyager.platform.catalog.CupResolution;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.platform.world.WorldFolders;
+import net.elytrarace.voyager.platform.world.WorldHealth;
+import net.elytrarace.voyager.server.config.exception.InvalidSettingException;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
 
 import net.minestom.server.instance.InstanceManager;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -20,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * The configuration check: every problem with the settings, the catalogue and the worlds, collected
@@ -85,6 +93,7 @@ public final class ConfigCheck {
         directoryProblem(problems, properties, ServerSettings.WORLDS_PATH_PROPERTY,
                 ServerSettings.DEFAULT_WORLDS_PATH, MissingServerDirectoryException.WORLDS);
         minimumRacersProblem(problems, properties);
+        lobbySettingProblems(problems, properties);
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
@@ -129,25 +138,43 @@ public final class ConfigCheck {
     }
 
     /**
-     * Every problem in the catalogue, the cup selection and the worlds, sorted.
+     * Every problem in the catalogue, the cup selection and the worlds of every map, sorted. This is the
+     * whole-catalogue check the validate-and-exit run uses.
      *
      * <p>The worlds are opened through {@code instances}, which must belong to an initialised Minestom
-     * server; nothing here starts that server or binds a socket. Every world opened for the check is
-     * closed again before this returns.
+     * server; nothing here starts that server or binds a socket. Each world is read and closed before the
+     * next one is opened, so the check holds one world at a time.
      *
      * @param settings  settings whose directories exist
      * @param instances the instance manager of the initialised Minestom server
      * @return every problem; empty when the catalogue and every world it names are sound
      */
     public static List<ConfigProblem> catalogueProblems(ServerSettings settings, InstanceManager instances) {
+        return problems(settings, instances, map -> true);
+    }
+
+    /**
+     * Every problem a boot with these settings would see: the catalogue, the cup selection, and the worlds of
+     * the maps of the played cup only. Without a played cup no world is opened, because the cup selection error
+     * already refuses the boot.
+     */
+    private static List<ConfigProblem> playedCupProblems(ServerSettings settings, InstanceManager instances,
+            Optional<CupDefinition> played) {
+        Predicate<MapDefinition> playedMap = played
+                .<Predicate<MapDefinition>>map(cup -> map -> cup.mapNames().contains(map.name()))
+                .orElse(map -> false);
+        return problems(settings, instances, playedMap);
+    }
+
+    private static List<ConfigProblem> problems(ServerSettings settings, InstanceManager instances,
+            Predicate<MapDefinition> checkWorld) {
         Objects.requireNonNull(instances, "the instance manager must come from an initialised server");
         List<ConfigProblem> problems = new ArrayList<>(cupSelectionProblems(settings));
         MapInstances worlds = new MapInstances(instances, settings.worldsPath());
         try {
-            problems.addAll(CatalogValidation.validate(settings.dataPath(), settings.worldsPath(), world -> {
-                worlds.readEveryChunk(world);
-                return worlds.healthOf(world);
-            }));
+            problems.addAll(CatalogValidation.validate(settings.dataPath(), settings.worldsPath(), checkWorld,
+                    worlds::checkWorld));
+            problems.addAll(lobbyProblems(settings, worlds));
         } finally {
             worlds.close();
         }
@@ -156,9 +183,10 @@ public final class ConfigCheck {
     }
 
     /**
-     * The problems a normal boot refuses with: every problem of the maps, the worlds, the cup selection and
-     * the played cup, and none of a cup that is not played. The unplayed cups' problems are not dropped; the
-     * composition root logs them as one warning, from {@link CupResolution#skippedCups}.
+     * The problems a normal boot refuses with: every problem of the catalogue and the cup selection, the worlds
+     * of the played cup's maps only, and none of a cup that is not played. The worlds of the other cups are not
+     * opened at all. The unplayed cups' problems are not dropped; the composition root logs them as one
+     * warning, from {@link CupResolution#skippedCups}.
      *
      * <p>When no cup can be picked, nothing is set aside: every error refuses, and the ambiguity is one of
      * them. A malformed unplayed cup file therefore still refuses a directory with two cup files and no name,
@@ -169,10 +197,10 @@ public final class ConfigCheck {
      * @return the errors that refuse boot, sorted; empty when boot may proceed
      */
     public static List<ConfigProblem> bootRefusals(ServerSettings settings, InstanceManager instances) {
-        List<ConfigProblem> errors = catalogueProblems(settings, instances).stream()
+        Optional<CupDefinition> played = playedCup(settings);
+        List<ConfigProblem> errors = playedCupProblems(settings, instances, played).stream()
                 .filter(problem -> problem.severity() == Severity.ERROR)
                 .toList();
-        Optional<CupDefinition> played = playedCup(settings);
         if (played.isEmpty()) {
             return errors;
         }
@@ -231,6 +259,86 @@ public final class ConfigCheck {
         }
         out.println("config check failed: %d error(s)".formatted(errors));
         return 1;
+    }
+
+    /**
+     * The lobby world, checked the way a map's world is, and the one rule that is about the lobby as a whole: no lobby is a
+     * warning, and a lobby may not be a catalogue map's world. The world is read and closed before this returns, so the
+     * check holds one world open at a time, as {@link MapInstances#checkWorld} does for each map's world.
+     */
+    private static List<ConfigProblem> lobbyProblems(ServerSettings settings, MapInstances worlds) {
+        Optional<LobbyDefinition> lobby = settings.lobby();
+        if (lobby.isEmpty()) {
+            return List.of(new ConfigProblem(ServerSettings.LOBBY_WORLD_PROPERTY,
+                    "system property " + ServerSettings.LOBBY_WORLD_PROPERTY,
+                    "no lobby world is set, so waiting racers stand at the first map's spawn; set %s and %s to give them a lobby (ADR-0029)"
+                            .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, ServerSettings.LOBBY_SPAWN_PROPERTY),
+                    Severity.WARNING));
+        }
+        String world = lobby.get().world();
+        Optional<MapDefinition> played = CatalogLoader.read(settings.dataPath()).snapshot().maps().values().stream()
+                .filter(map -> map.world().equals(world))
+                .findFirst();
+        if (played.isPresent()) {
+            return List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, "system property " + ServerSettings.LOBBY_WORLD_PROPERTY,
+                    "%s names world '%s', which map '%s' plays; a racer waiting in a map's world is inside that map's race"
+                            .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, world, played.get().name())));
+        }
+        String folder = settings.worldsPath().resolve(world).toAbsolutePath().toString();
+        return switch (WorldFolders.check(settings.worldsPath(), world)) {
+            case MISSING -> List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder,
+                    "the lobby world '%s' is not a folder; looked for %s".formatted(world, folder)));
+            case NO_REGION_DATA -> List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder,
+                    "the lobby world '%s' holds no region data; looked for region files in %s and in %s"
+                            .formatted(world, folder + "/region", folder + "/dimensions")));
+            case PRESENT -> lobbyHealthProblems(world, folder, worlds);
+        };
+    }
+
+    private static List<ConfigProblem> lobbyHealthProblems(String world, String folder, MapInstances worlds) {
+        try {
+            WorldHealth health = worlds.checkWorld(world);
+            return health.isSound()
+                    ? List.of()
+                    : List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder, health.describe()));
+        } catch (RuntimeException exception) {
+            String reason = Optional.ofNullable(exception.getMessage()).orElse(exception.getClass().getName());
+            return List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, folder,
+                    "the lobby world '%s' could not be read: %s".formatted(world, reason)));
+        }
+    }
+
+    /** A lobby setting that cannot be used, keyed under the setting that is at fault. */
+    private static void lobbySettingProblems(List<ConfigProblem> problems, Map<String, String> properties) {
+        try {
+            ServerSettings.parseLobby(blankToNull(properties.get(ServerSettings.LOBBY_WORLD_PROPERTY)),
+                    blankToNull(properties.get(ServerSettings.LOBBY_SPAWN_PROPERTY)));
+        } catch (InvalidSettingException exception) {
+            problems.add(error(exception.setting(), "system property " + exception.setting(), exception.getMessage()));
+        }
+        int maximum;
+        try {
+            maximum = ServerSettings.parseMaximumRacers(blankToNull(properties.get(ServerSettings.MAX_PLAYERS_PROPERTY)));
+        } catch (InvalidSettingException exception) {
+            problems.add(error(ServerSettings.MAX_PLAYERS_PROPERTY,
+                    "system property " + ServerSettings.MAX_PLAYERS_PROPERTY, exception.getMessage()));
+            return;
+        }
+        try {
+            int minimum = ServerSettings.minimumRacersFrom(
+                    blankToNull(properties.get(ServerSettings.MIN_RACERS_PROPERTY)),
+                    Boolean.parseBoolean(properties.get(ServerSettings.DEV_MODE_PROPERTY)));
+            ServerSettings.requireMaximumRacers(maximum, minimum);
+        } catch (InvalidSettingException exception) {
+            problems.add(error(ServerSettings.MAX_PLAYERS_PROPERTY,
+                    "system property " + ServerSettings.MAX_PLAYERS_PROPERTY, exception.getMessage()));
+        } catch (IllegalArgumentException ignored) {
+            // A minimum that is not a number is reported by minimumRacersProblem, once.
+        }
+    }
+
+    private static @Nullable String blankToNull(@Nullable String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static void directoryProblem(List<ConfigProblem> problems, Map<String, String> properties,

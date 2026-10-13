@@ -4,21 +4,33 @@ import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.race.flow.StartGate;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
+import net.minestom.server.instance.Instance;
 
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.Collection;
-import java.util.function.Consumer;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
  * The room racers wait in until a cup starts, and the Minestom side of {@link StartGate}.
  *
  * <p>Each tick the room asks the cup for its situation, asks the gate what to do with the number of racers online,
- * and acts on the answer: start the cup, cancel the countdown, abort the cup, or hold. It then tells every racer
- * where things stand: how many are online and needed while waiting, how long the countdown has left, nothing while
- * racing. It runs after the cup's own tick, in the same guarded task, so one broken tick stops the cup once.
+ * and acts on the answer: start the cup, cancel the countdown, abort the cup, or hold. A full server shortens a
+ * countdown that has time left on it. It then tells every racer where things stand: the join line is sent when a racer
+ * joins, and the lobby boss bar carries the count or the countdown while the racer stands in the lobby. It runs after
+ * the cup's own tick, in the same guarded task, so one broken tick stops the cup once.
+ *
+ * <h2>Where waiting racers stand</h2>
+ *
+ * <p>With a lobby world configured ({@link LobbyTransition}) a finished cup returns its racers there. Without one, the
+ * first map's spawn is where they stand, as before ADR-0029. The boss bar is shown there too, until the start is
+ * committed; the server says at boot that no lobby is set.
  *
  * <h2>Two rules the gate does not know about</h2>
  *
@@ -26,14 +38,14 @@ import java.util.function.Supplier;
  * which is not what {@code /race start} promises, so the room holds an abort until a racer has been online since the
  * cup started.
  *
- * <p>A cup that finishes is not an abort. Its racers are handed back their waiting loadout and placed at the first
- * map's spawn, and only then does the gate look at the room again, so a finished cup with enough racers starts the
- * next countdown on the same tick.
+ * <p>A cup that finishes is not an abort. Its racers are handed back their waiting loadout and placed in the lobby (or,
+ * with no lobby, at the first map's spawn), and only then does the gate look at the room again, so a finished cup with
+ * enough racers starts the next countdown on the same tick.
  */
 @NotNullByDefault
 public final class WaitingRoom {
 
-    /** Places a racer at the first map's spawn, where a waiting racer stands. */
+    /** Places a racer at the first map's spawn, where a waiting racer stands when no lobby world is configured. */
     @FunctionalInterface
     public interface WaitingSpawn {
 
@@ -46,7 +58,11 @@ public final class WaitingRoom {
     private final CupSession session;
     private final Supplier<Collection<Player>> players;
     private final int minimum;
+    private final int maximum;
+    private final @Nullable LobbyTransition lobby;
     private final WaitingSpawn spawn;
+    private final LobbyHud hud;
+    private final Supplier<Instance> firstMapInstance;
     private boolean racersSinceStart;
     private boolean running;
 
@@ -54,22 +70,41 @@ public final class WaitingRoom {
      * @param session the cup the room starts, cancels and aborts
      * @param players everyone online, read on every tick
      * @param minimum how many racers a cup needs to start; at least one
-     * @param spawn where a racer is placed when a finished cup returns the room to waiting
-     * @throws IllegalArgumentException if {@code minimum} is below one
+     * @param maximum how many racers make a full server; at least one. It sets the join line and the full-lobby
+     *     countdown, and it never refuses a racer
+     * @param lobby   the lobby world finished racers return to, or {@code null} when none is configured
+     * @param spawn   where a racer is placed when a finished cup returns the room to waiting and there is no lobby
+     * @param hud     the boss bar, one per racer
+     * @param firstMapInstance the instance of the first map of the current catalogue. With no lobby the racers wait in
+     *     it, so the bar is shown there; it is read only in that case
+     * @throws IllegalArgumentException if {@code minimum} or {@code maximum} is below one
      */
-    public WaitingRoom(CupSession session, Supplier<Collection<Player>> players, int minimum, WaitingSpawn spawn) {
+    public WaitingRoom(CupSession session, Supplier<Collection<Player>> players, int minimum, int maximum,
+            @Nullable LobbyTransition lobby, WaitingSpawn spawn, LobbyHud hud, Supplier<Instance> firstMapInstance) {
         if (minimum < 1) {
             throw new IllegalArgumentException("the minimum racer count must be at least 1, was %s".formatted(minimum));
+        }
+        if (maximum < 1) {
+            throw new IllegalArgumentException("the maximum racer count must be at least 1, was %s".formatted(maximum));
         }
         this.session = session;
         this.players = players;
         this.minimum = minimum;
+        this.maximum = maximum;
+        this.lobby = lobby;
         this.spawn = spawn;
+        this.hud = hud;
+        this.firstMapInstance = firstMapInstance;
     }
 
     /** How many racers a cup needs to start. */
     public int minimum() {
         return minimum;
+    }
+
+    /** The lobby world waiting racers stand in, or empty when none is configured and they stand at the first map. */
+    public Optional<LobbyTransition> lobby() {
+        return Optional.ofNullable(lobby);
     }
 
     /**
@@ -88,15 +123,29 @@ public final class WaitingRoom {
     }
 
     /**
-     * A racer has joined and been prepared. A racer who joins a cup that is racing is told so, and waits for the next
-     * map. A racer who joins while the countdown runs is part of the start and is told nothing.
+     * A racer has joined and been prepared. Every racer online is told who joined and how many are online against the
+     * maximum; a racer who joins a cup that is racing is also told that the cup is running and that they join at the
+     * next map. A racer who joins while the countdown runs is part of the start and is told nothing more.
+     *
+     * <p>A join is never refused, whatever the count: the maximum is soft (ADR-0029).
      *
      * @param racer the racer who joined
      */
     public void joined(Player racer) {
+        Collection<Player> online = players.get();
+        online.forEach(other -> other.sendMessage(Messages.playerJoined(racer.getUsername(), online.size(), maximum)));
         if (session.situation(StartGate.COMMIT_WINDOW) == StartGate.Situation.RUNNING) {
             racer.sendMessage(Messages.joinedMidCup());
         }
+    }
+
+    /**
+     * A racer has left: their lobby bar is dropped with them.
+     *
+     * @param playerId the racer who disconnected
+     */
+    public void left(UUID playerId) {
+        hud.forget(playerId);
     }
 
     /**
@@ -111,7 +160,11 @@ public final class WaitingRoom {
         if (running && !session.running() && session.cupFinished()) {
             for (Player racer : online) {
                 Racers.hold(racer);
-                spawn.place(racer);
+            }
+            if (lobby != null) {
+                lobby.returnTo(online);
+            } else {
+                online.forEach(spawn::place);
             }
         }
 
@@ -138,18 +191,52 @@ public final class WaitingRoom {
             }
         }
         running = session.running();
+        shortenIfFull(session.situation(StartGate.COMMIT_WINDOW), count);
         announce(session.situation(StartGate.COMMIT_WINDOW), online, count);
     }
 
-    /** What each racer sees this tick: the waiting count, or the countdown, or nothing while racing. */
+    /** A full server shortens a countdown that has more than the full-lobby length left; see {@link StartGate}. */
+    private void shortenIfFull(StartGate.Situation situation, int count) {
+        StartGate.shortenedCountdown(situation, session.lobbyRemaining(), count, maximum)
+                .ifPresent(session::shortenLobby);
+    }
+
+    /**
+     * What each racer sees this tick on the boss bar: the waiting count, or the countdown, while they stand where the
+     * racers wait. That is the lobby world when one is configured. With no lobby they wait in the first map, and the
+     * bar is shown there until the start is committed: from then on the race's own bar is the only one, as it is with a
+     * lobby once the racer has entered the first map. A racing cup shows no waiting bar.
+     */
     private void announce(StartGate.Situation situation, Collection<Player> online, int count) {
-        Consumer<Player> show = switch (situation) {
-            case WAITING -> racer -> racer.sendActionBar(Messages.lobbyWaiting(count, minimum));
-            case COUNTDOWN, COMMITTED -> racer -> racer.sendActionBar(Messages.lobbyCountdown(session.lobbyRemaining()));
-            case RUNNING -> racer -> {
-                // A racing cup shows its own HUD; the room says nothing.
-            };
+        Component title = waitingTitle(situation, count);
+        Instance waitingPlace = lobby != null ? lobby.instance() : firstMapInstance.get();
+        float progress = situation == StartGate.Situation.WAITING ? 1.0f : countdownFraction();
+        for (Player racer : online) {
+            if (title == null) {
+                hud.hide(racer);
+            } else {
+                hud.update(racer, waitingPlace, title, progress);
+            }
+        }
+    }
+
+    /** The line the bar reads in this situation, or {@code null} when no waiting bar is shown. */
+    private @Nullable Component waitingTitle(StartGate.Situation situation, int count) {
+        return switch (situation) {
+            case WAITING -> Messages.lobbyBossBarWaiting(count, minimum);
+            case COUNTDOWN -> Messages.lobbyBossBarCountdown(session.lobbyRemaining());
+            case COMMITTED -> lobby != null ? Messages.lobbyBossBarCountdown(session.lobbyRemaining()) : null;
+            case RUNNING -> null;
         };
-        online.forEach(show);
+    }
+
+    /** The fraction of the running lobby that is left, from zero to one. */
+    private float countdownFraction() {
+        Duration length = session.lobbyLength();
+        if (length.isZero() || length.isNegative()) {
+            return 0.0f;
+        }
+        double fraction = (double) session.lobbyRemaining().toMillis() / length.toMillis();
+        return (float) Math.min(1.0, Math.max(0.0, fraction));
     }
 }

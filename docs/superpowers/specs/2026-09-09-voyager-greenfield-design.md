@@ -411,9 +411,13 @@ decisions; it translates.
 ### Velocity authority
 
 Nobody sets velocity during normal flight. The client flies; the server simulates
-silently alongside. Velocity is emitted only for external forces: firework boost, ring
-BOOST/SLOW, out-of-bounds reset. This matches Minestom, which deliberately discards the
-physics result for players and leaves the client authoritative.
+silently alongside. Velocity is emitted only for external forces, and there are two
+senders: a zero when a map ends and when a racer is reset (both through the velocity
+exit), and the ring BOOST/SLOW effect once it exists. A firework boost is not a velocity:
+the rocket is a real entity the client boosts with. The take-off is the client's: the
+racer deploys the elytra themselves and no launch impulse is given (ADR-0028). This
+matches Minestom, which deliberately discards the physics result for players and leaves
+the client authoritative.
 
 The velocity exit is a **single class**. `Vec3` cannot hold NaN, and the boundary
 conversion additionally asserts finiteness before anything reaches Minestom.
@@ -968,9 +972,11 @@ permissions across the network, reading service snapshots — that is a separate
 `voyager-cloudnet-bridge`, packaged as its own extension jar and published unshaded. It is the only
 module permitted to reference `eu.cloudnetservice..`, every such dependency in it is `compileOnly`,
 and its `extension.json` declares `"dependencies": ["CloudNet_Bridge"]` so it loads after the bridge
-and shares its classloader hierarchy. The application and the extension exchange only JDK types
-declared in `voyager-api`. This module is **not** part of E4 and is deliberately deferred; it is
-specified here so the `compileOnly` boundary is decided before someone reaches for it in a hurry.
+and shares its classloader hierarchy. The application and the extension exchange only the permission
+pointer that every player carries, which is Adventure's type; the extension names no Voyager type.
+**Status (2026-10-11):** the owner brought this module forward. It is in progress under the change
+`add-cloudnet-deployment` and ADR-0026, and it is no longer deferred. It is still outside E4's scope
+and is built as the ninth module, and the `compileOnly` boundary is enforced by `CloudNetBoundaryTest`.
 
 **Template cut**, following the lifecycle boundary from the first table:
 

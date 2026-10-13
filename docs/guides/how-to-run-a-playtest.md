@@ -17,12 +17,37 @@ A cup starts only when enough racers are online. The minimum comes from `VOYAGER
 An explicit value wins in both modes. A value that is not a whole number, or is below 1, refuses the start and names
 `VOYAGER_MIN_PLAYERS` in the log.
 
+## Set the lobby and the maximum
+
+Waiting racers stand in a lobby world, which the server loads at boot. Two settings name it, and both are needed
+together:
+
+| Setting | What it sets |
+|---|---|
+| `VOYAGER_LOBBY_WORLD` | The lobby's world directory name, under the worlds directory. |
+| `VOYAGER_LOBBY_SPAWN` | The spot a waiting racer stands on, as `x,y,z` in block coordinates. |
+| `VOYAGER_MAX_PLAYERS` | The maximum racer count, 16 when not set. It sets the join line and the full-lobby countdown, and it refuses no one. |
+
+Without a lobby world the server warns once at boot and waiting racers stand at the first map's spawn. The boss bar is
+then shown there too, until the start is committed. A lobby world must not be a map's world. The lobby is checked at
+boot like a map's world, so a missing folder stops the start before anyone can join. The lobby world is never written.
+
+The lobby world is operator data. It is not in the repository, so a playtest on a machine without it runs with the
+fallback.
+
 ## Start the server
 
 For a playtest with two racers on a development machine:
 
 ```bash
 ./gradlew :voyager:server:runServerDev -PminPlayers=2
+```
+
+The shipped data holds two cups, `alpha_cup` and `legacy_cup`, so name the one to play. Without a name the server
+refuses to boot as ambiguous:
+
+```bash
+./gradlew :voyager:server:runServerDev -PminPlayers=2 -Pcup=legacy_cup
 ```
 
 Dev mode also shortens the lobby to 10 seconds and the results screen to 5 seconds, and it registers `/race start` and
@@ -39,16 +64,19 @@ the same address.
 
 | Moment | What the racer sees |
 |---|---|
-| Joined, fewer racers online than the minimum | An action bar line: `Waiting for racers: <online> of <needed> online`. The racer stands on the first map's spawn with no elytra and no rockets. |
-| The minimum is met | The first map's lobby starts. The action bar counts it down in whole seconds: `Cup starts in <n> s`. |
-| The last three seconds of the lobby | The digits 3, 2, 1 and `GO` are shown, and the racer is placed on the spawn facing the first ring. |
+| Anyone joins | Every racer online is told in chat: `<name> joined the game (<online>/<maximum>)`. |
+| Joined, fewer racers online than the minimum | A boss bar: `Waiting for racers: <online> of <needed> online`. The racer stands at the lobby spawn with no elytra and no rockets. |
+| The minimum is met | The lobby starts. The boss bar counts it down in whole seconds: `Cup starts in <n> s`, and its fill is the part of the lobby left. |
+| The server reaches its maximum during the countdown | The countdown is shortened to 10 seconds from that moment. It is never lengthened, and a committed start is not shortened. |
+| The last three seconds of the lobby | The digits 3, 2, 1 and `GO` are shown, and the racer is placed on the spawn facing the first ring with the elytra and the rockets in hand. |
+| GO | The racer is released, not launched. The subtitle `Jump, then deploy your elytra.` appears with the title. The racer jumps and deploys the elytra; a rocket is refused until the racer is gliding, so the rocket comes after the deployment. |
 | A racer leaves before the last three seconds | The lobby is cancelled and the room returns to waiting. The remaining racers are told `Start cancelled: <online> of <needed> racers online. Waiting for more.` A new countdown starts from its full length once the minimum is met again. |
-| A racer leaves in the last three seconds | The start is committed. The first map launches for the racers still online. |
+| A racer leaves in the last three seconds | The start is committed. The first map starts for the racers still online, and they are released at GO. |
 | A racer joins while a map is racing | The racer is told `A cup is running. You join at the next map.` and enters the next map when it starts. |
 | The last racer leaves a running cup | The cup stops without a result, and the room waits for the minimum again. |
 | A racer is still flying when a map's race time ends | That map is scored as DNF: ring points only. |
-| The cup finishes and enough racers are still online | The racers are returned to the first map's spawn, and the next countdown begins without any operator action. |
-| The cup finishes and too few racers are online | The racers are returned to the first map's spawn and the room waits. |
+| The cup finishes and enough racers are still online | The racers are returned to the lobby spawn, and the next countdown begins without any operator action. |
+| The cup finishes and too few racers are online | The racers are returned to the lobby spawn and the room waits. |
 
 ## Check the state from the console
 
@@ -84,4 +112,5 @@ These commands are not registered on a production run.
 
 - [Configuration check](../reference/config-check.md) for the settings the server validates.
 - [Local testing](local-testing.md) for the earlier server setup.
-- [ADR-0022](../decisions/0022-waiting-lobby-in-first-map.md) for why a cup waits in the first map's world.
+- [ADR-0029](../decisions/0029-dedicated-lobby-world-for-waiting-racers.md) for why waiting racers stand in a lobby world.
+- [ADR-0022](../decisions/0022-waiting-lobby-in-first-map.md), superseded by ADR-0029, for the earlier placement.

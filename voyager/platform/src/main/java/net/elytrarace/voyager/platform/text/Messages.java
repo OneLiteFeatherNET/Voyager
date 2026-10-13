@@ -41,12 +41,16 @@ public abstract class Messages {
     private static final String COUNTDOWN_DIGIT = "voyager.countdown.digit";
     private static final String COUNTDOWN_SUBTITLE = "voyager.countdown.subtitle";
     private static final String COUNTDOWN_GO = "voyager.countdown.go";
+    private static final String GO_JUMP = "voyager.race.go.jump";
     private static final String MAP_BANNER = "voyager.map.banner";
     private static final String RACE_FINISHED = "voyager.race.finished";
     private static final String JOINED_MID_CUP = "voyager.race.joined.midcup";
     private static final String LOBBY_WAITING = "voyager.lobby.waiting";
     private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
+    private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
+    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting";
+    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown";
     private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
     private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
     private static final String RESET_TARGET_RING = "voyager.reset.target.ring";
@@ -151,6 +155,12 @@ public abstract class Messages {
         return Component.translatable(COUNTDOWN_GO);
     }
 
+    /** The subtitle under GO: how the racer takes off. */
+    @Contract(pure = true)
+    public static Component goJump() {
+        return Component.translatable(GO_JUMP);
+    }
+
     /** The line that announces a map, broadcast when its countdown begins. */
     @Contract(pure = true)
     public static Component mapBanner(int mapNumber, int mapCount, String mapName, int ringCount,
@@ -198,6 +208,31 @@ public abstract class Messages {
     public static Component lobbyCountdown(Duration remaining) {
         long millis = Math.max(0L, remaining.toMillis());
         return Component.translatable(LOBBY_COUNTDOWN,
+                Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
+    }
+
+    /**
+     * Sent to every online racer when a racer joins: who joined, how many are online now, and the maximum.
+     *
+     * <p>The maximum is soft (ADR-0029): a join past it is announced with the count above the maximum, not refused.
+     */
+    @Contract(pure = true)
+    public static Component playerJoined(String name, int online, int maximum) {
+        return Component.translatable(LOBBY_PLAYER_JOIN,
+                Component.text(name), Component.text(online), Component.text(maximum));
+    }
+
+    /** The lobby boss bar while the minimum is not met: how many racers are online and how many are needed. */
+    @Contract(pure = true)
+    public static Component lobbyBossBarWaiting(int online, int needed) {
+        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(online), Component.text(needed));
+    }
+
+    /** The lobby boss bar during the start countdown: the whole seconds left, rounded up, as the action bar had them. */
+    @Contract(pure = true)
+    public static Component lobbyBossBarCountdown(Duration remaining) {
+        long millis = Math.max(0L, remaining.toMillis());
+        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN,
                 Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
     }
 

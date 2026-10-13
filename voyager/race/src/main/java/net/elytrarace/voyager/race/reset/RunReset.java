@@ -70,7 +70,7 @@ public abstract class RunReset {
      * step along its flow normal. With none, the racer goes to the spawn and faces the first ring, as a
      * map start does. In both cases the run keeps every ring it has passed, and loses only the fields that
      * describe the tick that produced it: the segment for the next tick, the ring passed on it, and the
-     * glide, so that the relaunch is not a landing.
+     * glide, so that a racer placed without one is not a landing.
      *
      * @throws RunNotResettableException if {@code run} has finished
      */

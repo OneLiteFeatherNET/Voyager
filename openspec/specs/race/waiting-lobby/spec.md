@@ -35,37 +35,45 @@ to 2 and to 1 when `voyager.dev` is set. An explicit value SHALL override the de
 - **WHEN** the server starts with `voyager.dev` and `VOYAGER_MIN_PLAYERS=3`
 - **THEN** the minimum racer count is 3
 
-### Requirement: Waiting racers stand on the first map's spawn without flight equipment
-**MoSCoW:** Must. WHILE no cup is running, THE SYSTEM SHALL hold each online racer in the first map's world of the
-current catalogue at that map's spawn, without elytra and without rockets. THE SYSTEM SHALL NOT create a lobby world.
-
-#### Scenario: A racer waits on the spawn
-- **WHEN** a racer joins while no cup is running
-- **THEN** the racer stands at the first map's spawn with no elytra and no rockets in the inventory
-
-#### Scenario: No world is created for the waiting room
-- **WHEN** the server starts with a catalogue of two maps
-- **THEN** the waiting room uses the first map's world and no world beyond the cup's maps is opened
-
 ### Requirement: Waiting racers are told how many are online and how many are needed
-**MoSCoW:** Must. WHILE the minimum is not met, THE SYSTEM SHALL show every waiting racer the number of racers online
-and the number needed to start.
+**MoSCoW:** Must. WHILE the minimum is not met, THE SYSTEM SHALL show every waiting racer, on the boss bar described in
+"The room shows the count and the countdown on a boss bar", the number of racers online and the number needed to start.
+THE SYSTEM SHALL NOT use the action bar for this line.
 
 #### Scenario: Count shown while waiting
 - **WHEN** one racer of a minimum of two is online and waiting
-- **THEN** the racer is shown that one racer is online and that two are needed
+- **THEN** the racer's boss bar states that one racer is online and that two are needed, and the action bar stays empty
 
 ### Requirement: The start countdown is the first map's lobby
 **MoSCoW:** Must. WHEN a cup starts from waiting, THE SYSTEM SHALL play the first map's lobby for the lobby length of
-the run's race timings, with the existing three-digit countdown and the launch on the tick the lobby ends.
+the run's race timings, with the existing three-digit countdown. ON the GO tick, THE SYSTEM SHALL release each racer to
+fly on their own: THE SYSTEM SHALL give no velocity and SHALL NOT set the racer gliding, and the racer keeps the elytra
+and rockets given during the countdown.
 
 #### Scenario: Production countdown length
 - **WHEN** the minimum is met at the start of a production run
-- **THEN** the first map launches 20 seconds later, with the countdown digits shown in its last three seconds
+- **THEN** the first map's GO tick comes 20 seconds later, with the countdown digits shown in its last three seconds
 
 #### Scenario: Dev countdown length
 - **WHEN** the minimum is met under dev mode
-- **THEN** the first map launches 10 seconds later
+- **THEN** the first map's GO tick comes 10 seconds later
+
+#### Scenario: GO gives no impulse
+- **WHEN** the GO tick of the first map is reached
+- **THEN** each racer's velocity is zero and the racer is not gliding
+
+#### Scenario: Racer keeps the equipment at GO
+- **WHEN** the GO tick of a map is reached
+- **THEN** each racer still holds the elytra in the chest slot and the rockets in the hotbar
+
+#### Scenario: GO tells the racer how to take off
+- **WHEN** the GO tick of a map is reached
+- **THEN** each racer is shown the GO title and, in the same tick, a subtitle telling them to jump and deploy the elytra
+  (translation key `voyager.race.go.jump`)
+
+#### Scenario: Racer takes off by deploying the elytra
+- **WHEN** a racer on the GO tick deploys the elytra
+- **THEN** the racer is gliding from that tick, and the race clock is the one that started on GO
 
 ### Requirement: Dropping below the minimum cancels the countdown before its last three seconds
 **MoSCoW:** Must. IF the online racer count falls below the minimum during the first map's lobby AND more than three
@@ -113,16 +121,17 @@ announcing a cup result, and return the room to waiting.
 - **THEN** the cup stops, no cup result is announced, and the room is waiting for the minimum again
 
 ### Requirement: A finished cup returns the room to waiting
-**MoSCoW:** Must. WHEN a cup finishes, THE SYSTEM SHALL return the room to waiting. IF enough racers are still online,
-THE SYSTEM SHALL begin the next cup's countdown without an operator's action.
+**MoSCoW:** Must. WHEN a cup finishes, THE SYSTEM SHALL return the room to waiting. THE SYSTEM SHALL hold each racer in
+the lobby world at the lobby spawn, without flight equipment. IF enough racers are still online, THE SYSTEM SHALL begin
+the next cup's countdown without an operator's action.
 
 #### Scenario: The next cup starts on its own
 - **WHEN** a two-map cup finishes while two racers are online and the minimum is two
-- **THEN** the next cup's countdown begins and the racers are placed at the first map's spawn
+- **THEN** the next cup's countdown begins and the racers are placed at the lobby spawn of the lobby world
 
 #### Scenario: The next cup waits for enough racers
 - **WHEN** a cup finishes while one racer is online and the minimum is two
-- **THEN** the room waits for a second racer and no countdown begins
+- **THEN** the room waits for a second racer, the racer stands at the lobby spawn, and no countdown begins
 
 ### Requirement: A racer who has not finished when a map ends is recorded as DNF
 **MoSCoW:** Must. WHEN a map's race phase ends and a racer has not crossed the finish, THE SYSTEM SHALL score that
@@ -171,3 +180,84 @@ specifies, and the lobby gate SHALL NOT change the tick order of that capability
 #### Scenario: The golden scenarios still pass
 - **WHEN** the cup-session golden master scenarios run after this change
 - **THEN** every transcript equals its committed golden file byte for byte
+
+### Requirement: Waiting racers stand in the lobby world without flight equipment
+**MoSCoW:** Must. WHILE no cup is running, THE SYSTEM SHALL hold each online racer in the lobby world named by the
+server's lobby setting, at the lobby spawn, without elytra and without rockets. THE SYSTEM SHALL NOT place a waiting racer
+in the world of a catalogue map.
+
+#### Scenario: A racer waits in the lobby world
+- **WHEN** a racer joins while no cup is running and a lobby world is configured
+- **THEN** the racer stands at the lobby spawn of the lobby world, with no elytra and no rockets in the inventory
+
+#### Scenario: A waiting racer is not in a map's world
+- **WHEN** the room is waiting with two racers online
+- **THEN** no racer is in the world of any catalogue map
+
+### Requirement: Joining racers are announced in chat with the online count
+**MoSCoW:** Must. WHEN a racer joins, THE SYSTEM SHALL send every online racer the chat line
+`<name> joined the game (x/y)`, where x is the number of racers online after the join and y is the maximum racer count.
+This applies whether a cup is running or not.
+
+#### Scenario: The first racer joins
+- **WHEN** the first racer joins an empty server whose maximum is sixteen
+- **THEN** the chat line reads that the racer joined the game (1/16)
+
+#### Scenario: A racer joins a running cup
+- **WHEN** a racer joins while a map is racing and three racers are online with a maximum of sixteen
+- **THEN** every online racer receives the join line (4/16), and the joining racer is also told that the cup is running
+
+### Requirement: The room shows the count and the countdown on a boss bar
+**MoSCoW:** Must. WHILE a racer is in the lobby world, THE SYSTEM SHALL show that racer a boss bar stating the waiting
+count and the maximum, or the seconds left of the start countdown. Where no lobby world is configured, THE SYSTEM SHALL
+show the same bar to a waiting racer in the first map until the start is committed. THE SYSTEM SHALL update the boss
+bar when its text or its progress changes, and SHALL hide it when the racer leaves the lobby world, or, without a lobby,
+when the start is committed.
+
+#### Scenario: The boss bar shows the waiting count
+- **WHEN** one racer of a minimum of two is online and waiting
+- **THEN** the racer's boss bar reads that one of two racers is online, and the bar stays until the racer leaves the lobby world
+
+#### Scenario: The boss bar shows the countdown
+- **WHEN** the minimum is met and ten seconds of the lobby remain
+- **THEN** the racer's boss bar reads ten seconds to the start, and its progress is the fraction of the lobby that remains
+
+#### Scenario: The boss bar leaves with the racer
+- **WHEN** the first map is entered and a racer moves out of the lobby world
+- **THEN** the lobby boss bar is hidden for that racer, and the race boss bar is the only one shown
+
+#### Scenario: The fallback boss bar shows the count and the countdown in the first map
+- **WHEN** no lobby world is configured and a racer waits at the first map's spawn with one racer of a minimum of two online
+- **THEN** the racer's boss bar reads that one of two racers is online, and when the minimum is met the same bar reads the seconds to the start
+- **AND** the bar is hidden for that racer once the start is committed, so the race boss bar is the only one shown from then on
+
+### Requirement: A full lobby shortens the start countdown
+**MoSCoW:** Must. IF the online racer count reaches the maximum racer count while the first map's lobby is counting down
+AND more than the full-lobby countdown length of that lobby remains, THEN THE SYSTEM SHALL shorten the countdown to the
+full-lobby countdown length of 10 seconds. THE SYSTEM SHALL NOT lengthen a countdown, and SHALL NOT shorten a countdown
+after the start is committed.
+
+#### Scenario: A full lobby shortens a long countdown
+- **WHEN** the sixteenth racer joins a server with a maximum of sixteen while fifteen seconds of the lobby remain
+- **THEN** the countdown is shortened to ten seconds from that tick, and the boss bar shows ten seconds
+
+#### Scenario: A short countdown is left alone
+- **WHEN** the sixteenth racer joins while six seconds of the lobby remain
+- **THEN** the countdown still ends after six seconds
+
+#### Scenario: A commit is not shortened
+- **WHEN** the lobby is full with two seconds of the lobby remaining
+- **THEN** the countdown is unchanged and the start remains committed
+
+#### Scenario: A racer leaving does not restore the longer countdown
+- **WHEN** the lobby was shortened to ten seconds and one racer leaves with nine seconds left
+- **THEN** the countdown is cancelled as in the cancel requirement, and when the lobby is full again the full lobby is shortened to ten seconds
+
+### Requirement: The maximum racer count does not reject a joining racer
+**MoSCoW:** Must. THE SYSTEM SHALL NOT reject a racer because the server holds the maximum racer count, whether a cup
+is running or not. The maximum racer count sets the join line and the full-lobby countdown only. A hard cap that refuses joins is not built
+in this change.
+
+#### Scenario: A join beyond the maximum is accepted
+- **WHEN** a seventeenth racer joins a server whose maximum is sixteen
+- **THEN** the connection is accepted, the join line reads (17/16), and the racer waits in the lobby world

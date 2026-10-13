@@ -72,7 +72,7 @@ pass a `voyager-platform` or composition-root type to the bridge.
 
 #### Scenario: Platform type in the bridge
 - **WHEN** a class in `net.elytrarace.voyager.cloudnet.bridge..` imports `net.elytrarace.voyager.platform..`
-- **THEN** the fitness rule `bridgeDependsOnlyOnApi` fails and names the class
+- **THEN** the fitness rule `bridgeDependsOnlyOnJdkAndLibraries` fails and names the class
 
 ### Requirement: Both roots start the extension bootstrap before binding
 **Priority:** MoSCoW Must

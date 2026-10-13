@@ -27,8 +27,12 @@ dependencyResolutionManagement {
             library("minecraft.cloud.minestom", "org.incendo", "cloud-minestom").version("2.0.0-SNAPSHOT")
 
             // OneLiteFeather Libraries (via aonyx-bom)
-            version("aonyx-bom", "0.7.1")
+            version("aonyx-bom", "0.8.9")
             library("aonyx.bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
+            // The tree being replaced stays on the aonyx-bom it was built against. Its Minestom is 2026.05.11-1.21.11,
+            // and aonyx-bom 0.8.9 imports mycelium-bom 1.8.9, which would move it to 26.2. Never upgrade it here.
+            version("aonyx-bom-legacy", "0.7.1")
+            library("aonyx.bom.legacy", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom-legacy")
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("xerus", "net.theevilreaper", "xerus").withoutVersion()
             library("hibernate.core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")
@@ -72,10 +76,12 @@ dependencyResolutionManagement {
 
             // LuckPerms, the optional permission backend behind the PermissionPolicy port (ADR-0024). The API is compileOnly
             // in voyager-platform. The Minestom loader is compileOnly there too, because LuckPermsBootstrap starts it, and
-            // runtimeOnly in the two composition roots only, never on a test class path. The loader is a snapshot, so the
-            // Sonatype snapshot repository is declared for net.luckperms only (see build.gradle.kts). Any bump needs owner approval.
-            version("luckperms-api", "5.5")
-            version("luckperms-minestom-loader", "5.6-SNAPSHOT")
+            // runtimeOnly in the two composition roots only, never on a test class path. Both are release artifacts of the
+            // OneLiteFeather LuckPerms fork, resolved from repo.onelitefeather.dev/releases (declared in build.gradle.kts).
+            // The loader must be 6.0.2 or newer: 6.0.1 calls ConnectionManager.getOnlinePlayers()Ljava/util/Collection;, which
+            // Minestom 2026.10.07 removed (NoSuchMethodError on boot). Any bump needs owner approval.
+            version("luckperms-api", "6.0.1")
+            version("luckperms-minestom-loader", "6.0.2")
             library("luckperms.api", "net.luckperms", "api").versionRef("luckperms-api")
             library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms-minestom-loader")
 
@@ -83,6 +89,24 @@ dependencyResolutionManagement {
             // them (spike 1.1, design.md risk R3). Pinned to the version Cygnus uses.
             version("guava", "33.7.2-jre")
             library("guava", "com.google.guava", "guava").versionRef("guava")
+
+            // CloudNet 4.0.0-RC17, the release the owner's network runs (ADR-0026). It was RC16 until 2026-10-11, the release Cygnus
+            // builds against; the extension's API calls are identical in both (javap, design.md Decision 6). Only
+            // :voyager:cloudnet-bridge compiles against it. It is never bundled: the node provides the driver, and the bridge arrives
+            // as a Minestom extension from extensions/. The bom pins the rest.
+            version("cloudnet", "4.0.0-RC17")
+            library("cloudnet.bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
+            library("cloudnet.bridge.api", "eu.cloudnetservice.cloudnet", "bridge-api").withoutVersion()
+            library("cloudnet.bridge.impl", "eu.cloudnetservice.cloudnet", "bridge-impl").withoutVersion()
+            library("cloudnet.driver.api", "eu.cloudnetservice.cloudnet", "driver-api").withoutVersion()
+
+            // The OneLiteFeather fork of the Minestom extension loader, the release Cygnus pins. Minestom 26.2 has no extension
+            // system of its own (greenfield design). The fork's ExtensionBootstrap is init(Auth) and start(host, port), see ADR-0026.
+            // The processor generates extension.json from @ExtensionInfo at compile time; its annotation has source retention.
+            version("minestom-extensions", "2.2.0")
+            library("minestom.extensions.bom", "net.onelitefeather", "minestom-extensions-bom").versionRef("minestom-extensions")
+            library("minestom.extensions", "net.onelitefeather", "minestom-extensions").withoutVersion()
+            library("minestom.extensions.processor", "net.onelitefeather", "minestom-extensions-processor").withoutVersion()
 
             bundle("hibernate", listOf("hibernate.core", "hibernate.hikaricp"))
             bundle("flyway", listOf("flyway.core", "flyway.mysql"))
@@ -111,6 +135,7 @@ include("voyager:platform")
 include("voyager:server")
 include("voyager:setup")
 include("voyager:fitness")
+include("voyager:cloudnet-bridge")
 
 // Tooling that is not part of the rebuild's module graph.
 include("tools:trace-recorder")

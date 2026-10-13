@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../../platform/src/main/resources/schema/cup.schema.json",
+  "schemaVersion": 1,
+  "name": "legacy_cup",
+  "mode": "RACE",
+  "mapNames": [
+    "palmbeach",
+    "dragonlobby",
+    "memoria"
+  ],
+  "notes": [
+    "Legacy cup 'Testing' (<rainbow>Testing Cup</rainbow>) from the old plugin: the three converted legacy maps."
+  ]
+}

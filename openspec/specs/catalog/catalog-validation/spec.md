@@ -2,14 +2,15 @@
 
 ## Purpose
 Defines the one-pass check of a Voyager catalogue and the worlds it references. The check reads every map and cup,
-verifies that each referenced world folder exists, holds region data and is sound, and reports every problem at once
-with its absolute source path and key, in a deterministic order. Only errors fail the result; warnings are listed
+verifies that the world folders of the maps it checks exist, hold region data and are sound, and reports every problem
+at once with its absolute source path and key, in a deterministic order. The whole-catalogue run checks every map's
+world; the boot run checks only the worlds of the played cup's maps. Only errors fail the result; warnings are listed
 but do not. The check needs no game client and no connected player, so it can run before the server starts.
 
 ## Requirements
 
 ### Requirement: Every catalogue and world problem is reported in one pass
-Priority: Must. When the validation runs, the system SHALL check every map, every cup and every referenced world, and SHALL report every problem it finds in one result. It SHALL NOT stop at the first problem. The catalogue problems come from the loader's reading (`CatalogLoader.read`, change `unify-catalog-loading`). Basis: NFR-007, research 005 P10.
+Priority: Must. When the validation runs, the system SHALL check every map and every cup, and SHALL report every problem it finds in one result. The whole-catalogue run SHALL also check every referenced world of every map. It SHALL NOT stop at the first problem. The catalogue problems come from the loader's reading (`CatalogLoader.read`, change `unify-catalog-loading`). Basis: NFR-007, research 005 P10.
 
 #### Scenario: two independent problems are both reported
 - **WHEN** the maps directory holds one malformed file and one map names a world folder that does not exist
@@ -18,6 +19,24 @@ Priority: Must. When the validation runs, the system SHALL check every map, ever
 #### Scenario: a valid configuration yields no errors
 - **WHEN** every map parses, every cup names only existing maps, and every map's world folder holds region data that is sound
 - **THEN** the result contains no error problems
+
+### Requirement: The boot run checks only the played cup's worlds
+Priority: Must. The boot run SHALL check the worlds of the maps of the played cup only: the cup named by the cup setting, or the only cup when no cup is named. It SHALL NOT open the world of any map that is not in the played cup. When no cup can be played, it SHALL NOT open any world. The catalogue-wide checks of JSON, schema and cup references SHALL still cover every cup.
+
+#### Scenario: a world of another cup is not opened at boot
+- **WHEN** the server is pinned to cup A and the world of a map that only cup B plays holds a region file that cannot be read
+- **THEN** the boot run reports no problem for that world and does not open it
+
+#### Scenario: the played cup's world is still checked at boot
+- **WHEN** the server is pinned to cup A and the world of a map that cup A plays holds a region file that cannot be read
+- **THEN** the boot run reports an error for that world
+
+### Requirement: At most one world is open during the check
+Priority: Must. Each world SHALL be closed before the next world is loaded, so the check holds at most one world at a time.
+
+#### Scenario: two worlds are checked in turn
+- **WHEN** the check reads the health of two worlds
+- **THEN** the first world is closed before the second is loaded, and no world is open when the second one starts
 
 ### Requirement: Each problem names its file and field
 Priority: Must. Each problem SHALL carry a source (the file path, or the setting name for a setting) and a key (the JSON field, or the setting name), and a message that says what is wrong. Paths SHALL be absolute.
@@ -42,7 +61,7 @@ Priority: Must. A map's world SHALL be reported as missing when its folder does 
 - **THEN** the folder check does not report the world
 
 ### Requirement: Every referenced world is checked for soundness
-Priority: Must. Every map's world that passes the folder check SHALL be loaded through the server's own world loader, and its `WorldHealth` SHALL be read. A world whose health is not sound (`WorldHealth.isSound()` is false) SHALL be reported as an error, and the problem SHALL name the counters that failed, as `WorldHealth.describe()` states them. The check needs no game client and no connected player.
+Priority: Must. Every map's world that passes the folder check, for each map the run checks, SHALL be loaded through the server's own world loader, and its `WorldHealth` SHALL be read. A world whose health is not sound (`WorldHealth.isSound()` is false) SHALL be reported as an error naming the failed counters, as `WorldHealth.describe()` states them.
 
 #### Scenario: a world with refused chunks is an error
 - **WHEN** a referenced world reports chunks refused for their data version

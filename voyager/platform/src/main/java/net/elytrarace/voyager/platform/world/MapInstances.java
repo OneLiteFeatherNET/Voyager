@@ -3,8 +3,8 @@ package net.elytrarace.voyager.platform.world;
 import net.elytrarace.voyager.platform.catalog.WorldOpener;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.platform.world.exception.UnreadableRegionException;
+import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.world.DimensionType;
 import net.onelitefeather.falco.anvil.AnvilDiagnostics;
@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,8 +73,16 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
     private static final Pattern REGION_FILE = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
     private static final int CHUNKS_PER_REGION = 32;
 
+    /**
+     * How long an unregister waits for a chunk load that is still in flight before it goes ahead anyway. A chunk
+     * load takes milliseconds, so a load still running after this is hung rather than slow, and a shutdown must
+     * not hang with it.
+     */
+    private static final Duration CHUNK_LOAD_WAIT = Duration.ofSeconds(10);
+
     private final InstanceManager instanceManager;
     private final Path worldsRoot;
+    private final Duration chunkLoadWait;
     private final Map<String, LoadedWorld> loaded = new ConcurrentHashMap<>();
 
     /**
@@ -82,8 +92,18 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
      *                        {@code dimensions/}, not to {@code region/} itself
      */
     public MapInstances(InstanceManager instanceManager, Path worldsRoot) {
+        this(instanceManager, worldsRoot, CHUNK_LOAD_WAIT);
+    }
+
+    /**
+     * @param chunkLoadWait the longest an unregister waits for a chunk load still in flight; a test passes a bound
+     *                      it can reach without waiting
+     */
+    @VisibleForTesting
+    MapInstances(InstanceManager instanceManager, Path worldsRoot, Duration chunkLoadWait) {
         this.instanceManager = instanceManager;
         this.worldsRoot = worldsRoot;
+        this.chunkLoadWait = chunkLoadWait;
     }
 
     /**
@@ -129,6 +149,11 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
      * Reads every chunk the world's region files cover, so {@link #healthOf(String)} reports what the
      * world really holds rather than what happened to be asked for.
      *
+     * <p>Each region is released as soon as it has been read: its chunks are unloaded before the walk moves
+     * on, so the walk holds one region's chunks at a time rather than the whole world's. The loader's
+     * counters are unaffected by the release, and nothing is saved; see {@link #close()}. A world of tens of
+     * thousands of chunks kept whole would be the heap's largest single cost during the configuration check.
+     *
      * <p>A chunk with no data behind it is counted as skipped, not as an error, so the walk over a
      * sparse region file costs little more than the chunks that exist. Used by the configuration check
      * only; the race server loads chunks as players reach them.
@@ -159,10 +184,46 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
                     }
                 } catch (CompletionException exception) {
                     throw new UnreadableRegionException(world, file, exception.getCause() == null ? exception : exception.getCause());
+                } finally {
+                    releaseRegion(entry.instance(), firstChunkX, firstChunkZ);
                 }
             }
         } catch (IOException exception) {
             throw new UncheckedIOException("cannot list the region directory %s".formatted(regionDirectory), exception);
+        }
+    }
+
+    /**
+     * Checks one world the way the configuration check needs it: reads every chunk, reports the health, and
+     * closes the world before it returns. Nothing of the world is open or registered afterwards, so a check
+     * over several worlds holds one at a time.
+     *
+     * @param world the world directory's name
+     * @return the world's health after the full read
+     * @throws UnknownWorldException if no region data sits behind the name
+     * @throws UnreadableRegionException if a chunk in a region file cannot be read; the message names the file
+     */
+    public WorldHealth checkWorld(String world) {
+        try {
+            readEveryChunk(world);
+            return healthOf(world);
+        } finally {
+            discard(world);
+        }
+    }
+
+    /**
+     * Unloads the chunks of one region that the walk loaded. Only the chunks that are present are unloaded:
+     * Minestom's {@code unloadChunk(int, int)} refuses an absent one, and most of a sparse region is absent.
+     */
+    private static void releaseRegion(Instance instance, int firstChunkX, int firstChunkZ) {
+        for (int chunkX = firstChunkX; chunkX < firstChunkX + CHUNKS_PER_REGION; chunkX++) {
+            for (int chunkZ = firstChunkZ; chunkZ < firstChunkZ + CHUNKS_PER_REGION; chunkZ++) {
+                Chunk chunk = instance.getChunk(chunkX, chunkZ);
+                if (chunk != null) {
+                    instance.unloadChunk(chunk);
+                }
+            }
         }
     }
 
@@ -199,6 +260,7 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
         if (entry == null) {
             return;
         }
+        awaitChunkLoads(world, entry);
         RuntimeException failure = null;
         try {
             instanceManager.unregisterInstance(entry.instance());
@@ -239,6 +301,7 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
         for (Map.Entry<String, LoadedWorld> cached : loaded.entrySet()) {
             String world = cached.getKey();
             LoadedWorld entry = cached.getValue();
+            awaitChunkLoads(world, entry);
 
             // Both steps keep going past a failure, for the same reason: a shutdown that stops at
             // the first world leaves every loader after it holding its region files open, and the
@@ -263,6 +326,21 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
 
         if (failure != null) {
             throw failure;
+        }
+    }
+
+    /**
+     * Waits, for a bounded time, for the chunk loads a world has in flight, before the world is unregistered.
+     *
+     * <p>Minestom caches a loaded chunk on its own thread without the instance's monitor, so an unregister that
+     * runs under a load iterates a map that load is still writing. Past the bound the unregister goes ahead and
+     * the world is logged as having gone with loads still running, rather than hanging a shutdown on a load that
+     * will not finish.
+     */
+    private void awaitChunkLoads(String world, LoadedWorld entry) {
+        if (!entry.loads().awaitQuiet(chunkLoadWait)) {
+            LOGGER.warn("world '{}' is unregistering with chunk loads still in flight after {}; they may fail",
+                    world, chunkLoadWait);
         }
     }
 
@@ -378,11 +456,13 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
             throw failure;
         }
 
-        InstanceContainer instance = instanceManager.createInstanceContainer(DimensionType.OVERWORLD);
+        InFlightChunkLoads loads = new InFlightChunkLoads();
+        TrackingInstance instance = new TrackingInstance(UUID.randomUUID(), DimensionType.OVERWORLD, loads);
+        instanceManager.registerInstance(instance);
         instance.setChunkLoader(loader);
         instance.enableAutoChunkLoad(true);
         return new LoadedWorld(instance, loader, diagnostics, new AtomicBoolean(),
-                regionFingerprint(loader.regionDirectory()));
+                regionFingerprint(loader.regionDirectory()), loads);
     }
 
     private static FalcoAnvilLoader buildLoader(Path worldRoot) {
@@ -426,6 +506,6 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
     }
 
     private record LoadedWorld(Instance instance, FalcoAnvilLoader loader, AnvilDiagnostics diagnostics,
-                               AtomicBoolean unknownBlocksReported, String fingerprint) {
+                               AtomicBoolean unknownBlocksReported, String fingerprint, InFlightChunkLoads loads) {
     }
 }
