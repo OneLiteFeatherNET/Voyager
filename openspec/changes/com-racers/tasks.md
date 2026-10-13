@@ -53,10 +53,10 @@ Effort for this group: medium (Haiku). The body is the primary PLAYER entity (D2
 - [x] 4.2 Green: add `ComNames` with `nameOf(seat)`, `isComputer(uuid)`, and the seat ids derived from the round seed and the seat index (`feat(race)`). Effort: low (Haiku).
 - [x] 4.3 Red: `ComBodyTest` on a fresh Minestom instance with explicit ticks names the behaviours "a body spawns in its instance at its position", "a teleport moves the body on the next tick", "removal despawns the body", and "the body shows its custom name" (`feat(race)`). If `voyager-platform` has no Minestom testing dependency, the same commit adds it (`feat(race)`). Effort: medium (Haiku).
 - [x] 4.4 Green: add `ComBody`, wrapping `new Entity(EntityType.PLAYER, uuid)` with a `PlayerMeta` and a custom name (`feat(race)`). The armour stand fallback is used only if the owner playtest finds the body hidden. Effort: medium (Haiku).
-- [ ] 4.5 Red: `ComTabListTest` names the behaviours "every human gets the add entry before a body spawns", "a human who joins mid-cup gets the entries of the current bodies", and "dismiss sends the remove entries" (`feat(race)`). Effort: medium (Haiku).
-- [ ] 4.6 Green: add `ComTabList` over `PlayerInfoUpdatePacket` and `PlayerInfoRemovePacket`, with the default skin and no textures (`feat(race)`). Effort: medium (Haiku).
-- [ ] 4.7 Red: `ComFieldTest` with a fake brain and explicit ticks names the behaviours "prepare returns one id per computer racer", "advance returns positions in seat order after the humans", "dismiss removes every body and entry", "a count of zero creates nothing", and "the path for a map is built once and shared" (`feat(race)`). Effort: medium (Haiku).
-- [ ] 4.8 Green: add `ComField implements CompetitorField` over `ComRoster`, `ComPilot`, `ComPath` (cached per map), `ComBody` and `ComTabList` (`feat(race)`). Effort: medium (Haiku).
+- [x] 4.5 Red: `ComTabListTest` names the behaviours "every human gets the add entry before a body spawns", "a human who joins mid-cup gets the entries of the current bodies", and "dismiss sends the remove entries" (`feat(race)`). Effort: medium (Haiku).
+- [x] 4.6 Green: add `ComTabList` over `PlayerInfoUpdatePacket` and `PlayerInfoRemovePacket`, with the default skin and no textures (`feat(race)`). Effort: medium (Haiku).
+- [x] 4.7 Red: `ComFieldTest` with a fake brain and explicit ticks names the behaviours "prepare returns one id per computer racer", "advance returns positions in seat order after the humans", "dismiss removes every body and entry", "a count of zero creates nothing", and "the path for a map is built once and shared" (`feat(race)`). Effort: medium (Haiku).
+- [x] 4.8 Green: add `ComField implements CompetitorField` over `ComRoster`, `ComPilot`, `ComPath` (cached per map), `ComBody` and `ComTabList` (`feat(race)`). Effort: medium (Haiku).
 
 ## 5. server: settings, configuration check and wiring (voyager-server)
 
