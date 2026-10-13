@@ -25,8 +25,8 @@ or blocks the tick.
 
 - [x] 3.1 Red: `RaceCompletionTest` names the behaviours "a racer's counts are never negative", "a finish time is present exactly when a finish position is", "a completion lists humans only and keeps the bot count", and "a cup result's medal counts are never negative" (`feat(stats)`). Haiku effort: medium.
 - [x] 3.2 Green: add `api.stats` records `RaceCompletion`, `RacerRun`, `CupCompletion`, `CupRacerResult`, `PlayerProfile`, `LeaderboardEntry`, the ports `RaceRecorder` and `StatsReader`, and `StatsUnavailableException` with its `package-info.java` (`feat(stats)`). Haiku effort: medium.
-- [ ] 3.3 Red: `DatabaseConfigTest` names "an on database without a URL logs one WARN, names the URL and runs with stats off", "a secret prints as masked", and "a pool size outside two to twenty logs one WARN and runs with stats off" (`feat(stats)`). Haiku effort: medium.
-- [ ] 3.4 Green: add `api.config.DatabaseConfig` and `api.config.Secret` (`feat(stats)`). Haiku effort: medium.
+- [x] 3.3 Red: `DatabaseConfigTest` names "an on database without a URL logs one WARN, names the URL and runs with stats off", "a secret prints as masked", and "a pool size outside two to twenty logs one WARN and runs with stats off" (`feat(stats)`). Haiku effort: medium.
+- [x] 3.4 Green: add `api.config.DatabaseConfig` and `api.config.Secret` (`feat(stats)`). Haiku effort: medium.
 
 ## 4. platform: observation
 
