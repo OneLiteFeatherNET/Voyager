@@ -148,6 +148,7 @@ public final class VoyagerServer {
         }
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
+        ConfigCheck.comBootLine(settings).ifPresent(LOGGER::info);
 
         // Before anything can say anything. PlayerSocketConnection.writePacketSync gates the entire
         // translation path on ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which is read once, when
