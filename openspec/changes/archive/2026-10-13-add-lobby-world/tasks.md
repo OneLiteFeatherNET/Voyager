@@ -12,9 +12,15 @@ test with explicit ticks.
 
 ## 2. Operator task: the lobby world (not code; the source stays untouched)
 
-- [ ] 2.1 Copy `/mnt/projects/lab/voyager-legacy-worlds/team-build/ElytraLobby` into a run directory outside `/mnt/projects/lab`, and remove `session.lock`, `paper-world.yml` and `bluemap.id` from the copy, as the converted maps did (Skipped: operator task on the node.)
-- [ ] 2.2 Upgrade the copy to 26.2 with the vanilla server `--forceUpgrade --eraseCache --nogui`, as `converted/tools/upgrade.sh` does; record the DataVersion before and after and keep the upgrade log (Skipped: operator task on the node.)
-- [ ] 2.3 Read the spawn from the copy's `level.dat`, confirm its chunk is fully generated, and run `-Dvoyager.config.check=true` with `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN` set; record the boot memory of the held lobby world in the PR description (Skipped: operator task on the node. The smoke boots below are not this task.)
+- [x] 2.1 Copy `/mnt/projects/lab/voyager-legacy-worlds/team-build/ElytraLobby` into a run directory outside `/mnt/projects/lab`, and remove `session.lock`, `paper-world.yml` and `bluemap.id` from the copy, as the converted maps did (Done on the live node by the operator.)
+- [x] 2.2 Upgrade the copy to 26.2 with the vanilla server `--forceUpgrade --eraseCache --nogui`, as `converted/tools/upgrade.sh` does; record the DataVersion before and after and keep the upgrade log (Done on the live node by the operator.)
+- [x] 2.3 Read the spawn from the copy's `level.dat`, confirm its chunk is fully generated, and run `-Dvoyager.config.check=true` with `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN` set; record the boot memory of the held lobby world in the PR description (Done on the live node by the operator. The smoke boots below are not this task.)
+
+Operator note (2026-10-13, from the operator session): ElytraLobby was upgraded to 26.2 (DataVersion 4903) with vanilla
+`forceUpgrade`; the original is unchanged. Spawn -10,105,-39 stands on `waxed_oxidized_copper` with 2 blocks of air
+above, configured as `VOYAGER_LOBBY_SPAWN=-9.5,105,-38.5`. The lobby has 16 regions and 8676 chunks. Heap after boot is
+532 MB of 1024 MB with the lobby and 166 MB without. v1.15.0 runs live with the lobby and cups have started. The owner
+playtest (10.2) and ADR-0029 acceptance (1.2) remain open.
 
 ## 3. api: the lobby definition
 

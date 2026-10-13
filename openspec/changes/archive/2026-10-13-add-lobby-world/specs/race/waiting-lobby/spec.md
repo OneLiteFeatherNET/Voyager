@@ -66,11 +66,21 @@ This applies whether a cup is running or not.
 - **THEN** every online racer receives the join line (4/16), and the joining racer is also told that the cup is running
 
 ### Requirement: The room shows the count and the countdown on a boss bar
-**MoSCoW:** Must. WHILE a racer is in the lobby world, THE SYSTEM SHALL show that racer a boss bar stating the waiting
-count and the maximum, or the seconds left of the start countdown. Where no lobby world is configured, THE SYSTEM SHALL
-show the same bar to a waiting racer in the first map until the start is committed. THE SYSTEM SHALL update the boss
-bar when its text or its progress changes, and SHALL hide it when the racer leaves the lobby world, or, without a lobby,
-when the start is committed.
+**MoSCoW:** Must. WHILE a racer is waiting, THE SYSTEM SHALL show that racer a boss bar stating the waiting count and
+the maximum, or the seconds left of the start countdown. THE SYSTEM SHALL update the bar only when its text or progress
+changes.
+
+#### Scenario: The boss bar follows the lobby
+- **WHEN** a racer leaves the lobby world, or, without a lobby, the start is committed
+- **THEN** the racer's boss bar is hidden
+
+### Requirement: Without a lobby the boss bar shows in the first map
+**MoSCoW:** Must. Where no lobby world is configured, THE SYSTEM SHALL show the same bar to a waiting racer in the first
+map until the start is committed.
+
+#### Scenario: No lobby configured
+- **WHEN** no lobby world is configured and one racer is waiting in the first map
+- **THEN** that racer sees the boss bar until the start is committed
 
 #### Scenario: The boss bar shows the waiting count
 - **WHEN** one racer of a minimum of two is online and waiting
