@@ -15,6 +15,7 @@ import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.com.ComField;
+import net.elytrarace.voyager.platform.com.ComNames;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
@@ -35,7 +36,9 @@ import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
@@ -60,9 +63,11 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -395,6 +400,8 @@ class CupSessionGoldenMasterTest {
 
         private final Env env;
         private final MapInstances worlds;
+        /** Whether the cup has computer racers, which the transcript then records on every tick. */
+        private final int comGrid;
         private int ticks;
         private final RaceRuns runs = new RaceRuns();
         private final CatalogHolder holder;
@@ -419,6 +426,7 @@ class CupSessionGoldenMasterTest {
         private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings, int comGrid) {
             this.env = env;
             this.worlds = worlds;
+            this.comGrid = comGrid;
             this.holder = new CatalogHolder(catalog);
             MapTransition transition = new MapTransition(worlds, runs);
             CurrentMapBlocks blocks = new CurrentMapBlocks();
@@ -531,7 +539,49 @@ class CupSessionGoldenMasterTest {
                 room.tick();
             }
             env.tick();
-            transcript.end("tick " + ticks, session.describe());
+            transcript.end("tick " + ticks, session.describe() + computerRacers());
+        }
+
+        /**
+         * The computer racers on the courses, one line each in name order, with their position, rings passed and whether they
+         * finished. Read from the entities and the runs after the tick, so the transcript shows what a player would see.
+         * Empty for a cup without computer racers, so the other scenarios are unchanged.
+         */
+        private String computerRacers() {
+            if (comGrid == 0) {
+                return "";
+            }
+            List<String> lines = new ArrayList<>();
+            for (Instance instance : List.of(worlds.forWorld(RIDGE), worlds.forWorld(DUNE))) {
+                for (Entity entity : instance.getEntities()) {
+                    if (ComNames.isComputer(entity.getUuid())) {
+                        lines.add(computerLine(entity));
+                    }
+                }
+            }
+            lines.sort(Comparator.naturalOrder());
+            StringBuilder block = new StringBuilder("\ncomputer racers");
+            for (String line : lines) {
+                block.append("\n  ").append(line);
+            }
+            return block.toString();
+        }
+
+        private String computerLine(Entity entity) {
+            Pos at = entity.getPosition();
+            String name = entity.getCustomName() == null
+                    ? "none" : GsonComponentSerializer.gson().serialize(entity.getCustomName());
+            String progress = runs.of(entity.getUuid())
+                    .map(run -> "rings %d, %s".formatted(run.progress().passedCount(),
+                            run.finished() ? "finished" : "racing"))
+                    .orElse("not on the course");
+            return "%s at %s, %s, %s, %s".formatted(name, coordinate(at.x()), coordinate(at.y()),
+                    coordinate(at.z()), progress);
+        }
+
+        /** A coordinate to two decimals in the root locale, so the transcript reads the same on every machine. */
+        private static String coordinate(double value) {
+            return String.format(Locale.ROOT, "%.2f", value);
         }
 
         /** Ticks, running {@code before} ahead of each tick, until {@code stop} answers true or the budget runs out. */
