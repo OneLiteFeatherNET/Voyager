@@ -96,7 +96,7 @@ Server (`CupSessionTest`, `CupPlaythroughTest`):
   the "not implemented" list (line ~56) drops the minimum air time and the cooldown, which now exist.
 - [x] 5.2 `docs(race)`: `docs/reference/map-and-cup-files.md` notes that `CHECKPOINT` is the reset target and that a map
   with none resets to the spawn.
-- [ ] 5.3 `docs(decisions)`: write `docs/decisions/0031-checkpoint-resets-with-a-deployed-elytra.md` as a MADR 4.0 record,
+- [x] 5.3 `docs(decisions)`: write `docs/decisions/0031-checkpoint-resets-with-a-deployed-elytra.md` as a MADR 4.0 record,
   status Proposed, amending ADR-0028. The owner accepts it.
 - [ ] 5.4 `docs(decisions)`: add a status note to `docs/decisions/0028-racers-take-off-without-a-server-impulse.md` that
   points to ADR-0031 for the reset glide. The decision of no impulse is unchanged.
