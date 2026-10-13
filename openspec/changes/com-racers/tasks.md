@@ -14,7 +14,7 @@ decisions, which the join policy and the settings in groups 2 and 4 follow.
 
 - [x] 0.1 Record the owner's answers to OQ1 to OQ10 in design.md, "Owner decisions" (`docs(openspec)`). Effort: low (Haiku).
 - [x] 0.2 ADR-0035 stays Proposed (owner decision). No status change. Effort: low (Haiku).
-- [ ] 0.3 Spike S1, no commit: read the `steady-glide`, `dive-and-pull-out` and `chained-boosts` recordings in `docs/reference/elytra-physics-26.2.md`, measure the horizontal speed, the yaw and pitch change per tick and the sink rate, and write the measured cap, floor, turn bound and sink bound into design.md D14 (`docs(openspec)`). Effort: medium (Haiku). Groups 2.1 to 2.8 use these numbers; until D14 is measured they use the starting values.
+- [x] 0.3 Spike S1: measured the speed, yaw, pitch and sink of the recordings into design.md D14. Result: cap 1.7 blocks/tick (kept), floor 0.70 blocks/tick (was 0.8), yaw 0.91 deg/tick, pitch 7.23 deg/tick, sink 0.134 blocks/tick. Effort: medium (Haiku).
 - [x] 0.4 Spike S2 recorded as an owner playtest item in design.md D2 and "Owner playtest" (`docs(openspec)`). No spike test. The primary approach (PLAYER entity with a tab-list entry) is built; the armour stand (D2 option C) is the fallback if the playtest shows the body hidden. Effort: low (Haiku).
 
 ## 1. api: the difficulty value

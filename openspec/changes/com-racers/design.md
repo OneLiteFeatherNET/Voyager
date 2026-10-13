@@ -318,20 +318,31 @@ the damage of any bug in the detour to one racer. The watchdog is tested with ex
 
 ### D14. Vanilla plausibility: the speed and turn bounds
 
-The speed of a computer racer is capped at the reference speed. The reference is taken from the physics reference
-(`docs/reference/elytra-physics-26.2.md`): the rocket terminal velocity is `1.7 · lookAngle` (line 492), and the
-`chained-boosts` profile records a steady `1.6862` blocks per tick. This change uses a **reference speed of 1.7 blocks
-per tick** as the cap, so the target is `factor × personal × 1.7`, and a **floor of 0.8 blocks per tick** that the speed
-never falls below, as starting values. With the EASY factor 0.85 the EASY target is about 1.45 blocks per tick.
+The speed of a computer racer is capped at the reference speed, and never falls below the floor. The target is
+`factor × personal × cap`. Spike S1 (tasks 0.3) measured every value below from the recordings in
+`voyager/physics/src/test/resources/traces/` (tick indices are the `index` field; the `ticks` array starts at line 9 of
+each file). The physics reference (`docs/reference/elytra-physics-26.2.md`) gives the rocket terminal velocity
+`1.7 · lookAngle` at line 492 and the steady boosted speed `1.6862` at line 495.
 
-These bounds are not final. Spike S1 reads the `steady-glide`, `dive-and-pull-out` and `chained-boosts` recordings and
-records the measured per-tick horizontal speed and the sink rate. The floor and the cap are then set from the
-measurement, and the golden transcript is regenerated in the same PR.
+| Value | Unit | Decided | Measured | Source (file:line or tick) |
+|---|---|---|---|---|
+| Cap (reference speed) | blocks per tick | **1.7**, unchanged | Boosted plateau `1.68615` (peak, `chained-boosts`), `1.67161` (`single-boost`) | `chained-boosts.json` tick 45; `single-boost.json` tick 51; terminal `docs/reference/elytra-physics-26.2.md:492`; code `voyager/physics/.../ElytraSimulator.java:284-285` |
+| Floor | blocks per tick | **0.70**, was 0.8 | Glide at pitch -5 plateaus at `0.7148` (ticks 150-199 p50 `0.7086`; `0.8` is never reached) | `steady-glide.json` ticks 150-199 |
+| Yaw bound `Y` | degrees per tick | **0.91** | `0.9091` on every turning tick (99 of 200 ticks) | `sustained-turn.json` ticks 104, 123, 125 |
+| Pitch bound `P` | degrees per tick | **7.23** | `7.2222` on the climb onset (9 ticks, peak tick 45); `5.0` on dive and pull-out ramps | `climb-into-stall.json` ticks 42-48; `dive-and-pull-out.json` ticks 17-19 |
+| Vertical sink bound | blocks per tick, downward | **0.134** | `0.1337` maximum on steady glide | `steady-glide.json` tick 22; `sustained-turn.json` tick 22 |
 
-The turn rate is bounded so that yaw changes by at most `Y` degrees per tick and pitch by at most `P` degrees per tick.
-`Y` and `P` are set in spike S1 from the same recordings. Until then they are not asserted in tests.
+The floor moved from 0.8 to 0.70: a steady glide never reaches 0.8, so a floor of 0.8 would push a gliding racer faster
+than the vanilla glide. The floor changed, so the golden transcript is regenerated in the same PR. The cap is unchanged,
+so the EASY target stays about `0.85 × 1.7 = 1.45` blocks per tick.
 
-The per-tick vertical step is bounded by the reference's glide descent, the same spike.
+Two measurements are outside these bounds and are not modelled. A diving human reaches `2.35` blocks per tick without a
+rocket (`dive-and-pull-out.json` tick 122; `pitch-extremes.json` peak `2.33`), and the pull-out sinks `2.11` blocks per
+tick (`dive-and-pull-out.json` tick 100). A racer on the racing line does not dive, so the cap and the sink bound stay
+as above. Owner check: confirm that a racer may not match a human dive.
+
+The turn bound limits yaw to `Y` and pitch to `P` per tick. The vertical step is limited to `0.134` blocks per tick
+downward. None of these is asserted in a test yet.
 
 ### D15. ADR and numbering
 
