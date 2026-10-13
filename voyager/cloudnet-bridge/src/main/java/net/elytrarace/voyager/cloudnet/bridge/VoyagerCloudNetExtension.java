@@ -2,8 +2,12 @@ package net.elytrarace.voyager.cloudnet.bridge;
 
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissionChecker;
+import eu.cloudnetservice.modules.bridge.player.PlayerManager;
+import net.elytrarace.voyager.api.handoff.PlayerHandoffs;
 import net.minestom.server.extensions.Extension;
 import net.onelitefeather.minestom.extensions.processor.ExtensionInfo;
+
+import java.util.UUID;
 
 /**
  * Teaches CloudNet's bridge how Voyager resolves permissions (ADR-0026).
@@ -32,9 +36,21 @@ public final class VoyagerCloudNetExtension extends Extension {
         ServiceRegistry.registry()
                 .registerProvider(MinestomPermissionChecker.class, REGISTRATION_NAME, checker)
                 .markAsDefaultService();
+        // The hub handoff the server asks for when a cup's results have lingered (ADR-0033). Installed here, so a node with
+        // this extension sends racers to the hub and a node without it disconnects them.
+        PlayerHandoffs.SLOT.install(new CloudNetPlayerHandoff(VoyagerCloudNetExtension::connectToFallback));
     }
 
     @Override
     public void terminate() {
+    }
+
+    /**
+     * CloudNet's move of one player to the best matching fallback (bridge-api RC17). The one CloudNet call of the hub handoff.
+     *
+     * @param playerId the racer to connect
+     */
+    static void connectToFallback(UUID playerId) {
+        ServiceRegistry.registry().defaultInstance(PlayerManager.class).playerExecutor(playerId).connectToFallback();
     }
 }

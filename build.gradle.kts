@@ -68,6 +68,33 @@ val verifyNoCloudNetInFatJars by tasks.registering {
     }
 }
 
+// The bridge is loaded beside the node's CloudNet, in its own class loader. A copy of voyager-api inside the bridge jar would be a
+// second hub-handoff slot, so PlayerHandoffs would split in two and the server would never see the bridge's install (ADR-0033).
+// The bridge's own package is the only Voyager package its jar may hold.
+val bridgeProject = ":voyager:cloudnet-bridge"
+val bridgeOwnPackage = "net/elytrarace/voyager/cloudnet/bridge/"
+val verifyNoVoyagerApiInBridgeJar by tasks.registering {
+    group = "verification"
+    description = "Fails when the voyager-cloudnet-bridge jar holds a Voyager class outside its own package."
+    dependsOn("$bridgeProject:jar")
+    doLast {
+        val jar = project(bridgeProject).tasks.getByName("jar").outputs.files.singleFile
+        val offenders = ZipFile(jar).use { zip ->
+            zip.entries().asSequence()
+                .filter { !it.isDirectory }
+                .map { it.name }
+                .filter { it.startsWith("net/elytrarace/voyager/") && !it.startsWith("net/elytrarace/voyager/cloudnet/bridge/") }
+                .map { "${jar.name}: $it" }
+                .toList()
+        }
+        if (offenders.isNotEmpty()) {
+            throw GradleException("Voyager classes found in the bridge jar, which may carry only $bridgeOwnPackage:\n" +
+                offenders.joinToString("\n"))
+        }
+    }
+}
+
 tasks.named("check") {
     dependsOn(verifyNoCloudNetInFatJars)
+    dependsOn(verifyNoVoyagerApiInBridgeJar)
 }
