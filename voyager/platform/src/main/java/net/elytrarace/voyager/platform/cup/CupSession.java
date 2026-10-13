@@ -131,6 +131,7 @@ public final class CupSession implements RacePhaseListener {
     private final CupRound round = new CupRound();
     private final CupAnnouncer announcer;
     private final RunResetter resetter;
+    private final CompetitorField competitors;
 
     /**
      * The cup being played: the boot cup until a round starts, then the cup of the catalogue that round pinned.
@@ -200,7 +201,23 @@ public final class CupSession implements RacePhaseListener {
     public CupSession(CatalogHolder catalog, MapInstances instances,
             MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
             FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players) {
+        this(catalog, instances, transition, runs, flight, blocks, boosts, timings, step, players,
+                NoCompetitors.INSTANCE);
+    }
+
+    /**
+     * Builds a session that also plays the computer racers {@code competitors} reports. The same collaborators as
+     * {@link #CupSession(CatalogHolder, MapInstances, MapTransition, RaceRuns, FlightTickDriver, CurrentMapBlocks,
+     * FireworkBoostTracker, RaceTimings, Duration, Supplier)}, and the competitor port last.
+     *
+     * @param competitors the computer racers; {@link NoCompetitors} for a cup with none
+     */
+    public CupSession(CatalogHolder catalog, MapInstances instances,
+            MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
+            FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
+            CompetitorField competitors) {
         this.catalog = catalog;
+        this.competitors = competitors;
         this.cup = catalog.current().cup();
         this.instances = instances;
         this.transition = transition;
@@ -409,6 +426,7 @@ public final class CupSession implements RacePhaseListener {
             Racers.standDown(racer);
             Racers.hold(racer);
         }
+        competitors.dismiss();
         round.reset();
     }
 
@@ -466,6 +484,7 @@ public final class CupSession implements RacePhaseListener {
             announcer.announceCupResult(cup, round.order());
             currentMap = null;
             blocks.follow(null);
+            competitors.dismiss();
         }
     }
 
@@ -570,6 +589,10 @@ public final class CupSession implements RacePhaseListener {
         // every racer on the same spawn with the same fresh run.
         List<Player> racers = List.copyOf(players.get());
         transition.advanceTo(map, racers);
+        // After the transition, which empties every run: a competitor's run is started here and not carried over.
+        for (UUID competitor : competitors.prepare(mapIndex, map)) {
+            runs.startFresh(competitor);
+        }
         for (Player racer : racers) {
             RaceFeedback.go(racer);
         }
@@ -651,6 +674,14 @@ public final class CupSession implements RacePhaseListener {
             // for another four ticks is the one moment the line would be visibly wrong. A racer who was
             // sent back on this tick is shown the run they were sent back with, for the same reason.
             lines.render(racer, map, shown.progress().passedCount(), clock.gameTick());
+        }
+        // Competitors are advanced after the human loop: they are not in the players supplier, and nothing
+        // above reads their runs. A competitor the cup holds no run for is not on this course, and is skipped.
+        for (Competitor competitor : competitors.advance(clock)) {
+            if (runs.of(competitor.id()).isEmpty()) {
+                continue;
+            }
+            runs.advance(competitor.id(), map, clock, competitor.position(), competitor.gliding(), false);
         }
     }
 
