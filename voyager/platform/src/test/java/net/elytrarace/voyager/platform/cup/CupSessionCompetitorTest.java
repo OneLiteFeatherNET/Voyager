@@ -235,6 +235,27 @@ class CupSessionCompetitorTest {
                 .doesNotContain(RIVAL);
     }
 
+    @Test
+    void aComputerRacerFinishSendsOneChatLineAndNoLineForEachRing(Env env) throws IOException {
+        ScriptedField field = new ScriptedField(RIVAL, List.of(SPAWN, PAST_RING_ZERO, PAST_RING_ONE));
+        TestConnection connection = env.createConnection();
+        Player human = connection.connect(env.createFlatInstance(), new Pos(0, 41, 0));
+        humans.add(human);
+        CupSession session = openSession(env, new RaceRuns(), field, FIVE_TICK_RACE, List.of(human));
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+
+        session.start(true);
+        runToTheEnd(session);
+
+        List<TranslatableComponent> finishes = chatWithKey(chat, "voyager.com.racer.finished");
+        assertThat(finishes)
+                .as("one line for the computer racer's finish, and none for the two rings it passed on the way")
+                .hasSize(1);
+        assertThat(describe(finishes.get(0).arguments().get(0).asComponent()))
+                .as("the line names the computer racer by its seat")
+                .isEqualTo("voyager.com.racer.name(1)");
+    }
+
     /** Ticks the cup from its first phase until it reports the cup as finished, and asserts that it does. */
     private void runToTheEnd(CupSession session) {
         for (int tick = 0; tick < TICK_LIMIT && !session.cupFinished(); tick++) {
