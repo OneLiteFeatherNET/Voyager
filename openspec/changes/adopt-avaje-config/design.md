@@ -87,6 +87,39 @@ avaje-config, and the exception is written once, in `ConfigLoader.velocitySecret
 **Alternative.** Unify on "property wins" for every key. This changes the spec for one key and needs the owner's answer. It is
 owner question Q2. The change is written so that either answer is a one-line change.
 
+### Spike findings (task 2.1, avaje-config 5.2 sources)
+
+Read from the 5.2 sources jar, not from documentation. Each finding is pinned by a test or by the golden matrix.
+
+- **Builder.** `Configuration.builder().includeResourceLoading().build()` loads, in order: classpath `application.yaml` and
+  `.properties`; `application.yaml` and `.properties` in the working directory; the file named by `config.file` or `CONFIG_FILE`;
+  `load.properties`; profiles; `-P` arguments of `sun.java.command`; `~/.localdev` when `app.name` is set. The loader uses this
+  builder in production (`ConfigLoader.fromJvm`). Tests use `Configuration.builder()` without resource loading.
+- **Precedence at build time.** A value loaded from a file is replaced by the system property of the same key, and then by the
+  environment variable of that key, when either is set. A later file replaces an earlier one. Result: property > environment >
+  `CONFIG_FILE` > working-directory file > classpath.
+- **Precedence at lookup time.** A key that no file sets is looked up when first read: system property first, then environment.
+  So `VOYAGER_CUP` set only in the environment is found, and `-DVOYAGER_CUP` beats it.
+- **Environment name.** `toEnvKey(key)` is `key.replace('.', '_').replace("-", "").toUpperCase()`. It yields the existing names:
+  `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH`, `VOYAGER_WORLDS_PATH`, `VOYAGER_LOBBY_WORLD`, `VOYAGER_LOBBY_SPAWN`,
+  `VOYAGER_MAX_PLAYERS`, `VOYAGER_VELOCITY_SECRET` (for `voyager.velocity.secret`, as the spec says). The new names are
+  `SERVICE_BIND_HOST`, `SERVICE_BIND_PORT`, `VOYAGER_DEV` and `VOYAGER_CONFIG_CHECK`.
+- **Trimming and expansion.** File values are trimmed. A value that contains `${...}` is expanded when it is in the source map
+  (a file value, or a system property or environment value that replaced a file value). A system property or environment value for
+  a key no file sets is returned as written. The velocity secret is read through `ProxyForwardingSettings.from`, so it is never
+  expanded when it comes from either source. Golden case `dollar-brace-value` pins the unchanged literal.
+- **Provenance.** `Configuration.entry(key).source()` is `SystemProperty`, `ENV`, `file:<name>` or `resource:<name>`. The loader's
+  `sourceOf` maps these to the labels the configuration check prints. The two avaje constants are package-private; the
+  literal strings are pinned by `ConfigurationPrecedenceTest`.
+- **Enumerated sections (Titan's caveat).** `asProperties()` and `loadIntoSystemProperties` are the only paths that enumerate
+  keys, and the loader never calls them. Voyager reads named keys, so the caveat does not apply in v1.
+- **YAML.** The YAML reader is SnakeYAML when it is on the class path, and a simpler parser otherwise. `org.yaml:snakeyaml:2.7`,
+  the version Titan uses, is a direct dependency of `voyager-platform`.
+- **Implicit names.** avaje-config also reads `CONFIG_FILE`, `CONFIG_PROFILES`, `AVAJE_PROFILES`, `POD_NAME`, `POD_NAMESPACE`,
+  `POD_VERSION`, `POD_IP`. None is set on the CloudNet node. They are listed in `docs/reference/configuration.md`.
+- **D3 fallback.** Not needed. The builder includes the environment, so the loader does not read it itself, except for the
+  velocity secret, which is the one exception the spec requires.
+
 ### D4. Where the code lives
 
 | Piece | Module | Package |
