@@ -9,9 +9,10 @@
 configuration check, wiring), `fitness` (rules for the new boundary). The rings, the scoring rules, the catalogue format,
 the flight simulation and the physics module are not touched.
 
-**Depends on, not blocked by:** the parallel planned changes `per-map-boost`, `checkpoint-resets`, `full-course-guide-line`
-and `lobby-cup-display-and-hub-handoff`. None is merged. Section "Interaction with planned changes" in `design.md` says
-what each one changes for bots and which side moves first.
+**Depends on, merged:** `per-map-boost` (`99de1c0`), `checkpoint-resets` (`1c2828c`), `full-course-guide-line` (`35bcdb5`)
+and `lobby-cup-display-and-hub-handoff` (`f000b6b`, `c28df3d`) are all merged on `main`, with their archives. Section
+"Interaction with planned changes" in `design.md` (D12) says what each one means for computer racers. The only code
+edit they require here is the bot exclusion in `WaitingRoom.handOff`.
 
 ## Why
 
@@ -28,27 +29,30 @@ a cup needs `VOYAGER_MIN_PLAYERS` human racers before it starts, and an empty co
   one that humans see, from the domain, not from the renderer. Movement is deterministic for a given seed. No elytra
   physics runs for a computer racer: its position is set by the server, as the owner's design allows, because client
   authority applies to players only.
-- **Difficulty.** `VOYAGER_COM_DIFFICULTY` (`EASY`, `NORMAL`, `HARD`, default `NORMAL`) sets the speed factor, the offset
+- **Difficulty.** `VOYAGER_COM_DIFFICULTY` (`EASY`, `MEDIUM`, `HARD`, default `MEDIUM`) sets the speed factor, the offset
   and wobble of the line, the chance of missing a ring, and the delay before a computer racer reacts to a boost ring.
   Each racer gets a seeded personal variation inside the level, so `COM 1` and `COM 2` differ.
 - **Rings.** A computer racer passes rings with the same disc test, the same strict order and the same run as a human.
   A missed ring costs time: the racer turns back and crosses the same plane through the disc. It never skips a ring.
 - **Joining.** Computer racers are never counted as online players. They never start a cup, never count toward
   `VOYAGER_MIN_PLAYERS`, and never appear in the `x/y` join line. The start gate, the join line and the boss bar read
-  humans only, as now.
+  humans only, as now. No gate change (owner decision OQ1).
 - **Results.** Computer racers appear in the cup's ranking table as `COM n` with their own time. They receive no cup
-  points, no placement bonus and no stored record. They never change a human's score. (Owner question OQ2.)
+  points, no placement bonus and no medal, and no stored record. They never change a human's score, and they are never
+  stored in stats (owner decision OQ2).
 - **Lifecycle.** Computer racers are added at cup start, topped up to the count at each map start, never removed in the
   middle of a map, and removed when the cup ends. They do not take the hub handoff, and the server does not make a
   LuckPerms or CloudNet call for them.
-- **Settings.** `VOYAGER_COM_COUNT` (integer, default `0`, range `0` to `15`) and `VOYAGER_COM_DIFFICULTY`. Both are read in
-  `ServerSettings` and checked by `ConfigCheck`. With `VOYAGER_COM_COUNT=0` the server behaves as it does today.
+- **Settings.** `VOYAGER_COM_COUNT` (integer, default `0`, range `0` to `15`) and `VOYAGER_COM_DIFFICULTY`, both global
+  (OQ3). Both are read through the avaje-config `ConfigLoader` in `ServerSettings` (never raw `System.getProperty`) and
+  checked by `ConfigCheck`. With `VOYAGER_COM_COUNT=0` the server behaves as it does today.
 
 **BREAKING:** none. The default count is zero, so an existing deployment sees no change.
 
 Out of scope: per-cup settings in the catalogue (a later format change, OQ3); bots in the lobby world (OQ4); bot skins
-fetched from the network (OQ6); a player-facing command to add or remove bots (OQ1, option C); stats and persistence of
-bots (the later Hibernate/PostgreSQL work records the human-only rule, it does not implement it); a rubber-banding
+fetched from the network (OQ6); a player-facing command to add or remove bots; stats and persistence of
+bots (the later Hibernate/PostgreSQL work records the human-only rule, it does not implement it); a per-player difficulty
+choice (OQ5); a rubber-banding
 mechanism; any change to the tree being replaced; any change to the physics module.
 
 ## Capabilities

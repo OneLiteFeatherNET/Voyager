@@ -58,9 +58,9 @@ seeded miss term `m` (D13).
 Contra for the recommendation: the bot follows the line exactly except for the offset, so tight guide-point turns look
 like rails. D14 bounds the turn rate to keep that plausible; spike S1 measures it.
 
-### D2. Entity: a plain `Entity` of `EntityType.PLAYER` with a tab-list entry (recommended)
+### D2. Entity: a plain `Entity` of `EntityType.PLAYER` with a tab-list entry (primary, decided; armour stand as fallback)
 
-**Recommended.** A computer racer is a Minestom `Entity` built with `new Entity(EntityType.PLAYER, uuid)` (the constructor
+**Primary approach, as built.** A computer racer is a Minestom `Entity` built with `new Entity(EntityType.PLAYER, uuid)` (the constructor
 exists in Minestom `2026.10.07-26.2`, `Entity.java`), with a `PlayerMeta` for the skin parts and a custom name `COM n`
 shown above the head. Each human gets one `PlayerInfoUpdatePacket` (add entry, with the default skin and no textures) for
 the tab list before the body is spawned, and a `PlayerInfoRemovePacket` at cup end.
@@ -74,24 +74,31 @@ Checked in the sources of `minestom-2026.10.07-26.2-sources.jar`: Minestom has *
 | Shows as a player, with a name | Yes, through the tab-list entry and the meta | Yes | No, no skin, no tab list |
 | Counted by `getOnlinePlayers()` | No | **Yes** (rejected) | No |
 | Triggers join events, LuckPerms, hub handoff | No | **Yes** (rejected) | No |
-| Animations for elytra pose | Not yet verified (spike S2) | Yes | No |
-| Risk | Client may hide a PLAYER entity whose UUID is missing from the tab list. Verified by the spike, not assumed | Violates the owner's rule that bots are not online players | Looks like an armour stand, not a racer |
+| Animations for elytra pose | Not verified; owner playtest item S2 | Yes | No |
+| Risk | Client may hide a PLAYER entity whose UUID is missing from the tab list. Checked by the owner in playtest (S2), not by a test | Violates the owner's rule that bots are not online players | Looks like an armour stand, not a racer |
 
-Option B is rejected on the owner's rule alone. Option C is the fallback if S2 finds that the client will not show a
-PLAYER entity without a real connection; the rest of the design does not change, because the body sits behind
+Option B is rejected on the owner's rule alone. Option C is the fallback if the owner's playtest finds that the client
+hides a PLAYER entity without a real connection; the rest of the design does not change, because the body sits behind
 `ComBody`.
+
+**Owner playtest item S2 (decided).** Whether a PLAYER-type entity without a live connection is shown by the client
+cannot be tested without a real client. No spike test is written for it. The primary approach above is implemented. The
+owner checks it in playtest (see "Owner playtest" below). If the body is hidden, the body switches to option C in the
+same change before it ships.
 
 Skins: the default skin (no textures) for every computer racer. A fetched skin needs the network at runtime and makes
 tests non-repeatable (OQ6).
 
 ### D3. Difficulty knobs
 
+The default difficulty is MEDIUM (OQ5). There is no per-player difficulty choice in this change.
+
 `ComTuning.of(ComDifficulty)` is a static factory over the enum (`api.race.com.ComDifficulty`, with `VALUES` and
 `byName()`, as the enum DSL rule asks). The values below are **starting values to be tuned after playtests**, not measured
 constants. Each racer also gets a seeded personal variation of plus or minus 2 per cent on the speed factor, so two racers
 at the same level differ.
 
-| Knob | EASY | NORMAL | HARD | Meaning |
+| Knob | EASY | MEDIUM | HARD | Meaning |
 |---|---|---|---|---|
 | Speed factor | 0.85 | 0.93 | 1.00 | Share of the reference speed D14 |
 | Line offset amplitude `A` (blocks) | 1.2 | 0.6 | 0.2 | How far the racer wanders off the line |
@@ -117,9 +124,9 @@ faster than the reference speed. The factor is capped at 1.00 on purpose: a HARD
 - Wall-clock waits do not exist. Lobby and countdown time is already tick-driven through the cup's phase driver, and
   nothing in this change adds a timer.
 
-### D5. Join policy: fill the grid at cup start, count humans only (recommended)
+### D5. Join policy: fill the grid at cup start, count humans only (decided, OQ1)
 
-**Recommended.** When a cup starts (the start gate has committed with at least `VOYAGER_MIN_PLAYERS` humans), the
+**Decided.** When a cup starts (the start gate has committed with at least `VOYAGER_MIN_PLAYERS` humans), the
 server adds computer racers until the grid holds `VOYAGER_COM_COUNT` racers in total, humans included. At each later map
 start the grid is topped up the same way. A bot is never removed mid-map; a bot is removed when the cup ends.
 
@@ -128,50 +135,53 @@ computer racer therefore never starts a cup and never raises a count.
 
 | Option | Pro | Contra |
 |---|---|---|
-| **1. Fill to N at cup start, humans gate (recommended)** | Simple, deterministic, the grid looks full from the first tick. Gate unchanged | A lone human never starts a race with fewer than the minimum; bots do not help the start |
+| **1. Fill to N at cup start, humans gate (decided)** | Simple, deterministic, the grid looks full from the first tick. Gate unchanged | A lone human never starts a race with fewer than the minimum; bots do not help the start |
 | 2. Add bots only while humans are below `VOYAGER_MIN_PLAYERS` | Lets a lone human race | The cup still needs the minimum to start, so the bots would only exist when the cup does not run. To make it work the gate must count bots, which contradicts the owner's rule (OQ1) |
 | 3. Operator command `/race com <n>` only | Full control, no surprises | Nobody is there to type it on an empty server; no automatic experience |
 
-Option 2 is not implementable without changing the gate. The owner should decide whether the minimum itself is relaxed
-for bots (OQ1); this change does not relax it.
+Option 2 is rejected by the owner (OQ1): it would need a gate change, and there is none. Option 3 is not chosen in this
+change.
 
 Mid-cup joiners wait in the lobby until the next map (the existing rule). When the next map starts, they count as humans
 and the grid is topped up; nobody is removed.
 
-### D6. Results and stats: ranked, shown, never scored or stored (recommended)
+### D6. Results and stats: ranked, shown, never scored or stored (decided, OQ2)
 
-**Recommended.** Computer racers run the course with a `RaceRun` and a time, and appear in the cup's ranking table as
+**Decided.** Computer racers run the course with a `RaceRun` and a time, and appear in the cup's ranking table as
 `COM n`, placed by time among all racers. They receive:
 
 - no cup points and no placement bonus (`CupRound` does not record them, so no human's score or placement changes);
-- a medal tier shown in the table as a display value only, never awarded or stored;
+- no medal;
 - no persisted record. The later persistence change must filter them out; this change adds the flag that the filter
   needs (`ComNames.isComputer(uuid)`), and the persistence change owns the filter.
 
-A computer racer's finish may be announced in chat once, as one line. There are no per-ring messages.
+Each computer racer finish is announced in chat as one line to every human racer, in both `de_DE` and `en_US` (German
+with the informal "du"). There are no per-ring messages (OQ9).
 
 | Option | Pro | Contra |
 |---|---|---|
-| **1. Ranked and shown, not scored or stored (recommended)** | Bots can never change a human's cup result or stats; the table reads like a race | Bots feel like scenery in the score, and a human can finish behind a bot without it counting |
+| **1. Ranked and shown, not scored or stored (decided)** | Bots can never change a human's cup result or stats; the table reads like a race | Bots feel like scenery in the score, and a human can finish behind a bot without it counting |
 | 2. Full scoring and placement bonus | Honest race, bots take places | A strong bot takes a human's placement bonus; humans who race bots may feel robbed |
 | 3. Not in the results at all | Simplest | Loses the old-game feel the owner asked for |
 
-Stats: bots are never stored in this change. The later Hibernate/PostgreSQL work stores humans only (OQ2).
+Stats: bots are never stored in this change. Stats work (`player-stats`, in progress in parallel) records humans only; a
+bot is counted only as a bot_count number, never as a player record.
 
-### D7. Settings: two server settings, global (recommended)
+### D7. Settings: two server settings, global (decided, OQ3)
 
-**Recommended.** `VOYAGER_COM_COUNT` and `VOYAGER_COM_DIFFICULTY`, read in `ServerSettings` like the other `VOYAGER_*`
-settings and checked by `ConfigCheck` (`server/com-settings`). The value is per deployment, as ADR-0029 chose for the
+**Decided.** `VOYAGER_COM_COUNT` and `VOYAGER_COM_DIFFICULTY`, read in `ServerSettings` through the avaje-config
+`ConfigLoader` (the one in `platform.config` and the server composition root, never raw `System.getProperty`) and checked
+by `ConfigCheck` (`server/com-settings`). Per-cup settings are a later change. The value is per deployment, as ADR-0029 chose for the
 lobby, so the catalogue format does not change.
 
 | Option | Pro | Contra |
 |---|---|---|
-| **1. Global settings (recommended)** | No catalogue change, one place to set it, checked at boot | Every cup on the server has the same field size |
+| **1. Global settings (decided)** | No catalogue change, one place to set it, checked at boot | Every cup on the server has the same field size |
 | 2. Per cup, in the cup JSON | Each cup can have its own field | A map/cup format change with its own schema, loader and reload path; a later change |
 | 3. Per cup, in a separate catalogue file | Editable without a restart | A new file kind for two values |
 
-The maximum of `15` is the cap: with `VOYAGER_MAX_PLAYERS` at its default of 16, one human can join a grid of 16 with 15
-computer racers. The cap is a proposal (OQ7).
+The maximum of `15` is the cap, confirmed by the owner (OQ7): with `VOYAGER_MAX_PLAYERS` at its default of 16, one human
+can join a grid of 16 with 15 computer racers. The default is `0`.
 
 ### D8. Module placement and dependency direction
 
@@ -269,7 +279,7 @@ smoke boot records the numbers in the PR description.
 ### D11. Golden master
 
 - A new golden transcript `voyager/server/src/test/resources/golden/cup-session/com-field.txt` records one cup with
-  `VOYAGER_COM_COUNT=3`, NORMAL, a fixed clock and a fixed round seed: each tick's bot positions, progress and finish
+  `VOYAGER_COM_COUNT=3`, MEDIUM, a fixed clock and a fixed round seed: each tick's bot positions, progress and finish
   ticks, through the existing `CupSessionGoldenMasterTest` harness.
 - With `VOYAGER_COM_COUNT=0` (or with the no-op `CompetitorField`), every existing transcript (`lobby-and-start.txt`,
   `lobby-world-start.txt`, `racing-boost-disconnect.txt`, `restart-pending-reload.txt`, `skip-finish.txt`) must be
@@ -278,18 +288,14 @@ smoke boot records the numbers in the PR description.
 
 ### D12. Interaction with planned changes
 
-These four changes are not merged. Each one is listed with what it changes for computer racers and which side moves
-first.
+All four planned changes are merged on `main`. Each row says what it is on `main` and what it means for computer racers.
 
-| Planned change | What it changes | Effect on `com-racers` | Who moves first |
-|---|---|---|---|
-| `per-map-boost` (BOOST and SLOW rings, rocket config) | Adds ring effects and rocket settings | Bots take the same effect values; the boost delay (D3) becomes live. Rocket config does not affect bots, which have no rockets | This change adds the boost-delay knob with a fake effect. `per-map-boost` provides the real effect values. Either order works; the boost test is skipped until the effect exists |
-| `checkpoint-resets` | Adds checkpoint resets for humans | Bots never reset (they follow the line). A bot that loses its way is handled by the watchdog (D13), not by a reset cause. If `checkpoint-resets` adds a reset cause, the watchdog may use it later | `com-racers` does not add a `ResetCause`. The watchdog removes the bot as DNF |
-| `full-course-guide-line` | Changes what the line shows humans | Bots use `RacingLine` from the domain, not the renderer. A change to the rendered line does not change bot movement. A change to `RacingLine` itself would change bots, and that is intended: they follow the same line | `com-racers` depends on `RacingLine` as it is today. A change that alters the line's points changes the golden transcript and must update `com-field.txt` in the same PR |
-| `lobby-cup-display-and-hub-handoff` | Shows the cup in the lobby and sends racers to a hub after a cup | Bots are not in the lobby (OQ4), are not sent to a hub, and do not appear in the display's player count. The display's standings may list them as `COM n` | `com-racers` adds `ComNames.isComputer` and the exclusion of bots from `players`. The hub change must use the human supplier, which it does already when it reads `players` |
-
-No planned change is required for this one to ship. If `lobby-cup-display-and-hub-handoff` lands first, its hub handoff
-must not be given the bot list; if this change lands first, the display must show bots only in the standings table.
+| Planned change (merged) | What it is on `main` | Effect on `com-racers` |
+|---|---|---|
+| `per-map-boost` (`99de1c0`, archive `2157cf9`) | BOOST and SLOW ring effects per map, through `RingEffectRegistry` | Bots take the same effect values. The boost delay (D3) is wired to the real effect; the unit test still uses a fake ring effect |
+| `checkpoint-resets` (`1c2828c`) | Human resets to the last checkpoint with a deployed elytra (`RunResetter`) | Bots never reset; they follow the line. A bot that loses its way is removed as DNF by the watchdog (D13). `com-racers` adds no `ResetCause` |
+| `full-course-guide-line` (`35bcdb5`) | The whole course is drawn as the racing line | Bots use the domain `RacingLine`, as designed, not the renderer. A change to the line's points changes bot movement and the golden transcript `com-field.txt` in the same PR |
+| `lobby-cup-display-and-hub-handoff` (`f000b6b`, `c28df3d`, archive `6abaa2f`) | `PlayerHandoff` is an API interface in `voyager/api/.../handoff/`, installed by `CloudNetPlayerHandoff` in the cloudnet bridge (`VoyagerCloudNetExtension`). `HubHandoff.send(List<Player>)` is called from `WaitingRoom.handOff`, with the human racers it holds | Bots never get the hub handoff. The exclusion goes in the list `WaitingRoom.handOff` builds (the `TODO(com-bots)` at `WaitingRoom.java:254`, which this change resolves). Bots are not in the lobby (OQ4), so they do not affect the display's player count; the standings may list them as `COM n` |
 
 ### D13. Missed rings and the watchdog
 
@@ -335,30 +341,58 @@ number the owner gave. The ADR is accepted only by the owner. The task that chan
 
 ## Risks / Trade-offs
 
-- **The client may refuse a PLAYER entity without a live connection (S2).** Mitigation: `ComBody` hides the choice, and
-  the fallback (D2, option C) keeps the rest of the design. The spike runs before any movement code is written.
+- **The client may refuse a PLAYER entity without a live connection (S2).** Owner playtest item (D2). Mitigation: `ComBody`
+  hides the choice, and the fallback (D2, option C) keeps the rest of the design. No spike test exists for it; the owner's
+  playtest decides.
 - **Bots look like rails on tight guide-point turns (D1).** Mitigation: the turn bound (D14) and the seeded wander.
   Measured in S1, judged in playtest.
-- **Bots make a lone human's race feel busy or cheap.** This is a design judgement, not a technical one. Pulse (psychology)
-  and Drift (game design) review the difficulty table (D3) before NORMAL becomes the default. Neither review has run yet.
+- **Bots make a lone human's race feel busy or cheap.** This is a design judgement, not a technical one. The owner's
+  playtest replaces the Pulse (psychology) and Drift (game design) reviews (OQ10). The difficulty table (D3) is tuned from
+  that playtest; MEDIUM is the default until then.
 - **A missed ring with the strict-order rule could strand a bot (D13).** Mitigation: the detour returns through the disc,
   and the watchdog removes the bot after 20 s. Both are tested with explicit ticks.
 - **Bots on the tab list and in the table may confuse the stats later.** Mitigation: `ComNames.isComputer` is the one flag,
   and the persistence change filters on it (D6).
 - **More bodies, more packets.** Mitigation: the budget in D10 and the smoke-boot measurement.
 
-## Owner questions
+## Owner decisions
 
-These are decided in this document as recommendations. The owner confirms or changes each one before implementation
-starts.
+The project owner decided the ten questions. Each decision is binding for the implementation and is reflected in the
+sections above.
 
-- **OQ1 Join policy.** Recommended: fill to N at cup start, human gate (D5). Option 2 needs the gate to change.
-- **OQ2 Results and stats.** Recommended: ranked and shown, never scored or stored (D6).
-- **OQ3 Settings scope.** Recommended: global settings now, per cup later (D7).
-- **OQ4 Lobby.** Recommended: bots appear only on the grid at cup start, not in the lobby world.
-- **OQ5 Difficulty default.** Recommended: NORMAL. Also: is there a per-player difficulty choice? Not in this change.
-- **OQ6 Skins.** Recommended: default skin for all. A fetched skin needs the network and breaks Repeatable tests.
-- **OQ7 Maximum count.** Recommended: 15, so one human fits a 16-racer grid. Confirm the cap and the default of `0`.
-- **OQ8 Tab list.** Recommended: computer racers are listed in the tab list, so the table and the list agree.
-- **OQ9 Finish line.** Recommended: one chat line per computer racer's finish, none per ring.
-- **OQ10 Psychology and design review.** Pulse and Drift have not reviewed D3 or D5. Recommended: review before NORMAL is the default.
+- **OQ1 Join policy.** When a cup starts (the start gate committed with at least `VOYAGER_MIN_PLAYERS` humans), fill the
+  grid with computer racers up to `VOYAGER_COM_COUNT`. Only then. The start gate, the join line (`x/y`) and the boss bar
+  count humans only. Top the grid up at each map start. Never remove a computer racer mid-map. Remove all of them at cup
+  end. Computer racers never take the hub handoff (`PlayerHandoff`) and never touch LuckPerms. Option 2 is rejected; no
+  gate change.
+- **OQ2 Results.** Computer racers are ranked and shown in the results as "COM n". They get no points, no placement bonus
+  and no medals. They are never stored in stats. Stats work (`player-stats`, in progress in parallel) records humans only;
+  a bot is counted only as a bot_count number, never as a player record.
+- **OQ3 Settings.** Global. `VOYAGER_COM_COUNT` (integer, default `0`, range `0` to `15`) and `VOYAGER_COM_DIFFICULTY`
+  (`EASY`, `MEDIUM` or `HARD`, default `MEDIUM`). Both are read through the avaje-config `ConfigLoader` (the one in
+  `platform.config` and the server composition root), never raw `System.getProperty`. Per-cup settings are a later change.
+- **Difficulty names.** The owner's names are EASY, MEDIUM and HARD. NORMAL is renamed to MEDIUM everywhere in these
+  artifacts. The default is MEDIUM. The numbers in the D3 table are unchanged for now.
+- **OQ4 Lobby.** Computer racers appear only on the grid, never in the lobby world.
+- **OQ5 Difficulty.** Default MEDIUM. No per-player difficulty choice in this change.
+- **OQ6 Skins.** Default skin for every computer racer. No network fetch.
+- **OQ7 Maximum count.** 15, confirmed. Default `0`.
+- **OQ8 Tab list.** Computer racers are listed in the tab list.
+- **OQ9 Finish.** One chat line per computer racer finish, in both `de_DE` and `en_US` (German with the informal "du").
+  No per-ring messages.
+- **OQ10 Reviews.** The Pulse (psychology) and Drift (game design) reviews are replaced by the owner's playtest.
+
+## Owner playtest
+
+These checks replace the real-client check that task 10.1 used to name. The owner runs them on the playtest server with
+`VOYAGER_COM_COUNT` set above zero. They are not automated tests.
+
+- **S2, body visibility (D2).** A PLAYER-type entity without a live connection is shown by the client. If it is hidden,
+  switch the body to the armour stand (D2, option C) before shipping.
+- Computer racers appear on the grid at cup start and not before, and not in the lobby world.
+- Each one has the name `COM n` above its head and a tab-list entry (OQ8).
+- They move along the racing line and look plausible on tight turns (D1, D14).
+- The results table lists them by time at the finish, with no points and no medal (OQ2).
+- One chat line per computer racer finish, in German and English (OQ9).
+- They are removed at cup end, and the tab list is clean afterwards.
+- The difficulty numbers in D3 feel right for EASY, MEDIUM and HARD. Tune them from this playtest (OQ10).

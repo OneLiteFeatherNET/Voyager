@@ -82,7 +82,7 @@ its speed at or above the floor, whatever the difficulty.
 ### Requirement: Difficulty shapes speed, offset, missed rings and boost reaction
 **MoSCoW:** Should. WHEN a cup starts, THE SYSTEM SHALL derive each computer racer's tuning from the difficulty named by
 `VOYAGER_COM_DIFFICULTY`, with a seeded personal variation, so that EASY racers are slower, wander more and miss more rings
-than NORMAL, and HARD racers are the reference racer.
+than MEDIUM, and HARD racers are the reference racer.
 
 #### Scenario: EASY is slower and wanders further
 - **WHEN** an EASY and a HARD computer racer run the same course with the same seed
@@ -93,8 +93,8 @@ than NORMAL, and HARD racers are the reference racer.
 - **THEN** it passes every ring on the first attempt
 
 #### Scenario: A boost reaction delay is applied
-- **WHEN** a NORMAL computer racer passes a boost ring
-- **THEN** the boost takes effect after the NORMAL reaction delay, and not before
+- **WHEN** a MEDIUM computer racer passes a boost ring
+- **THEN** the boost takes effect after the MEDIUM reaction delay, and not before
 
 ### Requirement: Computer racers pass rings like human racers
 **MoSCoW:** Must. THE SYSTEM SHALL test a computer racer's passes with the same ring test, the same strict order and the same
@@ -105,7 +105,7 @@ run as a human racer, and SHALL NOT let a computer racer skip a ring.
 - **THEN** its run has passed two rings, in order, and no ring is passed twice
 
 #### Scenario: A missed ring costs time, not a ring
-- **WHEN** a NORMAL computer racer misses a ring on its first attempt
+- **WHEN** a MEDIUM computer racer misses a ring on its first attempt
 - **THEN** it returns through the same ring's disc and passes it, and the run passes that ring only once
 
 ### Requirement: A stuck computer racer is removed as did-not-finish
@@ -130,7 +130,7 @@ or cup points, and SHALL NOT write a computer racer's result to any store.
 
 ### Requirement: Computer racers appear in the ranking table
 **MoSCoW:** Should. WHEN a map or a cup ends, THE SYSTEM SHALL list each computer racer in the ranking table as `COM n`,
-placed by its own time among all racers, with a medal tier shown for display only.
+placed by its own time among all racers. No medal tier is shown for them.
 
 #### Scenario: Table lists computer racers by time
 - **WHEN** a map ends with two humans and two computer racers finished
@@ -169,8 +169,8 @@ and produce the same cup transcript as before this capability existed.
 - **THEN** each transcript is byte-identical to its committed file
 
 ### Requirement: Computer racer finishes are announced once in chat
-**MoSCoW:** Could. WHEN a computer racer finishes a map, THE SYSTEM COULD send every human racer one chat line naming it,
-and SHALL NOT send a chat line for any ring pass.
+**MoSCoW:** Could. WHEN a computer racer finishes a map, THE SYSTEM COULD send every human racer one chat line naming it, in
+the player's language (de_DE or en_US, German with informal "du"), and SHALL NOT send a chat line for any ring pass.
 
 #### Scenario: One line per finish
 - **WHEN** `COM 2` finishes a map

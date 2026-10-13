@@ -5,7 +5,7 @@
 Proposed
 
 The project owner has not accepted this record yet. It becomes Accepted only when the owner accepts it. The change that
-implements it is `com-racers` (OpenSpec). Its tasks 0.1 to 0.4 are owner answers and spikes that come before any code.
+implements it is `com-racers` (OpenSpec). The owner's decisions on OQ1 to OQ10 are recorded in its design.md.
 
 ## Date
 
@@ -15,7 +15,7 @@ implements it is `com-racers` (OpenSpec). Its tasks 0.1 to 0.4 are owner answers
 
 - TheMeinerLP (project owner). On 2026-10-12 asked for computer opponents named "COM 1", "COM 2" and so on, as in old video
   games, and for a design before any build.
-- Drafted with the change `com-racers`. Its design.md lists the owner questions OQ1 to OQ10 with a recommendation for each.
+- Drafted with the change `com-racers`. Its design.md records the owner's decisions on OQ1 to OQ10.
 
 ## Context and problem statement
 
@@ -50,9 +50,10 @@ Movement:
 Entity:
 
 1. **A plain `Entity` of `EntityType.PLAYER` with a tab-list entry (chosen).** Shows as a player; not counted as online.
+   Client visibility is an owner playtest item.
 2. **A `Player` with a stub `PlayerConnection`.** Rejected: counted as online, triggers join events.
-3. **An armour stand or another entity.** The fallback if the client refuses a PLAYER entity without a connection, to be
-   checked by spike 0.4 and in the smoke boot.
+3. **An armour stand or another entity.** The fallback if the owner's playtest finds that the client refuses a PLAYER
+   entity without a connection (S2).
 
 Results and stats:
 
@@ -63,15 +64,15 @@ Results and stats:
 Join policy:
 
 1. **Fill the grid to the configured count at cup start; the start gate counts humans only (chosen).**
-2. **Add computer racers only while humans are below `VOYAGER_MIN_PLAYERS`.** Not implementable without making the gate
-   count computer racers, which contradicts the owner's rule. Left as an owner question.
-3. **An operator command only.** Left as an owner question.
+2. **Add computer racers only while humans are below `VOYAGER_MIN_PLAYERS`.** Rejected by the owner (OQ1): it would need the
+   gate to count computer racers.
+3. **An operator command only.** Not chosen in this change.
 
 ## Decision outcome
 
 Chosen options: movement 1, entity 1 (with option 3 as the fallback), results 1, join 1, and settings as two global
-server settings, `VOYAGER_COM_COUNT` (0 to 15, default 0) and `VOYAGER_COM_DIFFICULTY` (`EASY`, `NORMAL`, `HARD`, default
-`NORMAL`).
+server settings, `VOYAGER_COM_COUNT` (0 to 15, default 0) and `VOYAGER_COM_DIFFICULTY` (`EASY`, `MEDIUM`, `HARD`, default
+`MEDIUM`).
 
 - The server places each computer racer by arc length along the course's racing line. The line is the one humans see,
   taken from the domain. The brain is pure and lives in `voyager-race` (`race.com`). The Minestom body, packets and names
@@ -82,8 +83,8 @@ server settings, `VOYAGER_COM_COUNT` (0 to 15, default 0) and `VOYAGER_COM_DIFFI
   the boss bar, the waiting room, LuckPerms and the hub handoff read.
 - A missed ring costs time: the racer returns through the same ring's disc. A racer with no progress for 400 ticks is
   removed as did-not-finish.
-- Computer racers take no cup points, no placement bonus and no stored record. They appear in the ranking table as
-  `COM n`, with a time and a medal tier shown for display only.
+- Computer racers take no cup points, no placement bonus, no medal and no stored record. They appear in the ranking table
+  as `COM n`, with their time. Stats record humans only; a bot is counted only as a bot_count number.
 - With `VOYAGER_COM_COUNT=0` the no-op field is wired, and every existing golden transcript stays byte-identical.
 
 Dependency direction: `api.race.com` ← `race.com` ← `platform.cup` (port) ← `platform.com` (implements the port),
@@ -95,10 +96,10 @@ with `server.config` and `server.inject` as the only places that read the settin
   tested for a whole lap with no server; the zero-count default changes nothing.
 - Good: the fitness rules F1 to F4 in `voyager-fitness` name the boundary, so a later change cannot quietly import
   Minestom into the brain, make the cup depend on the body, or feed a computer racer into the flight tracker.
-- Bad: the start gate does not change, so a server with one human and a minimum of two still does not race. The owner
-  decides whether that should change (owner question OQ1).
-- Bad: the difficulty values are starting points. They need playtests before NORMAL is the default.
-- Bad: one more adapter to keep in step with Minestom's entity and packet API, and a fallback path if spike 0.4 fails.
+- Bad: the start gate does not change, so a server with one human and a minimum of two still does not race (owner
+  decision OQ1).
+- Bad: the difficulty values are starting points. The owner's playtest tunes them; MEDIUM is the default until then.
+- Bad: one more adapter to keep in step with Minestom's entity and packet API, and a fallback path if the owner playtest finds the body hidden (S2).
 - Bad: bots in the tab list and the results table mean a later persistence change must filter them out with one flag
   (`ComNames.isComputer`). The filter is that change's job, not this one's.
 - Neutral: the speed and turn bounds (cap 1.7 blocks per tick, floor 0.8) are taken from the physics reference's glide
@@ -111,7 +112,8 @@ with `server.config` and `server.inject` as the only places that read the settin
 - `CupSessionCompetitorTest` covers the port calls, and `CupSessionComGoldenTest` replays a committed transcript
   `com-field.txt`. The existing five golden transcripts are byte-identical.
 - `ComBoundaryTest` in `voyager-fitness` holds rules F1 to F4 with `allowEmptyShould(false)` and no freeze.
-- The smoke boot with a real client (task 10.1) confirms the body is visible and the tab entries are clean after the cup.
+- The owner's playtest (design.md, "Owner playtest") confirms the body is visible (S2) and the tab entries are clean after
+  the cup. The smoke boot in task 10.1 covers boot only.
 
 ## Pros and cons of the options
 
@@ -133,8 +135,8 @@ with `server.config` and `server.inject` as the only places that read the settin
 ### Entity 1, plain entity of PLAYER type (chosen)
 
 - Good: a name, a skin slot and a tab-list entry, with no connection and no online count.
-- Bad: the client's handling of a PLAYER entity without a connection is not yet verified (spike 0.4, and the real-client
-  check in the smoke boot).
+- Bad: the client's handling of a PLAYER entity without a connection is not verified by a test. It is an owner playtest
+  item (S2, design.md D2); the armour stand is the fallback.
 
 ### Entity 2, a Player with a stub connection
 
@@ -149,5 +151,5 @@ with `server.config` and `server.inject` as the only places that read the settin
 - ADR-0029: the lobby world. The computer racer count follows the same pattern: global server settings, no catalogue change.
 - ADR-0022 and ADR-0029 are the nearest prior records for the lobby and join line.
 - The planned changes `per-map-boost`, `checkpoint-resets`, `full-course-guide-line` and `lobby-cup-display-and-hub-handoff`
-  are not merged. design.md D12 says what each changes for computer racers.
+  are merged on `main`. design.md D12 says what each means for computer racers.
 - Numbering: on `main` the highest ADR is 0029, and this record takes 0035 as the owner asked.
