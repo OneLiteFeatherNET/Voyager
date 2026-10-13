@@ -14,7 +14,7 @@ up-to-date `origin/main`.
 
 ## 1. Decisions
 
-- [ ] 1.1 Owner answers UX-1 to UX-7 in `proposal.md` and `design.md`, and the answers are recorded in design.md (`docs(openspec)`). Effort: low.
+- [x] 1.1 Owner answers UX-1 to UX-7 in `proposal.md` and `design.md`, and the answers are recorded in design.md (`docs(openspec)`). Effort: low.
 - [ ] 1.2 Playtest plan for the sound candidates (UX-5): one ring of each candidate in a test world, recorded in the PR. Effort: low.
 
 ## 2. Start cue and sound meanings (effort: medium)
@@ -36,7 +36,7 @@ up-to-date `origin/main`.
 
 - [ ] 4.1 Red: `MessagesTest` gains "the next goal names the seconds to the next better medal", "no next goal at the top bracket", and "no next goal for a DNF", using `MedalCountdown.boundaryOf` (`feat(race)`).
 - [ ] 4.2 Green: add `voyager.result.map.subtitle.next` and the factory; compute the time in `CupAnnouncer.announceMapScore` (`feat(race)`).
-- [ ] 4.3 Red then Green: remove the duplicated breakdown from the title and subtitle, as UX-1 decides; each step behind a test named for the fact it keeps in one place (`feat(race)`).
+- [ ] 4.3 Red then Green: remove the points from the title and the subtitle, so the breakdown is in chat only (UX-1); each step behind a test named for the fact it keeps in one place (`feat(race)`). The key `voyager.result.map.subtitle` (points) is removed in both locales.
 
 ## 5. Joins and channels (effort: medium)
 
@@ -49,12 +49,14 @@ up-to-date `origin/main`.
 
 - [ ] 6.1 Red: `MessageStyleTest` in `voyager-platform` reads the bundles and names "failure keys use the warn tag", "refusal keys use the caution tag", "no bundle value uses a red colour", and "no line has two accents". Each assertion names the key (`feat(race)`). Seeded failing fixtures in test resources prove each check is not vacuous.
 - [ ] 6.2 Green: change the colours of the keys listed in the proposal, in both locales, and add palette tags to the setup bundle (`feat(race)`).
-- [ ] 6.3 Wording pass for the glossary (racer, player, map, cup, ring, points): changes only the words the glossary names, in both locales (`feat(race)`). The `de_DE` change is reviewed by the owner before merge.
+- [ ] 6.3 Wording pass for the glossary (racer, player, map, cup, ring, points): changes only the words the glossary names, in both locales (`feat(race)`). The join line reads "joined the race" (UX-6). Times keep `.` (UX-7). The `de_DE` change is reviewed by the owner before merge.
+- [ ] 6.5 Wording and colour pass over the lobby board, sidebar, hologram, handoff and cup-lobby texts added by `f000b6b` (`feat(race)`), with the same glossary and colour rules.
+- [ ] 6.6 Translate every error text Voyager's own command code sends (`feat(race)`). Minestom's built-in syntax errors are left as Minestom writes them. Console (log) lines stay English.
 - [ ] 6.4 Regenerate `CupSessionGoldenMasterTest` transcripts for the changed result line and join line, in a separate commit typed `test(race)`. The PR lists every changed transcript line. Effort: medium.
 
 ## 7. Documentation (effort: low)
 
-- [ ] 7.1 Write `docs/reference/message-style-guide.md`: voice, glossary, channel rules, colour table, timing limits, sound rules, German rules (`docs`). Diátaxis reference; English.
+- [ ] 7.1 Extend `docs/reference/message-style-guide.md` (it exists from `localise-player-messages`): the map-result channel rule, the next-goal subtitle, the sound table, the join wording (`docs`). Diátaxis reference; English.
 - [ ] 7.2 Link the guide from `Palette.java` and `Messages.java` class comments (`docs`, a one-line Javadoc change in its own commit under the same type).
 - [ ] 7.3 Record the ring-miss rule and the new sounds in `docs/reference/hud.md` (`docs`).
 

@@ -69,14 +69,14 @@ cleared when the map ends; the boss bar drops its countdown when no medal is lef
 
 ### D4 Map result: one place per fact, and a next goal (F5, F6)
 
-- Chat: keeps the breakdown line (`voyager.result.map.medal`), the only place the numbers are listed. Owner UX-1.
+- Chat: the breakdown line (`voyager.result.map.medal`) is the only place the points and rings are listed (UX-1).
 - Title: the medal word, unchanged.
-- Subtitle: `<points> points · <time> s, <next goal>` where the next goal is a new key
-  `voyager.result.map.subtitle.next` ("0.8 s faster for Gold"), shown only when a better medal is reachable. It is computed
-  from `MedalCountdown.boundaryOf(nextTier, reference, brackets)` minus the racer's completion time. Without a reachable
-  medal (already Diamond, or DNF) the subtitle is the existing line.
+- Subtitle: the next goal in seconds, `voyager.result.map.subtitle.next` ("<arg:0> s faster for <arg:1>", with the medal word
+  as `<arg:1>`), computed from `MedalCountdown.boundaryOf(nextTier, reference, brackets)` minus the racer's completion time,
+  one decimal (UX-7). When no better medal is reachable (Diamond) the subtitle is omitted. A DNF's subtitle is
+  `voyager.result.map.subtitle.dnf` reduced to the progress fact `<rings> of <count> rings`, with no points.
 - Test: `MessagesTest` gains "the next goal names the seconds to the next better medal", "no next goal at the top
-  bracket", and "no next goal for a DNF".
+  bracket", "a DNF subtitle names no points", and "the points are not in the title or subtitle".
 
 ### D5 Join coalescing (F7)
 
@@ -107,7 +107,7 @@ cleared when the map ends; the boss bar drops its countdown when no medal is lef
   line the client also writes ("joined the game"). **Map** is one course; **cup** is the sequence of maps; **ring** is one
   gate, numbered from 1; **medal** is one of Diamond, Gold, Silver, Bronze, Finish, DNF. **Points** in full, never "pts".
 - Applied by a wording pass over the two bundles: "Waiting for racers" stays; "joined the game" becomes "joined the race"
-  in the race's own line; the vanilla-looking join line keeps "joined the game" only if OQ-6 keeps it.
+  in the race's own line. The owner's answer to UX-6 is "joined the race", so no line keeps "joined the game".
 
 ### D9 Personal best (F11)
 
@@ -118,7 +118,7 @@ cleared when the map ends; the boss bar drops its countdown when no medal is lef
 - `docs/reference/message-style-guide.md` (English, Diátaxis reference): voice, glossary (D8), channel rules (below), colour
   table (palette roles and the failure rule of D6), timing limits (title hold at least 1.0 s for a start cue, at most 3.0 s
   otherwise; subtitle one line; action bar at most one line), sound rules (distinct per meaning, losses quieter, anti-
-  habituation), and the German rules for translators (`du` unless OQ-2 says otherwise; keep placeholders; no English word
+  habituation), and the German rules for translators (`du` (owner decision); keep placeholders; no English word
   where a German one is standard).
 - Channel rules: chat is the record that stays on screen (results, errors, joins); the action bar is live state under the
   crosshair (clock, ring counter, missed ring); a title is one moment (GO, medal, reset, cup); the boss bar is persistent
@@ -132,8 +132,8 @@ cleared when the map ends; the boss bar drops its countdown when no medal is lef
 - The new keys and factories: `voyager-platform` `platform.text` (only place that names a key).
 - No new `voyager-api` type. The pure rules stay in `voyager-race` and `platform`; `voyager-fitness` keeps passing (no
   Minestom import in `voyager-race`).
-- No new ADR: the choices are presentation rules, recorded in the style guide. If OQ-1 (missed-ring definition) is answered
-  as a near-miss with a distance test, that changes race rules and an ADR is then required before apply.
+- No new ADR: the choices are presentation rules, recorded in the style guide. The missed-ring definition is the skipped ring
+  (UX-2), which is a race rule inside `voyager-race` and needs no ADR. A near-miss cue would need one.
 
 ## Golden masters
 
@@ -147,13 +147,40 @@ typed `test(race)`, and the PR names each changed line. The change is not to be 
 Every new test names one behaviour, uses explicit ticks or pure inputs, and touches no clock, no sleep, no shared static
 state, and no `GlobalTranslator`. Parity and key tests from `localise-player-messages` run after each wording change.
 
-## Owner questions
+## Owner decisions (recorded 2026-10-13)
 
-- UX-1 Map result channel (D4): the proposal makes chat the only breakdown and gives the title and subtitle the medal and
-  the next goal.
-- UX-2 Missed-ring definition (D3): skipped ring (proposal) or near-miss proximity (Pulse).
-- UX-3 Join window (D5): three seconds, or no coalescing.
-- UX-4 Failure colour (D6): magenta for failures and amber for refusals.
-- UX-5 Sound candidates (D2, D3): playtest among the named candidates; proposal picks the first candidate for each.
-- UX-6 "joined the game" (D8): keep the vanilla phrasing, or "joined the race"?
-- UX-7 Map-result time (D4): time in `s` with one decimal (as today) for the next-goal line?
+The owner answered every question in `proposal.md`. The answers below replace the earlier proposals wherever the two differ.
+
+- UX-1 Map result (D4): chat is the only place for the points and rings breakdown. The title is the medal word. The subtitle
+  is the next goal in seconds only (`0.8 s faster for Gold`). When no better medal is reachable (Diamond), the subtitle is
+  omitted. For a DNF the subtitle is the progress fact `<rings> of <count> rings`, with no points.
+- UX-2 Missed ring (D3): a skipped ring, as proposed. No near-miss cue.
+- UX-3 Join window (D5): 60 game ticks (3 s), coalescing on.
+- UX-4 Colour (D6): `<c-warn>` for failures, `<c-caution>` for refusals.
+- UX-5 Sounds (D2, D3, the medal row of the table below): the candidates are chosen so that each meaning has its own sound
+  and none is the countdown beat. Final tuning in the owner's playtest; the PR lists each candidate that was played.
+- UX-6 Join wording (D8): "joined the race". The racer is a racer in every race line.
+- UX-7 Times (D4 and every race time): one decimal, `.` as the separator in both locales.
+
+| Event | Sound (candidate) | Pitch, volume | Against the countdown beat |
+|---|---|---|---|
+| Countdown digit | `block.note_block.bass` (unchanged) | 1.0 to 1.4 | the beat itself |
+| Ring hit | `block.note_block.bell`, rising (unchanged) | 1.0 to 1.8, 0.7 | distinct sample |
+| Last ring | `ui.toast.challenge_complete` (unchanged) | 1.0, 0.8 | distinct sample |
+| Reset | `block.note_block.chime` | 0.7, 0.8 | distinct sample, falling |
+| DNF | `block.note_block.bit` | 0.6, 0.6 | distinct sample, quieter |
+| Missed ring | `block.note_block.didgeridoo` | 0.5, 0.5 | distinct sample, quiet |
+| Medal (Diamond, Gold, Silver, Bronze, Finish) | unchanged (`ui.toast.challenge_complete`, `entity.player.levelup`, `block.note_block.pling`) | as now | distinct samples |
+
+Medal sounds are the candidates kept from `main`: none is the countdown beat, so the sound rule holds without a change. The
+playtest may replace them; each candidate played is listed in the PR.
+
+- Console (log) lines stay English.
+- Minestom's built-in command syntax errors stay as Minestom writes them. Every error text that Voyager's own code sends is
+  translated in both locales.
+- Setup wand: two short lines (D7), placement first.
+- GO title: 20 ticks of hold, as D1.
+- The German tone is informal "du" (matches ADR-0038 decision 5 and the style guide).
+- Cover the new lobby board, sidebar, hologram and handoff texts (from `f000b6b`) in the wording pass (task 6.5): glossary,
+  one accent per line, failure colour where they report a failure.
+- The golden masters are regenerated only in the `test(race)` commit, and the PR lists each changed transcript.

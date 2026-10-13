@@ -50,12 +50,20 @@ to every line) found these, with file references in `design.md`:
 - Changes to the boss bar, the flight HUD or the lobby boss bar layout, except the wording of their lines.
 - Spectator and social features.
 
-## Owner questions (to be answered before apply; full text in design.md)
+## Owner decisions (recorded 2026-10-13)
 
-- UX-1 Map result channel: keep the chat breakdown, the title and the subtitle as they are, or make the chat line the only
-  breakdown and the title carry the next goal? Proposal: the latter.
-- UX-2 Missed-ring definition: a ring skipped by passing the next one (proposal), or a near-miss within two blocks
-  (Pulse's suggestion)? Proposal: the skip, because a near-miss needs a distance test the course data does not yet support.
-- UX-3 Join coalescing window: 3 s (proposal), or none?
-- UX-4 Failure colour: `WARN` (magenta, the palette's "act now" role) for failures, `CAUTION` for refusals? Proposal: yes.
-- UX-5 The sound candidates for reset and DNF (see design), chosen by playtest.
+- UX-1 Map result: chat holds the only breakdown (points and rings). The title shows the medal word. The subtitle
+  shows the next goal in seconds, or nothing when no better medal is reachable.
+- UX-2 Missed ring: a ring skipped by passing the next one. No near-miss proximity cue in this change.
+- UX-3 Join window: 3 s (60 game ticks). Joins inside it coalesce into one line.
+- UX-4 Colour: failures use `<c-warn>` (WARN), refusals use `<c-caution>` (CAUTION).
+- UX-5 Sounds: the candidates in `design.md` D2 and D3 are the starting point. Final tuning happens in the owner's playtest,
+  and the PR lists the candidates played.
+- UX-6 Terminology: "racer" and "points" everywhere in race lines. The join line becomes "joined the race".
+- UX-7 Times keep the "." decimal separator in both locales (one decimal, as today).
+- German tone: informal "du".
+- Console (log) lines stay English.
+- Minestom's built-in command syntax errors stay as Minestom writes them. Every error text that Voyager's own code sends is
+  translated.
+- The GO title holds at least 1.0 s (20 ticks), the same as a countdown digit.
+- The setup wand instruction is split into short lines (placement, then removal).
