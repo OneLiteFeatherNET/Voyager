@@ -24,6 +24,7 @@ import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
+import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
@@ -42,8 +43,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +189,8 @@ class RaceCommandReloadTest {
         FlightTickDriver flight = new FlightTickDriver(new LivePlayerSampler(List::of, boosts), new FlightTracker(),
                 new MinestomCollisionSpace(blocks));
         CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
-                blocks, boosts, TIMINGS, STEP, List::of);
+                blocks, boosts, TIMINGS, STEP, List::of, new NoOpRaceRecorder(),
+                Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
         HubHandoff hub = new HubHandoff(Optional::empty, (racer, reason) -> { }, message -> { });
         WaitingRoom room = new WaitingRoom(session, holder, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
                 ServerSettings.DEFAULT_MAXIMUM_RACERS, null, hub, new LobbyHud(), new LobbySidebar(), null, () -> {

@@ -1,0 +1,18 @@
+# docker compose -f docker/postgres/compose.yml up -d
+# The password comes from the shell: export VOYAGER_LOCAL_DB_PASSWORD first. Nothing is written into this file.
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: 'voyager-postgres'
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_DB: voyager
+      POSTGRES_USER: voyager
+      POSTGRES_PASSWORD: "${VOYAGER_LOCAL_DB_PASSWORD:?set VOYAGER_LOCAL_DB_PASSWORD}"
+    volumes:
+      - voyager-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  voyager-postgres-data:
+    name: voyager-postgres-data

@@ -12,10 +12,18 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,6 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * changing one should be a deliberate edit to a test that says what it used to say.
  */
 class MessageBundleTest {
+
+    private static final Pattern PLACEHOLDER = Pattern.compile("<arg:\\d+>");
 
     private static VoyagerTranslator translator;
 
@@ -244,7 +254,22 @@ class MessageBundleTest {
                 Messages.medal(MedalTier.DNF),
                 Messages.cupRestarted("c"),
                 Messages.skipTaken(),
-                Messages.skipRefused());
+                Messages.skipRefused(),
+                Messages.statsProfileHeader("Alex"),
+                Messages.statsProfileCups(2),
+                Messages.statsProfileWins(1),
+                Messages.statsProfileMedals(1, 0, 0, 2),
+                Messages.statsProfileFlight(90_000L),
+                Messages.statsProfileBest("ridge", 61_200L),
+                Messages.statsProfileNone("Alex"),
+                Messages.statsUnknownPlayer("Nobody"),
+                Messages.statsLeaderboardHeader("ridge"),
+                Messages.statsLeaderboardEntry(1, "Alex", 61_200L),
+                Messages.statsLeaderboardEmpty("ridge"),
+                Messages.statsUnknownMap("nowhere"),
+                Messages.statsNotRecorded(),
+                Messages.statsUnavailable(),
+                Messages.statsUsage());
 
         for (Component message : everyMessage) {
             String rendered = render(message);
@@ -255,4 +280,61 @@ class MessageBundleTest {
             assertThat(rendered).as("a MessageFormat placeholder").doesNotContain("{0}");
         }
     }
+
+
+    // ---------------------------------------------------------------------------------------
+    // Statistics
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    void theLeaderboardLineShowsRankNameAndTheTimeWithThreeDecimals() {
+        assertThat(render(Messages.statsLeaderboardEntry(1, "Alex", 61_200L)))
+                .isEqualTo("1. Alex \u00b7 61.200 s");
+    }
+
+    @Test
+    void theFlightLineSplitsTheGlidingTimeIntoHoursMinutesAndSeconds() {
+        assertThat(render(Messages.statsProfileFlight(3_723_400L)))
+                .isEqualTo("Flight time: 1 h 2 min 3 s");
+    }
+
+    @Test
+    void everyStatisticsKeyHasTheSamePlaceholdersInBothLocales() throws IOException {
+        Properties english = bundle("/voyager_en_US.properties");
+        Properties german = bundle("/voyager_de_DE.properties");
+        List<String> keys = english.stringPropertyNames().stream()
+                .filter(key -> key.startsWith("stats."))
+                .sorted()
+                .toList();
+
+        assertThat(keys).as("the statistics keys, one line each").hasSize(15);
+        assertThat(german.stringPropertyNames().stream().filter(key -> key.startsWith("stats.")).sorted().toList())
+                .as("the German bundle names the same statistics keys")
+                .isEqualTo(keys);
+        for (String key : keys) {
+            assertThat(placeholders(german.getProperty(key)))
+                    .as("the placeholders of %s in de_DE", key)
+                    .isEqualTo(placeholders(english.getProperty(key)));
+        }
+    }
+
+    private static Properties bundle(String resource) throws IOException {
+        Properties properties = new Properties();
+        try (InputStream stream = MessageBundleTest.class.getResourceAsStream(resource)) {
+            assertThat(stream).as("the bundle %s is on the classpath", resource).isNotNull();
+            properties.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
+        }
+        return properties;
+    }
+
+    /** The {@code <arg:N>} placeholders of one line, in the order they appear. */
+    private static List<String> placeholders(String line) {
+        List<String> found = new ArrayList<>();
+        Matcher matcher = PLACEHOLDER.matcher(line);
+        while (matcher.find()) {
+            found.add(matcher.group());
+        }
+        return found;
+    }
 }
+

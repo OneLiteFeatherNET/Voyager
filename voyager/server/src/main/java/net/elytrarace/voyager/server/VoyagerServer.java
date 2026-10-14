@@ -19,10 +19,15 @@ import net.elytrarace.voyager.platform.permission.luckperms.exception.Permission
 import net.elytrarace.voyager.platform.config.ConfigLoader;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
+import net.elytrarace.voyager.platform.stats.StatsRequests;
+import net.elytrarace.voyager.server.command.LeaderboardCommand;
 import net.elytrarace.voyager.server.command.RaceCommand;
+import net.elytrarace.voyager.server.command.StatsCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
+import net.elytrarace.voyager.server.config.PersistenceSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.inject.JoinArrival;
+import net.elytrarace.voyager.server.persistence.StatsBinding;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
@@ -47,12 +52,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * The composition root: the one {@code main} in the rebuild, and the only place that knows all of it
@@ -118,6 +125,10 @@ public final class VoyagerServer {
     private VoyagerServer() {
     }
 
+    /** Every key the configuration check reads: the server's settings and the database's. */
+    private static final List<String> CHECK_KEYS = Stream.concat(ServerSettings.KEYS.stream(),
+            PersistenceSettings.KEYS.stream()).toList();
+
     /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
     static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
 
@@ -149,6 +160,12 @@ public final class VoyagerServer {
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
         ConfigCheck.comBootLine(settings).ifPresent(LOGGER::info);
+        // The database settings are read once, here, and never refuse the start: each problem is one warning, and the server
+        // runs with statistics off (owner decision Q1). Unset or off is one warning that no statistics are kept.
+        PersistenceSettings persistence = PersistenceSettings.from(config);
+        for (ConfigProblem problem : persistence.warnings()) {
+            LOGGER.warn(problem.message());
+        }
 
         // Before anything can say anything. PlayerSocketConnection.writePacketSync gates the entire
         // translation path on ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which is read once, when
@@ -227,7 +244,7 @@ public final class VoyagerServer {
             // Every singleton is built now, so a malformed map file, a duplicate definition or a cup
             // naming a map nothing provides is a refusal here rather than an exception on whichever
             // tick first asked for it.
-            graph = openGraph(settings);
+            graph = openGraph(settings, persistence);
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start while building the object graph", exception);
             System.exit(1);
@@ -259,11 +276,19 @@ public final class VoyagerServer {
         MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         registerEvents(session, waitingRoom, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
+        // Open to every sender: a player looks up their own record or another player's, and the leaderboard is public.
+        MinecraftServer.getCommandManager().register(graph.get(StatsCommand.class));
+        MinecraftServer.getCommandManager().register(graph.get(LeaderboardCommand.class));
         LOGGER.info("/race reload is registered: gated by {}", PermissionNode.VOYAGER_COMMAND_RACE_RELOAD.value());
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
-        scheduleTick(pipeline, waitingRoom, session);
+        scheduleTick(pipeline, waitingRoom, session, graph.get(StatsRequests.class));
+        // The statistics threads start before the port binds, so a race that finishes on the first tick is written. A
+        // database that was down at boot logs its one warning here, and is retried in the background from now on.
+        StatsBinding statistics = graph.get(StatsBinding.class);
+        statistics.bootWarning().ifPresent(warning -> LOGGER.warn(warning));
+        statistics.start();
         // The one clean shutdown: the stdin line `stop` and /stop both end here. The stop runs on a platform thread,
         // because the reader's own thread is the one the stop closes.
         ServiceShutdown shutdown = new ServiceShutdown(() -> {
@@ -298,7 +323,7 @@ public final class VoyagerServer {
      */
     static int configCheck(String[] args, ConfigLoader config,
             Supplier<InstanceManager> instances, PrintStream out) {
-        return configCheck(args, config.view(ServerSettings.KEYS), ConfigCheck.sourcesOf(config), instances, out);
+        return configCheck(args, config.view(CHECK_KEYS), ConfigCheck.sourcesOf(config), instances, out);
     }
 
     /** {@link #configCheck(String[], ConfigLoader, Supplier, PrintStream)} over a map of values, labelled as properties. */
@@ -307,13 +332,21 @@ public final class VoyagerServer {
         return configCheck(args, properties, ConfigCheck.PROPERTY_SOURCE, instances, out);
     }
 
+    /**
+     * The check's settings: the server's and the database's. The database warnings are printed with the report, and only
+     * the server's settings can refuse it, so a database problem does not change the exit code.
+     */
     private static int configCheck(String[] args, Map<String, String> properties, Function<String, String> sources,
             Supplier<InstanceManager> instances, PrintStream out) {
         List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties, sources);
+        List<ConfigProblem> persistence = ConfigCheck.persistenceProblems(properties, sources);
         if (!settingsProblems.isEmpty()) {
-            return ConfigCheck.report(settingsProblems, out);
+            List<ConfigProblem> all = new ArrayList<>(settingsProblems);
+            all.addAll(persistence);
+            all.sort(ConfigProblem.ORDER);
+            return ConfigCheck.report(all, out);
         }
-        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out, sources);
+        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out, sources, persistence);
     }
 
     /** Initialises Minestom's registries, which the world loader needs, and returns the instance manager. */
@@ -345,9 +378,18 @@ public final class VoyagerServer {
      *     bean or configured value
      */
     static BeanScope openGraph(ServerSettings settings) {
+        return openGraph(settings, PersistenceSettings.off());
+    }
+
+    /**
+     * {@link #openGraph(ServerSettings)} with the database settings the boot read. Opening the statistics database is part of
+     * building the graph, so a database that is down at boot is the binding's business and never a failure here.
+     */
+    static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence) {
         try {
             return BeanScope.builder()
                     .bean(ServerSettings.class, settings)
+                    .bean(PersistenceSettings.class, persistence)
                     .shutdownHook(false)
                     .build();
         } catch (RuntimeException exception) {
@@ -434,7 +476,8 @@ public final class VoyagerServer {
      * identical ones. So the first failure stops the cup and is logged once, with everything a
      * {@code /race} afterwards can still be asked about left standing.
      */
-    private static void scheduleTick(TickPipeline pipeline, WaitingRoom waitingRoom, CupSession session) {
+    private static void scheduleTick(TickPipeline pipeline, WaitingRoom waitingRoom, CupSession session,
+            StatsRequests statistics) {
         AtomicBoolean broken = new AtomicBoolean();
         MinecraftServer.getSchedulerManager().scheduleTask(() -> {
             if (broken.get()) {
@@ -444,6 +487,8 @@ public final class VoyagerServer {
                 pipeline.run();
                 // After the cup's own tick, inside the same guard: the room reads the cup as this tick left it.
                 waitingRoom.tick();
+                // Last: the statistics replies a read finished since the last tick. They never touch the cup.
+                statistics.tick();
             } catch (RuntimeException exception) {
                 broken.set(true);
                 session.stop();
@@ -483,6 +528,14 @@ public final class VoyagerServer {
                 LOGGER.info("World handles closed; nothing was saved, by design");
             } catch (RuntimeException exception) {
                 LOGGER.warn("A world handle did not close cleanly", exception);
+            }
+            // The statistics stop: the writer drains for at most ten seconds, the count left is logged, and the pool
+            // closes after the writer (design D5). Before the graph closes, so the binding is still a live bean.
+            try {
+                graph.get(StatsBinding.class).shutdown(StatsBinding.SHUTDOWN_DRAIN);
+            } catch (RuntimeException exception) {
+                // The rest of the stop still runs: the graph and LuckPerms close whatever the statistics did.
+                LOGGER.warn("The statistics did not stop cleanly", exception);
             }
             // After the world handles, so a bean's preDestroy hook, should one ever be added, runs
             // once nothing is still reading a world through it.

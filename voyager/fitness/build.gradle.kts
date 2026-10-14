@@ -13,6 +13,7 @@ dependencies {
     testImplementation(project(":voyager:server"))
     testImplementation(project(":voyager:setup"))
     testImplementation(project(":voyager:cloudnet-bridge"))
+    testImplementation(project(":voyager:persistence"))
     testImplementation(libs.archunit.junit5)
 }
 

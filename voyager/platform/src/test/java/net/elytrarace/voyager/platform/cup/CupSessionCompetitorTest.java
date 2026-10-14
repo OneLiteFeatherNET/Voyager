@@ -14,6 +14,7 @@ import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
@@ -42,8 +43,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -305,7 +308,8 @@ class CupSessionCompetitorTest {
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(nobody(), boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
         return new CupSession(new CatalogHolder(catalog), worlds, new MapTransition(worlds, runs), runs, flight,
-                blocks, boosts, timings, STEP, () -> humans, field);
+                blocks, boosts, timings, STEP, () -> humans, new NoOpRaceRecorder(),
+                Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), field);
     }
 
     private static Supplier<Collection<Player>> nobody() {

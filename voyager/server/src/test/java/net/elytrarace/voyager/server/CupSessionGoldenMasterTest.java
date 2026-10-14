@@ -25,6 +25,7 @@ import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
+import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.platform.cup.CompetitorField;
@@ -443,7 +444,7 @@ class CupSessionGoldenMasterTest {
                     : new ComField(() -> field, comGrid, ComDifficulty.MEDIUM,
                             Clock.fixed(Instant.ofEpochMilli(COM_ROUND_MILLIS), ZoneOffset.UTC), worlds::forWorld);
             this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, timings, STEP,
-                    () -> field, competitors);
+                    () -> field, new NoOpRaceRecorder(), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), competitors);
             this.pipeline = new CupBeans().tickPipeline(session, boosts);
         }
 

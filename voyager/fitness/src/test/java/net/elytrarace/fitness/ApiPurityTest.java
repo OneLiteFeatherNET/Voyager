@@ -128,11 +128,30 @@ class ApiPurityTest {
                     .because("Paper is dropped entirely by the rebuild")
                     .allowEmptyShould(false);
 
+    /**
+     * The storage libraries of voyager-persistence. Race and platform reach storage only through the ports in
+     * {@code net.elytrarace.voyager.api.stats}, so a Hibernate, JDBC pool, migration or driver type never reaches them.
+     */
+    static final String[] STORAGE_LIBRARIES = {
+        "jakarta.persistence..", "org.hibernate..", "com.zaxxer..", "org.flywaydb..", "org.postgresql..",
+    };
+
     @ArchTest
-    static final ArchRule raceDoesNotDependOnPersistenceTechnology =
-            noClasses().that().resideInAPackage("net.elytrarace.voyager.race..")
-                    .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "org.hibernate..")
-                    .because("the race domain scores a run; storing one is voyager-persistence's job")
+    static final ArchRule raceAndPlatformDoNotDependOnStorageTechnology =
+            noClasses().that().resideInAnyPackage("net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform..")
+                    .should().dependOnClassesThat().resideInAnyPackage(STORAGE_LIBRARIES)
+                    .because("the race domain scores a run and the platform observes it; storing one is "
+                            + "voyager-persistence's job, reached through the RaceRecorder port (design D2)")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule apiDoesNotDependOnStorage =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "org.hibernate..", "jakarta.persistence..", "com.zaxxer..", "org.flywaydb..",
+                            "org.postgresql..", "java.sql..", "javax.sql..")
+                    .because("the API declares the storage ports and records; it has no Hibernate, JDBC or pool type "
+                            + "(design D2)")
                     .allowEmptyShould(false);
 
     // E4 puts voyager-platform and voyager-server on this module's classpath for the first time.

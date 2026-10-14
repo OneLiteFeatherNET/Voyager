@@ -75,3 +75,32 @@ jobs:
           path: legacy/server/build/libs/*.jar
           if-no-files-found: warn
           retention-days: 14
+
+  # The PostgreSQL integration suite runs Testcontainers, which needs a Linux Docker daemon. The GitHub-hosted
+  # windows-latest and macos-latest runners do not provide one by default, so the suite runs here only, and the
+  # matrix job above keeps running the unit tests on all three systems (design D10 of player-stats).
+  # -Pvoyager.requireDocker=true makes a missing Docker daemon fail the job instead of skipping the suite.
+  persistence-integration:
+    if: github.repository_owner == 'OneLiteFeatherNET'
+    name: Persistence integration on ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.event_name == 'pull_request' }}
+
+      - name: Integration test
+        run: ./gradlew :voyager:persistence:integrationTest -Pvoyager.requireDocker=true
+        env:
+          ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
+          ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}

@@ -20,6 +20,7 @@ import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
+import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.minestom.server.MinecraftServer;
@@ -101,11 +102,15 @@ public final class CupBeans {
         return new ComField(players, settings.comCount(), settings.comDifficulty(), clock, instances::forWorld);
     }
 
+    /**
+     * The cup records every finished map and cup to the recorder {@link PersistenceBeans} binds: the no-op recorder with
+     * persistence off, the statistics writer otherwise. It plays the computer racers {@link #competitorField} binds.
+     */
     @Bean
     CupSession cupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition, RaceRuns runs,
             FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts, RaceTimings timings,
-            Supplier<Collection<Player>> players, CompetitorField competitors) {
+            Supplier<Collection<Player>> players, RaceRecorder recorder, Clock clock, CompetitorField competitors) {
         return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                Duration.ofMillis(MinecraftServer.TICK_MS), players, competitors);
+                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock, competitors);
     }
 }

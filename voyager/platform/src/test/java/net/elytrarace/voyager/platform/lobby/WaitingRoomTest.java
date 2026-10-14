@@ -27,6 +27,7 @@ import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
+import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.flow.StartGate.Situation;
@@ -55,8 +56,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -611,7 +614,7 @@ class WaitingRoomTest {
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(() -> online, boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
         CupSession session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, timings,
-                STEP, () -> online);
+                STEP, () -> online, new NoOpRaceRecorder(), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
         TickPipeline pipeline = TickPipeline.of(List.of(new TickStep("phase advance", session::advancePhase)));
         LobbyTransition lobby = withLobby ? new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN)) : null;
         LobbyHud hud = new LobbyHud();

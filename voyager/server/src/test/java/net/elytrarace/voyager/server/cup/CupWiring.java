@@ -5,6 +5,7 @@ import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
+import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
@@ -16,7 +17,10 @@ import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.inject.CupBeans;
 import net.minestom.server.entity.Player;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.function.Supplier;
 
@@ -41,7 +45,7 @@ public final class CupWiring {
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(players, boosts), tracker, new MinestomCollisionSpace(blocks));
         CupSession session = new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                step, players);
+                step, players, new NoOpRaceRecorder(), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
         return new Cup(session, new CupBeans().tickPipeline(session, boosts));
     }
 }

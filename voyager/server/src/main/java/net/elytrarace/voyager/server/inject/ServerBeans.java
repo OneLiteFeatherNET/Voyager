@@ -5,7 +5,9 @@ import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
+import net.elytrarace.voyager.api.stats.StatsReader;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.stats.StatsRequests;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyBoard;
@@ -27,7 +29,9 @@ import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.server.CatalogReloadService;
+import net.elytrarace.voyager.server.command.LeaderboardCommand;
 import net.elytrarace.voyager.server.command.RaceCommand;
+import net.elytrarace.voyager.server.command.StatsCommand;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.InstanceManager;
@@ -132,6 +136,18 @@ public final class ServerBeans {
     RaceCommand raceCommand(CupSession session, WaitingRoom room, CatalogReloadService reloads,
             PermissionPolicy policy, @External ServerSettings settings) {
         return new RaceCommand(session, room, settings.devMode(), reloads, policy);
+    }
+
+    /** {@code /stats}, built with the read queue the tick answers from. Registered by {@code VoyagerServer}, like {@code /race}. */
+    @Bean
+    StatsCommand statsCommand(StatsReader reader, StatsRequests requests) {
+        return new StatsCommand(reader, requests);
+    }
+
+    /** {@code /leaderboard}, built with the catalogue it looks maps up in. Registered by {@code VoyagerServer}. */
+    @Bean
+    LeaderboardCommand leaderboardCommand(CatalogHolder catalog, StatsReader reader, StatsRequests requests) {
+        return new LeaderboardCommand(catalog, reader, requests);
     }
 
     /**

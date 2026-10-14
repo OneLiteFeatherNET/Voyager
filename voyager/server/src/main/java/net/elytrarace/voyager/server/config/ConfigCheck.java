@@ -113,6 +113,21 @@ public final class ConfigCheck {
     }
 
     /**
+     * The database settings, checked for shape only and reported as warnings. They never enter {@link #settingsProblems}, so
+     * they never refuse a start: a database problem runs with statistics off (owner decision Q1). The validate-and-exit run
+     * prints them with its report; a switch that is unset or off is not a problem to check, so it prints nothing.
+     *
+     * @param properties the values by key, the database keys among them
+     * @param sources    the label of the source of a key
+     * @return one warning per problem; empty when the switch is unset or off, or the settings are complete
+     */
+    public static List<ConfigProblem> persistenceProblems(Map<String, String> properties,
+            Function<String, String> sources) {
+        PersistenceSettings settings = PersistenceSettings.from(properties, sources);
+        return settings.requested() ? settings.warnings() : List.of();
+    }
+
+    /**
      * The settings for a configuration whose {@link #settingsProblems} are empty.
      *
      * @throws IllegalStateException if the settings were not checked first and are refused
@@ -271,7 +286,19 @@ public final class ConfigCheck {
     /** {@link #run(ServerSettings, InstanceManager, PrintStream)} with each setting labelled by {@code sources}. */
     public static int run(ServerSettings settings, InstanceManager instances, PrintStream out,
             Function<String, String> sources) {
-        return report(catalogueProblems(settings, instances, sources), out);
+        return run(settings, instances, out, sources, List.of());
+    }
+
+    /**
+     * {@link #run(ServerSettings, InstanceManager, PrintStream, Function)} with the database warnings of
+     * {@link #persistenceProblems} printed in the same report, sorted with the catalogue's problems.
+     */
+    public static int run(ServerSettings settings, InstanceManager instances, PrintStream out,
+            Function<String, String> sources, List<ConfigProblem> extra) {
+        List<ConfigProblem> all = new ArrayList<>(extra);
+        all.addAll(catalogueProblems(settings, instances, sources));
+        all.sort(ConfigProblem.ORDER);
+        return report(all, out);
     }
 
     /**

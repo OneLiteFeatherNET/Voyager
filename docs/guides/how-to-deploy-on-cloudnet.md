@@ -54,8 +54,36 @@ change the defaults were `run/data` and `run/worlds`, and a service needed two `
 | Velocity forwarding secret | the environment variable `VOYAGER_VELOCITY_SECRET` in the task's environment, the same secret the Velocity proxy holds. The system property `voyager.velocity.secret` also works. Never write it into a file in the service directory |
 | Racer counts, cup and paths | the system properties `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH`, and the lobby pair `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`. Each of them also works as an environment variable of the same name |
 | The `stop` command | the node writes `end` and then `stop` to the service's standard input. `end` is ignored, `stop` shuts the service down cleanly |
+| The statistics switch | the environment variable `VOYAGER_PERSISTENCE`: `on` collects statistics, `off` keeps none. Unset means `off` |
+| The statistics database | the environment variables `VOYAGER_DB_URL`, `VOYAGER_DB_USER` and `VOYAGER_DB_PASSWORD`, or `VOYAGER_DB_PASSWORD_FILE` (see "Player statistics database") |
+| The statistics tuning | the environment variables `VOYAGER_DB_POOL_SIZE` (default 10) and `VOYAGER_DB_QUEUE_CAPACITY` (default 256). Leave them unset unless you have a reason to change them |
 
 A blank secret refuses the start: the server does not fall back to offline mode with an empty secret.
+
+## Player statistics database
+
+The server records race results and player statistics in PostgreSQL when `VOYAGER_PERSISTENCE` is `on`. The keys, their
+defaults and the behaviour during an outage are in `docs/reference/database.md`.
+
+The database is never a reason for the server to refuse to start. A wrong URL, a stopped database or a missing password
+leads to one WARN in the log, and the game runs without statistics until the database is reachable again.
+
+Before the release, choose one of two states for every task that runs the game:
+
+- **Collect statistics.** Set `VOYAGER_PERSISTENCE=on`, together with `VOYAGER_DB_URL`, `VOYAGER_DB_USER` and
+  `VOYAGER_DB_PASSWORD` (or `VOYAGER_DB_PASSWORD_FILE`). Put these in the CloudNet task environment as node-level secrets:
+  in the environment of the node process, never in the task file or in a template. The URL has this form, with the real host
+  that the operator provides:
+
+  ```
+  VOYAGER_DB_URL=jdbc:postgresql://db.example.invalid:5432/voyager
+  ```
+
+- **Keep statistics off.** Leave `VOYAGER_PERSISTENCE` unset, or set it to `off`. Each start then logs one WARN that no
+  statistics are kept on the server. The game plays normally.
+
+To roll back a `on` deployment, set `VOYAGER_PERSISTENCE=off` in the task and restart the service. The database schema and
+every recorded row stay in place, and nothing else changes. A later switch back to `on` uses the same schema.
 
 ### Precedence
 
