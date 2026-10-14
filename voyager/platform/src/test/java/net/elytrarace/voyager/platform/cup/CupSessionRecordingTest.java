@@ -267,6 +267,40 @@ class CupSessionRecordingTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // Nothing to record
+    // ------------------------------------------------------------------------------------------
+
+    /** The racer leaves during the first map, so the map ends with no human racer and nothing is stored for it. */
+    @Test
+    void aMapWithNoHumanRacerRecordsNothing(Env env) throws IOException {
+        Player racer = startTwoMapCup(env, recorder);
+        untilGameStarts();
+        leave(racer);
+
+        playUntilCupFinishes();
+
+        assertThat(recorder.races).as("completions of maps nobody raced").isEmpty();
+    }
+
+    /** The racer leaves during the first map, so the cup ends with no human racer and no cup result is stored. */
+    @Test
+    void aCupWithNoHumanRacerRecordsNoCupCompletion(Env env) throws IOException {
+        Player racer = startTwoMapCup(env, recorder);
+        untilGameStarts();
+        leave(racer);
+
+        playUntilCupFinishes();
+
+        assertThat(recorder.cups).as("cup completions of a cup nobody raced").isEmpty();
+    }
+
+    /** Takes the racer out of the race and out of the world, as a disconnect would. */
+    private void leave(Player racer) {
+        online.remove(racer);
+        racer.remove(true);
+    }
+
+    // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
 

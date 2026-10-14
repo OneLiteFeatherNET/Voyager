@@ -42,6 +42,8 @@ import net.elytrarace.voyager.race.reset.ResetPlan;
 import net.elytrarace.voyager.race.reset.RunReset;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.MapScore;
+import net.elytrarace.voyager.api.stats.CupCompletion;
+import net.elytrarace.voyager.api.stats.RaceCompletion;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.Rockets;
@@ -840,8 +842,13 @@ public final class CupSession implements RacePhaseListener {
                 racers.add(new RaceParticipant(id, racer.getUsername(), false, held.get(), score,
                         tally.boosts(id), tally.resets(id), tally.flightTime(id)));
             }
-            recorder.recordRace(RaceCompletions.of(map.name(), LAYOUT_NOT_COMPUTED, cup.mode(), cup.name(),
-                    mapStartedAt, clock.instant(), racers));
+            RaceCompletion completion = RaceCompletions.of(map.name(), LAYOUT_NOT_COMPUTED, cup.mode(), cup.name(),
+                    mapStartedAt, clock.instant(), racers);
+            if (completion.racers().isEmpty()) {
+                // A map nobody raced is not stored: an empty session would only count a map that was never played.
+                return;
+            }
+            recorder.recordRace(completion);
         } catch (RuntimeException failure) {
             LOGGER.warn("Map '{}' was not recorded for statistics: {}", map.name(), failure.getMessage(), failure);
         }
@@ -853,8 +860,13 @@ public final class CupSession implements RacePhaseListener {
      */
     private void recordCup() {
         try {
-            recorder.recordCup(CupCompletions.of(cup.name(), cup.mode(), cupStartedAt, clock.instant(),
-                    round.order(), round::of, this::nameOf));
+            CupCompletion completion = CupCompletions.of(cup.name(), cup.mode(), cupStartedAt, clock.instant(),
+                    round.order(), round::of, this::nameOf);
+            if (completion.racers().isEmpty()) {
+                // A cup nobody raced is not stored, in the same way as a map nobody raced.
+                return;
+            }
+            recorder.recordCup(completion);
         } catch (RuntimeException failure) {
             LOGGER.warn("Cup '{}' was not recorded for statistics: {}", cup.name(), failure.getMessage(), failure);
         }

@@ -38,6 +38,7 @@ or blocks the tick.
 - [x] 4.6 Green: `CupSession` takes a `RaceRecorder` through its constructor and calls it at `mapFinished` and at the cup end; `platform.stats.NoOpRaceRecorder` for `off` (`feat(stats)`). Haiku effort: high.
 - [x] 4.8 Red then green: flight time and boosts stop at the finish. `CupSessionRecordingTest` names "glidingAfterTheFinishIsNotCounted" and "boostsAndResetsAfterTheFinishAreNotCounted"; `raceTick` counts a gliding tick only while the run is unfinished after the advance, and `requestBoost` counts a boost only for an unfinished run (`feat(stats)`). Haiku effort: high.
 - [x] 4.9 Test: the completion carries the racer's boosts, resets and flight millis, with one boost, one reset and two gliding ticks before the finish. It passes on the code of 4.8, so it is a test-only commit (`feat(stats)`). Haiku effort: medium.
+- [x] 4.10 Red then green: a map or a cup with no human racer records nothing. `CupSessionRecordingTest` names "aMapWithNoHumanRacerRecordsNothing" and "aCupWithNoHumanRacerRecordsNoCupCompletion"; `CupSession` skips `recordRace` and `recordCup` when the completion has no racers (`feat(stats)`). Haiku effort: medium.
 
 ## 5. persistence: the write path with fakes
 
