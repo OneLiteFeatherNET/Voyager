@@ -1,3 +1,6 @@
+import java.io.File
+import java.util.zip.ZipFile
+
 plugins {
     id("voyager.java-conventions")
     alias(libs.plugins.shadow)
@@ -128,14 +131,111 @@ val prepareRunData by tasks.registering {
     dependsOn(syncRunMaps, syncRunCups)
 }
 
+/** The provider names one META-INF/services file lists: one per line, blank lines and comments ignored. */
+fun serviceProviders(bytes: ByteArray): Set<String> = String(bytes, Charsets.UTF_8).lines()
+    .map { it.trim() }
+    .filter { it.isNotEmpty() && !it.startsWith("#") }
+    .toSet()
+
+/**
+ * The providers that the entries of a class path register, per META-INF/services file, merged across the entries: a jar
+ * is read through its entries, a directory through its META-INF/services folder.
+ */
+fun serviceProvidersOf(entries: Iterable<File>): Map<String, Set<String>> {
+    val merged = linkedMapOf<String, MutableSet<String>>()
+    fun register(name: String, bytes: ByteArray) {
+        merged.getOrPut(name) { linkedSetOf<String>() }.addAll(serviceProviders(bytes))
+    }
+    for (entry in entries) {
+        if (entry.isDirectory) {
+            File(entry, "META-INF/services").listFiles()
+                ?.filter { it.isFile }
+                ?.forEach { register("META-INF/services/${it.name}", it.readBytes()) }
+        } else if (entry.isFile && entry.name.endsWith(".jar")) {
+            ZipFile(entry).use { zip ->
+                for (zipEntry in zip.entries().asSequence().toList()) {
+                    if (!zipEntry.isDirectory && zipEntry.name.startsWith("META-INF/services/")) {
+                        register(zipEntry.name, zip.getInputStream(zipEntry).readBytes())
+                    }
+                }
+            }
+        }
+    }
+    return merged
+}
+
+// Shadow keeps only the first copy of each path (DuplicatesStrategy.EXCLUDE is its default), so a second copy of a
+// service file never reaches mergeServiceFiles(). Flyway finds its PostgreSQL support and its stub extensions through
+// META-INF/services/org.flywaydb.core.extensibility.Plugin, which flyway-core and flyway-database-postgresql both
+// register: without flyway-core's lines the statistics start fails with an NPE inside Flyway's configuration. So the
+// service files are excluded from the copied jars and written once, merged across every entry, from this task.
+val mergedServiceFiles = layout.buildDirectory.dir("generated/merged-service-files")
+val mergeServiceFilesForShadow by tasks.registering {
+    group = "build"
+    description = "Writes the META-INF/services files of the runtime class path and the server classes, merged."
+    val runtimeJars = configurations.getByName("runtimeClasspath")
+    val ownClasses = sourceSets.main.get().output
+    inputs.files(runtimeJars, ownClasses)
+    outputs.dir(mergedServiceFiles)
+    doLast {
+        val root = mergedServiceFiles.get().asFile
+        project.delete(root)
+        for ((name, providers) in serviceProvidersOf(runtimeJars.files + ownClasses.files)) {
+            val file = File(root, name.removePrefix("META-INF/services/"))
+            file.parentFile.mkdirs()
+            file.writeText(providers.joinToString(separator = "\n", postfix = "\n"))
+        }
+    }
+}
+
 tasks.shadowJar {
     archiveClassifier.set("")
-    // Defensive: keeps every META-INF/services file, including avaje's InjectExtension, merged rather
-    // than overwritten by whichever dependency is copied last.
-    mergeServiceFiles()
+    dependsOn(mergeServiceFilesForShadow)
+    exclude("META-INF/services/**")
+    from(mergedServiceFiles) {
+        into("META-INF/services")
+    }
     manifest {
         attributes["Main-Class"] = "net.elytrarace.voyager.server.VoyagerServer"
     }
+}
+
+// Every provider that a runtime dependency or this module registers must be in the shadow jar's service files. A jar
+// that lost flyway-core's lines fails the statistics start with an NPE inside Flyway's configuration, and nothing else
+// reports it.
+val verifyShadowServices by tasks.registering {
+    group = "verification"
+    description = "Fails when the server's shadow jar drops a service provider that a runtime dependency registers."
+    dependsOn(tasks.shadowJar)
+    val runtimeJars = configurations.getByName("runtimeClasspath")
+    val ownClasses = sourceSets.main.get().output
+    val shadowJar = tasks.shadowJar.flatMap { it.archiveFile }
+    inputs.files(runtimeJars, ownClasses)
+    inputs.file(shadowJar)
+    doLast {
+        val expected = serviceProvidersOf(runtimeJars.files + ownClasses.files)
+        val shadow = shadowJar.get().asFile
+        val missing = mutableListOf<String>()
+        ZipFile(shadow).use { zip ->
+            for ((name, wanted) in expected) {
+                val entry = zip.getEntry(name)
+                val have: Set<String> = if (entry == null) emptySet() else serviceProviders(zip.getInputStream(entry).readBytes())
+                for (provider in wanted) {
+                    if (provider !in have) {
+                        missing.add("$name: $provider")
+                    }
+                }
+            }
+        }
+        if (missing.isNotEmpty()) {
+            throw GradleException("${shadow.name} lost ${missing.size} service provider(s) of its runtime dependencies:\n" +
+                missing.joinToString("\n"))
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(verifyShadowServices)
 }
 
 // Only the shadow jar is produced. shadowJar keeps the archive name of the plain jar (archiveClassifier ""), so both
