@@ -57,7 +57,7 @@ or blocks the tick.
 - [x] 6.5 Red: `LeaderboardPlanIT` names "the leaderboard uses its index and has no sort node", checked with `EXPLAIN (FORMAT JSON)` on a seeded table of at least 2000 rows (`feat(stats)`). Haiku effort: medium.
 - [x] 6.6 Green: the leaderboard and profile queries as HQL constructor expressions or native reads returning API records; the profile is three queries in one read-only transaction (`feat(stats)`). Haiku effort: high.
 - [ ] 6.7 Red: `DatabaseLostIT` stops the container mid-test and names "a completion is kept while the database is down and written after it returns", and "an on-start against a stopped database runs without stats and starts writing after the database returns" (`feat(stats)`). Haiku effort: high.
-- [ ] 6.8 Green: the writer's transaction for a race (session, results, splits, personal bests, statistics) and a cup, one transaction each (`feat(stats)`). Haiku effort: high.
+- [x] 6.8 Green: the writer's transaction for a race (session, results, splits, personal bests, statistics) and a cup, one transaction each (`feat(stats)`). Haiku effort: high.
 
 ## 7. server: configuration, wiring and fitness
 
