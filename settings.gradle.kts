@@ -48,7 +48,7 @@ dependencyResolutionManagement {
             // Flyway's PostgreSQL support, required since Flyway 10; same release as flyway-core, uploaded 2026-06-30.
             library("flyway.postgresql", "org.flywaydb", "flyway-database-postgresql").versionRef("flyway")
             // JDBC driver, uploaded 2026-07-06. 42.7.14 (uploaded 2026-10-07) is inside the window and not used yet.
-            version("postgresql", "42.7.13")
+            version("postgresql", "42.7.14")
             library("postgresql", "org.postgresql", "postgresql").versionRef("postgresql")
             // Testcontainers for the integration source set, uploaded 2026-04-20.
             version("testcontainers", "2.0.5")
