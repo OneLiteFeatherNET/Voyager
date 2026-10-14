@@ -49,11 +49,13 @@ resets and flight time in the player profile only for modes where the mode is ra
 - **THEN** the run is stored, and the profile's races played, medals and total flight time do not change
 
 ### Requirement: `/stats` shows a player's profile
-**MoSCoW:** Must. WHEN a racer runs `/stats`, THE SYSTEM SHALL reply in chat with the player's profile: cups played, cup wins,
-medals per tier (the total of each tier), total flight time and the player's personal bests. WHEN the player has no recorded run,
-THE SYSTEM SHALL say so. `/stats [player]` without an argument SHALL answer for the sender. The reply SHALL be sent from the game
-loop. Anyone may run `/stats`; no permission node is required. The reply is a plain chat message, not clickable, and its text
-exists in de_DE (informal "du") and en_US.
+**MoSCoW:** Must. WHEN a racer runs `/stats [player]`, THE SYSTEM SHALL reply in chat with that player's profile, and the reply
+SHALL be sent from the game loop. Without an argument it answers for the sender. Anyone may run it.
+
+#### Scenario: the profile content
+- **WHEN** a player with recorded ranked runs runs `/stats`
+- **THEN** the reply shows cups played, cup wins, medals per tier (the total of each tier), total flight time and the player's
+  personal bests, as a plain chat message that is not clickable, in de_DE (informal "du") and en_US
 
 #### Scenario: a new player
 - **WHEN** a player who has never finished a map runs `/stats`
