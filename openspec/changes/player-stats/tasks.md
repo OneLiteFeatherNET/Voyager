@@ -65,8 +65,8 @@ or blocks the tick.
 - [x] 7.2 Green: the keys of design.md D8 read through the loader from `adopt-avaje-config`, and the shape checks in `ConfigCheck` (no connection); a failed check logs its WARN and runs with stats off, it never refuses the start (`feat(stats)`). Haiku effort: medium.
 - [x] 7.3 Red: `PersistenceWiringTest` on a fresh Minestom instance with a fake store names "unset and off bind the no-op recorder", "on binds the store", and "the cup of a server with persistence off records nothing" (`feat(stats)`). Haiku effort: medium.
 - [x] 7.4 Green: `server.inject.PersistenceBeans` (`@Factory`, the only DI annotation, in the composition root), wired into `CupBeans` (`feat(stats)`). Haiku effort: high.
-- [ ] 7.5 Red: fitness rules of design.md D11 added to `voyager/fitness` with `allowEmptyShould(false)`; run `./gradlew :voyager:fitness:test`; record the red (`test(stats)`). Haiku effort: medium.
-- [ ] 7.6 Green: add `:voyager:persistence` to `settings.gradle.kts`, to `voyager/fitness/build.gradle.kts`, to `FitnessCoverageTest`'s map; the rules pass (`feat(stats)`). Haiku effort: medium.
+- [x] 7.5 Red: fitness rules of design.md D11 added to `voyager/fitness` with `allowEmptyShould(false)`; run `./gradlew :voyager:fitness:test`; record the red (`test(stats)`). Haiku effort: medium.
+- [x] 7.6 Green: add `:voyager:persistence` to `settings.gradle.kts`, to `voyager/fitness/build.gradle.kts`, to `FitnessCoverageTest`'s map; the rules pass (`feat(stats)`). Haiku effort: medium.
 - [ ] 7.7 CI: a new job `persistence-integration` on `ubuntu-latest` in `.github/workflows/build.yml` runs `./gradlew :voyager:persistence:integrationTest -Pvoyager.requireDocker=true`. The existing matrix names stay unchanged (`ci`). Haiku effort: medium.
 
 ## 8. platform and server: /stats and /leaderboard
