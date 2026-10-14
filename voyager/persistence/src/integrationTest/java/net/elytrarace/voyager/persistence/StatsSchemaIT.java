@@ -1,6 +1,10 @@
 package net.elytrarace.voyager.persistence;
 
+import com.zaxxer.hikari.HikariDataSource;
 import net.elytrarace.voyager.persistence.schema.FlywayMigrator;
+import net.elytrarace.voyager.persistence.schema.HikariDataSources;
+import net.elytrarace.voyager.persistence.schema.SessionFactoryBuilder;
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -56,6 +60,22 @@ class StatsSchemaIT extends DockerRequiredIT {
 
         assertThat(secondStart).as("the database is already at version 1, so the second start applies nothing")
                 .isZero();
+    }
+
+    @Test
+    @DisplayName("the mappings validate against it")
+    void theMappingsValidateAgainstIt() throws SQLException {
+        String url = FreshDatabase.create(POSTGRES);
+        FlywayMigrator.migrate(url, POSTGRES.getUsername(), POSTGRES.getPassword());
+        HikariDataSource pool = HikariDataSources.create(url, POSTGRES.getUsername(), POSTGRES.getPassword(), 2, false);
+        try (SessionFactory sessionFactory = SessionFactoryBuilder.build(pool)) {
+            // Building the factory runs hbm2ddl.auto=validate; a mapping that does not match the schema throws here.
+            assertThat(sessionFactory.isOpen())
+                    .as("every mapping of the eight entities matches the table it names")
+                    .isTrue();
+        } finally {
+            pool.close();
+        }
     }
 
     private static Connection connect(String url) throws SQLException {
