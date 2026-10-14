@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.persistence;
 
 import com.zaxxer.hikari.HikariDataSource;
+import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.persistence.schema.FlywayMigrator;
 import net.elytrarace.voyager.persistence.schema.HikariDataSources;
 import net.elytrarace.voyager.persistence.schema.StatsDatabase;
@@ -17,6 +18,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,6 +80,27 @@ class StatsSchemaIT extends DockerRequiredIT {
             assertThat(database.sessionFactory().isOpen())
                     .as("every mapping of the eight entities matches the table it names")
                     .isTrue();
+        }
+    }
+
+    @Test
+    @DisplayName("every named query executes")
+    void everyNamedQueryExecutes() throws SQLException {
+        String url = FreshDatabase.create(POSTGRES);
+        try (StatsDatabase database =
+                     StatsDatabase.open(url, POSTGRES.getUsername(), POSTGRES.getPassword(), 2, false)) {
+            // An empty database: every read still runs its statement and returns, with no row and no error.
+            PostgresStatsReader reader = new PostgresStatsReader(database.sessionFactory());
+
+            assertThat(reader.profile(UUID.randomUUID()).personalBests())
+                    .as("the three profile queries run and find nothing")
+                    .isEmpty();
+            assertThat(reader.findPlayer("nobody"))
+                    .as("the player lookup runs and finds nothing")
+                    .isEmpty();
+            assertThat(reader.topTimes("hangar", StatsSeed.LAYOUT_VERSION, GameMode.RACE, 10))
+                    .as("the leaderboard query runs and finds nothing")
+                    .isEmpty();
         }
     }
 
