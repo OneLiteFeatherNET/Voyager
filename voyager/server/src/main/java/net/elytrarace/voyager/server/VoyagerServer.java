@@ -21,6 +21,7 @@ import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
 import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
+import net.elytrarace.voyager.server.config.PersistenceSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.elytrarace.voyager.platform.cup.CupSession;
@@ -47,12 +48,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * The composition root: the one {@code main} in the rebuild, and the only place that knows all of it
@@ -118,6 +121,10 @@ public final class VoyagerServer {
     private VoyagerServer() {
     }
 
+    /** Every key the configuration check reads: the server's settings and the database's. */
+    private static final List<String> CHECK_KEYS = Stream.concat(ServerSettings.KEYS.stream(),
+            PersistenceSettings.KEYS.stream()).toList();
+
     /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
     static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
 
@@ -148,6 +155,11 @@ public final class VoyagerServer {
         }
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
+        // The database settings are read once, here, and never refuse the start: each problem is one warning, and the server
+        // runs with statistics off (owner decision Q1). Unset or off is one warning that no statistics are kept.
+        for (ConfigProblem problem : PersistenceSettings.from(config).warnings()) {
+            LOGGER.warn(problem.message());
+        }
 
         // Before anything can say anything. PlayerSocketConnection.writePacketSync gates the entire
         // translation path on ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION, which is read once, when
@@ -297,7 +309,7 @@ public final class VoyagerServer {
      */
     static int configCheck(String[] args, ConfigLoader config,
             Supplier<InstanceManager> instances, PrintStream out) {
-        return configCheck(args, config.view(ServerSettings.KEYS), ConfigCheck.sourcesOf(config), instances, out);
+        return configCheck(args, config.view(CHECK_KEYS), ConfigCheck.sourcesOf(config), instances, out);
     }
 
     /** {@link #configCheck(String[], ConfigLoader, Supplier, PrintStream)} over a map of values, labelled as properties. */
@@ -306,13 +318,21 @@ public final class VoyagerServer {
         return configCheck(args, properties, ConfigCheck.PROPERTY_SOURCE, instances, out);
     }
 
+    /**
+     * The check's settings: the server's and the database's. The database warnings are printed with the report, and only
+     * the server's settings can refuse it, so a database problem does not change the exit code.
+     */
     private static int configCheck(String[] args, Map<String, String> properties, Function<String, String> sources,
             Supplier<InstanceManager> instances, PrintStream out) {
         List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties, sources);
+        List<ConfigProblem> persistence = ConfigCheck.persistenceProblems(properties, sources);
         if (!settingsProblems.isEmpty()) {
-            return ConfigCheck.report(settingsProblems, out);
+            List<ConfigProblem> all = new ArrayList<>(settingsProblems);
+            all.addAll(persistence);
+            all.sort(ConfigProblem.ORDER);
+            return ConfigCheck.report(all, out);
         }
-        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out, sources);
+        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out, sources, persistence);
     }
 
     /** Initialises Minestom's registries, which the world loader needs, and returns the instance manager. */
