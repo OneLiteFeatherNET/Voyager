@@ -234,6 +234,38 @@ class CupSessionRecordingTest {
         assertThat(run.resets()).as("resets after the finish").isZero();
     }
 
+    /**
+     * One accepted boost, one reset and two gliding ticks before the finish. The reset is an out-of-bounds send-back
+     * on a tick the racer is not gliding, so it adds no flight time; the finishing tick is not counted either, as
+     * {@link #glidingAfterTheFinishIsNotCounted} says.
+     */
+    @Test
+    void theCompletionCarriesTheRacersBoostsResetsAndFlightMillis(Env env) throws IOException {
+        Player racer = startTwoMapCup(env, recorder, 2);
+        untilGameStarts();
+        racer.setFlyingWithElytra(true);
+        moveTo(racer, FRONT_OF_RING);
+        session.advancePhase();
+        moveTo(racer, FRONT_OF_RING);
+        assertThat(session.requestBoost(racer)).as("the boost is accepted").isTrue();
+        session.advancePhase();
+        racer.setFlyingWithElytra(false);
+        moveTo(racer, BELOW_THE_WORLD);
+        session.advancePhase();
+        moveTo(racer, FRONT_OF_RING);
+        session.advancePhase();
+        racer.setFlyingWithElytra(true);
+        moveTo(racer, BEHIND_RING);
+        session.advancePhase();
+        playUntilCupFinishes();
+
+        RacerRun run = runOf(recorder.races.get(0), racer);
+        assertThat(run.finishPosition()).as("the racer finished the first map").isEqualTo(1);
+        assertThat(run.boosts()).as("boosts in the completion").isEqualTo(1);
+        assertThat(run.resets()).as("resets in the completion").isEqualTo(1);
+        assertThat(run.flightMillis()).as("flight millis in the completion").isEqualTo(2 * 50);
+    }
+
     // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
