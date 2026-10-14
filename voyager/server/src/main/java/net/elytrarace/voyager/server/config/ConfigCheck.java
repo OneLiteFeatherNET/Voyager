@@ -107,6 +107,7 @@ public final class ConfigCheck {
                 ServerSettings.DEFAULT_WORLDS_PATH, MissingServerDirectoryException.WORLDS);
         minimumRacersProblem(problems, properties, sources);
         lobbySettingProblems(problems, properties, sources);
+        comSettingProblems(problems, properties, sources);
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
@@ -378,6 +379,39 @@ public final class ConfigCheck {
         } catch (IllegalArgumentException ignored) {
             // A minimum that is not a number is reported by minimumRacersProblem, once.
         }
+    }
+
+    /**
+     * The computer racer settings that cannot be used, each keyed under its own setting. An unset or blank value is no
+     * problem: the count defaults to 0 and the difficulty to MEDIUM.
+     */
+    private static void comSettingProblems(List<ConfigProblem> problems, Map<String, String> properties,
+            Function<String, String> sources) {
+        try {
+            ServerSettings.parseComCount(blankToNull(properties.get(ServerSettings.COM_COUNT_PROPERTY)));
+        } catch (InvalidSettingException exception) {
+            problems.add(error(ServerSettings.COM_COUNT_PROPERTY,
+                    sources.apply(ServerSettings.COM_COUNT_PROPERTY), exception.getMessage()));
+        }
+        try {
+            ServerSettings.parseComDifficulty(blankToNull(properties.get(ServerSettings.COM_DIFFICULTY_PROPERTY)));
+        } catch (InvalidSettingException exception) {
+            problems.add(error(ServerSettings.COM_DIFFICULTY_PROPERTY,
+                    sources.apply(ServerSettings.COM_DIFFICULTY_PROPERTY), exception.getMessage()));
+        }
+    }
+
+    /**
+     * The boot line that states the computer racers, or nothing when the count is zero and none run.
+     *
+     * @param settings the settings the server booted with
+     * @return a line such as {@code computer racers: 5 at HARD}, or empty when the count is zero
+     */
+    public static Optional<String> comBootLine(ServerSettings settings) {
+        if (settings.comCount() == 0) {
+            return Optional.empty();
+        }
+        return Optional.of("computer racers: %d at %s".formatted(settings.comCount(), settings.comDifficulty()));
     }
 
     private static @Nullable String blankToNull(@Nullable String value) {

@@ -54,6 +54,8 @@ public abstract class Messages {
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
     private static final String LOBBY_PLAYERS_JOINED = "voyager.lobby.player.joined.many";
     private static final String RING_MISSED = "voyager.race.ring.missed";
+    private static final String COM_RACER_NAME = "voyager.com.racer.name";
+    private static final String COM_RACER_FINISHED = "voyager.com.racer.finished";
     private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting.cup";
     private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown.cup";
     private static final String HANDOFF_DISCONNECT = "voyager.handoff.disconnect";
@@ -370,6 +372,28 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component ringMissed(int ringNumber) {
         return Component.translatable(RING_MISSED, Component.text(ringNumber));
+    }
+
+    /**
+     * The name a computer racer is shown under, above its body and in the tab list: {@code COM n}.
+     *
+     * @param number the computer racer's number, counted from one
+     */
+    @Contract(pure = true)
+    public static Component computerRacerName(int number) {
+        return Component.translatable(COM_RACER_NAME, Component.text(number));
+    }
+
+    /**
+     * The line sent to every human racer when a computer racer finishes a map: its name and its time.
+     *
+     * @param number the computer racer's number, counted from one
+     * @param time the time it finished the map in
+     */
+    @Contract(pure = true)
+    public static Component computerRacerFinished(int number, Duration time) {
+        return Component.translatable(COM_RACER_FINISHED, computerRacerName(number),
+                Component.text(RaceTimeFormat.tenths(time)));
     }
 
     /** The title shown to everybody when the cup's last map has been scored. */

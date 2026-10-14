@@ -19,7 +19,7 @@ play does not stop it. The catalogue-wide checks (JSON, schema, references) stil
 
 The same check runs without Gradle as `java -Dvoyager.config.check=true -jar <server jar>`, with
 `-DVOYAGER_DATA_PATH`, `-DVOYAGER_WORLDS_PATH`, `-DVOYAGER_CUP`, `-DVOYAGER_MIN_PLAYERS`, `-DVOYAGER_LOBBY_WORLD`,
-`-DVOYAGER_LOBBY_SPAWN`, `-DVOYAGER_LOBBY_HOLOGRAM` and `-DVOYAGER_MAX_PLAYERS` as needed. Each key also reads its environment variable of the same name,
+`-DVOYAGER_LOBBY_SPAWN`, `-DVOYAGER_LOBBY_HOLOGRAM`, `-DVOYAGER_MAX_PLAYERS`, `-DVOYAGER_COM_COUNT` and `-DVOYAGER_COM_DIFFICULTY` as needed. Each key also reads its environment variable of the same name,
 and the report names the source of each problem (see `docs/reference/configuration.md`).
 
 A normal boot runs the same check before it builds the object graph, and refuses with the same report.
@@ -71,6 +71,13 @@ Standard output carries the report. A normal boot logs the same lines at error l
   It defaults to 16, in production and under `voyager.dev`. It is soft: it sets the join line and the full-lobby
   countdown, and it never refuses a racer. A value that is not a number, or one below `VOYAGER_MIN_PLAYERS`, is an
   error under its key, and the message names both settings when they clash.
+- The computer racer count, `VOYAGER_COM_COUNT`: when set, it is a whole number from 0 to 15, and 0 is the default. A
+  value that is not a number, or is outside that range, is an error under its key that prints the text it read. A
+  normal boot refuses with it. When the count is above zero, a normal boot logs one info line, for example
+  `computer racers: 5 at HARD`.
+- The computer racer difficulty, `VOYAGER_COM_DIFFICULTY`: when set, it is `EASY`, `MEDIUM` or `HARD`, matched without
+  regard to case. `MEDIUM` is the default. Any other value is an error under this key that lists the three names.
+  See [computer racers](com-racers.md).
 - The catalogue: every map and cup file parses, names are unique, and every map a cup plays exists.
 - Each map's world: the folder exists under the worlds directory and holds region data in the
   `region/` or `dimensions/` layout. A boot does this for the played cup's maps only.

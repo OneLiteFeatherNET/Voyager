@@ -150,9 +150,48 @@ a fall out of the world.
 3. Record the number of resets, the number of touches that did not reset you, and whether two resets came one after the
    other within two seconds. That chain is the one the rules are meant to prevent.
 
+## Playtest with computer racers
+
+Computer racers ("COM n") fill the grid with bodies the server moves, so one human can race a full field. They are
+off by default. Turn them on with the environment, because the Gradle run tasks have no flag for them:
+
+```bash
+VOYAGER_COM_COUNT=5 VOYAGER_COM_DIFFICULTY=MEDIUM \
+  ./gradlew :voyager:server:runServerDev -PminPlayers=1 -Pcup=alpha_cup
+```
+
+| Setting | What to set |
+|---|---|
+| `VOYAGER_COM_COUNT` | The grid size, humans included, from `0` to `15`. `0`, the default, switches them off. |
+| `VOYAGER_COM_DIFFICULTY` | `EASY`, `MEDIUM` (the default) or `HARD`. |
+
+When the count is above zero, the log holds the line `computer racers: 5 at MEDIUM`. A value outside the range, or an
+unknown difficulty, stops the server before it listens, with the key named. See
+[computer racers](../reference/com-racers.md) for the full rules.
+
+Check these on a client:
+
+| Moment | What to look for |
+|---|---|
+| Cup start | The grid is full: the computer racers stand on the grid with the humans, not in the lobby world. The join line still counts humans only. |
+| Each racer | A name `COM n` above its head, from `COM 1` in seat order. |
+| Tab list | One entry per computer racer. The entries are gone after the cup ends. |
+| Racing line | The racers follow the line the humans see. Check the tight turns: they should not look like rails. |
+| Finish | One chat line per computer racer finish, in your language, with its time. No line per ring. |
+| Results | The table lists `COM n` by time, with no points, no placement bonus and no medal. |
+| Cup end | The computer racers are removed, and the tab list is clean. |
+
+The owner playtest items that the server cannot check by itself:
+
+1. **Body visibility (S2).** Does your client show a player-type body with no connection? If the body is hidden, tell
+   the owner: the body switches to an armour stand before the change ships.
+2. **Difficulty feel.** Does `EASY` feel slow and wandering, `MEDIUM` a fair race, and `HARD` a reference racer? Tell
+   the owner which level feels wrong, and how.
+
 ## Related
 
 - [Configuration check](../reference/config-check.md) for the settings the server validates.
+- [Computer racers](../reference/com-racers.md) for the settings, the difficulty table and the known limits.
 - [Local testing](local-testing.md) for the earlier server setup.
 - [ADR-0029](../decisions/0029-dedicated-lobby-world-for-waiting-racers.md) for why waiting racers stand in a lobby world.
 - [ADR-0022](../decisions/0022-waiting-lobby-in-first-map.md), superseded by ADR-0029, for the earlier placement.

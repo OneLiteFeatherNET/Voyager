@@ -9,10 +9,13 @@ import net.elytrarace.voyager.api.race.LobbyDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.api.race.com.ComDifficulty;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
+import net.elytrarace.voyager.platform.com.ComField;
+import net.elytrarace.voyager.platform.com.ComNames;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
@@ -24,14 +27,18 @@ import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.platform.cup.CompetitorField;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.cup.NoCompetitors;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
@@ -53,12 +60,16 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -152,6 +163,27 @@ class CupSessionGoldenMasterTest {
 
     /** Every scenario ends well before this; it guards against a hang, and is not a length anything asserts. */
     private static final int BUDGET = 400;
+
+    /**
+     * The ridge course of the computer scenario. It has two rings, because a line through one ring and no guide point
+     * is a single point, and a computer racer needs a direction.
+     */
+    private static final MapDefinition COM_RIDGE_RUN = new MapDefinition("com-ridge", RIDGE, RIDGE_SPAWN,
+            List.of(ring(0, RIDGE_SPAWN.plus(new Vec3(0, 8, 10)), 7),
+                    ring(1, RIDGE_SPAWN.plus(new Vec3(0, 8, 20)), 9)),
+            Duration.ofMillis(400), RIDGE_BOOST, new GuideLine(List.of(), 2, 1.0));
+
+    private static final CupDefinition COM_CUP =
+            new CupDefinition("com_tour", List.of("com-ridge", "dune-run"), GameMode.RACE);
+
+    /**
+     * The clock reading at which the computer racers' round starts, fixed so that the field plays the same race on every
+     * run; its milliseconds are the round seed.
+     */
+    private static final long COM_ROUND_MILLIS = 20261014L;
+
+    /** The grid of the computer scenario: one human and three computer racers, the grid size counting the human. */
+    private static final int COM_GRID = 4;
 
     @TempDir
     Path tempDir;
@@ -300,6 +332,20 @@ class CupSessionGoldenMasterTest {
         assertGolden("checkpoint-reset", harness.transcript);
     }
 
+    /**
+     * A cup on a grid of {@link #COM_GRID} with one human: three computer racers at MEDIUM, on a fixed round seed.
+     * The human races the ridge course, and the transcript records the computer racers on every tick, until the cup ends.
+     */
+    @Test
+    void comField(Env env) throws IOException {
+        harness = Harness.open(env, tempDir, Harness.comCatalog(), TIMINGS, COM_GRID);
+        harness.connect(ADA, COM_RIDGE_RUN);
+        harness.act("start", () -> harness.session.start(false));
+        harness.runUntil(() -> harness.session.cupFinished(), () -> { });
+
+        assertGolden("com-field", harness.transcript);
+    }
+
     // ------------------------------------------------------------------------------------------
     // Comparison
     // ------------------------------------------------------------------------------------------
@@ -359,6 +405,8 @@ class CupSessionGoldenMasterTest {
 
         private final Env env;
         private final MapInstances worlds;
+        /** Whether the cup has computer racers, which the transcript then records on every tick. */
+        private final int comGrid;
         private int ticks;
         private final RaceRuns runs = new RaceRuns();
         private final CatalogHolder holder;
@@ -380,9 +428,10 @@ class CupSessionGoldenMasterTest {
         /** The racers the room handed to the hub, in order. */
         private final List<UUID> handedToHub = new ArrayList<>();
 
-        private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings) {
+        private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings, int comGrid) {
             this.env = env;
             this.worlds = worlds;
+            this.comGrid = comGrid;
             this.holder = new CatalogHolder(catalog);
             MapTransition transition = new MapTransition(worlds, runs);
             CurrentMapBlocks blocks = new CurrentMapBlocks();
@@ -390,8 +439,11 @@ class CupSessionGoldenMasterTest {
             FlightTickDriver flight = new FlightTickDriver(
                     new LivePlayerSampler(() -> field, boosts), new FlightTracker(),
                     new MinestomCollisionSpace(blocks));
+            CompetitorField competitors = comGrid == 0 ? NoCompetitors.INSTANCE
+                    : new ComField(() -> field, comGrid, ComDifficulty.MEDIUM,
+                            Clock.fixed(Instant.ofEpochMilli(COM_ROUND_MILLIS), ZoneOffset.UTC), worlds::forWorld);
             this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, timings, STEP,
-                    () -> field);
+                    () -> field, competitors);
             this.pipeline = new CupBeans().tickPipeline(session, boosts);
         }
 
@@ -400,10 +452,16 @@ class CupSessionGoldenMasterTest {
         }
 
         static Harness open(Env env, Path tempDir, LoadedCatalog catalog, RaceTimings timings) throws IOException {
+            return open(env, tempDir, catalog, timings, 0);
+        }
+
+        /** Opens a cup whose grid holds {@code comGrid} racers, humans included; zero means no computer racers. */
+        static Harness open(Env env, Path tempDir, LoadedCatalog catalog, RaceTimings timings, int comGrid)
+                throws IOException {
             writeWorld(env, tempDir, RIDGE, RIDGE_SPAWN, RIDGE_FLOOR);
             writeWorld(env, tempDir, DUNE, DUNE_SPAWN, DUNE_FLOOR);
             MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
-            return new Harness(env, instances, catalog, timings);
+            return new Harness(env, instances, catalog, timings, comGrid);
         }
 
         /** Connects a racer on the spawn of {@code map}, prepared as the join handler prepares one. */
@@ -487,7 +545,49 @@ class CupSessionGoldenMasterTest {
                 room.tick();
             }
             env.tick();
-            transcript.end("tick " + ticks, session.describe());
+            transcript.end("tick " + ticks, session.describe() + computerRacers());
+        }
+
+        /**
+         * The computer racers on the courses, one line each in name order, with their position, rings passed and whether they
+         * finished. Read from the entities and the runs after the tick, so the transcript shows what a player would see.
+         * Empty for a cup without computer racers, so the other scenarios are unchanged.
+         */
+        private String computerRacers() {
+            if (comGrid == 0) {
+                return "";
+            }
+            List<String> lines = new ArrayList<>();
+            for (Instance instance : List.of(worlds.forWorld(RIDGE), worlds.forWorld(DUNE))) {
+                for (Entity entity : instance.getEntities()) {
+                    if (ComNames.isComputer(entity.getUuid())) {
+                        lines.add(computerLine(entity));
+                    }
+                }
+            }
+            lines.sort(Comparator.naturalOrder());
+            StringBuilder block = new StringBuilder("\ncomputer racers");
+            for (String line : lines) {
+                block.append("\n  ").append(line);
+            }
+            return block.toString();
+        }
+
+        private String computerLine(Entity entity) {
+            Pos at = entity.getPosition();
+            String name = entity.getCustomName() == null
+                    ? "none" : GsonComponentSerializer.gson().serialize(entity.getCustomName());
+            String progress = runs.of(entity.getUuid())
+                    .map(run -> "rings %d, %s".formatted(run.progress().passedCount(),
+                            run.finished() ? "finished" : "racing"))
+                    .orElse("not on the course");
+            return "%s at %s, %s, %s, %s".formatted(name, coordinate(at.x()), coordinate(at.y()),
+                    coordinate(at.z()), progress);
+        }
+
+        /** A coordinate to two decimals in the root locale, so the transcript reads the same on every machine. */
+        private static String coordinate(double value) {
+            return String.format(Locale.ROOT, "%.2f", value);
         }
 
         /** Ticks, running {@code before} ahead of each tick, until {@code stop} answers true or the budget runs out. */
@@ -511,6 +611,11 @@ class CupSessionGoldenMasterTest {
 
         private static LoadedCatalog bootCatalog() {
             return new LoadedCatalog(snapshot(CUP), CUP, Instant.EPOCH);
+        }
+
+        private static LoadedCatalog comCatalog() {
+            return new LoadedCatalog(new CatalogSnapshot(Map.of(COM_RIDGE_RUN.name(), COM_RIDGE_RUN, DUNE_RUN.name(), DUNE_RUN),
+                    Map.of(COM_CUP.name(), COM_CUP)), COM_CUP, Instant.EPOCH);
         }
 
         private static LoadedCatalog checkpointCatalog() {
