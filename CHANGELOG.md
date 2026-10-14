@@ -5,6 +5,42 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.16.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.15.0...v1.16.0) (2026-10-14)
+
+
+### Features
+
+* **catalog:** ship the converted legacy cup ([#315](https://github.com/OneLiteFeatherNET/Voyager/issues/315)) ([3efba76](https://github.com/OneLiteFeatherNET/Voyager/commit/3efba761442ca5c2328f465b2fab6f2757f391c0))
+* **i18n:** localise player messages ([#318](https://github.com/OneLiteFeatherNET/Voyager/issues/318)) ([cacdaed](https://github.com/OneLiteFeatherNET/Voyager/commit/cacdaed69c29cedaa8dc394fe1d624921b2ae9da))
+* **platform:** light the racetrack and lobby worlds ([ea42b3a](https://github.com/OneLiteFeatherNET/Voyager/commit/ea42b3ac35d4cb7be2031f724353c7a7e4447da9))
+* **race:** add computer racers named COM 1, COM 2 and so on ([#336](https://github.com/OneLiteFeatherNET/Voyager/issues/336)) ([c756dd8](https://github.com/OneLiteFeatherNET/Voyager/commit/c756dd801f23b193bc9aa3c22ad4f56ae88dbfe3))
+* **race:** draw the whole course as the racing line ([35bcdb5](https://github.com/OneLiteFeatherNET/Voyager/commit/35bcdb5f0b9ef97ba7c14d246ee5871c2f870105))
+* **race:** improve message ux ([#333](https://github.com/OneLiteFeatherNET/Voyager/issues/333)) ([c28df3d](https://github.com/OneLiteFeatherNET/Voyager/commit/c28df3df547d797c99a1375bea58dda4a18e85fc))
+* **race:** reset racers to the last checkpoint with a deployed elytra ([1c2828c](https://github.com/OneLiteFeatherNET/Voyager/commit/1c2828c8acd86ad4aaf00c2979f82f92f0f04522))
+* **race:** show the cup in the lobby and hand finished racers to the hub ([#331](https://github.com/OneLiteFeatherNET/Voyager/issues/331)) ([f000b6b](https://github.com/OneLiteFeatherNET/Voyager/commit/f000b6baea38b636c721c3af7d27a32846553db5))
+* **race:** tune boost and ring effects per map ([#325](https://github.com/OneLiteFeatherNET/Voyager/issues/325)) ([99de1c0](https://github.com/OneLiteFeatherNET/Voyager/commit/99de1c0efdcf82bc34b96c83e66f64b48a72beec))
+* **stats:** record race results and player statistics in postgresql ([#335](https://github.com/OneLiteFeatherNET/Voyager/issues/335)) ([d9152a1](https://github.com/OneLiteFeatherNET/Voyager/commit/d9152a1a4ff9e6fd526296fe0cd029a2aba44ee9))
+
+
+### Code Refactoring
+
+* **server:** load configuration through avaje-config ([#320](https://github.com/OneLiteFeatherNET/Voyager/issues/320)) ([d62b31f](https://github.com/OneLiteFeatherNET/Voyager/commit/d62b31f6c0120d3a9fc6e6aba6ab85087ba9c846))
+
+
+### Documentation
+
+* **openspec:** archive add-lobby-world ([#317](https://github.com/OneLiteFeatherNET/Voyager/issues/317)) ([16fffa7](https://github.com/OneLiteFeatherNET/Voyager/commit/16fffa71ae5576da1ca2354423bb3558c5b13c92))
+* **openspec:** archive adopt-avaje-config ([#322](https://github.com/OneLiteFeatherNET/Voyager/issues/322)) ([b08b6c1](https://github.com/OneLiteFeatherNET/Voyager/commit/b08b6c13335c1286562390300a48634e189c5048))
+* **openspec:** archive checkpoint-resets ([1e1f551](https://github.com/OneLiteFeatherNET/Voyager/commit/1e1f5512b2c272ba0ae4a9875cd30e9f7f17cb00))
+* **openspec:** archive com-racers ([#337](https://github.com/OneLiteFeatherNET/Voyager/issues/337)) ([fe7bec6](https://github.com/OneLiteFeatherNET/Voyager/commit/fe7bec6a1f2f88b63d87a0765fdc3a82cc71d4cd))
+* **openspec:** archive full-course-guide-line ([40dd05d](https://github.com/OneLiteFeatherNET/Voyager/commit/40dd05dbc8aa40d387ee98c76f0e8b9af44c61b2))
+* **openspec:** archive improve-message-ux ([#334](https://github.com/OneLiteFeatherNET/Voyager/issues/334)) ([a862027](https://github.com/OneLiteFeatherNET/Voyager/commit/a86202772cd45cce66f8f5db2787841f785c36e2))
+* **openspec:** archive lobby-cup-display-and-hub-handoff ([#332](https://github.com/OneLiteFeatherNET/Voyager/issues/332)) ([6abaa2f](https://github.com/OneLiteFeatherNET/Voyager/commit/6abaa2f0507063952ba6a8e9e4c32522bcea078d))
+* **openspec:** archive localise-player-messages ([#319](https://github.com/OneLiteFeatherNET/Voyager/issues/319)) ([5a2372f](https://github.com/OneLiteFeatherNET/Voyager/commit/5a2372f12012ed8f429070a3e027c48664011af5))
+* **openspec:** archive per-map-boost ([#326](https://github.com/OneLiteFeatherNET/Voyager/issues/326)) ([2157cf9](https://github.com/OneLiteFeatherNET/Voyager/commit/2157cf9a74d2c2cb2dc9d0cfd07278fbc4e096e9))
+* **openspec:** archive player-stats ([#338](https://github.com/OneLiteFeatherNET/Voyager/issues/338)) ([19a5269](https://github.com/OneLiteFeatherNET/Voyager/commit/19a526931b7d8569bdb0011a1d656f1afcbea419))
+* **openspec:** archive world-lighting ([d703b73](https://github.com/OneLiteFeatherNET/Voyager/commit/d703b7317270853c6c7a57b2846cd1590aeabf23))
+
 ## [1.15.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.14.2...v1.15.0) (2026-10-12)
 
 
