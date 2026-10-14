@@ -3,8 +3,7 @@ package net.elytrarace.voyager.persistence;
 import com.zaxxer.hikari.HikariDataSource;
 import net.elytrarace.voyager.persistence.schema.FlywayMigrator;
 import net.elytrarace.voyager.persistence.schema.HikariDataSources;
-import net.elytrarace.voyager.persistence.schema.SessionFactoryBuilder;
-import org.hibernate.SessionFactory;
+import net.elytrarace.voyager.persistence.schema.StatsDatabase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -35,7 +34,10 @@ class StatsSchemaIT extends DockerRequiredIT {
     void theBaselineAppliesOnceInSchemaVoyager() throws SQLException {
         String url = FreshDatabase.create(POSTGRES);
 
-        int applied = FlywayMigrator.migrate(url, POSTGRES.getUsername(), POSTGRES.getPassword());
+        int applied;
+        try (HikariDataSource pool = pool(url)) {
+            applied = FlywayMigrator.migrate(pool);
+        }
 
         assertThat(applied).as("version 1 is the only migration and it runs on an empty database").isEqualTo(1);
         try (Connection connection = connect(url)) {
@@ -54,28 +56,33 @@ class StatsSchemaIT extends DockerRequiredIT {
     @DisplayName("a second start applies nothing")
     void aSecondStartAppliesNothing() throws SQLException {
         String url = FreshDatabase.create(POSTGRES);
-        FlywayMigrator.migrate(url, POSTGRES.getUsername(), POSTGRES.getPassword());
+        try (HikariDataSource pool = pool(url)) {
+            FlywayMigrator.migrate(pool);
 
-        int secondStart = FlywayMigrator.migrate(url, POSTGRES.getUsername(), POSTGRES.getPassword());
+            int secondStart = FlywayMigrator.migrate(pool);
 
-        assertThat(secondStart).as("the database is already at version 1, so the second start applies nothing")
-                .isZero();
+            assertThat(secondStart)
+                    .as("the database is already at version 1, so the second start applies nothing")
+                    .isZero();
+        }
     }
 
     @Test
     @DisplayName("the mappings validate against it")
     void theMappingsValidateAgainstIt() throws SQLException {
         String url = FreshDatabase.create(POSTGRES);
-        FlywayMigrator.migrate(url, POSTGRES.getUsername(), POSTGRES.getPassword());
-        HikariDataSource pool = HikariDataSources.create(url, POSTGRES.getUsername(), POSTGRES.getPassword(), 2, false);
-        try (SessionFactory sessionFactory = SessionFactoryBuilder.build(pool)) {
-            // Building the factory runs hbm2ddl.auto=validate; a mapping that does not match the schema throws here.
-            assertThat(sessionFactory.isOpen())
+        // StatsDatabase migrates through the pool and then builds the factory, which runs hbm2ddl.auto=validate:
+        // a mapping that does not match the migrated schema throws in open().
+        try (StatsDatabase database =
+                     StatsDatabase.open(url, POSTGRES.getUsername(), POSTGRES.getPassword(), 2, false)) {
+            assertThat(database.sessionFactory().isOpen())
                     .as("every mapping of the eight entities matches the table it names")
                     .isTrue();
-        } finally {
-            pool.close();
         }
+    }
+
+    private static HikariDataSource pool(String url) {
+        return HikariDataSources.create(url, POSTGRES.getUsername(), POSTGRES.getPassword(), 2, false);
     }
 
     private static Connection connect(String url) throws SQLException {
