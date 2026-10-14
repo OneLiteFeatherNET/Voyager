@@ -81,8 +81,8 @@ Shutdown: design D5. On stop the writer drains for at most ten seconds, the numb
 - [x] 9.1 `docs/guides/how-to-deploy-on-cloudnet.md`: the database variables in the node table, the rule for `VOYAGER_PERSISTENCE` (set `on` to collect statistics, or leave it unset for `off`, in the task before the release), and the rollback (`docs`). Haiku effort: low.
 - [x] 9.2 `docs/reference/database.md` (Diataxis reference): keys, environment names, defaults, the DB-down table of design.md D5 (`docs`). Haiku effort: medium.
 - [x] 9.3 `docs/guides/run-with-postgresql-locally.md` and `docker/postgres/compose.yml` (new file; the MariaDB compose files are not touched) (`docs`). Haiku effort: low.
-- [ ] 9.4 `docs/decisions/0037-player-stats-on-postgresql.md` (MADR, stays Proposed per task 1.1; owner decision 2026-10-13) (`docs`). Haiku effort: medium.
-- [ ] 9.5 Amend the greenfield design spec: Persistence section (PostgreSQL types, the registry deviation of D4) and Configuration section (the keys through the loader); add rows D15 (PostgreSQL) and D16 (avaje-config) to the decision table (`docs`). Haiku effort: medium.
+- [x] 9.4 `docs/decisions/0037-player-stats-on-postgresql.md` (MADR, stays Proposed per task 1.1; owner decision 2026-10-13) (`docs`). Haiku effort: medium.
+- [x] 9.5 Amend the greenfield design spec: Persistence section (PostgreSQL types, the registry deviation of D4) and Configuration section (the keys through the loader); add rows D15 (PostgreSQL) and D16 (avaje-config) to the decision table (`docs`). Haiku effort: medium.
 - [ ] 9.6 Lumen's research note in `docs/research/`: the schema decisions, the write-path measurements from the integration suite, and the open questions (`docs`). Haiku effort: medium.
 
 ## 10. Verification and pull request

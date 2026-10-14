@@ -65,6 +65,10 @@ Chosen option: **2**, with these rules.
 **Consequences.**
 - The design's "Persistence" section changes to PostgreSQL. Design decision D15 records it (task 9.5).
 - The design's `cup` and `map` registry tables are dropped in favour of text keys (owner decision Q6, 2026-10-13).
+- A map's layout identity (`layout_version`) is the canonical JSON of its geometry, the spawn and the rings only (owner
+  decision Q6, 2026-10-13). Tuning values do not change it, so a retune keeps the leaderboard.
+- Records are kept indefinitely (owner decision Q5, 2026-10-13). The retention purge and the erasure tooling are a follow-up
+  change, not part of this record.
 - Operators provision a PostgreSQL database and set `VOYAGER_PERSISTENCE=on` in the CloudNet task to collect statistics; unset
   keeps them off. The PostgreSQL host and role are not known yet (owner question Q2); this record does not depend on them.
 - The rebuild gets its first Testcontainers suite; CI runs it in one Linux job only.

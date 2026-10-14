@@ -28,6 +28,9 @@ modules.
 
 These were decided with the project owner before this document was written.
 
+*Amended by `player-stats` (2026-10-13): decision D15 is added below. D16 was already in this table and records the
+avaje-config decision of ADR-0036; the change `player-stats` adds no second D16.*
+
 | # | Decision | Rationale |
 |---|---|---|
 | D1 | Greenfield rebuild, not incremental hardening | Structural debt is in the module boundaries themselves; refactoring in place preserves them |
@@ -44,6 +47,7 @@ These were decided with the project owner before this document was written.
 | D12 | `CLAUDE.md` is superseded by this specification | It describes a tree that no longer matches reality; the design rules live here now |
 | D13 | Permission port in `voyager-api`, LuckPerms as an optional adapter in `voyager-platform`, and a fail-closed level-based fallback (ADR-0024) | Command code asks one question and never names a backend; a jar without the loader fails closed, so a lost loader never widens access on a public network |
 | D14 | Velocity modern forwarding with the secret from `VOYAGER_VELOCITY_SECRET` or `voyager.velocity.secret`; a blank secret refuses to start (ADR-0025) | A proxied player keeps the real UUID that LuckPerms keys on, and a misconfigured secret cannot silently turn signature checking off |
+| D15 | PostgreSQL 17 for player statistics, not MariaDB (ADR-0037, Proposed); the legacy tree keeps MariaDB | The statistics need atomic upserts (`ON CONFLICT ... DO UPDATE`), `timestamptz` and check constraints in place of unsigned types; the image and driver are the ones Titan already runs. Text keys replace the registry tables (owner decision Q6, 2026-10-13) |
 | D16 | The layered resolver of "Configuration" is implemented by avaje-config 5.2 (instance API, built in `voyager-platform`), not by a hand-written `ConfigResolver`; the four ranks are kept (ADR-0036) | The library already implements these ranks, and Titan runs it in production. One loader owns every key; the velocity secret keeps environment before property as a documented exception |
 
 ### Non-goals
@@ -460,7 +464,18 @@ best pilots' runs.
 
 ## Persistence (`voyager-persistence`)
 
-Hibernate ORM 7 with HikariCP over MariaDB, schema owned by Flyway. The module depends on
+*Amended by `player-stats` (2026-10-13).* The database is PostgreSQL 17, not MariaDB (ADR-0037, decision D15 in the table
+below). The rest of this section stands, with these changes, which are design D4 of `openspec/changes/player-stats/design.md`:
+
+- No `cup` or `map` registry tables. Map and cup identities are text keys: `map_key` and `cup_key`, the name of the map or cup
+  in its file (owner decision Q6, 2026-10-13). Where the tables below show `map_id` or `cup_id`, read the key instead.
+- `layout_version` is `char(16)`: the first 16 hex characters of SHA-256 over the canonical geometry of the map (spawn and
+  rings only).
+- Timestamps are `timestamptz`, not `DATETIME(6)`. Durations are `integer` milliseconds, totals `bigint`. PostgreSQL has no
+  unsigned type, so every non-negative column carries a check constraint (`>= 0`), and enumerated columns carry a check
+  constraint on their allowed values.
+
+Hibernate ORM 7 with HikariCP over PostgreSQL 17, schema owned by Flyway. The module depends on
 `voyager-api` and nothing else. It contains no race types, no Minestom types, and it exports no
 Hibernate types.
 
@@ -505,8 +520,8 @@ Renaming a map becomes a display-name change rather than a mass update.
 |---|---|---|---|
 | `player` | Identity only, near-static after first join | `player_id UUID` | `last_known_name`, `first_seen`, `last_seen` |
 | `player_statistics` | Lifetime counters, write-hot | `player_id UUID` (shared PK) | `races_played`, `races_won`, `rings_passed`, `cups_won`, `total_flight_ms` |
-| `cup` | Registry of cup identities | `cup_id SMALLINT` | `cup_key UNIQUE`, `display_name` |
-| `map` | Registry of map identities plus layout generation | `map_id INT` | `map_key UNIQUE`, `cup_id`, `display_name`, `layout_version` |
+| `cup` | Registry of cup identities (*dropped by `player-stats`, see the amendment above*) | `cup_id SMALLINT` | `cup_key UNIQUE`, `display_name` |
+| `map` | Registry of map identities plus layout generation (*dropped by `player-stats`, see the amendment above*) | `map_id INT` | `map_key UNIQUE`, `cup_id`, `display_name`, `layout_version` |
 | `cup_session` | One run of a cup | `cup_session_id BIGINT` | `cup_id`, `game_mode`, `started_at`, `finished_at` |
 | `race_session` | One run of one map | `race_session_id BIGINT` | `map_id`, `layout_version`, `cup_session_id NULL`, `game_mode`, timestamps, `player_count` |
 | `race_result` | One player's outcome in one race | `race_result_id BIGINT` | `race_session_id`, `player_id`, `finish_position`, `finish_time_ms NULL`, `ring_points`, `position_bonus`, `total_points`, `rings_passed`, `medal_tier NULL`, `validation_state`, `plausibility_error NULL` |
@@ -535,9 +550,9 @@ log-scraping exercise.
 every join and written almost never; the statistics row is written at the end of every race.
 Splitting keeps the row-lock path off the identity row.
 
-Timestamps are `DATETIME(6)` holding UTC — not `TIMESTAMP` (2038) and not server-local time (DST).
-Durations are `INT UNSIGNED` milliseconds, capping at 49 days and halving the leaderboard index key
-against a `BIGINT`.
+Timestamps are `timestamptz` (*amended by `player-stats`*): the stored instant does not depend on the time zone of the
+session, and the clock is injected. Durations are `integer` milliseconds, capping at 24.8 days, far above any race length
+(*amended by `player-stats`*, in place of `INT UNSIGNED`). Totals are `bigint`.
 
 Two indexes on `map_personal_best` are both required and are different orderings of the same
 columns: a unique index on `(map_id, layout_version, game_mode, player_id)` enforces "one best per
@@ -633,20 +648,24 @@ That validates against the real schema, which is strictly more than the processo
 **Atomic writes.** Both hot mutations are single statements — no read-modify-write, no lost updates:
 
 ```sql
-INSERT INTO map_personal_best
-       (map_id, layout_version, game_mode, player_id, best_time_ms, race_result_id, achieved_at)
+INSERT INTO voyager.map_personal_best
+       (map_key, layout_version, game_mode, player_id, best_time_millis, race_result_id, achieved_at)
 VALUES (?, ?, ?, ?, ?, ?, ?)
-ON DUPLICATE KEY UPDATE
-    race_result_id = IF(VALUES(best_time_ms) < best_time_ms, VALUES(race_result_id), race_result_id),
-    achieved_at    = IF(VALUES(best_time_ms) < best_time_ms, VALUES(achieved_at),    achieved_at),
-    best_time_ms   = LEAST(best_time_ms, VALUES(best_time_ms));
+ON CONFLICT (map_key, layout_version, game_mode, player_id) DO UPDATE SET
+    best_time_millis = LEAST(voyager.map_personal_best.best_time_millis, EXCLUDED.best_time_millis),
+    race_result_id   = CASE WHEN EXCLUDED.best_time_millis < voyager.map_personal_best.best_time_millis
+                            THEN EXCLUDED.race_result_id ELSE voyager.map_personal_best.race_result_id END,
+    achieved_at      = CASE WHEN EXCLUDED.best_time_millis < voyager.map_personal_best.best_time_millis
+                            THEN EXCLUDED.achieved_at ELSE voyager.map_personal_best.achieved_at END;
 ```
+
+*Amended by `player-stats`: the statement above is the PostgreSQL form, with the column names of the amended schema.*
 
 A finished race is **one transaction**: close `race_session`, batch-insert every `race_result`, one
 upsert per finisher, one statistics increment per participant. All or nothing.
-`hibernate.jdbc.batch_size=50` plus `rewriteBatchedStatements=true` on the JDBC URL turns fifty
-inserts into one multi-row statement — without that URL parameter the driver sends fifty round trips
-and Hibernate's batching setting has no visible effect.
+`hibernate.jdbc.batch_size=50` plus `reWriteBatchedInserts=true` on the PostgreSQL JDBC URL (*amended by `player-stats`*,
+in place of `rewriteBatchedStatements=true`) turns fifty inserts into one multi-row statement — without that URL parameter the
+driver sends fifty round trips and Hibernate's batching setting has no visible effect.
 
 ### Tick safety
 
@@ -742,7 +761,7 @@ Flyway runs to completion before the `SessionFactory` is built, and `hbm2ddl.aut
 The new schema also gets its own database name (`voyager`), so old and new can run side by side
 through E5–E7 and a rollback is a configuration change rather than a restore.
 
-The single highest-value test in the module: start a MariaDB Testcontainer, run `migrate()`, build
+The single highest-value test in the module: start a PostgreSQL 17 Testcontainer, run `migrate()`, build
 the `SessionFactory` in `validate` mode, and execute every named query. That one test catches
 entity/schema drift, malformed HQL and missing indexes before CI goes green.
 
@@ -757,15 +776,15 @@ the design permits at most five concurrent database operations by construction.
 | `maximumPoolSize` | `10` | 4 readers + 1 writer + headroom; the application cannot demand more |
 | `minimumIdle` | `10` | Fixed-size pool; connection establishment must not appear in the race-end burst |
 | `connectionTimeout` | `5000` | Fail fast; a 30 s stall would fill the bounded write queue before surfacing |
-| `maxLifetime` | `1500000` | Below MariaDB `wait_timeout` and any load-balancer idle cut |
+| `maxLifetime` | `1500000` | Below the server's idle timeout and any load-balancer idle cut (*amended by `player-stats`*) |
 | `keepaliveTime` | `120000` | Prevents NAT silently killing idle connections between quiet periods |
 | `leakDetectionThreshold` | `10000` dev/staging, `0` production | Catches an unclosed `StatelessSession` |
-| `transactionIsolation` | `READ_COMMITTED` | MariaDB defaults to `REPEATABLE_READ`, whose gap locks on the personal-best unique-key range serialise concurrent finishers for no benefit |
+| `transactionIsolation` | `READ_COMMITTED` | Set explicitly so that no server default can change it. The personal-best upsert is one statement, so it needs no stricter level (*amended by `player-stats`*) |
 
-JDBC URL parameters are part of the configuration, not an afterthought:
-`rewriteBatchedStatements=true`, `cachePrepStmts=true`, `useServerPrepStmts=true`,
-`prepStmtCacheSize=250`, and `connectionTimeZone=UTC` with `forceConnectionTimeZoneToSession=true`,
-so no session-local timezone can reinterpret a stored `DATETIME`.
+JDBC URL parameters are part of the configuration, not an afterthought. The PostgreSQL URL carries
+`reWriteBatchedInserts=true`. The MariaDB parameters of the original text (`rewriteBatchedStatements`, `connectionTimeZone`,
+`forceConnectionTimeZoneToSession`) do not apply (*amended by `player-stats`*): the stored type is `timestamptz`, which keeps its
+instant whatever the session time zone is.
 
 Hikari's `pendingThreads` gauge is exported alongside the tick-budget metrics from E4. It should be
 zero; a non-zero value means the design's own concurrency assumption is wrong, not that the pool is
@@ -794,6 +813,9 @@ documented rule that no ArchUnit test enforces; blocking JDBC on `ForkJoinPool.c
 `LazyInitializationException` waiting for its first caller.
 
 ## Configuration
+
+*Amended by `player-stats` (2026-10-13).* The database keys are read through the avaje-config loader of ADR-0036, with the
+switch values `off` and `on`; the Secrets subsection carries the amendment. Everything else in this section stands.
 
 Configuration is currently the least-defined part of the project. In the tree being replaced there is
 no configuration layer at all: values are read wherever they are needed, mostly from system
@@ -1047,12 +1069,13 @@ absent by decision and absent by accident:
 - `VOYAGER_PERSISTENCE=off` is an explicit operator decision. A no-op repository is bound and a
   `WARN` line states that no records will be persisted, on every start rather than once. This is what
   E4 uses before `voyager-persistence` exists.
-- `VOYAGER_PERSISTENCE` unset or `required` with a missing or unusable credential is fatal. The
-  process exits non-zero before `bootstrap.start(...)`, so it never binds and no player connects to a
-  server that cannot record their run.
+- *Amended by `player-stats` (owner decision Q1, 2026-10-13):* the switch has two values, `off` and `on`. Unset means
+  `off`, with the same one `WARN` at boot. The value `required` is not used. `on` with a missing or unusable database
+  setting logs one `WARN` that names the setting and runs with statistics off. The server never refuses to start because
+  of the database, so a missing database secret is not fatal. Every other secret still refuses the start.
 
 Falling back to no-op because a *configured* database failed to connect is the failure mode this
-distinction forbids.
+distinction forbids for every secret that is not a database secret.
 
 To make accidental disclosure a type error rather than a review finding, secrets are wrapped, in the
 same spirit as `Vec3` refusing to hold NaN:
@@ -1073,6 +1096,25 @@ public record Secret(String value) {
 `DatabaseConfig.password()` returns `Secret`. It cannot be interpolated into a log line, a stack
 trace, a build-scan tag or an enclosing record's `toString()` by accident; extracting it requires
 `.value()`, which is a grep-able and ArchUnit-enforceable act.
+
+**Amendment (`player-stats`, 2026-10-13): the database keys.** They are read through the same avaje-config loader as every
+other key (ADR-0036, the amendment above), so they follow the same four ranks. Their environment names are the upper-case
+form of the system property, as for every key:
+
+| Key (system property) | Environment variable | Default | Rule |
+|---|---|---|---|
+| `voyager.persistence` | `VOYAGER_PERSISTENCE` | unset, which means `off` | `off` or `on` |
+| `voyager.db.url` | `VOYAGER_DB_URL` | none | `jdbc:postgresql://host:port/database`; required when `on` |
+| `voyager.db.user` | `VOYAGER_DB_USER` | none | required when `on`; no default |
+| `voyager.db.password` | `VOYAGER_DB_PASSWORD` | none | required when `on` and no password file is set |
+| `voyager.db.password.file` | `VOYAGER_DB_PASSWORD_FILE` | none | a path whose content is the password; when both are set, the file wins |
+| `voyager.db.pool.size` | `VOYAGER_DB_POOL_SIZE` | 10 | 2 to 20 |
+| `voyager.db.queue.capacity` | `VOYAGER_DB_QUEUE_CAPACITY` | 256 | 16 to 4096 |
+
+The secret rules above still hold: the password is environment only in the documented setup, and it never appears in a log,
+in the configuration check or in a task file. The local compose file of `docker/postgres/compose.yml` reads its password from
+the shell variable `VOYAGER_LOCAL_DB_PASSWORD`, which has no default, so no password is written into the repository. The full
+rules are in `docs/reference/database.md` and `docs/reference/configuration.md`.
 
 ### Validation
 
@@ -1115,8 +1157,12 @@ every failure, and throws once, carrying `ConfigProblem(String key, String sourc
 Configuration is invalid (3 problems):
   boost.cooldownMs        file:config/tuning.json#/boost/cooldownMs   must be >= 0, was -1
   db.poolSize             env:VOYAGER_DB_POOL_SIZE                    not an integer: "ten"
-  db.password             <unset>                                     required when persistence=required
+  db.password             <unset>                                     required when persistence=on
 ```
+
+*Amended by `player-stats` (owner decision Q1, 2026-10-13):* a database problem never refuses the start. At boot it is logged
+as one `WARN` that names the setting, and the server runs with statistics off. The example shows the form of a message for the
+configuration check, not a start refusal for the database.
 
 One restart per error is an unacceptable operator loop. Note also that `"ten"` is *reported*, not
 silently replaced by the default — the current `DatabaseConfig.parseInt` swallows the
