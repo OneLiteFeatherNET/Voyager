@@ -16,7 +16,7 @@ import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
-import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
+import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
@@ -82,13 +82,15 @@ public final class CupBeans {
                 new TickStep("phase advance", session::advancePhase)));
     }
 
+    /**
+     * The cup records every finished map and cup to the recorder {@link PersistenceBeans} binds: the no-op recorder with
+     * persistence off, the statistics writer otherwise.
+     */
     @Bean
     CupSession cupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition, RaceRuns runs,
             FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts, RaceTimings timings,
-            Supplier<Collection<Player>> players, Clock clock) {
-        // Statistics are not stored yet: the recorder of the `off` mode, in every mode. The PostgreSQL recorder is wired
-        // by the persistence change, behind VOYAGER_PERSISTENCE.
+            Supplier<Collection<Player>> players, RaceRecorder recorder, Clock clock) {
         return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                Duration.ofMillis(MinecraftServer.TICK_MS), players, new NoOpRaceRecorder(), clock);
+                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock);
     }
 }

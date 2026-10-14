@@ -24,6 +24,7 @@ import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.PersistenceSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.inject.JoinArrival;
+import net.elytrarace.voyager.server.persistence.StatsBinding;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
@@ -157,7 +158,8 @@ public final class VoyagerServer {
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
         // The database settings are read once, here, and never refuse the start: each problem is one warning, and the server
         // runs with statistics off (owner decision Q1). Unset or off is one warning that no statistics are kept.
-        for (ConfigProblem problem : PersistenceSettings.from(config).warnings()) {
+        PersistenceSettings persistence = PersistenceSettings.from(config);
+        for (ConfigProblem problem : persistence.warnings()) {
             LOGGER.warn(problem.message());
         }
 
@@ -238,7 +240,7 @@ public final class VoyagerServer {
             // Every singleton is built now, so a malformed map file, a duplicate definition or a cup
             // naming a map nothing provides is a refusal here rather than an exception on whichever
             // tick first asked for it.
-            graph = openGraph(settings);
+            graph = openGraph(settings, persistence);
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start while building the object graph", exception);
             System.exit(1);
@@ -275,6 +277,11 @@ public final class VoyagerServer {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
         scheduleTick(pipeline, waitingRoom, session);
+        // The statistics threads start before the port binds, so a race that finishes on the first tick is written. A
+        // database that was down at boot logs its one warning here, and is retried in the background from now on.
+        StatsBinding statistics = graph.get(StatsBinding.class);
+        statistics.bootWarning().ifPresent(warning -> LOGGER.warn(warning));
+        statistics.start();
         // The one clean shutdown: the stdin line `stop` and /stop both end here. The stop runs on a platform thread,
         // because the reader's own thread is the one the stop closes.
         ServiceShutdown shutdown = new ServiceShutdown(() -> {
@@ -364,9 +371,18 @@ public final class VoyagerServer {
      *     bean or configured value
      */
     static BeanScope openGraph(ServerSettings settings) {
+        return openGraph(settings, PersistenceSettings.off());
+    }
+
+    /**
+     * {@link #openGraph(ServerSettings)} with the database settings the boot read. Opening the statistics database is part of
+     * building the graph, so a database that is down at boot is the binding's business and never a failure here.
+     */
+    static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence) {
         try {
             return BeanScope.builder()
                     .bean(ServerSettings.class, settings)
+                    .bean(PersistenceSettings.class, persistence)
                     .shutdownHook(false)
                     .build();
         } catch (RuntimeException exception) {

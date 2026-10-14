@@ -8,6 +8,8 @@ dependencies {
     implementation(project(":voyager:physics"))
     implementation(project(":voyager:race"))
     implementation(project(":voyager:platform"))
+    // The statistics store: the PostgreSQL write path and read path that the composition root binds (PersistenceBeans).
+    implementation(project(":voyager:persistence"))
 
     // The Minestom extension bootstrap, the OneLiteFeather fork Cygnus pins (ADR-0026). The root starts it itself, because
     // the fork's init must replace MinecraftServer.init before anything else touches Minestom.

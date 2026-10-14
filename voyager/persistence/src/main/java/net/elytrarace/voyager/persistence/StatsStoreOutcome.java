@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.persistence;
 
+import net.elytrarace.voyager.api.stats.StatsReader;
 import net.elytrarace.voyager.persistence.schema.StatsDatabase;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +25,16 @@ public sealed interface StatsStoreOutcome permits StatsStoreOutcome.Available, S
         public Available {
             Objects.requireNonNull(store, "store must not be null");
             Objects.requireNonNull(database, "database must not be null");
+        }
+
+        /**
+         * The read side over the same pool. It is built here so that the composition root never names the session factory,
+         * which keeps Hibernate out of the server's compile classpath.
+         *
+         * @return a reader over the database's session factory
+         */
+        public StatsReader reader() {
+            return new PostgresStatsReader(database.sessionFactory());
         }
     }
 
