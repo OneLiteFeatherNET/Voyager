@@ -18,6 +18,7 @@ import net.elytrarace.voyager.platform.cup.TickStep;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
+import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
 import net.elytrarace.voyager.platform.text.Messages;
@@ -30,7 +31,9 @@ import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.flow.StartGate.Situation;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
@@ -60,6 +63,8 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,6 +101,13 @@ class WaitingRoomTest {
 
     private static final CupDefinition TOUR = new CupDefinition("waiting_tour", List.of("arena-run", "other-run"),
             GameMode.RACE);
+
+    /** The cup a reload offers: it plays from the next round, so the lobby keeps naming TOUR until a round promotes it. */
+    private static final CupDefinition RELOADED_TOUR = new CupDefinition("waiting_tour_two",
+            List.of("arena-run", "other-run"), GameMode.RACE);
+    private static final LoadedCatalog RELOADED = new LoadedCatalog(new CatalogSnapshot(
+            Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(RELOADED_TOUR.name(), RELOADED_TOUR)),
+            RELOADED_TOUR, Instant.EPOCH);
 
     /** Lobby 10 s (200 ticks), race 5 s (100 ticks), results 100 ms. */
     private static final RaceTimings TIMINGS = new RaceTimings(
@@ -302,17 +314,125 @@ class WaitingRoomTest {
         assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.WAITING);
     }
 
+    /** The results stay up for the whole linger, and no racer is handed to the hub before its last tick. */
     @Test
-    void finishedCupWithTwoOnlineStartsTheNextCountdown(Env env) throws IOException {
+    void nothingIsHandedOffWhileTheResultsLinger(Env env) throws IOException {
         Fixture fixture = fixture(env);
         fixture.join();
         fixture.join();
         fixture.tick();
-
         fixture.playUntilCupFinishes();
 
-        assertThat(fixture.session.cupFinished()).isFalse();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS - 1);
+
+        assertThat(fixture.handedToHub).isEmpty();
+    }
+
+    /** The racers are still online during the results, and no countdown starts until they have been sent away. */
+    @Test
+    void noCountdownStartsWhileTheResultsLinger(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS - 1);
+
+        assertThat(fixture.session.running()).isFalse();
+        assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.WAITING);
+    }
+
+    /** When the linger ends, every racer online is handed to the hub, in the order they are online. */
+    @Test
+    void aFinishedCupHandsEveryRacerOnlineToTheHubWhenTheLingerEnds(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player first = fixture.join();
+        Player second = fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        assertThat(fixture.handedToHub).containsExactly(first.getUuid(), second.getUuid());
+        assertThat(fixture.kicked).isEmpty();
+    }
+
+    /** A racer who joins while the results are up is online when the linger ends, so the hub gets them too. */
+    @Test
+    void aRacerWhoJoinsDuringTheLingerIsHandedOffWithTheRest(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player first = fixture.join();
+        Player second = fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(100);
+
+        Player late = fixture.join();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS - 100);
+
+        assertThat(fixture.handedToHub).containsExactly(first.getUuid(), second.getUuid(), late.getUuid());
+    }
+
+    /** Racers who were handed away are still connected until the proxy moves them, so the room must not count them. */
+    @Test
+    void aRoomWhoseRacersWereHandedOffStartsNoCountdown(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+        assertThat(fixture.handedToHub).hasSize(2);
+
+        fixture.tick();
+
+        assertThat(fixture.session.situation(Duration.ofSeconds(3)))
+                .describedAs("the two racers were sent away, so the room waits for new racers")
+                .isEqualTo(Situation.WAITING);
+    }
+
+    /** After a handoff a new join starts the room as the minimum rule says, counting only the new racers. */
+    @Test
+    void aJoinAfterTheHandoffStartsTheRoomAsBefore(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+
         assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.COUNTDOWN);
+    }
+
+    /** A cup that is racing is not finished, so the linger does not start and nobody is handed off. */
+    @Test
+    void aRunningCupHandsNobodyOff(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.ticks(200 + 100 + 1);
+
+        assertThat(fixture.session.running()).isTrue();
+        assertThat(fixture.handedToHub).isEmpty();
+    }
+
+    /** A cup that finishes with nobody online hands nobody off: the hub move is for racers only. */
+    @Test
+    void aFinishedCupWithNobodyOnlineHandsNobodyOff(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.session.start(true);
+
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        assertThat(fixture.handedToHub).isEmpty();
+        assertThat(fixture.kicked).isEmpty();
     }
 
     @Test
@@ -327,7 +447,10 @@ class WaitingRoomTest {
     // The lobby world, the join line and the full lobby
     // ------------------------------------------------------------------------------------------
 
-    /** A join is announced to every racer online, with the count after the join and the maximum. */
+    /**
+     * A join is announced to every racer online, with the count after the join and the maximum. A join that follows
+     * another inside the join window is held until the window closes, and is then told as the single join it was.
+     */
     @Test
     void aJoinSendsTheJoinLineToEveryRacer(Env env) throws IOException {
         Fixture fixture = fixture(env);
@@ -336,6 +459,7 @@ class WaitingRoomTest {
         fixture.join(first);
 
         Player secondRacer = fixture.join();
+        fixture.ticks(JoinBurst.WINDOW_TICKS + 1);
 
         assertThat(chat.collect().stream().map(SystemChatPacket::message).toList())
                 .contains(Messages.playerJoined(secondRacer.getUsername(), 2, MAXIMUM));
@@ -351,10 +475,12 @@ class WaitingRoomTest {
         fixture.join();
 
         Player third = fixture.join();
+        fixture.ticks(JoinBurst.WINDOW_TICKS + 1);
 
         assertThat(online).contains(third);
         assertThat(chat.collect().stream().map(SystemChatPacket::message).toList())
-                .contains(Messages.playerJoined(third.getUsername(), 3, 2));
+                .as("the two joins after the first are one line, counted past the maximum")
+                .contains(Messages.playersJoined(2, 3, 2));
     }
 
     /** A full lobby with fifteen seconds of its countdown left is shortened to ten seconds from that tick. */
@@ -372,17 +498,15 @@ class WaitingRoomTest {
         assertThat(fixture.session.lobbyRemaining()).isEqualTo(Duration.ofSeconds(10));
     }
 
-    /** A finished cup returns every racer to the lobby world's spawn, not the first map's. */
+    /** A finished cup moves no racer to the lobby world: the racers go to the hub, and the lobby stays for joins. */
     @Test
-    void aFinishedCupReturnsRacersThroughTheLobby(Env env) throws IOException {
+    void aFinishedCupDoesNotMoveRacersToTheLobbyWorld(Env env) throws IOException {
         Fixture fixture = fixture(env, TIMINGS, MAXIMUM, true);
         Player racer = fixture.join();
         fixture.join();
         fixture.playUntilCupFinishes();
 
-        assertThat(racer.getInstance()).isSameAs(fixture.instances.forWorld(LOBBY));
-        assertThat(racer.getPosition().distance(new Pos(LOBBY_SPAWN.x(), LOBBY_SPAWN.y(), LOBBY_SPAWN.z())))
-                .isLessThan(0.01);
+        assertThat(racer.getInstance()).isNotSameAs(fixture.instances.forWorld(LOBBY));
     }
 
     // ------------------------------------------------------------------------------------------
@@ -402,7 +526,7 @@ class WaitingRoomTest {
                 .isPresent()
                 .get()
                 .satisfies(bar -> assertThat(((TranslatableComponent) bar.name()).key())
-                        .isEqualTo("voyager.lobby.bossbar.waiting"));
+                        .isEqualTo("voyager.lobby.bossbar.waiting.cup"));
     }
 
     /**
@@ -416,7 +540,7 @@ class WaitingRoomTest {
         fixture.join();
         fixture.tick();
         assertThat(((TranslatableComponent) fixture.hud.barOf(racer.getUuid()).orElseThrow().name()).key())
-                .isEqualTo("voyager.lobby.bossbar.countdown");
+                .isEqualTo("voyager.lobby.bossbar.countdown.cup");
 
         for (int tick = 0; tick < BUDGET && fixture.session.situation(StartGate.COMMIT_WINDOW) != Situation.COMMITTED;
                 tick++) {
@@ -425,6 +549,40 @@ class WaitingRoomTest {
 
         assertThat(fixture.session.situation(StartGate.COMMIT_WINDOW)).isEqualTo(Situation.COMMITTED);
         assertThat(fixture.hud.barOf(racer.getUuid())).isEmpty();
+    }
+
+    /** A reload waits for the next round: the lobby names the cup that is loaded until a round promotes the reload. */
+    @Test
+    void aPendingReloadDoesNotChangeTheCupTheLobbyNames(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.tick();
+
+        fixture.holder.offer(RELOADED);
+        fixture.tick();
+
+        assertThat(cupOnBar(fixture.hud.barOf(racer.getUuid()).orElseThrow())).isEqualTo(TOUR.name());
+    }
+
+    /** A countdown keeps the cup it began with, even when a reload is applied while it runs. */
+    @Test
+    void aCountdownKeepsItsCupWhenAReloadIsApplied(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.join();
+        fixture.tick();
+        assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.COUNTDOWN);
+
+        fixture.holder.offer(RELOADED);
+        fixture.tick();
+
+        assertThat(cupOnBar(fixture.hud.barOf(racer.getUuid()).orElseThrow())).isEqualTo(TOUR.name());
+    }
+
+    /** The cup name the boss bar carries, which is the first argument of its translated line. */
+    private static String cupOnBar(BossBar bar) {
+        TranslatableComponent line = (TranslatableComponent) bar.name();
+        return PlainTextComponentSerializer.plainText().serialize(line.arguments().getFirst().asComponent());
     }
 
     // ------------------------------------------------------------------------------------------
@@ -460,10 +618,17 @@ class WaitingRoomTest {
         TickPipeline pipeline = TickPipeline.of(List.of(new TickStep("phase advance", session::advancePhase)));
         LobbyTransition lobby = withLobby ? new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN)) : null;
         LobbyHud hud = new LobbyHud();
-        WaitingRoom room = new WaitingRoom(session, () -> online, MINIMUM, maximum, lobby,
-                racer -> racer.teleport(new Pos(ARENA_SPAWN.x(), ARENA_SPAWN.y(), ARENA_SPAWN.z())).join(), hud,
-                () -> instances.forWorld(ARENA));
-        return new Fixture(session, pipeline, room, hud, runs, instances, env);
+        List<UUID> handedToHub = new ArrayList<>();
+        List<Player> kicked = new ArrayList<>();
+        // The hub is installed: every racer the room sends is recorded as handed off. A warning is not expected here.
+        HubHandoff hub = new HubHandoff(() -> Optional.of(handedToHub::add),
+                (racer, reason) -> kicked.add(racer),
+                message -> {
+                    throw new AssertionError("no refused handoff was expected, but got: " + message);
+                });
+        WaitingRoom room = new WaitingRoom(session, holder, () -> online, MINIMUM, maximum, lobby, hub, hud,
+                new LobbySidebar(), null, () -> instances.forWorld(ARENA));
+        return new Fixture(session, holder, pipeline, room, hud, runs, instances, env, handedToHub, kicked);
     }
 
     /** Writes a world with one floor block under the spawn, through a Falco loader of its own. */
@@ -488,22 +653,31 @@ class WaitingRoomTest {
     private final class Fixture {
 
         private final CupSession session;
+        private final CatalogHolder holder;
         private final TickPipeline pipeline;
         private final WaitingRoom room;
         private final LobbyHud hud;
         private final RaceRuns runs;
         private final MapInstances instances;
         private final Env env;
+        /** The racers the room handed to the hub, in order. */
+        private final List<UUID> handedToHub;
+        /** The racers the room disconnected because no handoff ran or it refused. */
+        private final List<Player> kicked;
 
-        private Fixture(CupSession session, TickPipeline pipeline, WaitingRoom room, LobbyHud hud, RaceRuns runs,
-                MapInstances instances, Env env) {
+        private Fixture(CupSession session, CatalogHolder holder, TickPipeline pipeline, WaitingRoom room, LobbyHud hud,
+                RaceRuns runs,
+                MapInstances instances, Env env, List<UUID> handedToHub, List<Player> kicked) {
             this.session = session;
+            this.holder = holder;
             this.pipeline = pipeline;
             this.room = room;
             this.hud = hud;
             this.runs = runs;
             this.instances = instances;
             this.env = env;
+            this.handedToHub = handedToHub;
+            this.kicked = kicked;
         }
 
         /** Connects a racer to the first map's spawn, as the join handler does: prepared, then offered to the room. */

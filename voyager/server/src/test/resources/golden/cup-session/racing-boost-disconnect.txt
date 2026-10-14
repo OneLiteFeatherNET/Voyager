@@ -660,10 +660,10 @@ describe
     Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
     Ben: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=0.0], not simulated
 messages
-  Ada title-times 0 10 5
+  Ada title-times 0 20 5
   Ada subtitle {"translate":"voyager.race.go.jump"}
   Ada title {"translate":"voyager.countdown.go"}
-  Ben title-times 0 10 5
+  Ben title-times 0 20 5
   Ben subtitle {"translate":"voyager.race.go.jump"}
   Ben title {"translate":"voyager.countdown.go"}
 logs
@@ -860,7 +860,7 @@ messages
   Ada actionbar ""
   Ada chat {"translate":"voyager.result.map.dnf","with":["ridge-run","0","1","10"]}
   Ada title-times 5 60 10
-  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","1","10"]}
+  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","1"]}
   Ada title {"translate":"voyager.medal.dnf"}
 logs
   INFO Map 1/2 'ridge-run' finished after 20 tick(s), 1,000 s
@@ -1540,7 +1540,7 @@ describe
     Ada: ring 0, gliding=false, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=63.71017729629031, z=30.457720487378644] v=Vec3[x=0.0, y=-0.12590909386552412, z=1.4964221113962997]
     cup: Ada — 10 point(s), 0 map(s) finished, best -
 messages
-  Ada title-times 0 10 5
+  Ada title-times 0 20 5
   Ada subtitle {"translate":"voyager.race.go.jump"}
   Ada title {"translate":"voyager.countdown.go"}
 logs
@@ -1737,7 +1737,7 @@ messages
   Ada actionbar ""
   Ada chat {"translate":"voyager.result.map.dnf","with":["dune-run","0","2","10"]}
   Ada title-times 5 60 10
-  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2","10"]}
+  Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2"]}
   Ada title {"translate":"voyager.medal.dnf"}
 logs
   INFO Map 2/2 'dune-run' finished after 20 tick(s), 1,000 s

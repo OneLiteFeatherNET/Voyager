@@ -28,7 +28,9 @@ import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
+import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.minestom.server.command.ConsoleSender;
@@ -48,6 +50,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -188,8 +191,9 @@ class RaceCommandReloadTest {
         CupSession session = new CupSession(holder, instances, new MapTransition(instances, runs), runs, flight,
                 blocks, boosts, TIMINGS, STEP, List::of, new NoOpRaceRecorder(),
                 Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
-        WaitingRoom room = new WaitingRoom(session, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
-                ServerSettings.DEFAULT_MAXIMUM_RACERS, null, racer -> { }, new LobbyHud(), () -> {
+        HubHandoff hub = new HubHandoff(Optional::empty, (racer, reason) -> { }, message -> { });
+        WaitingRoom room = new WaitingRoom(session, holder, List::of, ServerSettings.PRODUCTION_MINIMUM_RACERS,
+                ServerSettings.DEFAULT_MAXIMUM_RACERS, null, hub, new LobbyHud(), new LobbySidebar(), null, () -> {
                     throw new AssertionError("the room is never ticked in this test");
                 });
         env.process().command().register(new RaceCommand(session, room, devMode, service, policy));

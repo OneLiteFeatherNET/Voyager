@@ -47,6 +47,19 @@ Rules:
   the next goal (not the breakdown again).
 - A sound confirms an event. It never carries information on its own: the same event is also on screen.
 - At most three UI elements are visible to a racer at the same time.
+- A missed ring is on the action bar for 1.5 s (thirty ticks), in the warn colour, and replaces the flight line for that
+  span only. The clock is back on the next refresh.
+- A burst of joins within three seconds (sixty game ticks) is one chat line with the count. A single join is told at once.
+
+### Map result
+
+| Surface | Says |
+|---|---|
+| Chat | the breakdown: rings, medal points, placement bonus, total |
+| Title | the medal word |
+| Subtitle | the next goal in seconds, for example `0.8 s faster for Gold`; omitted when no better medal is reachable |
+
+A DNF's subtitle is the rings reached (`23 of 35 rings`) and carries no points. The points stay in chat.
 
 ## Colour
 
@@ -61,10 +74,12 @@ The palette is defined once, in `Palette.java`, and written in the bundles as ta
 | `<c-caution>` | attention, not a failure | the countdown, a refusal that is information |
 | `<c-warn>` | a failure, act now | a missed ring, a DNF, a failed command |
 
-Rules (enforced by `MessageStyleTest` once `improve-message-ux` lands):
+Rules (enforced by `MessageStyleTest` in `voyager-fitness`):
 
 - One accent per line. A colour with two jobs has none.
 - Failures use `<c-warn>`. Refusals that are information use `<c-caution>`. Neither is `<c-dim>`.
+- A line has at most one accent. The dim tag is structure and does not count. A medal word keeps the colour of its
+  medal (`<m-gold>`), which is its identity and not a second accent.
 - Red is never used, in any form. The course marks its finish in red.
 
 ## Timing
@@ -84,6 +99,19 @@ Rules (enforced by `MessageStyleTest` once `improve-message-ux` lands):
 - A loss is quieter than a gain, and informational rather than punishing.
 - A sound that plays more than ten times in one race varies in pitch, timing or timbre.
 
+Candidates in use (`RaceFeedback`). The owner's playtest chooses the final sounds; each candidate played is listed in the
+pull request that changes it.
+
+| Event | Sound | Pitch | Volume | Note |
+|---|---|---|---|---|
+| Countdown digit | `block.note_block.bass` | 1.0 to 1.4 | 0.8 | the beat, for a digit only |
+| Ring passed | `block.note_block.bell` | 1.0 to 1.8 | 0.7 | rises with the ring number |
+| Last ring | `ui.toast.challenge_complete` | 1.0 | 0.8 | not a higher bell |
+| Reset | `block.note_block.chime` | 0.7 | 0.8 | falling, not the beat |
+| DNF | `block.note_block.bit` | 0.6 | 0.6 | quieter than any medal |
+| Missed ring | `block.note_block.didgeridoo` | 0.5 | 0.5 | quiet, not the bell or the beat |
+| Medal | `ui.toast.challenge_complete`, `entity.player.levelup`, `block.note_block.pling` | as in `RaceFeedback` | 0.9 to 1.0 | none is the countdown beat |
+
 ## German
 
 - Use "du". The owner chose it (ADR-0038, decision 5).
@@ -102,5 +130,5 @@ Rules (enforced by `MessageStyleTest` once `improve-message-ux` lands):
 | Every key in both locales, with the same placeholders and tags | `MessageBundleParityTest` (`voyager-fitness`) |
 | No `{N}` in any value | the bundle loader, and the parity test |
 | No literal player-facing string outside `platform.text` | `ApiPurityTest.onlyTheTextPackageBuildsAUserFacingString` |
-| Failure and refusal colours, one accent per line, no red | `MessageStyleTest` (`voyager-platform`), added by `improve-message-ux` |
+| Failure and refusal colours, one accent per line, no red | `MessageStyleTest` (`voyager-fitness`) |
 | Channel and timing choices | review against this page; the timing values are asserted in `RaceFeedbackTimingTest` |

@@ -56,6 +56,14 @@ public final class RaceHud {
     public static final int RING_FLASH_TICKS = 8;
 
     /**
+     * How long the missed-ring line replaces the flight line: thirty ticks, one and a half seconds.
+     *
+     * <p>Long enough to read, and short enough that the clock is back on the action bar before the next ring is
+     * reached, so the racer is never left without the time they are racing against.
+     */
+    public static final int MISSED_RING_TICKS = 30;
+
+    /**
      * Solid, never notched. Thirty-five rings divide into none of the notch counts the protocol
      * offers, so a notched bar would put lines on the course where there is nothing — a bar that is
      * precise about something false is worse than one that is only approximate.
@@ -64,6 +72,18 @@ public final class RaceHud {
 
     /** One bar per racer, because two racers at different rings have different bars to show. */
     private final Map<UUID, BossBar> bars = new HashMap<>();
+
+    /** The missed-ring line each racer was last shown, and the tick it came up on. */
+    private final Map<UUID, MissedRing> missed = new HashMap<>();
+
+    /**
+     * A skipped ring's line on the action bar.
+     *
+     * @param ringNumber the ring that was missed, counted from one
+     * @param shownAtGameTick the game tick the line came up on
+     */
+    private record MissedRing(int ringNumber, int shownAtGameTick) {
+    }
 
     /**
      * Puts the boss bar on screen with whatever the state says, without the action bar and without
@@ -88,8 +108,38 @@ public final class RaceHud {
             return;
         }
         updateBar(racer, state);
+        MissedRing skipped = missed.get(racer.getUuid());
+        if (skipped != null && missedLineShowing(state.gameTick(), skipped.shownAtGameTick())) {
+            racer.sendActionBar(Messages.ringMissed(skipped.ringNumber()));
+            return;
+        }
         racer.sendActionBar(Messages.flightHud(
                 state.elapsed(), state.ringsPassed(), state.ringCount(), flashing(state)));
+    }
+
+    /**
+     * A ring was skipped: the missed-ring sound, and the line that replaces the flight line for
+     * {@link #MISSED_RING_TICKS} ticks.
+     *
+     * <p>Called in the tick the skip was detected, so the sound and the line come with the skip and not with the next
+     * refresh.
+     *
+     * @param racer the racer who skipped the ring
+     * @param ringNumber the ring that was missed, counted from one
+     * @param gameTick the game tick the skip was detected on
+     */
+    public void missedRing(Player racer, int ringNumber, int gameTick) {
+        missed.put(racer.getUuid(), new MissedRing(ringNumber, gameTick));
+        RaceFeedback.ringMissed(racer);
+        racer.sendActionBar(Messages.ringMissed(ringNumber));
+    }
+
+    /**
+     * Whether the missed-ring line is on the action bar at {@code gameTick}: from the tick it came up on, for
+     * {@link #MISSED_RING_TICKS} ticks, and not after.
+     */
+    static boolean missedLineShowing(int gameTick, int shownAtGameTick) {
+        return gameTick >= shownAtGameTick && gameTick - shownAtGameTick < MISSED_RING_TICKS;
     }
 
     /**
@@ -104,12 +154,14 @@ public final class RaceHud {
         if (bar != null) {
             racer.hideBossBar(bar);
         }
+        missed.remove(racer.getUuid());
         racer.sendActionBar(Component.empty());
     }
 
     /** Drops what was held for a player who disconnected. */
     public void forget(UUID playerId) {
         bars.remove(playerId);
+        missed.remove(playerId);
     }
 
     /**

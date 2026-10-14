@@ -5,10 +5,13 @@ import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
-import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.handoff.HubHandoff;
+import net.elytrarace.voyager.platform.lobby.LobbyBoard;
+import net.elytrarace.voyager.platform.lobby.LobbyHologram;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
+import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
@@ -133,8 +136,9 @@ public final class ServerBeans {
 
     /**
      * The waiting room: starts, cancels and aborts the cup from the racers online, with the minimum and the maximum the
-     * settings name. A finished cup returns its racers to the lobby world when one is configured, and otherwise places
-     * them at the first map's spawn, which is the spawn a new joiner gets with no lobby.
+     * settings name. The lobby world is where a joining racer waits when one is configured. A finished cup's racers go to
+     * the network hub after the results linger (ADR-0033): through the handoff the CloudNet bridge installs, or, with no
+     * bridge, a disconnect with the translated message.
      *
      * <p>The lobby world is loaded here, while the graph is built, so a lobby folder that is not there stops the boot
      * before a client can connect.
@@ -145,11 +149,15 @@ public final class ServerBeans {
         LobbyTransition lobby = settings.lobby()
                 .map(definition -> new LobbyTransition(instances, definition))
                 .orElse(null);
-        return new WaitingRoom(session, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
-                racer -> {
-                    MapDefinition first = catalog.current().rotation().getFirst();
-                    racer.setInstance(instances.forWorld(first.world()), Vectors.toMinestom(first.spawn()).asPos());
-                }, new LobbyHud(), () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
+        HubHandoff hub = HubHandoff.fromSlot((racer, reason) -> racer.kick(reason), LOGGER::warn);
+        // The hologram stands in the lobby world, which the lobby transition has just loaded, so it is spawned here, once
+        // at boot. It is an entity and not part of the world, so the lobby is never written with it.
+        LobbyHologram hologram = lobby == null ? null : LobbyHologram.spawnAt(
+                settings.lobbyHologram().map(at -> Vectors.toMinestom(at).asPos()), lobby.instance(),
+                LobbyBoard.of(catalog.current().cup())).orElse(null);
+        return new WaitingRoom(session, catalog, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
+                hub, new LobbyHud(), new LobbySidebar(), hologram,
+                () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
     }
 
     @Bean

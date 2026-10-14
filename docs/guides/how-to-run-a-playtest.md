@@ -65,8 +65,10 @@ the same address.
 | Moment | What the racer sees |
 |---|---|
 | Anyone joins | Every racer online is told in chat: `<name> joined the game (<online>/<maximum>)`. |
-| Joined, fewer racers online than the minimum | A boss bar: `Waiting for racers: <online> of <needed> online`. The racer stands at the lobby spawn with no elytra and no rockets. |
-| The minimum is met | The lobby starts. The boss bar counts it down in whole seconds: `Cup starts in <n> s`, and its fill is the part of the lobby left. |
+| Joined, fewer racers online than the minimum | A boss bar that names the cup: `Cup <name> · waiting for racers: <online> of <needed> online`. The racer stands at the lobby spawn with no elytra and no rockets. |
+| Waiting in the lobby | A sidebar titled with the cup's name, listing its maps in play order. Twelve maps at most; a longer cup ends the list with `+<n> more`. The sidebar is gone once the racer enters a map. |
+| The lobby hologram is set (`VOYAGER_LOBBY_HOLOGRAM`) | A text display in the lobby world at that position shows the same cup name and maps as the sidebar. |
+| The minimum is met | The lobby starts. The boss bar counts it down in whole seconds: `Cup <name> · starts in <n> s`, and its fill is the part of the lobby left. |
 | The server reaches its maximum during the countdown | The countdown is shortened to 10 seconds from that moment. It is never lengthened, and a committed start is not shortened. |
 | The last three seconds of the lobby | The digits 3, 2, 1 and `GO` are shown, and the racer is placed on the spawn facing the first ring with the elytra and the rockets in hand. |
 | GO | The racer is released, not launched. The subtitle `Jump, then deploy your elytra.` appears with the title. The racer jumps and deploys the elytra; a rocket is refused until the racer is gliding, so the rocket comes after the deployment. |
@@ -75,8 +77,10 @@ the same address.
 | A racer joins while a map is racing | The racer is told `A cup is running. You join at the next map.` and enters the next map when it starts. |
 | The last racer leaves a running cup | The cup stops without a result, and the room waits for the minimum again. |
 | A racer is still flying when a map's race time ends | That map is scored as DNF: ring points only. |
-| The cup finishes and enough racers are still online | The racers are returned to the lobby spawn, and the next countdown begins without any operator action. |
-| The cup finishes and too few racers are online | The racers are returned to the lobby spawn and the room waits. |
+| The cup finishes | The results stay up for 10 seconds. Then every racer online is sent to the network hub through CloudNet's fallback. No racer is kicked on that path, and no countdown starts for the racers who were sent away. |
+| A racer joins during those 10 seconds | The racer is sent to the hub with the others when the results end. |
+| A racer joins after the hand-off | The room starts as it does for any join: a countdown begins once the minimum is met. |
+| The cup finishes on a server without the CloudNet bridge (a local run) | Each racer is disconnected with `The cup is over, and this server cannot hand you on to the network hub. Reconnect to keep playing.` Nothing is retried. |
 
 ## Check the state from the console
 

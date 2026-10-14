@@ -58,10 +58,12 @@ import java.util.function.Function;
  *     which case waiting racers stand at the first map's spawn and the server warns at boot (ADR-0029)
  * @param maximumRacers how many racers make a full server; at least {@link #minimumRacers}. Defaults to
  *     {@link #DEFAULT_MAXIMUM_RACERS}. It is soft: it sets the join line and the full-lobby countdown, and refuses no one
+ * @param lobbyHologram where the cup's hologram stands in the lobby world, or empty for no hologram. It needs a lobby
+ *     (ADR-0033)
  */
 public record ServerSettings(String host, int port, Path dataPath, Path worldsPath,
         Optional<String> cupName, boolean devMode, int minimumRacers, Optional<LobbyDefinition> lobby,
-        int maximumRacers) {
+        int maximumRacers, Optional<Vec3> lobbyHologram) {
 
     /** The property naming the directory holding {@code maps/} and {@code cups/}. */
     public static final String DATA_PATH_PROPERTY = "VOYAGER_DATA_PATH";
@@ -87,6 +89,12 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The property naming how many racers make a full server; absent means {@link #DEFAULT_MAXIMUM_RACERS}. */
     public static final String MAX_PLAYERS_PROPERTY = "VOYAGER_MAX_PLAYERS";
 
+    /**
+     * The property naming where the cup's hologram stands in the lobby, as {@code x,y,z} in block coordinates. Optional; it
+     * needs {@link #LOBBY_WORLD_PROPERTY}, and it is refused without one.
+     */
+    public static final String LOBBY_HOLOGRAM_PROPERTY = "VOYAGER_LOBBY_HOLOGRAM";
+
     /** The maximum racer count when {@link #MAX_PLAYERS_PROPERTY} is not set, in production and in dev mode (ADR-0029). */
     public static final int DEFAULT_MAXIMUM_RACERS = 16;
 
@@ -102,7 +110,7 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
      */
     public static final List<String> KEYS = List.of(DATA_PATH_PROPERTY, WORLDS_PATH_PROPERTY, CUP_PROPERTY,
             DEV_MODE_PROPERTY, MIN_RACERS_PROPERTY, LOBBY_WORLD_PROPERTY, LOBBY_SPAWN_PROPERTY, MAX_PLAYERS_PROPERTY,
-            BIND_HOST_PROPERTY, BIND_PORT_PROPERTY);
+            LOBBY_HOLOGRAM_PROPERTY, BIND_HOST_PROPERTY, BIND_PORT_PROPERTY);
 
     /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is off. */
     public static final int PRODUCTION_MINIMUM_RACERS = 2;
@@ -150,7 +158,7 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     public ServerSettings(String host, int port, Path dataPath, Path worldsPath, Optional<String> cupName,
             boolean devMode, int minimumRacers) {
         this(host, port, dataPath, worldsPath, cupName, devMode, minimumRacers, Optional.empty(),
-                DEFAULT_MAXIMUM_RACERS);
+                DEFAULT_MAXIMUM_RACERS, Optional.empty());
     }
 
     public ServerSettings {
@@ -160,6 +168,9 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
         requirePort(port);
         requireMinimumRacers(minimumRacers);
         requireMaximumRacers(maximumRacers, minimumRacers);
+        if (lobbyHologram.isPresent() && lobby.isEmpty()) {
+            throw new InvalidSettingException(LOBBY_HOLOGRAM_PROPERTY, hologramNeedsLobby());
+        }
         requireDirectory(dataPath, MissingServerDirectoryException.DATA);
         requireDirectory(worldsPath, MissingServerDirectoryException.WORLDS);
     }
@@ -192,7 +203,9 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
                 minimum,
                 parseLobby(blankToNull(property.apply(LOBBY_WORLD_PROPERTY)),
                         blankToNull(property.apply(LOBBY_SPAWN_PROPERTY))),
-                parseMaximumRacers(blankToNull(property.apply(MAX_PLAYERS_PROPERTY))));
+                parseMaximumRacers(blankToNull(property.apply(MAX_PLAYERS_PROPERTY))),
+                parseHologram(blankToNull(property.apply(LOBBY_HOLOGRAM_PROPERTY)),
+                        blankToNull(property.apply(LOBBY_WORLD_PROPERTY))));
     }
 
     /**
@@ -234,11 +247,46 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     }
 
     /**
+     * The hologram a pair of settings names: empty when the hologram is not set, and otherwise its position, which is refused
+     * without a lobby world.
+     *
+     * @param raw   the position as {@code x,y,z}, or {@code null} when the setting is absent
+     * @param world the lobby world directory name, or {@code null} when the setting is absent
+     * @return the position, or empty when the hologram is not set
+     * @throws InvalidSettingException if the position is not three finite numbers, or it is set without a lobby world; the
+     *     message names {@link #LOBBY_HOLOGRAM_PROPERTY}
+     */
+    static Optional<Vec3> parseHologram(@Nullable String raw, @Nullable String world) {
+        if (raw == null) {
+            return Optional.empty();
+        }
+        Vec3 position = parseCoordinates(LOBBY_HOLOGRAM_PROPERTY, raw);
+        if (world == null) {
+            throw new InvalidSettingException(LOBBY_HOLOGRAM_PROPERTY, hologramNeedsLobby());
+        }
+        return Optional.of(position);
+    }
+
+    private static String hologramNeedsLobby() {
+        return "%s is set, but %s is not: the hologram stands in the lobby world, so it needs %s"
+                .formatted(LOBBY_HOLOGRAM_PROPERTY, LOBBY_WORLD_PROPERTY, LOBBY_WORLD_PROPERTY);
+    }
+
+    /**
      * The spawn a setting names: three finite numbers, {@code x,y,z}, in block coordinates.
      *
      * @throws InvalidSettingException if the text is not three finite numbers; the message names the text read
      */
     static Vec3 parseSpawn(String raw) {
+        return parseCoordinates(LOBBY_SPAWN_PROPERTY, raw);
+    }
+
+    /**
+     * Three finite numbers, {@code x,y,z}, in block coordinates, named by the setting they came from.
+     *
+     * @throws InvalidSettingException if the text is not three finite numbers; the message names the setting and the text
+     */
+    private static Vec3 parseCoordinates(String setting, String raw) {
         String[] parts = raw.split(",", -1);
         if (parts.length == 3) {
             try {
@@ -252,8 +300,8 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
                 // Reported below, once, with the text that was read.
             }
         }
-        throw new InvalidSettingException(LOBBY_SPAWN_PROPERTY,
-                "%s must be three numbers x,y,z in block coordinates, was '%s'".formatted(LOBBY_SPAWN_PROPERTY, raw));
+        throw new InvalidSettingException(setting,
+                "%s must be three numbers x,y,z in block coordinates, was '%s'".formatted(setting, raw));
     }
 
     /**
@@ -296,11 +344,12 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
 
     /** One line naming every resolved value, for the boot log. Absolute paths, deliberately. */
     public String describe() {
-        return "host=%s port=%s data=%s worlds=%s cup=%s dev=%s minimum=%s maximum=%s lobby=%s".formatted(
+        return "host=%s port=%s data=%s worlds=%s cup=%s dev=%s minimum=%s maximum=%s lobby=%s hologram=%s".formatted(
                 host, port, dataPath.toAbsolutePath(), worldsPath.toAbsolutePath(),
                 cupName.orElse("<the only one>"), devMode, minimumRacers, maximumRacers,
                 lobby.map(definition -> "%s@%s,%s,%s".formatted(definition.world(), definition.spawn().x(),
-                        definition.spawn().y(), definition.spawn().z())).orElse("none"));
+                        definition.spawn().y(), definition.spawn().z())).orElse("none"),
+                lobbyHologram.map(at -> "%s,%s,%s".formatted(at.x(), at.y(), at.z())).orElse("none"));
     }
 
     /**

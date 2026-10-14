@@ -11,7 +11,11 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
+import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.inject.JoinArrival;
+import io.avaje.inject.BeanScope;
+import net.minestom.server.entity.EntityType;
+import net.minestom.server.instance.Instance;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -51,6 +55,7 @@ class LobbyWiringTest {
     private static final String FIRST = "wiring_first";
     private static final Vec3 LOBBY_SPAWN = new Vec3(3.5, 65.0, 5.5);
     private static final Vec3 FIRST_SPAWN = new Vec3(-37.5, 71.0, 88.5);
+    private static final Vec3 HOLOGRAM = new Vec3(0.5, 70.0, 0.5);
 
     @TempDir
     Path tempDir;
@@ -124,9 +129,51 @@ class LobbyWiringTest {
         assertThat(contentsOf(lobbyFolder)).isEqualTo(beforeStop);
     }
 
+    /** The hologram stands at its configured position in the lobby instance once the graph is built, that is at boot. */
+    @Test
+    void theHologramIsSpawnedInTheLobbyInstanceAtBoot(Env env) throws IOException {
+        writeWorld(env, LOBBY, LOBBY_SPAWN);
+        ServerSettings settings = bootSettings();
+
+        try (BeanScope scope = VoyagerServer.openGraph(settings)) {
+            Instance lobby = scope.get(MapInstances.class).forWorld(LOBBY);
+
+            assertThat(lobby.getEntities())
+                    .anySatisfy(entity -> {
+                        assertThat(entity.getEntityType()).isEqualTo(EntityType.TEXT_DISPLAY);
+                        assertThat(entity.getPosition()).isEqualTo(Vectors.toMinestom(HOLOGRAM).asPos());
+                    });
+        }
+    }
+
+    /** The hologram is an entity, not part of the lobby world: stopping the server writes the lobby exactly as it was. */
+    @Test
+    void theHologramIsNotSavedWhenTheServerStops(Env env) throws IOException {
+        writeWorld(env, LOBBY, LOBBY_SPAWN);
+        Path lobbyFolder = tempDir.resolve("worlds").resolve(LOBBY);
+        BeanScope scope = VoyagerServer.openGraph(bootSettings());
+        Map<Path, String> beforeStop = contentsOf(lobbyFolder);
+
+        scope.get(MapInstances.class).close();
+        scope.close();
+
+        assertThat(contentsOf(lobbyFolder)).isEqualTo(beforeStop);
+    }
+
     // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
+
+    /** The settings a boot reads: the shipped catalogue, the lobby world, and the hologram at {@link #HOLOGRAM}. */
+    private ServerSettings bootSettings() throws IOException {
+        Path data = tempDir.resolve("data");
+        Path worlds = Files.createDirectories(tempDir.resolve("worlds"));
+        ShippedCatalogue.copyMapsInto(data);
+        ShippedCatalogue.copyCupsInto(data);
+        return new ServerSettings("127.0.0.1", 25571, data, worlds, Optional.of("alpha_cup"), false,
+                ServerSettings.PRODUCTION_MINIMUM_RACERS, Optional.of(new LobbyDefinition(LOBBY, LOBBY_SPAWN)),
+                ServerSettings.DEFAULT_MAXIMUM_RACERS, Optional.of(HOLOGRAM));
+    }
 
     private MapInstances openWorlds(Env env) {
         worlds = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));

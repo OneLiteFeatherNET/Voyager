@@ -31,6 +31,9 @@ import java.util.OptionalInt;
  * medal word, which is coloured by which medal it is. Those arrive as coloured components, built
  * here from the same palette. A translator can still translate every one of these lines; none of
  * them can recolour anything.
+ *
+ * <p>The colour, wording and channel rules that these lines follow are in
+ * {@code docs/reference/message-style-guide.md}.
  */
 @ApiStatus.Internal
 public abstract class Messages {
@@ -49,8 +52,12 @@ public abstract class Messages {
     private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
-    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting";
-    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown";
+    private static final String LOBBY_PLAYERS_JOINED = "voyager.lobby.player.joined.many";
+    private static final String RING_MISSED = "voyager.race.ring.missed";
+    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting.cup";
+    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown.cup";
+    private static final String HANDOFF_DISCONNECT = "voyager.handoff.disconnect";
+    private static final String LOBBY_BOARD_MORE = "voyager.lobby.board.more";
     private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
     private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
     private static final String RESET_TARGET_CHECKPOINT = "voyager.reset.target.checkpoint";
@@ -58,7 +65,7 @@ public abstract class Messages {
     private static final long MILLIS_PER_SECOND = 1_000L;
     private static final String MAP_RESULT_MEDAL = "voyager.result.map.medal";
     private static final String MAP_RESULT_DNF = "voyager.result.map.dnf";
-    private static final String MAP_RESULT_SUBTITLE = "voyager.result.map.subtitle";
+    private static final String MAP_RESULT_SUBTITLE_NEXT = "voyager.result.map.subtitle.next";
     private static final String MAP_RESULT_SUBTITLE_DNF = "voyager.result.map.subtitle.dnf";
     private static final String CUP_TITLE = "voyager.result.cup.title";
     private static final String CUP_SUBTITLE = "voyager.result.cup.subtitle";
@@ -228,17 +235,39 @@ public abstract class Messages {
                 Component.text(name), Component.text(online), Component.text(maximum));
     }
 
-    /** The lobby boss bar while the minimum is not met: how many racers are online and how many are needed. */
+    /**
+     * Sent to every online racer for a burst of joins told as one line: how many joined in the window, and how many
+     * are online now against the maximum. Used for two or more joins; a single join keeps {@link #playerJoined}.
+     *
+     * @param joined how many racers joined in the window, two or more
+     */
     @Contract(pure = true)
-    public static Component lobbyBossBarWaiting(int online, int needed) {
-        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(online), Component.text(needed));
+    public static Component playersJoined(int joined, int online, int maximum) {
+        return Component.translatable(LOBBY_PLAYERS_JOINED,
+                Component.text(joined), Component.text(online), Component.text(maximum));
     }
 
-    /** The lobby boss bar during the start countdown: the whole seconds left, rounded up, as the action bar had them. */
+    /**
+     * The lobby boss bar while the minimum is not met: the cup a racer waits for, and how many racers are online and needed.
+     *
+     * @param cup    the cup's name, as the cup shown in the lobby names it
+     * @param online how many racers are online
+     * @param needed how many racers the cup needs to start
+     */
     @Contract(pure = true)
-    public static Component lobbyBossBarCountdown(Duration remaining) {
+    public static Component lobbyBossBarWaiting(String cup, int online, int needed) {
+        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(cup), Component.text(online),
+                Component.text(needed));
+    }
+
+    /**
+     * The lobby boss bar during the start countdown: the cup, and the whole seconds left, rounded up, as the action bar had
+     * them.
+     */
+    @Contract(pure = true)
+    public static Component lobbyBossBarCountdown(String cup, Duration remaining) {
         long millis = Math.max(0L, remaining.toMillis());
-        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN,
+        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN, Component.text(cup),
                 Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
     }
 
@@ -246,6 +275,47 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component lobbyCancelled(int online, int needed) {
         return Component.translatable(LOBBY_CANCELLED, Component.text(online), Component.text(needed));
+    }
+
+    /**
+     * The title of the lobby's cup board: the cup's name. The name is the cup's own, not a sentence the game wrote.
+     *
+     * @param cup the cup's name
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardTitle(String cup) {
+        return Component.text(cup);
+    }
+
+    /**
+     * One map line of the lobby's cup board: its place in the cup and its name. The numbering and the name are data, so the
+     * line is not translated.
+     *
+     * @param position the map's place in play order, from one
+     * @param map      the map's name
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardMap(int position, String map) {
+        return Component.text("%d. %s".formatted(position, map));
+    }
+
+    /**
+     * The last line of the lobby's cup board when the cup has more maps than the board holds: how many follow.
+     *
+     * @param more how many maps the board does not list
+     */
+    @Contract(pure = true)
+    public static Component lobbyBoardMore(int more) {
+        return Component.translatable(LOBBY_BOARD_MORE, Component.text(more));
+    }
+
+    /**
+     * The disconnect a racer gets when no hub handoff runs (a local run without the bridge) or the handoff refuses. The
+     * refusal is not retried; the racer reconnects (ADR-0033).
+     */
+    @Contract(pure = true)
+    public static Component handoffDisconnect() {
+        return Component.translatable(HANDOFF_DISCONNECT);
     }
 
     /** A finisher's map result, in one chat line that is still there when the next map starts. */
@@ -271,21 +341,35 @@ public abstract class Messages {
                 Component.text(points));
     }
 
-    /** The subtitle under a finisher's medal: the time, and what the map was worth. */
+    /**
+     * The subtitle under a finisher's medal: the next goal, in seconds to save, and the medal it buys.
+     *
+     * @param saving the time to save for {@code next}, one decimal place with a dot
+     * @param next the medal the racer would earn
+     */
     @Contract(pure = true)
-    public static Component mapResultSubtitle(Duration time, int points) {
-        return Component.translatable(MAP_RESULT_SUBTITLE,
-                Component.text(RaceTimeFormat.tenths(time)),
-                Component.text(points));
+    public static Component mapResultNextGoal(Duration saving, MedalTier next) {
+        return Component.translatable(MAP_RESULT_SUBTITLE_NEXT,
+                Component.text(RaceTimeFormat.seconds(saving)),
+                medal(next));
     }
 
-    /** The subtitle under a DNF: how far they got, and what that was worth. */
+    /** The subtitle under a DNF: how many of the rings were reached. No points, which are in chat. */
     @Contract(pure = true)
-    public static Component mapResultSubtitleDnf(int ringsPassed, int ringCount, int points) {
+    public static Component mapResultSubtitleDnf(int ringsPassed, int ringCount) {
         return Component.translatable(MAP_RESULT_SUBTITLE_DNF,
                 Component.text(ringsPassed),
-                Component.text(ringCount),
-                Component.text(points));
+                Component.text(ringCount));
+    }
+
+    /**
+     * The action bar line for a ring that was skipped: the ring's number, counted from one.
+     *
+     * @param ringNumber the missed ring, from one
+     */
+    @Contract(pure = true)
+    public static Component ringMissed(int ringNumber) {
+        return Component.translatable(RING_MISSED, Component.text(ringNumber));
     }
 
     /** The title shown to everybody when the cup's last map has been scored. */

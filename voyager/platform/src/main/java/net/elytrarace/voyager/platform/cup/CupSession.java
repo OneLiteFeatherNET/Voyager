@@ -682,6 +682,10 @@ public final class CupSession implements RacePhaseListener {
                 tally.recordGlidingTick(id);
             }
             announcer.report(racer, map, advanced, wasFinished, clock);
+            if (advanced.justMissed() != null) {
+                // Ring numbers count from one; the ring's own index is zero-based.
+                hud.missedRing(racer, advanced.justMissed().index() + 1, clock.gameTick());
+            }
             RaceRun shown = sendBackIfLostOrLanded(racer, map, held.get(), advanced, position);
             // sendBackIfLostOrLanded hands back the run it was given unless it reset the racer, so a reset
             // cancels the effect of the ring it was crossed on. A reset racer has no ring effect on that tick.

@@ -153,10 +153,10 @@ class MessageBundleTest {
     @Test
     void theResultTitleIsOneWordAndOneLine() {
         assertThat(render(Messages.medal(MedalTier.GOLD))).isEqualTo("GOLD");
-        assertThat(render(Messages.mapResultSubtitle(Duration.ofMillis(64_800), 420)))
-                .isEqualTo("1:04.8  ·  420 points");
-        assertThat(render(Messages.mapResultSubtitleDnf(23, 35, 230)))
-                .isEqualTo("23 of 35 rings  ·  230 points");
+        assertThat(render(Messages.mapResultNextGoal(Duration.ofMillis(800), MedalTier.GOLD)))
+                .isEqualTo("0.8 s faster for GOLD");
+        assertThat(render(Messages.mapResultSubtitleDnf(23, 35)))
+                .isEqualTo("23 of 35 rings");
     }
 
     @Test
@@ -231,8 +231,10 @@ class MessageBundleTest {
                 Messages.joinedMidCup(),
                 Messages.mapResult("m", 1, 2, MedalTier.GOLD, 3, 6),
                 Messages.mapResultDnf("m", 1, 2, 3),
-                Messages.mapResultSubtitle(Duration.ZERO, 1),
-                Messages.mapResultSubtitleDnf(1, 2, 3),
+                Messages.mapResultNextGoal(Duration.ZERO, MedalTier.GOLD),
+                Messages.mapResultSubtitleDnf(1, 2),
+                Messages.ringMissed(1),
+                Messages.playersJoined(2, 3, 4),
                 Messages.cupTitle(),
                 Messages.cupSubtitle(1, 2),
                 Messages.cupHeading("c"),

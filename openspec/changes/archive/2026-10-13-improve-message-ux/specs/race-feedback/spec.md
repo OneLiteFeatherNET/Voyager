@@ -47,8 +47,9 @@ colour, after which the flight HUD returns on its next refresh.
 
 ### Requirement: The map result names the next goal in seconds, when one is reachable
 **MoSCoW:** Should. WHEN a racer finishes a map with a medal that has a better medal above it, THE SYSTEM SHALL show in the
-result subtitle the seconds the racer would need to save to reach the next better medal. WHEN no better medal is reachable,
-or the map ended as DNF, THE SYSTEM SHALL show the existing subtitle without a next goal.
+result subtitle the seconds the racer would need to save to reach the next better medal, with one decimal. WHEN no better
+medal is reachable, THE SYSTEM SHALL omit the subtitle. WHEN the map ended as DNF, THE SYSTEM SHALL show the rings passed
+out of the rings in the map, with no points and no next goal.
 
 #### Scenario: A silver finish
 - **WHEN** a racer finishes with a Silver medal 0.8 s slower than the Gold boundary
@@ -56,19 +57,19 @@ or the map ended as DNF, THE SYSTEM SHALL show the existing subtitle without a n
 
 #### Scenario: A Diamond finish
 - **WHEN** a racer finishes with Diamond
-- **THEN** the subtitle shows no next goal
+- **THEN** the subtitle is omitted
 
 #### Scenario: A DNF
-- **WHEN** a racer's map ends as DNF
-- **THEN** the subtitle shows the rings and points, with no next goal
+- **WHEN** a racer's map ends as DNF after 5 of 35 rings
+- **THEN** the subtitle reads 5 of 35 rings, with no points and no next goal
 
-### Requirement: The map result is recorded in one place for its numbers
-**MoSCoW:** Should. THE SYSTEM SHALL list the points breakdown of a map result in chat only, and SHALL show the title and
-the subtitle without repeating that breakdown.
+### Requirement: The map result lists its points in chat only
+**MoSCoW:** Should. THE SYSTEM SHALL list the points breakdown of a map result in chat only. THE SYSTEM SHALL show the medal
+word as the title and the next goal, or nothing, as the subtitle, and neither SHALL repeat a point figure.
 
 #### Scenario: A finished map
 - **WHEN** a racer finishes a map
-- **THEN** chat holds the breakdown line once, and the title and subtitle show the medal, the total points and the next goal
+- **THEN** chat holds the breakdown line once, the title shows the medal word, and the subtitle shows the next goal in seconds
 
 ### Requirement: Joins in a short burst are told as one line
 **MoSCoW:** Should. WHEN racers join the waiting room within 60 game ticks of each other, THE SYSTEM SHALL send the racers

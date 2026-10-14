@@ -93,13 +93,15 @@ public abstract class RunReset {
             throw RunNotResettableException.finishedRun();
         }
         int checkpoint = run.progress().lastCheckpointIndex();
+        int missedMemory = run.progress().lastMissedIndex();
         if (checkpoint < 0) {
-            RaceRun reset = resetRun(RingProgress.atStart(), List.of());
+            RaceRun reset = resetRun(RingProgress.atStart().withLastMissedIndex(missedMemory), List.of());
             Ring first = map.rings().getFirst();
             return new ResetPlan(cause, reset, map.spawn(), first.center(), OptionalInt.empty());
         }
         int kept = checkpoint + 1;
-        RaceRun reset = resetRun(new RingProgress(kept, checkpoint), run.passedOnGameTick().subList(0, kept));
+        RaceRun reset = resetRun(new RingProgress(kept, checkpoint, missedMemory),
+                run.passedOnGameTick().subList(0, kept));
         Ring target = map.rings().get(checkpoint);
         return new ResetPlan(cause, reset, target.center(), target.center().plus(target.normal()),
                 OptionalInt.of(kept));

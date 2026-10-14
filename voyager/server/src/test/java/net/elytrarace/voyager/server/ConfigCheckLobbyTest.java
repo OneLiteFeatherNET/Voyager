@@ -183,7 +183,8 @@ class ConfigCheckLobbyTest {
     private record Fixture(Path data, Path worlds) {
 
         ServerSettings settings(Optional<LobbyDefinition> lobby) {
-            return new ServerSettings("127.0.0.1", 25573, data, worlds, Optional.of("alpha_cup"), false, 2, lobby, 16);
+            return new ServerSettings("127.0.0.1", 25573, data, worlds, Optional.of("alpha_cup"), false, 2, lobby, 16,
+                Optional.empty());
         }
     }
 }

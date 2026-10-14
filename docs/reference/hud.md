@@ -117,7 +117,27 @@ When a course reset sends a racer back, `platform.hud.RaceFeedback.reset` shows 
 
 The title names the reason: `voyager.reset.title.outofbounds` or `voyager.reset.title.landed`. The subtitle names the target: `voyager.reset.target.ring` with the one-based number of the last ring passed, or `voyager.reset.target.start`. The title has no fade-in, as every race title does.
 
-The sound is `block.note_block.bass` at pitch 0.6 and volume 0.8, on the master channel. A ring pass plays a rising bell, so a racer who has been sent back hears the difference without reading.
+The sound is `block.note_block.chime` at pitch 0.7 and volume 0.8, on the master channel. It falls, so a racer who has been sent back hears the difference without reading. It is not the countdown beat (`block.note_block.bass`), and a ring pass plays a rising bell.
+
+## Missed ring
+
+A ring is missed when the racer passes the ring after it while the ring is still the next one expected. The rule is in `voyager-race` (`ProgressTracker`), and it is reported once per run: a second crossing of the same pair, or a reset that keeps the progress, reports nothing more. Progression does not change: the racer must still pass the missed ring in order.
+
+The cue, in the tick the skip is detected (`RaceHud.missedRing`):
+
+- a quiet sound, `block.note_block.didgeridoo` at pitch 0.5 and volume 0.5, from `RaceFeedback.missedRingSound`;
+- the action bar line `Ring <n> missed` in the warn colour, numbered from one, for 30 ticks (1.5 s). It replaces the flight line for that span, and the clock returns on the first refresh after it.
+
+There is no proximity cue. A near miss needs a distance test against the ring plane that the course data does not yet provide.
+
+## Results and joins
+
+- The map result: the breakdown is in chat. The title is the medal word. The subtitle is the next goal in seconds, for example `0.8 s faster for Gold`, and it is omitted for Diamond. A DNF's subtitle is `23 of 35 rings`.
+- A join: the first join of a burst is told at once. Joins after it within 60 game ticks (3 s) are told as one line at the window's close, with the count. The window is counted in ticks by the waiting room.
+
+## Sounds
+
+Each meaning has its own sound, and the countdown beat is for a countdown digit only. The table of candidates, which the owner's playtest tunes, is in [the message style guide](message-style-guide.md#sound).
 
 ## Thread model
 
@@ -135,6 +155,20 @@ This contrasts with `FireworkBoostComponent`, which is written from both the Net
 | `showCountdown` | Lobby phase (reserved; no current caller) | When a countdown tick fires |
 | `showRingPassed` | `RingCollisionSystem.process` | When a passthrough is detected on a ring |
 | `cleanup` | `GameOrchestrator.restartGame`, `GameOrchestrator.cleanup` | Before removing a player entity, and when the orchestrator tears down |
+
+## Lobby displays
+
+The rebuild's lobby shows the cup that waiting racers are about to play. Three displays read one board, `LobbyBoard`, so they
+always name the same cup and the same maps in play order (`platform/lobby`, ADR-0033).
+
+| Display | Shown when | Text |
+|---|---|---|
+| Sidebar | The room is waiting and the racer stands in the place racers wait: the lobby instance, or the first map with no lobby. Hidden at `RUNNING` and when the racer enters a map. | The cup's name as the title, then one line per map, `1. <map>`. Twelve maps at most; a longer cup ends with `+<n> more`. |
+| Hologram | `VOYAGER_LOBBY_HOLOGRAM` names a position and a lobby world is set. One text display, spawned at boot, never saved with the lobby. | The same lines as the sidebar, the cup's name on the first line. |
+| Boss bar | Waiting and countdown, as before. | `Cup <name> · waiting for racers: <online> of <needed> online`, or `Cup <name> · starts in <n> s`. |
+
+The cup shown is the cup the catalogue currently holds. A reload that is pending does not change it until a round starts and
+promotes it. A countdown keeps the cup it began with.
 
 ## Related topics
 
