@@ -9,6 +9,7 @@ import net.elytrarace.voyager.api.race.effect.RingEffect;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.catalog.writer.LayoutVersion;
 import net.elytrarace.voyager.platform.convert.VelocityExit;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
@@ -128,12 +129,6 @@ public final class CupSession implements RacePhaseListener {
 
     /** {@link #preparedMapIndex} when no map of the current cup has been entered yet. */
     private static final int NO_MAP = -1;
-
-    /**
-     * The layout identity written with every completion until the canonical form of a map definition exists
-     * (design D7). Deliberately not a hash: a row stored under it cannot be mistaken for a real layout.
-     */
-    private static final String LAYOUT_NOT_COMPUTED = "not-computed";
 
     private final CatalogHolder catalog;
     private final MapInstances instances;
@@ -842,7 +837,7 @@ public final class CupSession implements RacePhaseListener {
                 racers.add(new RaceParticipant(id, racer.getUsername(), false, held.get(), score,
                         tally.boosts(id), tally.resets(id), tally.flightTime(id)));
             }
-            RaceCompletion completion = RaceCompletions.of(map.name(), LAYOUT_NOT_COMPUTED, cup.mode(), cup.name(),
+            RaceCompletion completion = RaceCompletions.of(map.name(), LayoutVersion.of(map), cup.mode(), cup.name(),
                     mapStartedAt, clock.instant(), racers);
             if (completion.racers().isEmpty()) {
                 // A map nobody raced is not stored: an empty session would only count a map that was never played.
