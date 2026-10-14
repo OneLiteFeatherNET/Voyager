@@ -67,7 +67,7 @@ or blocks the tick.
 - [x] 7.4 Green: `server.inject.PersistenceBeans` (`@Factory`, the only DI annotation, in the composition root), wired into `CupBeans` (`feat(stats)`). Haiku effort: high.
 - [x] 7.5 Red: fitness rules of design.md D11 added to `voyager/fitness` with `allowEmptyShould(false)`; run `./gradlew :voyager:fitness:test`; record the red (`test(stats)`). Haiku effort: medium.
 - [x] 7.6 Green: add `:voyager:persistence` to `settings.gradle.kts`, to `voyager/fitness/build.gradle.kts`, to `FitnessCoverageTest`'s map; the rules pass (`feat(stats)`). Haiku effort: medium.
-- [ ] 7.7 CI: a new job `persistence-integration` on `ubuntu-latest` in `.github/workflows/build.yml` runs `./gradlew :voyager:persistence:integrationTest -Pvoyager.requireDocker=true`. The existing matrix names stay unchanged (`ci`). Haiku effort: medium.
+- [x] 7.7 CI: a new job `persistence-integration` on `ubuntu-latest` in `.github/workflows/build.yml` runs `./gradlew :voyager:persistence:integrationTest -Pvoyager.requireDocker=true`. The existing matrix names stay unchanged (`ci`). Haiku effort: medium.
 
 ## 8. platform and server: /stats and /leaderboard
 
