@@ -20,6 +20,11 @@ public final class NoOpStatsReader implements StatsReader {
     public static final String NOT_RECORDED = "statistics are not recorded on this server";
 
     @Override
+    public boolean recorded() {
+        return false;
+    }
+
+    @Override
     public PlayerProfile profile(UUID playerId) {
         throw new StatsUnavailableException(NOT_RECORDED, null);
     }

@@ -19,7 +19,10 @@ import net.elytrarace.voyager.platform.permission.luckperms.exception.Permission
 import net.elytrarace.voyager.platform.config.ConfigLoader;
 import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
 import net.elytrarace.voyager.platform.proxy.VelocityAuth;
+import net.elytrarace.voyager.platform.stats.StatsRequests;
+import net.elytrarace.voyager.server.command.LeaderboardCommand;
 import net.elytrarace.voyager.server.command.RaceCommand;
+import net.elytrarace.voyager.server.command.StatsCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.PersistenceSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
@@ -272,11 +275,14 @@ public final class VoyagerServer {
         MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
         registerEvents(session, waitingRoom, settings, catalog, instances);
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
+        // Open to every sender: a player looks up their own record or another player's, and the leaderboard is public.
+        MinecraftServer.getCommandManager().register(graph.get(StatsCommand.class));
+        MinecraftServer.getCommandManager().register(graph.get(LeaderboardCommand.class));
         LOGGER.info("/race reload is registered: gated by {}", PermissionNode.VOYAGER_COMMAND_RACE_RELOAD.value());
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
-        scheduleTick(pipeline, waitingRoom, session);
+        scheduleTick(pipeline, waitingRoom, session, graph.get(StatsRequests.class));
         // The statistics threads start before the port binds, so a race that finishes on the first tick is written. A
         // database that was down at boot logs its one warning here, and is retried in the background from now on.
         StatsBinding statistics = graph.get(StatsBinding.class);
@@ -469,7 +475,8 @@ public final class VoyagerServer {
      * identical ones. So the first failure stops the cup and is logged once, with everything a
      * {@code /race} afterwards can still be asked about left standing.
      */
-    private static void scheduleTick(TickPipeline pipeline, WaitingRoom waitingRoom, CupSession session) {
+    private static void scheduleTick(TickPipeline pipeline, WaitingRoom waitingRoom, CupSession session,
+            StatsRequests statistics) {
         AtomicBoolean broken = new AtomicBoolean();
         MinecraftServer.getSchedulerManager().scheduleTask(() -> {
             if (broken.get()) {
@@ -479,6 +486,8 @@ public final class VoyagerServer {
                 pipeline.run();
                 // After the cup's own tick, inside the same guard: the room reads the cup as this tick left it.
                 waitingRoom.tick();
+                // Last: the statistics replies a read finished since the last tick. They never touch the cup.
+                statistics.tick();
             } catch (RuntimeException exception) {
                 broken.set(true);
                 session.stop();

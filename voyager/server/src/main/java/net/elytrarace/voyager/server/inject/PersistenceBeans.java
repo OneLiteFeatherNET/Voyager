@@ -6,6 +6,7 @@ import io.avaje.inject.Factory;
 
 import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.elytrarace.voyager.api.stats.StatsReader;
+import net.elytrarace.voyager.platform.stats.StatsRequests;
 import net.elytrarace.voyager.server.config.PersistenceSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.persistence.StatsBinding;
@@ -35,5 +36,11 @@ public final class PersistenceBeans {
     @Bean
     StatsReader statsReader(StatsBinding binding) {
         return binding.reader();
+    }
+
+    /** The read queue behind {@code /stats} and {@code /leaderboard}: reads on the reader pool, replies from the tick. */
+    @Bean
+    StatsRequests statsRequests(Clock clock) {
+        return new StatsRequests(StatsRequests.readerPool(), clock);
     }
 }

@@ -71,8 +71,8 @@ or blocks the tick.
 
 ## 8. platform and server: /stats and /leaderboard
 
-- [ ] 8.1 Red: `StatsCommandTest` with a fake `StatsReader` and explicit ticks names "a read answer is sent from the tick, not from the reader thread", "an unknown player is told there is no record", "a read over two seconds answers unavailable", and "persistence off answers not recorded" (`feat(stats)`). Haiku effort: high.
-- [ ] 8.2 Green: `platform.stats.StatsRequests` (a bounded queue drained by the tick with a budget), the two commands in `server.command` with no permission node, and the messages in `voyager_en_US.properties` and `voyager_de_DE.properties` (German with informal "du") with `<arg:N>` placeholders (`feat(stats)`). Haiku effort: high.
+- [x] 8.1 Red: `StatsCommandTest` with a fake `StatsReader` and explicit ticks names "a read answer is sent from the tick, not from the reader thread", "an unknown player is told there is no record", "a read over two seconds answers unavailable", and "persistence off answers not recorded" (`feat(stats)`). Haiku effort: high.
+- [x] 8.2 Green: `platform.stats.StatsRequests` (a bounded queue drained by the tick with a budget), the two commands in `server.command` with no permission node, and the messages in `voyager_en_US.properties` and `voyager_de_DE.properties` (German with informal "du") with `<arg:N>` placeholders (`feat(stats)`). Haiku effort: high.
 
 ## 9. Documentation
 

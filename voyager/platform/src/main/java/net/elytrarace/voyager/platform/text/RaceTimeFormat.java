@@ -59,6 +59,20 @@ public abstract class RaceTimeFormat {
         return "%d.%d".formatted(tenths / TENTHS_PER_SECOND, tenths % TENTHS_PER_SECOND);
     }
 
+    /**
+     * {@code S.TTT} — a recorded time in seconds, three decimals, for a leaderboard: "61.200", "0.800". The millisecond is
+     * kept, so two times that differ by a tenth never print the same.
+     *
+     * @param millis the time in milliseconds, never negative
+     */
+    @Contract(pure = true)
+    public static String millis(long millis) {
+        if (millis < 0) {
+            throw new IllegalArgumentException("a time cannot be negative, was %s ms".formatted(millis));
+        }
+        return "%d.%03d".formatted(millis / MILLIS_PER_SECOND, millis % MILLIS_PER_SECOND);
+    }
+
     /** {@code M:SS} — a target that is standing still. */
     @Contract(pure = true)
     public static String whole(Duration duration) {

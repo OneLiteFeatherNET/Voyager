@@ -14,6 +14,16 @@ import java.util.UUID;
 public interface StatsReader {
 
     /**
+     * Whether statistics are kept on this server at all. {@code false} means every read will fail, and a command can say
+     * so without asking: the switch is off, so nothing was or will be recorded.
+     *
+     * @return {@code true} unless the server keeps no statistics
+     */
+    default boolean recorded() {
+        return true;
+    }
+
+    /**
      * The statistics of one player. A player with no recorded run gets a profile with zero counts.
      *
      * @param playerId the player's UUID

@@ -89,6 +89,23 @@ public abstract class Messages {
     private static final String MEDAL_BRONZE = "voyager.medal.bronze";
     private static final String MEDAL_FINISH = "voyager.medal.finish";
     private static final String MEDAL_DNF = "voyager.medal.dnf";
+    private static final String STATS_PROFILE_HEADER = "stats.profile.header";
+    private static final String STATS_PROFILE_CUPS = "stats.profile.cups";
+    private static final String STATS_PROFILE_WINS = "stats.profile.wins";
+    private static final String STATS_PROFILE_MEDALS = "stats.profile.medals";
+    private static final String STATS_PROFILE_FLIGHT = "stats.profile.flight";
+    private static final String STATS_PROFILE_BEST = "stats.profile.best";
+    private static final String STATS_PROFILE_NONE = "stats.profile.none";
+    private static final String STATS_UNKNOWN_PLAYER = "stats.unknown_player";
+    private static final String STATS_LEADERBOARD_HEADER = "stats.leaderboard.header";
+    private static final String STATS_LEADERBOARD_ENTRY = "stats.leaderboard.entry";
+    private static final String STATS_LEADERBOARD_EMPTY = "stats.leaderboard.empty";
+    private static final String STATS_UNKNOWN_MAP = "stats.unknown_map";
+    private static final String STATS_NOT_RECORDED = "stats.not_recorded";
+    private static final String STATS_UNAVAILABLE = "stats.unavailable";
+    private static final String STATS_USAGE = "stats.usage";
+    private static final long MILLIS_PER_HOUR = 3_600_000L;
+    private static final long MILLIS_PER_MINUTE = 60_000L;
 
     private Messages() {
     }
@@ -521,5 +538,113 @@ public abstract class Messages {
         return checkpointNumber.isPresent()
                 ? Component.translatable(RESET_TARGET_CHECKPOINT, Component.text(checkpointNumber.getAsInt()))
                 : Component.translatable(RESET_TARGET_START);
+    }
+
+    /** The first line of a profile: whose statistics follow. */
+    @Contract(pure = true)
+    public static Component statsProfileHeader(String name) {
+        return Component.translatable(STATS_PROFILE_HEADER, Component.text(name));
+    }
+
+    /** Cups the player took part in. */
+    @Contract(pure = true)
+    public static Component statsProfileCups(int cupsPlayed) {
+        return Component.translatable(STATS_PROFILE_CUPS, Component.text(cupsPlayed));
+    }
+
+    /** Cups the player won. */
+    @Contract(pure = true)
+    public static Component statsProfileWins(int cupsWon) {
+        return Component.translatable(STATS_PROFILE_WINS, Component.text(cupsWon));
+    }
+
+    /** The total of each medal tier over all ranked maps. */
+    @Contract(pure = true)
+    public static Component statsProfileMedals(int diamonds, int golds, int silvers, int bronzes) {
+        return Component.translatable(STATS_PROFILE_MEDALS,
+                Component.text(diamonds), Component.text(golds), Component.text(silvers), Component.text(bronzes));
+    }
+
+    /**
+     * The total gliding time, as hours, minutes and seconds. The seconds are truncated, as every race time is.
+     *
+     * @param flightMillis the gliding time in milliseconds, never negative
+     */
+    @Contract(pure = true)
+    public static Component statsProfileFlight(long flightMillis) {
+        if (flightMillis < 0) {
+            throw new IllegalArgumentException("flight time cannot be negative, was %s ms".formatted(flightMillis));
+        }
+        return Component.translatable(STATS_PROFILE_FLIGHT,
+                Component.text(flightMillis / MILLIS_PER_HOUR),
+                Component.text(flightMillis / MILLIS_PER_MINUTE % 60),
+                Component.text(flightMillis / MILLIS_PER_SECOND % 60));
+    }
+
+    /** One personal best of the profile: the map and the fastest time on it. */
+    @Contract(pure = true)
+    public static Component statsProfileBest(String mapKey, long bestTimeMillis) {
+        return Component.translatable(STATS_PROFILE_BEST,
+                Component.text(mapKey), Component.text(RaceTimeFormat.millis(bestTimeMillis)));
+    }
+
+    /** The profile of a player with no ranked run: there is nothing to show yet. */
+    @Contract(pure = true)
+    public static Component statsProfileNone(String name) {
+        return Component.translatable(STATS_PROFILE_NONE, Component.text(name));
+    }
+
+    /** {@code /stats} named a player nobody has recorded under that name. */
+    @Contract(pure = true)
+    public static Component statsUnknownPlayer(String name) {
+        return Component.translatable(STATS_UNKNOWN_PLAYER, Component.text(name));
+    }
+
+    /** The first line of a leaderboard: the map it is for. */
+    @Contract(pure = true)
+    public static Component statsLeaderboardHeader(String mapKey) {
+        return Component.translatable(STATS_LEADERBOARD_HEADER, Component.text(mapKey));
+    }
+
+    /**
+     * One line of a leaderboard.
+     *
+     * @param rank           the one-based position
+     * @param bestTimeMillis the time in milliseconds, never negative
+     */
+    @Contract(pure = true)
+    public static Component statsLeaderboardEntry(int rank, String name, long bestTimeMillis) {
+        return Component.translatable(STATS_LEADERBOARD_ENTRY,
+                Component.text(rank), Component.text(name), Component.text(RaceTimeFormat.millis(bestTimeMillis)));
+    }
+
+    /** The leaderboard of a map that has no recorded time on its current layout. */
+    @Contract(pure = true)
+    public static Component statsLeaderboardEmpty(String mapKey) {
+        return Component.translatable(STATS_LEADERBOARD_EMPTY, Component.text(mapKey));
+    }
+
+    /** {@code /leaderboard} named a map the catalogue does not hold. */
+    @Contract(pure = true)
+    public static Component statsUnknownMap(String mapKey) {
+        return Component.translatable(STATS_UNKNOWN_MAP, Component.text(mapKey));
+    }
+
+    /** The answer on a server with the statistics switch off. */
+    @Contract(pure = true)
+    public static Component statsNotRecorded() {
+        return Component.translatable(STATS_NOT_RECORDED);
+    }
+
+    /** The answer when a read did not finish within two seconds, or the store refused it. */
+    @Contract(pure = true)
+    public static Component statsUnavailable() {
+        return Component.translatable(STATS_UNAVAILABLE);
+    }
+
+    /** The usage line, sent when a command is run without the argument it needs. */
+    @Contract(pure = true)
+    public static Component statsUsage() {
+        return Component.translatable(STATS_USAGE);
     }
 }
