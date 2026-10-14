@@ -2,6 +2,8 @@ package net.elytrarace.voyager.server.config;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.LobbyDefinition;
+import net.elytrarace.voyager.api.race.com.ComDifficulty;
+import net.elytrarace.voyager.race.com.ComRoster;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.exception.InvalidSettingException;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
@@ -12,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -60,10 +63,13 @@ import java.util.function.Function;
  *     {@link #DEFAULT_MAXIMUM_RACERS}. It is soft: it sets the join line and the full-lobby countdown, and refuses no one
  * @param lobbyHologram where the cup's hologram stands in the lobby world, or empty for no hologram. It needs a lobby
  *     (ADR-0033)
+ * @param comCount how many computer racers fill the grid, humans included, from 0 to {@link ComRoster#MAXIMUM_COUNT}; 0 is
+ *     the default and runs none
+ * @param comDifficulty how hard every computer racer plays; {@link ComDifficulty#MEDIUM} when not set
  */
 public record ServerSettings(String host, int port, Path dataPath, Path worldsPath,
         Optional<String> cupName, boolean devMode, int minimumRacers, Optional<LobbyDefinition> lobby,
-        int maximumRacers, Optional<Vec3> lobbyHologram) {
+        int maximumRacers, Optional<Vec3> lobbyHologram, int comCount, ComDifficulty comDifficulty) {
 
     /** The property naming the directory holding {@code maps/} and {@code cups/}. */
     public static final String DATA_PATH_PROPERTY = "VOYAGER_DATA_PATH";
@@ -98,6 +104,12 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
     /** The maximum racer count when {@link #MAX_PLAYERS_PROPERTY} is not set, in production and in dev mode (ADR-0029). */
     public static final int DEFAULT_MAXIMUM_RACERS = 16;
 
+    /** The property naming how many computer racers fill the grid; absent means {@code 0}, which runs none. */
+    public static final String COM_COUNT_PROPERTY = "VOYAGER_COM_COUNT";
+
+    /** The property naming how hard the computer racers play; absent means {@link ComDifficulty#MEDIUM}. */
+    public static final String COM_DIFFICULTY_PROPERTY = "VOYAGER_COM_DIFFICULTY";
+
     /** The system property naming the interface to bind; read when no positional host is given. */
     public static final String BIND_HOST_PROPERTY = "service.bind.host";
 
@@ -110,7 +122,7 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
      */
     public static final List<String> KEYS = List.of(DATA_PATH_PROPERTY, WORLDS_PATH_PROPERTY, CUP_PROPERTY,
             DEV_MODE_PROPERTY, MIN_RACERS_PROPERTY, LOBBY_WORLD_PROPERTY, LOBBY_SPAWN_PROPERTY, MAX_PLAYERS_PROPERTY,
-            LOBBY_HOLOGRAM_PROPERTY, BIND_HOST_PROPERTY, BIND_PORT_PROPERTY);
+            LOBBY_HOLOGRAM_PROPERTY, BIND_HOST_PROPERTY, BIND_PORT_PROPERTY, COM_COUNT_PROPERTY, COM_DIFFICULTY_PROPERTY);
 
     /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is off. */
     public static final int PRODUCTION_MINIMUM_RACERS = 2;
@@ -161,6 +173,16 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
                 DEFAULT_MAXIMUM_RACERS, Optional.empty());
     }
 
+    /**
+     * The settings with no computer racers and the default difficulty, for callers that do not configure either.
+     */
+    public ServerSettings(String host, int port, Path dataPath, Path worldsPath, Optional<String> cupName,
+            boolean devMode, int minimumRacers, Optional<LobbyDefinition> lobby, int maximumRacers,
+            Optional<Vec3> lobbyHologram) {
+        this(host, port, dataPath, worldsPath, cupName, devMode, minimumRacers, lobby, maximumRacers, lobbyHologram,
+                0, ComDifficulty.MEDIUM);
+    }
+
     public ServerSettings {
         if (host.isBlank()) {
             throw new IllegalArgumentException("host must not be blank");
@@ -168,6 +190,8 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
         requirePort(port);
         requireMinimumRacers(minimumRacers);
         requireMaximumRacers(maximumRacers, minimumRacers);
+        requireComCount(comCount);
+        Objects.requireNonNull(comDifficulty, "comDifficulty");
         if (lobbyHologram.isPresent() && lobby.isEmpty()) {
             throw new InvalidSettingException(LOBBY_HOLOGRAM_PROPERTY, hologramNeedsLobby());
         }
@@ -205,7 +229,55 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
                         blankToNull(property.apply(LOBBY_SPAWN_PROPERTY))),
                 parseMaximumRacers(blankToNull(property.apply(MAX_PLAYERS_PROPERTY))),
                 parseHologram(blankToNull(property.apply(LOBBY_HOLOGRAM_PROPERTY)),
-                        blankToNull(property.apply(LOBBY_WORLD_PROPERTY))));
+                        blankToNull(property.apply(LOBBY_WORLD_PROPERTY))),
+                parseComCount(blankToNull(property.apply(COM_COUNT_PROPERTY))),
+                parseComDifficulty(blankToNull(property.apply(COM_DIFFICULTY_PROPERTY))));
+    }
+
+    /**
+     * The computer racer count a setting names, or 0 when it is absent.
+     *
+     * @throws InvalidSettingException if the text is not a whole number, or is outside 0 to {@link ComRoster#MAXIMUM_COUNT};
+     *     the message names {@link #COM_COUNT_PROPERTY}, the range and the text read
+     */
+    static int parseComCount(@Nullable String raw) {
+        if (raw == null) {
+            return 0;
+        }
+        int count;
+        try {
+            count = Integer.parseInt(raw.strip());
+        } catch (NumberFormatException exception) {
+            throw new InvalidSettingException(COM_COUNT_PROPERTY, "%s must be a whole number from 0 to %d, was '%s'"
+                    .formatted(COM_COUNT_PROPERTY, ComRoster.MAXIMUM_COUNT, raw));
+        }
+        requireComCount(count);
+        return count;
+    }
+
+    /**
+     * The one range rule for the computer racer count, shared by the parser and the constructor.
+     *
+     * @throws InvalidSettingException if the count is outside 0 to {@link ComRoster#MAXIMUM_COUNT}
+     */
+    static void requireComCount(int count) {
+        if (count < 0 || count > ComRoster.MAXIMUM_COUNT) {
+            throw new InvalidSettingException(COM_COUNT_PROPERTY,
+                    "%s must be from 0 to %d, was %d".formatted(COM_COUNT_PROPERTY, ComRoster.MAXIMUM_COUNT, count));
+        }
+    }
+
+    /**
+     * The difficulty a setting names, matched case-insensitively, or {@link ComDifficulty#MEDIUM} when it is absent.
+     *
+     * @throws InvalidSettingException if the text names none of EASY, MEDIUM or HARD; the message lists the three
+     */
+    static ComDifficulty parseComDifficulty(@Nullable String raw) {
+        if (raw == null) {
+            return ComDifficulty.MEDIUM;
+        }
+        return ComDifficulty.byName(raw).orElseThrow(() -> new InvalidSettingException(COM_DIFFICULTY_PROPERTY,
+                "%s must be EASY, MEDIUM or HARD, was '%s'".formatted(COM_DIFFICULTY_PROPERTY, raw)));
     }
 
     /**

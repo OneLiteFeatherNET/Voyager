@@ -159,6 +159,7 @@ public final class VoyagerServer {
         }
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
+        ConfigCheck.comBootLine(settings).ifPresent(LOGGER::info);
         // The database settings are read once, here, and never refuse the start: each problem is one warning, and the server
         // runs with statistics off (owner decision Q1). Unset or off is one warning that no statistics are kept.
         PersistenceSettings persistence = PersistenceSettings.from(config);

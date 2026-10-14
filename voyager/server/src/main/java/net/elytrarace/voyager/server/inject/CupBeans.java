@@ -1,12 +1,16 @@
 package net.elytrarace.voyager.server.inject;
 
 import io.avaje.inject.Bean;
+import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.com.ComField;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
+import net.elytrarace.voyager.platform.cup.CompetitorField;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
+import net.elytrarace.voyager.platform.cup.NoCompetitors;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
@@ -18,6 +22,7 @@ import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
+import net.elytrarace.voyager.server.config.ServerSettings;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 
@@ -83,14 +88,29 @@ public final class CupBeans {
     }
 
     /**
+     * The computer racers of every cup this server plays. A count of zero binds {@link NoCompetitors}, so a cup with no
+     * computer racers runs exactly as it did before them; a count above zero binds a {@link ComField} of the configured
+     * difficulty. The round seed is read from the clock when a cup's first map starts, so the seats and their names are the
+     * same for every map of one round and differ between rounds.
+     */
+    @Bean
+    CompetitorField competitorField(@External ServerSettings settings, Supplier<Collection<Player>> players,
+            MapInstances instances, Clock clock) {
+        if (settings.comCount() == 0) {
+            return NoCompetitors.INSTANCE;
+        }
+        return new ComField(players, settings.comCount(), settings.comDifficulty(), clock, instances::forWorld);
+    }
+
+    /**
      * The cup records every finished map and cup to the recorder {@link PersistenceBeans} binds: the no-op recorder with
-     * persistence off, the statistics writer otherwise.
+     * persistence off, the statistics writer otherwise. It plays the computer racers {@link #competitorField} binds.
      */
     @Bean
     CupSession cupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition, RaceRuns runs,
             FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts, RaceTimings timings,
-            Supplier<Collection<Player>> players, RaceRecorder recorder, Clock clock) {
+            Supplier<Collection<Player>> players, RaceRecorder recorder, Clock clock, CompetitorField competitors) {
         return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock);
+                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock, competitors);
     }
 }
