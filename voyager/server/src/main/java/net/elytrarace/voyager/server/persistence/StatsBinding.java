@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -86,8 +87,15 @@ public final class StatsBinding {
         }
     };
 
+    /**
+     * How long the stop may spend writing what is queued, measured with the binding's clock. Design D5: the writer drains for
+     * at most ten seconds, the number still queued is logged, and only then does the pool close.
+     */
+    public static final Duration SHUTDOWN_DRAIN = Duration.ofSeconds(10);
+
     private final DatabaseConfig config;
     private final Opener opener;
+    private final Clock clock;
     private final Mode mode;
     private final RaceRecorder recorder;
     private final StatsReader reader;
@@ -100,12 +108,24 @@ public final class StatsBinding {
     @Nullable
     private final String bootWarning;
     private volatile boolean bound;
+    /** Set by {@link #shutdown}: no later attempt opens the database, and the retry thread stops. */
+    private volatile boolean stopping;
+    /** The loop that drives the writer; set by {@link #start}. */
+    @Nullable
+    private volatile StatsWriterThread writerLoop;
+    /** The thread that runs {@link #writerLoop}; set by {@link #start}. */
+    @Nullable
+    private volatile Thread writerThread;
+    /** Closes the pool of the open database; set when the database binds. */
+    @Nullable
+    private volatile Runnable closePool;
 
-    private StatsBinding(DatabaseConfig config, Opener opener, Mode mode, RaceRecorder recorder, StatsReader reader,
-            @Nullable StatsWriter writer, @Nullable DeferredCompletionStore deferredStore,
+    private StatsBinding(DatabaseConfig config, Opener opener, Clock clock, Mode mode, RaceRecorder recorder,
+            StatsReader reader, @Nullable StatsWriter writer, @Nullable DeferredCompletionStore deferredStore,
             @Nullable DeferredStatsReader deferredReader, @Nullable String bootWarning) {
         this.config = config;
         this.opener = opener;
+        this.clock = clock;
         this.mode = mode;
         this.recorder = recorder;
         this.reader = reader;
@@ -131,7 +151,7 @@ public final class StatsBinding {
         Objects.requireNonNull(log, "log must not be null");
         Objects.requireNonNull(opener, "opener must not be null");
         if (!config.enabled()) {
-            return new StatsBinding(config, opener, Mode.OFF, new NoOpRaceRecorder(), new NoOpStatsReader(),
+            return new StatsBinding(config, opener, clock, Mode.OFF, new NoOpRaceRecorder(), new NoOpStatsReader(),
                     null, null, null, null);
         }
         DeferredCompletionStore store = new DeferredCompletionStore();
@@ -139,13 +159,14 @@ public final class StatsBinding {
         StatsWriter writer = new StatsWriter(store, clock, RETRY, log, config.queueCapacity());
         OpenResult first = attempt(opener, config);
         if (first instanceof OpenResult.Ready ready) {
-            StatsBinding binding = new StatsBinding(config, opener, Mode.AVAILABLE, writer, deferredReader, writer,
-                    store, deferredReader, null);
+            StatsBinding binding = new StatsBinding(config, opener, clock, Mode.AVAILABLE, writer, deferredReader,
+                    writer, store, deferredReader, null);
             binding.bind(ready);
             return binding;
         }
         String reason = ((OpenResult.Failed) first).reason();
-        return new StatsBinding(config, opener, Mode.BUFFERING, writer, deferredReader, writer, store, deferredReader,
+        return new StatsBinding(config, opener, clock, Mode.BUFFERING, writer, deferredReader, writer, store,
+                deferredReader,
                 "statistics are buffered and retried in the background (up to %s completions): %s; the game runs normally "
                         .formatted(config.queueCapacity(), reason)
                         + "until the database opens");
@@ -160,7 +181,8 @@ public final class StatsBinding {
      */
     public static Opener databaseOpener(boolean leakDetection) {
         return (config, log) -> switch (StatsStoreFactory.open(config, leakDetection, log)) {
-            case StatsStoreOutcome.Available available -> new OpenResult.Ready(available.store(), available.reader());
+            case StatsStoreOutcome.Available available -> new OpenResult.Ready(available.store(), available.reader(),
+                    available.database()::close);
             case StatsStoreOutcome.Unavailable unavailable -> new OpenResult.Failed(unavailable.reason());
         };
     }
@@ -198,7 +220,9 @@ public final class StatsBinding {
         if (writer == null) {
             return;
         }
-        new StatsWriterThread(writer).start();
+        StatsWriterThread loop = new StatsWriterThread(writer);
+        writerLoop = loop;
+        writerThread = loop.start();
         if (mode == Mode.BUFFERING) {
             Thread opening = new Thread(this::retryOpening, OPEN_THREAD_NAME);
             opening.setDaemon(true);
@@ -213,7 +237,7 @@ public final class StatsBinding {
      * @return {@code true} when the database is open after this call
      */
     public boolean attemptOpen() {
-        if (deferredStore == null || deferredReader == null) {
+        if (deferredStore == null || deferredReader == null || stopping) {
             return false;
         }
         if (bound) {
@@ -242,16 +266,84 @@ public final class StatsBinding {
         return writer == null ? 0 : writer.drain(limit);
     }
 
+    /**
+     * Stops the statistics for shutdown, in the order design D5 fixes: the writer thread is asked to stop and waited for, for
+     * at most {@code limit}; what is still queued is written from this thread for the time that is left; the number that
+     * could not be written is logged; and only then does the connection pool close, so no write runs against a closed pool.
+     *
+     * <p>A writer that does not stop within the limit is not drained, because two threads must not drive one writer; its
+     * queue is counted and reported, and the pool closes anyway, so the stop cannot block forever. A binding that never
+     * started a writer (the switch is off, or the server never started) has nothing to wait for and drains here at once.
+     *
+     * <p>Called once, from the server's stop path, on the thread that stops the server; never from the tick.
+     *
+     * @param limit how long the writes may take in total, measured with the binding's clock; the wait for the writer
+     *     thread counts against it
+     * @return the completions still unwritten when this returns; zero when everything was written or nothing was kept
+     */
+    public int shutdown(Duration limit) {
+        stopping = true;
+        if (writer == null) {
+            return 0;
+        }
+        Instant started = clock.instant();
+        boolean writerStopped = stopWriterThread(limit);
+        Duration remaining = limit.minus(Duration.between(started, clock.instant()));
+        int unwritten = writerStopped ? writer.drain(remaining) : writer.queued();
+        if (!writerStopped) {
+            LOGGER.warn("the statistics writer did not stop within {} s; {} completion(s) are not written",
+                    limit.toSeconds(), unwritten);
+        } else if (unwritten > 0) {
+            LOGGER.warn("{} completion(s) were not written before shutdown; the database was not reachable in time",
+                    unwritten);
+        } else {
+            LOGGER.info("all statistics completions were written before shutdown");
+        }
+        closePoolAfterWriter();
+        return unwritten;
+    }
+
+    /** Asks the writer loop to stop and waits for its thread, for at most {@code limit}. True when no writer is running. */
+    private boolean stopWriterThread(Duration limit) {
+        StatsWriterThread loop = writerLoop;
+        Thread thread = writerThread;
+        if (loop == null || thread == null) {
+            return true;
+        }
+        loop.requestStop();
+        try {
+            // join(0) would wait forever; the limit is never below one millisecond here.
+            thread.join(Math.max(1L, limit.toMillis()));
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
+        return !thread.isAlive();
+    }
+
+    private void closePoolAfterWriter() {
+        Runnable close = closePool;
+        closePool = null;
+        if (close == null) {
+            return;
+        }
+        try {
+            close.run();
+        } catch (RuntimeException failure) {
+            LOGGER.warn("the statistics connection pool did not close cleanly", failure);
+        }
+    }
+
     private void bind(OpenResult.Ready ready) {
         if (deferredStore != null && deferredReader != null) {
             deferredStore.bind(ready.store());
             deferredReader.bind(ready.reader());
         }
+        closePool = ready.closePool();
         bound = true;
     }
 
     private void retryOpening() {
-        for (int failures = 1; !bound; failures++) {
+        for (int failures = 1; !bound && !stopping; failures++) {
             try {
                 Thread.sleep(RETRY.delayAfter(failures));
             } catch (InterruptedException interrupted) {

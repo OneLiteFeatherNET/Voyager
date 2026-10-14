@@ -12,10 +12,17 @@ public sealed interface OpenResult permits OpenResult.Ready, OpenResult.Failed {
     /**
      * The database is open.
      *
-     * @param store  the write side, which writes each completion in one transaction
-     * @param reader the read side, which answers {@code /stats} and {@code /leaderboard}
+     * @param store     the write side, which writes each completion in one transaction
+     * @param reader    the read side, which answers {@code /stats} and {@code /leaderboard}
+     * @param closePool closes the connection pool; called once, at shutdown, after the writer has stopped
      */
-    record Ready(CompletionStore store, StatsReader reader) implements OpenResult {
+    record Ready(CompletionStore store, StatsReader reader, Runnable closePool) implements OpenResult {
+
+        /** An open database whose pool needs no closing, for a caller that owns none. */
+        public Ready(CompletionStore store, StatsReader reader) {
+            this(store, reader, () -> {
+            });
+        }
     }
 
     /**

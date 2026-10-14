@@ -528,6 +528,14 @@ public final class VoyagerServer {
             } catch (RuntimeException exception) {
                 LOGGER.warn("A world handle did not close cleanly", exception);
             }
+            // The statistics stop: the writer drains for at most ten seconds, the count left is logged, and the pool
+            // closes after the writer (design D5). Before the graph closes, so the binding is still a live bean.
+            try {
+                graph.get(StatsBinding.class).shutdown(StatsBinding.SHUTDOWN_DRAIN);
+            } catch (RuntimeException exception) {
+                // The rest of the stop still runs: the graph and LuckPerms close whatever the statistics did.
+                LOGGER.warn("The statistics did not stop cleanly", exception);
+            }
             // After the world handles, so a bean's preDestroy hook, should one ever be added, runs
             // once nothing is still reading a world through it.
             graph.close();
