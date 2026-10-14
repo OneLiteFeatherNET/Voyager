@@ -17,6 +17,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -58,10 +59,15 @@ public final class StatsRequests {
     /** Results waiting for the tick to send them. */
     static final int FINISHED_CAPACITY = 64;
 
+    /** Refusals waiting for the tick to answer them "unavailable". */
+    static final int REFUSED_CAPACITY = 32;
+
     private final Executor readers;
     private final Clock clock;
     private final BlockingQueue<Request<?>> incoming = new ArrayBlockingQueue<>(INCOMING_CAPACITY);
     private final BlockingQueue<Finished<?>> finished = new ArrayBlockingQueue<>(FINISHED_CAPACITY);
+    private final BlockingQueue<Consumer<Component>> refused = new ArrayBlockingQueue<>(REFUSED_CAPACITY);
+    private final AtomicLong droppedReplies = new AtomicLong();
     /** Tick thread only: the requests taken in and not yet answered, oldest first. */
     private final List<Request<?>> pending = new ArrayList<>();
 
@@ -91,10 +97,11 @@ public final class StatsRequests {
     }
 
     /**
-     * Asks for one read. Called from any thread; it never waits for the read and never sends anything itself, except when
-     * the request queue is full, in which case the answer is "unavailable" at once.
+     * Asks for one read. Called from any thread; it never waits for the read and never sends anything itself. When the
+     * request queue is full the request is refused, and the tick answers "unavailable" for it. If the refusal queue is full
+     * too, that answer is dropped and counted in {@link #droppedReplies()}, rather than blocking the caller.
      *
-     * @param replyTo where each line of the answer goes; the tick calls it, or the caller in the full-queue case
+     * @param replyTo where each line of the answer goes; the tick calls it
      * @param read    the read; runs on the reader pool and may throw
      * @param answer  turns the read's value into the lines to send; runs on the tick
      * @param <T>     the value the read returns
@@ -102,7 +109,9 @@ public final class StatsRequests {
     public <T> void ask(Consumer<Component> replyTo, Supplier<T> read, Function<T, List<Component>> answer) {
         Request<T> request = new Request<>(replyTo, read, answer, clock.instant().plus(DEADLINE));
         if (!incoming.offer(request)) {
-            send(replyTo, List.of(Messages.statsUnavailable()));
+            if (!refused.offer(replyTo)) {
+                droppedReplies.incrementAndGet();
+            }
             return;
         }
         try {
@@ -135,6 +144,11 @@ public final class StatsRequests {
                 replies++;
             }
         }
+        Consumer<Component> target;
+        while (replies < REPLIES_PER_TICK && (target = refused.poll()) != null) {
+            send(target, List.of(Messages.statsUnavailable()));
+            replies++;
+        }
         Finished<?> result;
         while (replies < REPLIES_PER_TICK && (result = finished.poll()) != null) {
             if (result.request().answered) {
@@ -143,6 +157,15 @@ public final class StatsRequests {
             reply(result);
             replies++;
         }
+    }
+
+    /**
+     * How many answers were dropped because even the refusal queue was full. Read from any thread.
+     *
+     * @return the count since this instance was built
+     */
+    public long droppedReplies() {
+        return droppedReplies.get();
     }
 
     private static <T> void reply(Finished<T> result) {

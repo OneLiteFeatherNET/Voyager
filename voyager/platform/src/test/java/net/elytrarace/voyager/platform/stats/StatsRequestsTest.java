@@ -85,6 +85,56 @@ class StatsRequestsTest {
         assertThat(keys(replies)).containsExactly("stats.unavailable");
     }
 
+    @Test
+    void aRefusedReadIsAnsweredFromTheTickNotFromTheCommandThread() throws InterruptedException {
+        StatsRequests requests = new StatsRequests(queueOnly(new ArrayList<>()), new Steps(START));
+        for (int accepted = 0; accepted < StatsRequests.INCOMING_CAPACITY; accepted++) {
+            requests.ask(line -> { }, () -> "queued", value -> List.of(Component.text(value)));
+        }
+        List<Thread> senders = new ArrayList<>();
+        List<Component> replies = new ArrayList<>();
+        Thread commandThread = new Thread(() -> requests.ask(line -> {
+            senders.add(Thread.currentThread());
+            replies.add(line);
+        }, () -> "never read", value -> List.of(Component.text(value))), "stats-command");
+
+        commandThread.start();
+        commandThread.join();
+        assertThat(replies).as("nothing is sent by the command thread").isEmpty();
+
+        requests.tick();
+
+        assertThat(keys(replies)).containsExactly("stats.unavailable");
+        assertThat(senders).as("the refusal is sent by the tick's thread")
+                .containsExactly(Thread.currentThread());
+    }
+
+    @Test
+    void aRefusalThatFindsTheRefusalQueueFullIsDroppedAndCounted() {
+        StatsRequests requests = new StatsRequests(queueOnly(new ArrayList<>()), new Steps(START));
+        List<Component> replies = new ArrayList<>();
+        int refusals = StatsRequests.REFUSED_CAPACITY + 1;
+        for (int accepted = 0; accepted < StatsRequests.INCOMING_CAPACITY; accepted++) {
+            requests.ask(line -> { }, () -> "queued", value -> List.of(Component.text(value)));
+        }
+        for (int refused = 0; refused < refusals; refused++) {
+            requests.ask(replies::add, () -> "never read", value -> List.of(Component.text(value)));
+        }
+
+        assertThat(requests.droppedReplies()).as("only the refusal that found no room is dropped").isEqualTo(1);
+
+        for (int tick = 0; tick < refusals; tick++) {
+            requests.tick();
+        }
+
+        assertThat(replies).as("every refusal that had room is answered").hasSize(StatsRequests.REFUSED_CAPACITY);
+    }
+
+    /** An executor that keeps each task and never runs it, so requests stay waiting for the test to decide. */
+    private static Executor queueOnly(List<Runnable> kept) {
+        return kept::add;
+    }
+
     private static List<String> keys(List<Component> components) {
         return components.stream().map(component -> ((TranslatableComponent) component).key()).toList();
     }
