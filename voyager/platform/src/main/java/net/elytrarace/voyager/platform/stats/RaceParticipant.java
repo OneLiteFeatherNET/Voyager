@@ -11,8 +11,8 @@ import java.util.UUID;
  * One racer's values on one finished map, as the platform hands them to {@link RaceCompletions}.
  *
  * <p>A computer racer is described with {@code computer} set, so that the mapping can leave it out of the
- * completion and count it instead. The platform's cup has no computer racers today, so every participant
- * the cup builds is a human.
+ * completion and count it instead. The cup builds one for each computer racer that ran a map, and the human
+ * participants for the humans, so the bot count is the number of computer participants.
  *
  * @param playerId the player's UUID
  * @param name the player's name when the map finished

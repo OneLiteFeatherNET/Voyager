@@ -43,6 +43,7 @@ import net.elytrarace.voyager.race.reset.ResetPlan;
 import net.elytrarace.voyager.race.reset.RunReset;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.MapScore;
+import net.elytrarace.voyager.race.scoring.MapScorer;
 import net.elytrarace.voyager.api.stats.CupCompletion;
 import net.elytrarace.voyager.api.stats.RaceCompletion;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
@@ -147,6 +148,9 @@ public final class CupSession implements RacePhaseListener {
 
     /** The computer racers' finishes, kept for the results only: they are never in {@link #round}. */
     private final ComStandings computerRacers = new ComStandings();
+
+    /** The computer racers seated on the map being raced, counted into its completion's bot count. Set by {@link #mapStarted}. */
+    private List<UUID> seatedCompetitors = List.of();
 
     /** What each racer boosted, reset and glided on the map being raced. Cleared when a map is entered. */
     private final RacerTally tally;
@@ -317,6 +321,7 @@ public final class CupSession implements RacePhaseListener {
         tally.clear();
         cupStartedAt = clock.instant();
         computerRacers.clear();
+        seatedCompetitors = List.of();
         lastSimulated.clear();
         // A restart owes nobody the abandoned cup's cooldown, and a burn lit on the map it abandons
         // must not still be running when the new first map releases its racers.
@@ -471,6 +476,7 @@ public final class CupSession implements RacePhaseListener {
         competitors.dismiss();
         round.reset();
         computerRacers.clear();
+        seatedCompetitors = List.of();
     }
 
     /** Drops everything a started or armed cup holds for its current lobby, so that {@link #describe()} reads not started. */
@@ -644,6 +650,7 @@ public final class CupSession implements RacePhaseListener {
         transition.advanceTo(map, racers);
         // After the transition, which empties every run: a competitor's run is started here and not carried over.
         List<UUID> prepared = competitors.prepare(mapIndex, map);
+        seatedCompetitors = prepared;
         computerRacers.seat(prepared);
         for (UUID competitor : prepared) {
             runs.startFresh(competitor);
@@ -883,6 +890,17 @@ public final class CupSession implements RacePhaseListener {
                 }
                 racers.add(new RaceParticipant(id, racer.getUsername(), false, held.get(), score,
                         tally.boosts(id), tally.resets(id), tally.flightTime(id)));
+            }
+            // A computer racer that ran the map is passed as a computer participant: RaceCompletions leaves it out of the
+            // racers and counts it as the bot count. It takes no placement bonus, so its score is the map's score without
+            // one, and nothing of that score is stored.
+            for (UUID competitor : seatedCompetitors) {
+                Optional<RaceRun> held = runs.of(competitor);
+                if (held.isEmpty()) {
+                    continue;
+                }
+                MapScore score = MapScorer.score(held.get().progress(), map, held.get().timeOnCourse(timings.race()));
+                racers.add(new RaceParticipant(competitor, "COM", true, held.get(), score, 0, 0, Duration.ZERO));
             }
             RaceCompletion completion = RaceCompletions.of(map.name(), LayoutVersion.of(map), cup.mode(), cup.name(),
                     mapStartedAt, clock.instant(), racers);

@@ -21,6 +21,7 @@ import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -47,6 +48,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,6 +85,9 @@ class CupSessionRecordingTest {
             Duration.ofMillis(650), BOOST, new GuideLine(List.of(), 4, 1.5));
 
     private static final CupDefinition TOUR = new CupDefinition(CUP, List.of(FIRST_MAP, SECOND_MAP), GameMode.RACE);
+
+    /** The one computer racer of the bot tests. */
+    private static final UUID BOT = UUID.fromString("00000000-0000-0000-0000-00000000c0de");
 
     /** Points around the first map's ring, which is centred eight blocks up and ten ahead of the spawn. */
     private static final Vec3 FRONT_OF_RING = FIRST_SPAWN.plus(new Vec3(0, 8, 9));
@@ -267,6 +272,31 @@ class CupSessionRecordingTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // Computer racers
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * One human and one computer racer both finish the first map. The completion holds the human alone, and the
+     * computer racer is counted in the bot count and nowhere else.
+     */
+    @Test
+    void aComputerRacerIsNotRecorded(Env env) throws IOException {
+        Player racer = startTwoMapCup(env, recorder, 1, new OneComputerRacer(BOT));
+        untilGameStarts();
+        racer.setFlyingWithElytra(true);
+        moveTo(racer, FRONT_OF_RING);
+        session.advancePhase();
+        moveTo(racer, BEHIND_RING);
+        session.advancePhase();
+        playUntilCupFinishes();
+
+        RaceCompletion completion = recorder.races.get(0);
+        assertThat(completion.racers()).as("racers in the completion of the first map")
+                .extracting(RacerRun::playerId).containsExactly(racer.getUuid());
+        assertThat(completion.botCount()).as("computer racers counted as the bot count").isEqualTo(1);
+    }
+
+    // ------------------------------------------------------------------------------------------
     // Nothing to record
     // ------------------------------------------------------------------------------------------
 
@@ -318,6 +348,12 @@ class CupSessionRecordingTest {
      * can end without.
      */
     private Player startTwoMapCup(Env env, RaceRecorder raceRecorder, int racerCount) throws IOException {
+        return startTwoMapCup(env, raceRecorder, racerCount, CompetitorField.none());
+    }
+
+    /** As {@link #startTwoMapCup(Env, RaceRecorder, int)}, with the computer racers {@code competitors} reports. */
+    private Player startTwoMapCup(Env env, RaceRecorder raceRecorder, int racerCount, CompetitorField competitors)
+            throws IOException {
         writeWorld(env, FIRST_WORLD, FIRST_SPAWN);
         writeWorld(env, SECOND_WORLD, SECOND_SPAWN);
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
@@ -332,7 +368,7 @@ class CupSessionRecordingTest {
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(() -> online, boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
         this.session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, TIMINGS, STEP,
-                () -> online, raceRecorder, CLOCK);
+                () -> online, raceRecorder, CLOCK, competitors);
 
         Instance first = instances.forWorld(FIRST_WORLD);
         first.loadChunk(Math.floorDiv((int) Math.floor(FIRST_SPAWN.x()), 16),
@@ -403,6 +439,38 @@ class CupSessionRecordingTest {
         } finally {
             manager.unregisterInstance(instance);
             writer.close();
+        }
+    }
+
+    /**
+     * One computer racer that walks the first map's ring: one point per race tick, the last point held after it.
+     * It is seated on every map, so the fixture is the same whichever map it races.
+     */
+    private static final class OneComputerRacer implements CompetitorField {
+
+        private final UUID id;
+        private final List<Vec3> path = List.of(FRONT_OF_RING, BEHIND_RING);
+        private int tick;
+
+        OneComputerRacer(UUID id) {
+            this.id = id;
+        }
+
+        @Override
+        public List<UUID> prepare(int mapIndex, MapDefinition map) {
+            return List.of(id);
+        }
+
+        @Override
+        public List<Competitor> advance(RaceClock clock) {
+            Vec3 at = path.get(Math.min(tick, path.size() - 1));
+            tick++;
+            return List.of(new Competitor(id, at, true));
+        }
+
+        @Override
+        public void dismiss() {
+            // Nothing to let go: the fake holds no state beyond its path.
         }
     }
 
