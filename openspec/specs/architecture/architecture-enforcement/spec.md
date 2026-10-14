@@ -377,3 +377,15 @@ THE SYSTEM SHALL require every class of `net.elytrarace.voyager.platform..` that
 #### Scenario: New slice is acyclic
 - **WHEN** `com` introduces a cycle with another slice in `race` or `platform`
 - **THEN** r4 or r7 fails
+
+### Requirement: The persistence module is covered by the fitness rules
+**MoSCoW:** Must. THE SYSTEM SHALL cover `voyager-persistence` with the rules of design D11 in `voyager-fitness`, and
+`FitnessCoverageTest` SHALL fail when the module is on the classpath and no rule names its package.
+
+#### Scenario: a persistence class depends on the race domain
+- **WHEN** a class in `net.elytrarace.voyager.persistence..` depends on a class in `..race..`
+- **THEN** the rule `persistenceDependsOnlyOnApiAndTheStorageLibraries` fails the build
+
+#### Scenario: a module without a rule
+- **WHEN** `voyager-persistence` is on the classpath and no `@ArchTest` rule names its package
+- **THEN** `FitnessCoverageTest` fails and names the module
