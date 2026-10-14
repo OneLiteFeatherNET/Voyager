@@ -24,6 +24,9 @@ dependencies {
 val integrationTest by sourceSets.creating {
     compileClasspath += sourceSets.main.get().output
     runtimeClasspath += sourceSets.main.get().output
+    // The clock and log fakes of the unit tests are reused, so an outage test drives the same backoff as the unit tests.
+    compileClasspath += sourceSets.test.get().output
+    runtimeClasspath += sourceSets.test.get().output
 }
 
 configurations.named("integrationTestImplementation") {
