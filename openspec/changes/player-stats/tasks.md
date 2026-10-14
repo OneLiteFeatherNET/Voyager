@@ -52,8 +52,8 @@ or blocks the tick.
 
 - [x] 6.1 Red: `StatsSchemaIT` (Testcontainers PostgreSQL 17, one container per class, one schema per test) names "the baseline applies once in schema voyager", "the mappings validate against it", "every named query executes", and "a second start applies nothing" (`feat(stats)`, source set `integrationTest`). Haiku effort: high. Done for three of four names; "every named query executes" is deferred to 6.6, which adds the queries it runs.
 - [x] 6.2 Green: `persistence/src/main/resources/db/migration/V1__baseline.sql` with the tables, checks and indexes of design.md D4, and the Flyway runner under an advisory lock with `baselineOnMigrate=false`, `validateOnMigrate=true`, `cleanDisabled=true` (`feat(stats)`). Haiku effort: high.
-- [ ] 6.3 Red: `PersonalBestConcurrencyIT` names "two writers keep the fastest time" with 2 x 500 upserts and one expected value (`feat(stats)`). Haiku effort: medium.
-- [ ] 6.4 Green: the upsert of design.md D4, through `StatelessSession` native mutation (`feat(stats)`). Haiku effort: high.
+- [x] 6.3 Red: `PersonalBestConcurrencyIT` names "two writers keep the fastest time" with 2 x 500 upserts and one expected value (`feat(stats)`). Haiku effort: medium.
+- [x] 6.4 Green: the upsert of design.md D4, through `StatelessSession` native mutation (`feat(stats)`). Haiku effort: high.
 - [ ] 6.5 Red: `LeaderboardPlanIT` names "the leaderboard uses its index and has no sort node", checked with `EXPLAIN (FORMAT JSON)` on a seeded table of at least 2000 rows (`feat(stats)`). Haiku effort: medium.
 - [ ] 6.6 Green: the leaderboard and profile queries as HQL constructor expressions or native reads returning API records; the profile is three queries in one read-only transaction (`feat(stats)`). Haiku effort: high.
 - [ ] 6.7 Red: `DatabaseLostIT` stops the container mid-test and names "a completion is kept while the database is down and written after it returns", and "an on-start against a stopped database runs without stats and starts writing after the database returns" (`feat(stats)`). Haiku effort: high.
