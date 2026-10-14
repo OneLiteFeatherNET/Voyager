@@ -19,7 +19,7 @@ or blocks the tick.
 
 - [x] 2.1 Pin the observation points: the call that ends a cup (`CupSession`, the branch on `cupFinished()`), the accept point of `FireworkBoostTracker`, the success path of `RunResetter.reset`, and the gliding flag of `FlightTick` where it is sampled. Record the exact method names in design.md D3. Haiku effort: high.
 - [x] 2.2 Pin the canonical form of a map definition for `layout_version` (D7): which writer exists (`MapDraftJsonWriter`, `MapDefinitionAdapter`) and whether a canonical write produces stable bytes. Record in design.md D7. Haiku effort: high.
-- [ ] 2.3 Confirm PostgreSQL 17 with Flyway 12.10.0 and `flyway-database-postgresql` runs `V1` in schema `voyager` with an advisory lock on a throwaway container (run by hand, no commit). Haiku effort: medium.
+- [x] 2.3 Confirm PostgreSQL 17 with Flyway 12.10.0 and `flyway-database-postgresql` runs `V1` in schema `voyager` with an advisory lock on a throwaway container (run by hand, no commit). Haiku effort: medium.
 
 ## 3. api: records, ports and settings
 
