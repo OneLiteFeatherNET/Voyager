@@ -564,9 +564,16 @@ public final class CupSession implements RacePhaseListener {
         if (!boosts.requestBoost(racer.getUuid(), config, racer.isFlyingWithElytra())) {
             return false;
         }
-        tally.recordBoost(racer.getUuid());
+        if (stillRacing(racer.getUuid())) {
+            tally.recordBoost(racer.getUuid());
+        }
         Rockets.fire(racer, config);
         return true;
+    }
+
+    /** Whether the racer holds a run that has not finished: the only runs whose counts the record keeps. */
+    private boolean stillRacing(UUID playerId) {
+        return runs.of(playerId).map(run -> !run.finished()).orElse(false);
     }
 
     /**
@@ -678,7 +685,8 @@ public final class CupSession implements RacePhaseListener {
             boolean wasFinished = held.get().finished();
             Vec3 position = Vectors.toDomain(racer.getPosition());
             RaceRun advanced = runs.advance(id, map, clock, position, racer.isFlyingWithElytra(), racer.isOnGround());
-            if (advanced.gliding()) {
+            // The finishing tick and every tick after it are not flight time: flight time stops at the finish.
+            if (advanced.gliding() && !advanced.finished()) {
                 tally.recordGlidingTick(id);
             }
             announcer.report(racer, map, advanced, wasFinished, clock);

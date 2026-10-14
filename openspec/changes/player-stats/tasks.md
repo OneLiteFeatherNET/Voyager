@@ -36,6 +36,7 @@ or blocks the tick.
 - [x] 4.4 Green: `platform.stats.RacerTally`, one per cup, with the three counters; wire the accept of `FireworkBoostTracker`, the reset of `RunResetter` and the gliding ticks of the flight sampler to it, without changing their behaviour (`feat(stats)`). Haiku effort: high.
 - [x] 4.5 Red: `CupSessionRecordingTest` with a fake `RaceRecorder` and explicit ticks names "a finished map records one completion per map", "a finished cup records one cup completion", "the recorder is never called on a tick that does not finish a map", and "a throwing recorder does not stop the map" (`feat(stats)`). Haiku effort: high.
 - [x] 4.6 Green: `CupSession` takes a `RaceRecorder` through its constructor and calls it at `mapFinished` and at the cup end; `platform.stats.NoOpRaceRecorder` for `off` (`feat(stats)`). Haiku effort: high.
+- [x] 4.8 Red then green: flight time and boosts stop at the finish. `CupSessionRecordingTest` names "glidingAfterTheFinishIsNotCounted" and "boostsAndResetsAfterTheFinishAreNotCounted"; `raceTick` counts a gliding tick only while the run is unfinished after the advance, and `requestBoost` counts a boost only for an unfinished run (`feat(stats)`). Haiku effort: high.
 
 ## 5. persistence: the write path with fakes
 

@@ -11,6 +11,7 @@ import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.stats.CupCompletion;
 import net.elytrarace.voyager.api.stats.RaceCompletion;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
+import net.elytrarace.voyager.api.stats.RacerRun;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
@@ -82,6 +83,13 @@ class CupSessionRecordingTest {
             Duration.ofMillis(650), BOOST, new GuideLine(List.of(), 4, 1.5));
 
     private static final CupDefinition TOUR = new CupDefinition(CUP, List.of(FIRST_MAP, SECOND_MAP), GameMode.RACE);
+
+    /** Points around the first map's ring, which is centred eight blocks up and ten ahead of the spawn. */
+    private static final Vec3 FRONT_OF_RING = FIRST_SPAWN.plus(new Vec3(0, 8, 9));
+    private static final Vec3 BEHIND_RING = FIRST_SPAWN.plus(new Vec3(0, 8, 11));
+    private static final Vec3 FAR_BEHIND_RING = FIRST_SPAWN.plus(new Vec3(0, 8, 13));
+    /** Far under the world's floor, so a racer there is outside the bounds a reset is due for. */
+    private static final Vec3 BELOW_THE_WORLD = FIRST_SPAWN.plus(new Vec3(0, -200, 0));
 
     /** Lobby zero for the first map, race ten seconds (200 ticks), results 100 ms: a map ends by its skip, never by time. */
     private static final RaceTimings TIMINGS = new RaceTimings(
@@ -172,6 +180,61 @@ class CupSessionRecordingTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // Counts stop at the finish
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * Two gliding ticks come before the crossing of the ring, and the crossing tick itself is the finish, so the
+     * count is two. Two more gliding ticks follow the finish while the second racer still races; they are not counted.
+     */
+    @Test
+    void glidingAfterTheFinishIsNotCounted(Env env) throws IOException {
+        Player racer = startTwoMapCup(env, recorder, 2);
+        untilGameStarts();
+        racer.setFlyingWithElytra(true);
+        moveTo(racer, FRONT_OF_RING);
+        session.advancePhase();
+        moveTo(racer, FRONT_OF_RING);
+        session.advancePhase();
+        moveTo(racer, BEHIND_RING);
+        session.advancePhase();
+        moveTo(racer, FAR_BEHIND_RING);
+        session.advancePhase();
+        moveTo(racer, FAR_BEHIND_RING);
+        session.advancePhase();
+        playUntilCupFinishes();
+
+        RacerRun run = runOf(recorder.races.get(0), racer);
+        assertThat(run.finishPosition()).as("the racer finished the first map").isEqualTo(1);
+        assertThat(run.flightMillis()).as("flight time: the two ticks before the finish").isEqualTo(2 * 50);
+    }
+
+    /**
+     * A boost accepted after the finish is really accepted, so only the count can keep it out of the record. A
+     * racer who is sent below the world after the finish is not reset, because the run is finished.
+     */
+    @Test
+    void boostsAndResetsAfterTheFinishAreNotCounted(Env env) throws IOException {
+        Player racer = startTwoMapCup(env, recorder, 2);
+        untilGameStarts();
+        racer.setFlyingWithElytra(true);
+        moveTo(racer, FRONT_OF_RING);
+        session.advancePhase();
+        moveTo(racer, BEHIND_RING);
+        session.advancePhase();
+
+        assertThat(session.requestBoost(racer)).as("a boost after the finish is accepted").isTrue();
+        moveTo(racer, BELOW_THE_WORLD);
+        session.advancePhase();
+        playUntilCupFinishes();
+
+        RacerRun run = runOf(recorder.races.get(0), racer);
+        assertThat(run.finishPosition()).as("the racer finished the first map").isEqualTo(1);
+        assertThat(run.boosts()).as("boosts accepted after the finish").isZero();
+        assertThat(run.resets()).as("resets after the finish").isZero();
+    }
+
+    // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
 
@@ -180,6 +243,15 @@ class CupSessionRecordingTest {
      * The cup is started at once, with no lobby, so the first map's race begins on the first tick.
      */
     private Player startTwoMapCup(Env env, RaceRecorder raceRecorder) throws IOException {
+        return startTwoMapCup(env, raceRecorder, 1);
+    }
+
+    /**
+     * As {@link #startTwoMapCup(Env, RaceRecorder)}, with {@code racerCount} humans connected at the first spawn
+     * before the cup starts. The first of them is returned; the others never move, so they hold a run that a map
+     * can end without.
+     */
+    private Player startTwoMapCup(Env env, RaceRecorder raceRecorder, int racerCount) throws IOException {
         writeWorld(env, FIRST_WORLD, FIRST_SPAWN);
         writeWorld(env, SECOND_WORLD, SECOND_SPAWN);
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
@@ -199,11 +271,39 @@ class CupSessionRecordingTest {
         Instance first = instances.forWorld(FIRST_WORLD);
         first.loadChunk(Math.floorDiv((int) Math.floor(FIRST_SPAWN.x()), 16),
                 Math.floorDiv((int) Math.floor(FIRST_SPAWN.z()), 16)).join();
-        Player racer = env.createConnection().connect(first,
-                new Pos(FIRST_SPAWN.x(), FIRST_SPAWN.y(), FIRST_SPAWN.z()));
-        online.add(racer);
+        List<Player> joined = new ArrayList<>();
+        for (int connected = 0; connected < racerCount; connected++) {
+            Player racer = env.createConnection().connect(first,
+                    new Pos(FIRST_SPAWN.x(), FIRST_SPAWN.y(), FIRST_SPAWN.z()));
+            online.add(racer);
+            joined.add(racer);
+        }
         session.start(true);
-        return racer;
+        return joined.get(0);
+    }
+
+    /** Ticks until the first map's {@code GAME} phase has begun, so the ticks counted after this call are race ticks. */
+    private void untilGameStarts() {
+        for (int tick = 0; tick < BUDGET; tick++) {
+            session.advancePhase();
+            if (session.describe().contains("phase GAME")) {
+                return;
+            }
+        }
+        throw new AssertionError("the first map's GAME phase did not begin within %s ticks".formatted(BUDGET));
+    }
+
+    /** Moves the racer to {@code at}, as a movement packet would, and waits until the move has happened. */
+    private static void moveTo(Player racer, Vec3 at) {
+        racer.teleport(new Pos(at.x(), at.y(), at.z())).join();
+    }
+
+    /** The racer's entry in a completion, found by UUID so a fixture with two racers cannot pass by order. */
+    private static RacerRun runOf(RaceCompletion completion, Player racer) {
+        return completion.racers().stream()
+                .filter(run -> run.playerId().equals(racer.getUuid()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no run of %s in the completion".formatted(racer.getUsername())));
     }
 
     /**
