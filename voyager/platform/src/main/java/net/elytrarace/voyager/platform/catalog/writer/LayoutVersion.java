@@ -12,8 +12,9 @@ import java.util.HexFormat;
 
 /**
  * The layout identity of a map definition: the first sixteen lowercase hex characters of the SHA-256 digest of its
- * canonical form ({@link MapDefinitionCanonicalWriter}), in UTF-8. A changed ring, spawn or any other component changes
- * it, the name and the world included, and the file the definition was read from does not take part at all.
+ * canonical form ({@link MapDefinitionCanonicalWriter}), in UTF-8. A changed ring or spawn changes it. The name, the
+ * world, the guide line, the reference time and all tuning (boost and ring effects) do not take part, so retuning a
+ * map keeps its leaderboards (design D7).
  */
 @ApiStatus.Internal
 public abstract class LayoutVersion {

@@ -19,6 +19,16 @@ class LayoutVersionTest {
     }
 
     @Test
+    void changingBoostTuningDoesNotChangeTheLayoutVersion() {
+        String before = LayoutVersion.of(CanonicalFixtures.course());
+        String after = LayoutVersion.of(CanonicalFixtures.courseWithRetunedBoost());
+
+        assertThat(after)
+                .as("layout version after the boost tuning changed, with the same spawn and rings")
+                .isEqualTo(before);
+    }
+
+    @Test
     void theLayoutVersionIsSixteenLowercaseHexCharacters() {
         String version = LayoutVersion.of(CanonicalFixtures.course());
 

@@ -196,9 +196,12 @@ a racer kind can be added without a migration of these tables.
 
 ### D7. Layout version and practice runs
 
-- `layout_version` is the first 16 hex characters of SHA-256 over the map definition's canonical JSON (the parsed definition written
-  back in the schema's canonical field order, so whitespace and key order do not change it). A change of a ring or a spawn changes it,
-  and the leaderboard shows only the current layout. Old rows stay and stop appearing (design, "Records are scoped by `layout_version`").
+- `layout_version` is the first 16 hex characters of SHA-256 over the canonical JSON of the layout geometry only: the spawn and the
+  rings, in list order, written in a fixed field order so whitespace and key order do not change it. A change of a ring or a spawn
+  changes it. `name`, `world`, `referenceTime`, `guideLine`, `boostConfig` and `ringEffects` are excluded: `name` is already the
+  `map_key`, the world is a deployment detail, and the rest is presentation or tuning. Tuning revisions are out of scope (the proposal),
+  and a retune must not reset every leaderboard, so `boostConfig` and `ringEffects` must never change this identity. The leaderboard
+  shows only the current layout. Old rows stay and stop appearing (design, "Records are scoped by `layout_version`").
   Owner decision Q6 (2026-10-13) accepts the canonical form as the boundary.
 - **Pinned by spike 2.2 (2026-10-13): no canonical writer exists.** `MapDefinition` (`voyager/api/.../api/race/MapDefinition.java:40-41`)
   has no serializer. The only writer, `platform/.../catalog/writer/MapDraftJsonWriter.java`, serializes `MapDraft`, not

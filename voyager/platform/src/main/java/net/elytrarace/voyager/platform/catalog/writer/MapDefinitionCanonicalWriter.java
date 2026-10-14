@@ -1,12 +1,8 @@
 package net.elytrarace.voyager.platform.catalog.writer;
 
 import net.elytrarace.voyager.api.math.Vec3;
-import net.elytrarace.voyager.api.race.BoostConfig;
-import net.elytrarace.voyager.api.race.GuideLine;
-import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
-import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -14,13 +10,17 @@ import org.jetbrains.annotations.Contract;
 import java.util.List;
 
 /**
- * Writes a map definition as canonical JSON: one line with no whitespace, every component in one fixed order, lists in
- * list order, durations as whole milliseconds and every double through one formatter. The same definition therefore
- * always has the same bytes, which is what {@link LayoutVersion} hashes.
+ * Writes the layout geometry of a map definition as canonical JSON: the spawn and the rings, one line with no
+ * whitespace, lists in list order and every double through one formatter. The same geometry therefore always has the
+ * same bytes, which is what {@link LayoutVersion} hashes.
+ *
+ * <p>Only the geometry is written. {@code name} is already the {@code map_key}, {@code world} is a deployment detail,
+ * {@code referenceTime} and {@code guideLine} are presentation, and {@code boostConfig} and {@code ringEffects} are
+ * tuning. A tuning revision must not reset the leaderboards of a layout (design D7), so none of them is written.
  *
  * <p>Nothing is read from a {@code Map}, so no iteration order can leak into the text. The writer is written by hand
- * rather than with a reflective serializer, so that a new component of the definition is a visible change here and
- * never a silent one.
+ * rather than with a reflective serializer, so that a new geometric component is a visible change here and never a
+ * silent one.
  */
 @ApiStatus.Internal
 public abstract class MapDefinitionCanonicalWriter {
@@ -29,31 +29,19 @@ public abstract class MapDefinitionCanonicalWriter {
     }
 
     /**
-     * @param map the definition to write
-     * @return the canonical form of {@code map}
+     * @param map the definition whose geometry is written
+     * @return the canonical form of the spawn and rings of {@code map}
      * @throws IllegalArgumentException if a component is a double that is not finite, which JSON cannot carry
      */
     @Contract(pure = true, value = "_ -> new")
     public static String toCanonicalJson(MapDefinition map) {
         StringBuilder json = new StringBuilder();
         json.append('{');
-        text(json, "name", map.name()).append(',');
-        text(json, "world", map.world()).append(',');
         key(json, "spawn");
         vector(json, map.spawn());
         json.append(',');
         key(json, "rings");
         rings(json, map.rings());
-        json.append(',');
-        key(json, "referenceTimeMillis").append(map.referenceTime().toMillis()).append(',');
-        key(json, "boostConfig");
-        boostConfig(json, map.boostConfig());
-        json.append(',');
-        key(json, "guideLine");
-        guideLine(json, map.guideLine());
-        json.append(',');
-        key(json, "ringEffects");
-        ringEffects(json, map.ringEffects());
         return json.append('}').toString();
     }
 
@@ -78,48 +66,6 @@ public abstract class MapDefinitionCanonicalWriter {
             json.append('}');
         }
         json.append(']');
-    }
-
-    private static void boostConfig(StringBuilder json, BoostConfig boost) {
-        json.append('{');
-        key(json, "burnDurationTicks").append(boost.burnDurationTicks()).append(',');
-        key(json, "cooldownTicks").append(boost.cooldownTicks()).append(',');
-        key(json, "rocketsPerRacer").append(boost.rocketsPerRacer()).append(',');
-        key(json, "maxSpeedBlocksPerTick");
-        json.append(boost.maxSpeedBlocksPerTick() == null ? "null" : number(boost.maxSpeedBlocksPerTick()));
-        json.append('}');
-    }
-
-    private static void guideLine(StringBuilder json, GuideLine line) {
-        json.append('{');
-        key(json, "points").append('[');
-        List<GuidePoint> points = line.points();
-        for (int index = 0; index < points.size(); index++) {
-            GuidePoint point = points.get(index);
-            if (index > 0) {
-                json.append(',');
-            }
-            json.append('{');
-            key(json, "orderIndex").append(point.orderIndex()).append(',');
-            key(json, "position");
-            vector(json, point.position());
-            json.append('}');
-        }
-        json.append("],");
-        key(json, "lookAheadRings").append(line.lookAheadRings()).append(',');
-        key(json, "particleSpacing").append(number(line.particleSpacing())).append(',');
-        text(json, "mode", line.mode().name()).append(',');
-        text(json, "particle", line.particle().name()).append(',');
-        key(json, "dustRgb");
-        json.append(line.dustRgb() == null ? "null" : line.dustRgb().toString());
-        json.append('}');
-    }
-
-    private static void ringEffects(StringBuilder json, RingEffectTuning tuning) {
-        json.append('{');
-        key(json, "boostMultiplier").append(number(tuning.boostMultiplier())).append(',');
-        key(json, "slowMultiplier").append(number(tuning.slowMultiplier()));
-        json.append('}');
     }
 
     private static void vector(StringBuilder json, Vec3 vector) {
