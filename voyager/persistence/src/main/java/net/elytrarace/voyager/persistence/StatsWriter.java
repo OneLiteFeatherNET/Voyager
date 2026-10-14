@@ -144,7 +144,9 @@ public final class StatsWriter implements RaceRecorder {
 
     private void onFailure(Write head, RuntimeException failure, Instant now) {
         String sqlState = failure instanceof StoreException storeFailure ? storeFailure.sqlState() : null;
-        if (!(failure instanceof StoreException) || isDataError(sqlState)) {
+        boolean dataError = !(failure instanceof StoreException)
+                || SqlStateClassifier.classify(sqlState) == SqlStateClassifier.Failure.DATA;
+        if (dataError) {
             queue.poll();
             droppedData.incrementAndGet();
             consecutiveFailures = 0;
@@ -169,15 +171,6 @@ public final class StatsWriter implements RaceRecorder {
             outage = false;
             log.warn("database reachable again, %s completions queued".formatted(queue.size()));
         }
-    }
-
-    // Classes 22 and 23 are data errors. This check moves to SqlStateClassifier once that class exists.
-    private static boolean isDataError(@Nullable String sqlState) {
-        if (sqlState == null || sqlState.length() != 5) {
-            return false;
-        }
-        String sqlClass = sqlState.substring(0, 2);
-        return "22".equals(sqlClass) || "23".equals(sqlClass);
     }
 
     private sealed interface Write permits RaceWrite, CupWrite {

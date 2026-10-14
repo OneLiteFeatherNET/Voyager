@@ -45,8 +45,8 @@ or blocks the tick.
 
 - [x] 5.1 Red: `StatsWriterTest` (fakes, injected `Clock` and backoff, no threads: explicit `step()`) names "a completion is offered without waiting", "a full queue drops the newest and counts it", "a lost database is retried with backoff up to sixty seconds", "the outage start and end are logged once each", "a data error drops one completion and the next is written", "completions are written in finish order", and "drain stops after the time limit and reports the remainder" (`feat(stats)`). Haiku effort: high.
 - [x] 5.2 Green: `persistence.StatsWriter` with the bounded `ArrayBlockingQueue`, the writer loop, the retry policy and the drain; the store is a port inside the module (`feat(stats)`). Haiku effort: high.
-- [ ] 5.3 Red: `SqlStateClassifierTest` names "class 22 is a data error", "class 23 is a data error", "class 08 is a connection error", and "an unknown state is retried" (`feat(stats)`). Haiku effort: low.
-- [ ] 5.4 Green: `persistence.SqlStateClassifier` (`feat(stats)`). Haiku effort: low.
+- [x] 5.3 Red: `SqlStateClassifierTest` names "class 22 is a data error", "class 23 is a data error", "class 08 is a connection error", and "an unknown state is retried" (`feat(stats)`). Haiku effort: low.
+- [x] 5.4 Green: `persistence.SqlStateClassifier` (`feat(stats)`). Haiku effort: low.
 
 ## 6. persistence: schema and integration
 
