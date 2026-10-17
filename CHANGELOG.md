@@ -5,6 +5,13 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.16.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.16.0...v1.16.1) (2026-10-17)
+
+
+### Miscellaneous Chores
+
+* **deps:** update onelitefeathernet/workflows action to v2.9.0 ([#281](https://github.com/OneLiteFeatherNET/Voyager/issues/281)) ([7a06047](https://github.com/OneLiteFeatherNET/Voyager/commit/7a060473c5f93946e07cc318ac46a86ca4db323d))
+
 ## [1.16.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.15.0...v1.16.0) (2026-10-14)
 
 
