@@ -31,7 +31,7 @@ dependencyResolutionManagement {
             library("aonyx.bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             // The tree being replaced stays on the aonyx-bom it was built against. Its Minestom is 2026.05.11-1.21.11,
             // and aonyx-bom 0.8.9 imports mycelium-bom 1.8.9, which would move it to 26.2. Never upgrade it here.
-            version("aonyx-bom-legacy", "0.7.1")
+            version("aonyx-bom-legacy", "0.7.3")
             library("aonyx.bom.legacy", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom-legacy")
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("xerus", "net.theevilreaper", "xerus").withoutVersion()
