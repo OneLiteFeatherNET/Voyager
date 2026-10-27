@@ -1,8 +1,8 @@
 package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.cup.exception.MapArrivalException;
+import net.elytrarace.voyager.platform.flight.ArrivalFacing;
 import net.elytrarace.voyager.platform.world.Arrivals;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.exception.ArrivalFailedException;
@@ -106,9 +106,9 @@ public final class MapTransition {
         // every racer still holding the run they had, rather than half-way into a move that cannot
         // finish.
         Instance target = instances.forWorld(map.world());
-        // MapDefinition carries a position and no facing, so a racer arrives looking north. Giving
-        // a spawn a yaw is a map-format change, not something to invent per player here.
-        Pos spawn = Vectors.toMinestom(map.spawn()).asPos();
+        // The spawn is built with the facing of the first ring, so the GO placement does not turn a racer
+        // back to the north the bare position would give them. See ArrivalFacing.
+        Pos spawn = ArrivalFacing.at(map);
 
         runs.clearAll();
 
