@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Contract;
  * red glazed terracotta and red nether bricks. A racer learns in one run that red is the end of the
  * course, in the world, at 33 blocks a second. <strong>So nothing on any screen surface may claim
  * red.</strong> That is why the "act now" role below is magenta rather than the obvious choice, and
- * why {@link #bossBarColour} never returns {@link BossBar.Color#RED} for any band.
+ * why {@link #BOSS_BAR_COLOUR} is never {@link BossBar.Color#RED}.
  *
  * <p>(What the two froglight runs <em>mean</em> is unknown. They are sections, not an alternation, and
  * nothing in the map data distinguishes them — every ring on the course is {@code STANDARD} and worth
@@ -139,26 +139,13 @@ public abstract class Palette {
     }
 
     /**
-     * The boss bar colour for a medal band.
+     * The boss bar's colour: one fixed colour for every medal band.
      *
-     * <p>A coarser palette than the one above and not by choice: the protocol allows seven values,
-     * so the bar cannot be told the hex the same band is written in. What it can do is never lie
-     * about which band is which, and never use the two values that already mean something else —
-     * {@link BossBar.Color#RED}, which the course spent on its finish line, and
-     * {@link BossBar.Color#GREEN}, which would congratulate a racer for having lost every medal.
-     * {@link BossBar.Color#PURPLE} is what is left for the band below every bracket, and it is the
-     * one band a racer should not mistake for a medal.
+     * <p>The bar is the ring progress, and the medal is named by the title. A bar that took the band's
+     * colour competed with the title that named the same band, so the colour no longer follows the
+     * band. The bar is never {@link BossBar.Color#RED}, which the course spent on its finish line.
      */
-    @Contract(pure = true)
-    public static BossBar.Color bossBarColour(MedalTier tier) {
-        return switch (tier) {
-            case DIAMOND -> BossBar.Color.BLUE;
-            case GOLD -> BossBar.Color.YELLOW;
-            case SILVER -> BossBar.Color.WHITE;
-            case BRONZE -> BossBar.Color.PINK;
-            case FINISH, DNF -> BossBar.Color.PURPLE;
-        };
-    }
+    public static final BossBar.Color BOSS_BAR_COLOUR = BossBar.Color.GREEN;
 
     private static TagResolver colour(String name, TextColor colour) {
         return TagResolver.resolver(name, Tag.styling(colour));

@@ -1,7 +1,6 @@
 package net.elytrarace.voyager.platform.hud;
 
 import net.elytrarace.voyager.api.race.MedalBrackets;
-import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.platform.text.Palette;
 import net.elytrarace.voyager.race.scoring.MedalCountdown;
 import net.elytrarace.voyager.race.scoring.MedalOutlook;
@@ -123,7 +122,7 @@ class RaceHudTest {
 
         BossBar bar = hud.barOf(racer.getUuid()).orElseThrow();
         assertThat(bar.progress()).isEqualTo(0.0f);
-        assertThat(bar.color()).isEqualTo(Palette.bossBarColour(MedalTier.DIAMOND));
+        assertThat(bar.color()).isEqualTo(Palette.BOSS_BAR_COLOUR);
         assertThat(bar.overlay()).isEqualTo(BossBar.Overlay.PROGRESS);
     }
 
@@ -137,24 +136,6 @@ class RaceHudTest {
 
         assertThat(hud.barOf(racer.getUuid()).orElseThrow().progress())
                 .isCloseTo(12f / 35f, within(1e-6f));
-    }
-
-    /**
-     * The bar changes band with the clock and not with anything else. 23.4 s into a 60 s reference
-     * is still diamond; 70 s is gold gone and silver holding, which is a different colour.
-     */
-    @Test
-    void theBarTakesTheColourOfTheBandTheClockIsInside(Env env) {
-        Player racer = createPlayer(env);
-        RaceHud hud = new RaceHud();
-
-        hud.render(racer, at(468, 12, 461));
-        assertThat(hud.barOf(racer.getUuid()).orElseThrow().color())
-                .isEqualTo(Palette.bossBarColour(MedalTier.DIAMOND));
-
-        hud.render(racer, at(1400, 20, 1390));
-        assertThat(hud.barOf(racer.getUuid()).orElseThrow().color())
-                .isEqualTo(Palette.bossBarColour(MedalTier.SILVER));
     }
 
     @Test
