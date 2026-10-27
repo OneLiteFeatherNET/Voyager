@@ -36,9 +36,9 @@ Each kind of information has one channel. Choose the channel before the wording.
 | Channel | Carries | Stays on screen | Example |
 |---|---|---|---|
 | Chat | the record: results, errors, joins, the map breakdown | until the next message | the map result breakdown line |
-| Action bar | live state under the crosshair: the clock, the ring counter, a missed ring | until replaced | `Ring 5 missed` |
+| Action bar | live state under the crosshair: the clock and the ring counter, each labelled, and a missed ring | until replaced | `Time 0:02.1 · Rings 0/35`, `Ring 5 missed` |
 | Title and subtitle | one moment: GO, the medal, a reset, the cup result | the title's hold time | `GOLD`, `0.8 s faster for Gold` |
-| Boss bar | persistent state: map progress, the lobby count | until the state changes | `Map 2/4 · 12.4 s` |
+| Boss bar | persistent state: map progress, the medal band and the time left in it, the lobby count | until the state changes | `Map 2/4 · Diamond · 12.4 s left` |
 | Sound | confirmation of an event | not on screen | the ring bell |
 
 Rules:
@@ -81,6 +81,16 @@ Rules (enforced by `MessageStyleTest` in `voyager-fitness`):
 - A line has at most one accent. The dim tag is structure and does not count. A medal word keeps the colour of its
   medal (`<m-gold>`), which is its identity and not a second accent.
 - Red is never used, in any form. The course marks its finish in red.
+- Every race HUD text colour reads at 4.5 to 1 or more on the dark backdrops `#101010` and `#1E1E1E`. `PaletteContrastTest`
+  (`voyager-platform`) checks each colour and names one that fails.
+
+### Medal words
+
+- The boss bar names the medal band in words, with the time left in it: `Diamond · 57.9 s left` in English and
+  `Diamant · noch 57.9 s` in German. The phrase takes the band's own colour, and the bar itself is one fixed colour for every
+  band, so the title is what names the medal.
+- The finish band has no countdown and is named alone: `Finish`, or `Ziel` in German.
+- Results keep the capitals medal words (`DIAMOND`, `GOLD`, and so on) in the title and in chat. The boss bar does not use them.
 
 ## Timing
 
