@@ -48,29 +48,13 @@ class PaletteTest {
         assertThat(everyColour()).noneMatch(PaletteTest::readsAsRed);
     }
 
+    /**
+     * The boss bar is the ring progress, so its colour carries no medal. It must never be the finish
+     * line's red, which the course spent on its own finish.
+     */
     @Test
-    void noBandIsEverShownOnARedOrGreenBossBar() {
-        for (MedalTier tier : MedalTier.values()) {
-            assertThat(Palette.bossBarColour(tier))
-                    .as("%s must not claim the finish line's colour, nor congratulate a loss", tier)
-                    .isNotIn(BossBar.Color.RED, BossBar.Color.GREEN);
-        }
-    }
-
-    @Test
-    void everyBandThatIsAMedalGetsItsOwnBossBarColour() {
-        assertThat(Palette.bossBarColour(MedalTier.DIAMOND)).isEqualTo(BossBar.Color.BLUE);
-        assertThat(Palette.bossBarColour(MedalTier.GOLD)).isEqualTo(BossBar.Color.YELLOW);
-        assertThat(Palette.bossBarColour(MedalTier.SILVER)).isEqualTo(BossBar.Color.WHITE);
-        assertThat(Palette.bossBarColour(MedalTier.BRONZE)).isEqualTo(BossBar.Color.PINK);
-        assertThat(Palette.bossBarColour(MedalTier.FINISH)).isEqualTo(BossBar.Color.PURPLE);
-
-        List<BossBar.Color> medalColours = new ArrayList<>();
-        for (MedalTier tier : new MedalTier[] {
-                MedalTier.DIAMOND, MedalTier.GOLD, MedalTier.SILVER, MedalTier.BRONZE, MedalTier.FINISH }) {
-            medalColours.add(Palette.bossBarColour(tier));
-        }
-        assertThat(medalColours).doesNotHaveDuplicates();
+    void theBossBarIsNeverRed() {
+        assertThat(Palette.BOSS_BAR_COLOUR).isNotEqualTo(BossBar.Color.RED);
     }
 
     @Test

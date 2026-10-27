@@ -104,7 +104,7 @@ class MessagesTest {
         Component bar = Messages.bossBarTitle(1, 3, "skylift", diamond);
 
         assertThat(translatable(bar).key()).isEqualTo("voyager.hud.bossbar");
-        assertThat(argumentsOf(bar)).containsExactly("1", "3", "skylift", "@voyager.medal.diamond", "0:36.6");
+        assertThat(argumentsOf(bar)).containsExactly("1", "3", "skylift", "@voyager.hud.medal.left");
     }
 
     /**
@@ -118,7 +118,7 @@ class MessagesTest {
         Component bar = Messages.bossBarTitle(2, 3, "skylift", finish);
 
         assertThat(translatable(bar).key()).isEqualTo("voyager.hud.bossbar.last");
-        assertThat(argumentsOf(bar)).containsExactly("2", "3", "skylift", "@voyager.medal.finish");
+        assertThat(argumentsOf(bar)).containsExactly("2", "3", "skylift", "@voyager.hud.medal.last");
     }
 
     // ---------------------------------------------------------------------------------------

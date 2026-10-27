@@ -203,7 +203,7 @@ public final class RaceHud {
         Component title = Messages.bossBarTitle(
                 state.mapNumber(), state.mapCount(), state.mapName(), state.outlook());
         float progress = fill(state.ringsPassed(), state.ringCount());
-        BossBar.Color colour = Palette.bossBarColour(state.outlook().tier());
+        BossBar.Color colour = Palette.BOSS_BAR_COLOUR;
         BossBar bar = bars.get(racer.getUuid());
         if (bar == null) {
             BossBar created = BossBar.bossBar(title, progress, colour, OVERLAY);

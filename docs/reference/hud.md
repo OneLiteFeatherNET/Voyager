@@ -119,6 +119,19 @@ The title names the reason: `voyager.reset.title.outofbounds` or `voyager.reset.
 
 The sound is `block.note_block.chime` at pitch 0.7 and volume 0.8, on the master channel. It falls, so a racer who has been sent back hears the difference without reading. It is not the countdown beat (`block.note_block.bass`), and a ring pass plays a rising bell.
 
+## Race boss bar and action bar
+
+The rebuild's race HUD is `RaceHud` (`voyager-platform`, `platform/hud`). It refreshes both lines at 10 Hz and names every value.
+
+| Surface | Shows | Colour | Example (English, `de_DE` in brackets) |
+|---|---|---|---|
+| Boss bar title | `Map <n>/<count> · <map display name> · <tier phrase>`, the tier phrase being the medal band and the time left in it | The map is dim; the tier phrase takes the band's colour | `Map 1/2 · Blue & Red · Diamond · 57.9 s left` (`Map 1/2 · Blue & Red · Diamant · noch 57.9 s`) |
+| Boss bar fill | The fraction of the rings passed | One fixed colour, `GREEN`, for every band | 12 of 35 rings passed: 12/35 |
+| Action bar | The race clock and the ring counter, each labelled | The labels are dim; the clock is white; the counter is white, and green for 8 ticks after a ring | `Time 0:02.1 · Rings 0/35` (`Zeit 0:02.1 · Ringe 0/35`) |
+
+The finish band has no countdown, so its tier phrase is the name alone (`Finish`, `Ziel`). Times keep the dot as the decimal
+separator in both locales (ADR-0038). Every text colour reads at 4.5 to 1 or more on the dark backdrops (`PaletteContrastTest`).
+
 ## Missed ring
 
 A ring is missed when the racer passes the ring after it while the ring is still the next one expected. The rule is in `voyager-race` (`ProgressTracker`), and it is reported once per run: a second crossing of the same pair, or a reset that keeps the progress, reports nothing more. Progression does not change: the racer must still pass the missed ring in order.

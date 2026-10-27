@@ -41,6 +41,14 @@ public abstract class Messages {
     private static final String FLIGHT_HUD = "voyager.hud.flight";
     private static final String BOSS_BAR = "voyager.hud.bossbar";
     private static final String BOSS_BAR_LAST_BAND = "voyager.hud.bossbar.last";
+    private static final String BOSS_BAR_MEDAL_LEFT = "voyager.hud.medal.left";
+    private static final String BOSS_BAR_MEDAL_LAST = "voyager.hud.medal.last";
+    private static final String TIER_DIAMOND = "voyager.hud.tier.diamond";
+    private static final String TIER_GOLD = "voyager.hud.tier.gold";
+    private static final String TIER_SILVER = "voyager.hud.tier.silver";
+    private static final String TIER_BRONZE = "voyager.hud.tier.bronze";
+    private static final String TIER_FINISH = "voyager.hud.tier.finish";
+    private static final String TIER_DNF = "voyager.hud.tier.dnf";
     private static final String COUNTDOWN_DIGIT = "voyager.countdown.digit";
     private static final String COUNTDOWN_SUBTITLE = "voyager.countdown.subtitle";
     private static final String COUNTDOWN_GO = "voyager.countdown.go";
@@ -146,24 +154,41 @@ public abstract class Messages {
      * The boss bar's title: which map, which map name, and the best medal still reachable together
      * with how long is left to keep it.
      *
+     * <p>The medal is named in words, and the name and the time left are one phrase, coloured with
+     * the medal's own colour. The phrase is what tells a racer which band they are in, so the bar
+     * itself carries no colour of the medal (see {@link Palette#BOSS_BAR_COLOUR}).
+     *
      * <p>{@link MedalTier#FINISH} has no countdown, because there is no band under it to fall into,
-     * so it gets a shorter line rather than a zero.
+     * so it gets the name alone rather than a zero.
      */
     @Contract(pure = true)
     public static Component bossBarTitle(int mapNumber, int mapCount, String mapName, MedalOutlook outlook) {
-        Component band = medal(outlook.tier());
+        TextColor colour = Palette.of(outlook.tier());
+        Component tier = Component.translatable(tierKey(outlook.tier()));
         return outlook.untilLost()
                 .map(left -> Component.translatable(BOSS_BAR,
                         Component.text(mapNumber),
                         Component.text(mapCount),
                         Component.text(mapName),
-                        band,
-                        Component.text(RaceTimeFormat.tenths(left), Palette.of(outlook.tier()))))
+                        Component.translatable(BOSS_BAR_MEDAL_LEFT, tier,
+                                Component.text(RaceTimeFormat.seconds(left))).color(colour)))
                 .orElseGet(() -> Component.translatable(BOSS_BAR_LAST_BAND,
                         Component.text(mapNumber),
                         Component.text(mapCount),
                         Component.text(mapName),
-                        band));
+                        Component.translatable(BOSS_BAR_MEDAL_LAST, tier).color(colour)));
+    }
+
+    /** The key of a medal band's name as the boss bar writes it: words, not the capitals the results use. */
+    private static String tierKey(MedalTier tier) {
+        return switch (tier) {
+            case DIAMOND -> TIER_DIAMOND;
+            case GOLD -> TIER_GOLD;
+            case SILVER -> TIER_SILVER;
+            case BRONZE -> TIER_BRONZE;
+            case FINISH -> TIER_FINISH;
+            case DNF -> TIER_DNF;
+        };
     }
 
     /** One digit of the start countdown. */

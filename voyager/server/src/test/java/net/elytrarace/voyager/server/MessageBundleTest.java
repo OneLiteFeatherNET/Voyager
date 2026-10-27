@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -78,26 +79,72 @@ class MessageBundleTest {
     // In the air
     // ---------------------------------------------------------------------------------------
 
+    /**
+     * The clock and the counter are named, and the pad after them is the same width as the clock, so the
+     * counter stays on the centreline. The pad is nine spaces: three of gap and six of clock width.
+     */
     @Test
-    void theFlightHudIsTheClockThenTheCounterThenThePadThatCentresIt() {
+    void theFlightHudLabelsTheClockAndTheRingsInEnglish() {
         assertThat(render(Messages.flightHud(Duration.ofMillis(23_400), 12, 35, false)))
-                .isEqualTo("0:23.4   12/35         ");
+                .isEqualTo("Time 0:23.4 · Rings 12/35" + " ".repeat(9));
     }
 
     @Test
-    void theBossBarNamesTheMapTheCourseAndTheBandWithTheTimeLeftInIt() {
-        MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(36_600)));
+    void theFlightHudLabelsTheClockAndTheRingsInGerman() {
+        assertThat(renderIn(Messages.flightHud(Duration.ofMillis(23_400), 12, 35, false), Locale.GERMANY))
+                .isEqualTo("Zeit 0:23.4 · Ringe 12/35" + " ".repeat(9));
+    }
 
-        assertThat(render(Messages.bossBarTitle(1, 3, "skylift", diamond)))
-                .isEqualTo("Map 1/3 · skylift · DIAMOND 0:36.6");
+    /** The owner's example: the tier, a dot as the decimal, and the words "left" that say what the number is. */
+    @Test
+    void theBossBarNamesTheTierAndTheSecondsLeftInEnglish() {
+        MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(57_900)));
+
+        assertThat(render(Messages.bossBarTitle(1, 2, "Blue & Red", diamond)))
+                .isEqualTo("Map 1/2 · Blue & Red · Diamond · 57.9 s left");
     }
 
     @Test
-    void theBossBarDropsTheCountdownOnceThereIsNoMedalLeftToLose() {
+    void theBossBarNamesTheTierAndTheSecondsLeftInGerman() {
+        MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(57_900)));
+
+        assertThat(renderIn(Messages.bossBarTitle(1, 2, "Blue & Red", diamond), Locale.GERMANY))
+                .isEqualTo("Map 1/2 · Blue & Red · Diamant · noch 57.9 s");
+    }
+
+    /** Every medal band a German racer can be in is named in German, with no English word or dotted key left. */
+    @Test
+    void everyBandIsNamedInGermanOnTheBossBar() {
+        Map<MedalTier, String> names = Map.of(
+                MedalTier.DIAMOND, "Diamant",
+                MedalTier.GOLD, "Gold",
+                MedalTier.SILVER, "Silber",
+                MedalTier.BRONZE, "Bronze");
+
+        names.forEach((tier, german) -> assertThat(renderIn(
+                        Messages.bossBarTitle(1, 2, "Blue & Red",
+                                new MedalOutlook(tier, Optional.of(Duration.ofSeconds(30)))),
+                        Locale.GERMANY))
+                .as("the %s band in German", tier)
+                .contains(german + " · noch 30.0 s")
+                .doesNotContain("voyager."));
+    }
+
+    /** The finish band has no countdown, so its line is the tier name alone, in each language. */
+    @Test
+    void theFinishBandNamesItsTierAloneInEnglish() {
         MedalOutlook finish = new MedalOutlook(MedalTier.FINISH, Optional.empty());
 
         assertThat(render(Messages.bossBarTitle(2, 3, "skylift", finish)))
-                .isEqualTo("Map 2/3 · skylift · FINISH");
+                .isEqualTo("Map 2/3 · skylift · Finish");
+    }
+
+    @Test
+    void theFinishBandNamesItsTierAloneInGerman() {
+        MedalOutlook finish = new MedalOutlook(MedalTier.FINISH, Optional.empty());
+
+        assertThat(renderIn(Messages.bossBarTitle(2, 3, "skylift", finish), Locale.GERMANY))
+                .isEqualTo("Map 2/3 · skylift · Ziel");
     }
 
     // ---------------------------------------------------------------------------------------
