@@ -5,6 +5,32 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.17.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.16.0...v1.17.0) (2026-10-27)
+
+
+### Features
+
+* **race:** label the race boss bar and action bar and fix their contrast ([#347](https://github.com/OneLiteFeatherNET/Voyager/issues/347)) ([e56605d](https://github.com/OneLiteFeatherNET/Voyager/commit/e56605d016ae19168c0883195cf65bf90cc9f58f))
+* **race:** rework the waiting lobby with items, a tutorial and an XP countdown ([#348](https://github.com/OneLiteFeatherNET/Voyager/issues/348)) ([6007352](https://github.com/OneLiteFeatherNET/Voyager/commit/60073525f2541fd74f72e2a5b7770d08c0a66cd8))
+* **race:** show display names for cups and maps ([#346](https://github.com/OneLiteFeatherNET/Voyager/issues/346)) ([fc64832](https://github.com/OneLiteFeatherNET/Voyager/commit/fc648329eb64f8cae97eb420b2fc98aab8c65f2a))
+
+
+### Bug Fixes
+
+* **race:** keep racers facing the first ring at GO and on arrival ([#345](https://github.com/OneLiteFeatherNET/Voyager/issues/345)) ([00c5ad5](https://github.com/OneLiteFeatherNET/Voyager/commit/00c5ad5ba31f4b413ca1ddded5d488e398a08057))
+
+
+### Documentation
+
+* **openspec:** propose lobby and race hud polish ([#344](https://github.com/OneLiteFeatherNET/Voyager/issues/344)) ([025978f](https://github.com/OneLiteFeatherNET/Voyager/commit/025978fe89179d1069cb12c1a50905279651fec7))
+
+
+### Miscellaneous Chores
+
+* **deps:** update gradle to v9.8.0 ([#291](https://github.com/OneLiteFeatherNET/Voyager/issues/291)) ([9d07cfa](https://github.com/OneLiteFeatherNET/Voyager/commit/9d07cfae79c73d1c3e409e49333dcb0934d6728b))
+* **deps:** update gradle to v9.8.1 ([#342](https://github.com/OneLiteFeatherNET/Voyager/issues/342)) ([75301cd](https://github.com/OneLiteFeatherNET/Voyager/commit/75301cd2fcf4ab985aee5bcb57fb671ce15592ba))
+* **deps:** update onelitefeathernet/workflows action to v2.9.0 ([#281](https://github.com/OneLiteFeatherNET/Voyager/issues/281)) ([7a06047](https://github.com/OneLiteFeatherNET/Voyager/commit/7a060473c5f93946e07cc318ac46a86ca4db323d))
+
 ## [1.16.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.15.0...v1.16.0) (2026-10-14)
 
 
