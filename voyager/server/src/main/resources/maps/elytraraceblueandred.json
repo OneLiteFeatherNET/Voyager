@@ -2,6 +2,7 @@
   "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
   "schemaVersion": 1,
   "name": "elytraraceblueandred",
+  "displayName": "Blue & Red",
   "world": "ElytraraceBlueAndRed",
   "spawn": {
     "x": 109.0,

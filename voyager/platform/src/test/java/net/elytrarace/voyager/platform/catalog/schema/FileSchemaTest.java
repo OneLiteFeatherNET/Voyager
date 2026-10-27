@@ -106,6 +106,20 @@ class FileSchemaTest {
     }
 
     @Test
+    void aMapWithAStringDisplayNameValidates() {
+        String named = VALID_MAP.replace("\"name\": \"sky-drift\",", "\"name\": \"sky-drift\",\n  \"displayName\": \"Sky Drift\",");
+
+        assertThat(errors(mapSchema(), JSON.readTree(named))).isEmpty();
+    }
+
+    @Test
+    void aCupWithAStringDisplayNameValidates() {
+        String named = VALID_CUP.replace("\"name\": \"sky_cup\",", "\"name\": \"sky_cup\",\n  \"displayName\": \"Sky Cup\",");
+
+        assertThat(errors(cupSchema(), JSON.readTree(named))).isEmpty();
+    }
+
+    @Test
     void ringWithoutRadiusIsRejectedNamingRadius() {
         String withoutRadius = VALID_MAP.replace("\"radius\": 4.0, \"points\": 10, \"type\": \"STANDARD\"",
                 "\"points\": 10, \"type\": \"STANDARD\"");

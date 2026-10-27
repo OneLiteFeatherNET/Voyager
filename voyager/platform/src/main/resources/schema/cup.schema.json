@@ -22,6 +22,11 @@
       "pattern": "\\S",
       "description": "The cup's name. Must not be blank."
     },
+    "displayName": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The name players read, in place of the cup's id. Optional; absent or blank means the id. Shown as plain text, never translated."
+    },
     "mode": {
       "enum": ["RACE", "PRACTICE"],
       "description": "RACE scores and ranks; PRACTICE does not."

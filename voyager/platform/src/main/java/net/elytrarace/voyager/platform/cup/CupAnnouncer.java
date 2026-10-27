@@ -72,7 +72,7 @@ public final class CupAnnouncer {
             RaceFeedback.ringPassed(racer, passed.index(), map.rings().size());
         }
         if (run.finished() && !wasFinished) {
-            racer.sendMessage(Messages.finished(map.name(), clock.elapsed()));
+            racer.sendMessage(Messages.finished(map.displayName(), clock.elapsed()));
             LOGGER.info("{} finished '{}' on tick {} ({})",
                     racer.getUsername(), map.name(), clock.gameTick(), seconds(clock.elapsed()));
         }
@@ -91,12 +91,12 @@ public final class CupAnnouncer {
         }
         int ringCount = map.rings().size();
         if (score.medal() == MedalTier.DNF) {
-            racer.sendMessage(Messages.mapResultDnf(map.name(), ringsPassed, ringCount, score.total()));
+            racer.sendMessage(Messages.mapResultDnf(map.displayName(), ringsPassed, ringCount, score.total()));
             RaceFeedback.mapResult(racer, MedalTier.DNF, Messages.mapResultSubtitleDnf(ringsPassed, ringCount));
             return;
         }
         // The breakdown is in chat only (UX-1): the title and the subtitle carry the medal and the next goal.
-        racer.sendMessage(Messages.mapResult(map.name(), score.ringPoints(), score.medalPoints(),
+        racer.sendMessage(Messages.mapResult(map.displayName(), score.ringPoints(), score.medalPoints(),
                 score.medal(), score.placementBonus(), score.total()));
         RaceFeedback.mapResult(racer, score.medal(), nextGoalSubtitle(map, score));
     }
@@ -145,7 +145,7 @@ public final class CupAnnouncer {
         }
         entries.sort(STANDING_ORDER);
         LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.name(), entries.size());
-        broadcast(Messages.cupHeading(cup.name()));
+        broadcast(Messages.cupHeading(cup.displayName()));
         int mapCount = cup.mapNames().size();
         int place = 1;
         for (Entry entry : entries) {

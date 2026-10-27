@@ -2,6 +2,7 @@
   "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
   "schemaVersion": 1,
   "name": "memoria",
+  "displayName": "Memoria",
   "world": "Memoria",
   "spawn": {
     "x": -144.0,

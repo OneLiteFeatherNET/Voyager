@@ -17,6 +17,7 @@ A file the loader refuses stops the server at boot. The refusal names the file, 
 | `$schema` | string | No | None. The loader ignores it. | Never. The editor schema checks it as a relative path. |
 | `schemaVersion` | integer | No | `1` when absent. | Not a whole number of 1 or more, or above `1`. The refusal names the declared version and the highest supported version. |
 | `name` | string | Yes | None. | Missing, or blank. |
+| `displayName` | string | No | The map's `name`. | Longer than 40 characters. The refusal names the field and the file. |
 | `world` | string | No | The map's `name`, exactly as written, including case. | Present and blank. At boot, a world with no region data under the worlds path stops the server and the message names the resolved world. |
 | `spawn` | vector | Yes | None. | Missing, or a component is missing. |
 | `referenceTimeSeconds` | number | Yes | None. A fraction is kept. | Missing, not finite, or zero or negative. |
@@ -102,11 +103,23 @@ The world default is case-sensitive on Linux, so a directory named `ElytraraceBl
 | `$schema` | string | No | None. The loader ignores it. | Never. |
 | `schemaVersion` | integer | No | `1` when absent. | The same rule as for maps. |
 | `name` | string | Yes | None. | Missing, or blank. |
+| `displayName` | string | No | The cup's `name`. | Longer than 40 characters. The refusal names the field and the file. |
 | `mode` | string | Yes | None. | Missing, or not `RACE` or `PRACTICE`. |
 | `mapNames` | array of strings | Yes | None. The order is the rotation. | Missing, not an array, empty, or an entry that is not a string. |
 | `notes` | array of strings | No | None. The loader ignores it. | Never. |
 
 At boot, every name in `mapNames` must match the `name` of a loaded map. An unknown name stops the server.
+
+## Display names
+
+`name` is the id: the key of the catalogue, the name an operator types and the name in the file. `displayName` is the name a player reads, on the boss bar, the map banner, the lobby sidebar and hologram, and the results.
+
+- A file that leaves `displayName` out, or gives it blank, shows the id.
+- The text is shown as written and is never translated, so a German and an English player read the same name. MiniMessage tags in it are shown as plain characters.
+- A name longer than 40 characters is refused at boot, rather than cut short.
+- Operator output (command replies, the validation report and log lines) keeps the id, so an operator can find the file.
+
+The shipped catalogue names `alpha_cup` "Alpha Cup", `legacy_cup` "Testing Cup", and the maps `elytraraceblueandred` "Blue & Red", `palmbeach` "PalmBeach", `dragonlobby` "DragonLobby" and `memoria` "Memoria". Those tests are `ShippedCatalogueTest.theShippedCatalogueNamesItsCupsAndMapsForPlayers` and `CatalogLoaderTest` for the loader rules.
 
 ## Schema version
 

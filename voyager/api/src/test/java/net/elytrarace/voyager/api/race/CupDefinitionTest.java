@@ -24,6 +24,28 @@ class CupDefinitionTest {
     }
 
     @Test
+    void aCupWithoutADisplayNameDisplaysItsId() {
+        CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
+
+        assertThat(cup.displayName()).isEqualTo("winter-cup");
+    }
+
+    @Test
+    void aBlankDisplayNameDisplaysTheId() {
+        CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE, "   ");
+
+        assertThat(cup.displayName()).isEqualTo("winter-cup");
+    }
+
+    @Test
+    void keepsTheDisplayNameItIsGiven() {
+        CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE, "Winter Cup");
+
+        assertThat(cup.displayName()).isEqualTo("Winter Cup");
+        assertThat(cup.name()).isEqualTo("winter-cup");
+    }
+
+    @Test
     void rejectsABlankName() {
         assertThatThrownBy(() -> new CupDefinition("  ", MAP_NAMES, GameMode.RACE))
                 .isInstanceOf(InvalidCupException.class);

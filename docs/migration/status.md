@@ -173,8 +173,9 @@ value. The map's `boostConfig` (burn 30 ticks, cooldown 40 ticks) is unchanged.
 ### Dropped from the old data
 
 `maxSpeedBlocksPerTick` (3.2 to 3.6 in the old files) has no field in `BoostConfig`, which carries burn and cooldown
-only. The old map and cup display names have no field in the rebuild's definitions either. The alpha's display name is
-kept in the cup's `notes`.
+only. The old map and cup display names now have a field in the rebuild's definitions: an optional `displayName` in each
+cup and map file, shown to players in place of the id. The shipped catalogue names its cups and maps with it, and the
+names are no longer kept only in the `notes`.
 
 ### Validation
 

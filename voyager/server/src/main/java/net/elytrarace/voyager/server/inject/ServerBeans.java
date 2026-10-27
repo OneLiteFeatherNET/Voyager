@@ -170,7 +170,7 @@ public final class ServerBeans {
         // at boot. It is an entity and not part of the world, so the lobby is never written with it.
         LobbyHologram hologram = lobby == null ? null : LobbyHologram.spawnAt(
                 settings.lobbyHologram().map(at -> Vectors.toMinestom(at).asPos()), lobby.instance(),
-                LobbyBoard.of(catalog.current().cup())).orElse(null);
+                LobbyBoard.of(catalog.current().cup(), catalog.current().snapshot())).orElse(null);
         return new WaitingRoom(session, catalog, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
                 hub, new LobbyHud(), new LobbySidebar(), hologram,
                 () -> instances.forWorld(catalog.current().rotation().getFirst().world()));

@@ -58,6 +58,22 @@ class ShippedCatalogueTest {
                 .containsExactly("palmbeach", "dragonlobby", "memoria");
     }
 
+    /**
+     * The names players read, as the shipped catalogue seeds them. The ids stay the keys of the files; these are the
+     * names the boss bar, the banner, the lobby and the results show.
+     */
+    @Test
+    void theShippedCatalogueNamesItsCupsAndMapsForPlayers() {
+        CatalogSnapshot catalog = CatalogLoader.load(RESOURCES);
+
+        assertThat(catalog.cupByName(ALPHA_CUP).orElseThrow().displayName()).isEqualTo("Alpha Cup");
+        assertThat(catalog.cupByName(LEGACY_CUP).orElseThrow().displayName()).isEqualTo("Testing Cup");
+        assertThat(catalog.mapByName(ALPHA_MAP).orElseThrow().displayName()).isEqualTo("Blue & Red");
+        assertThat(catalog.mapByName("palmbeach").orElseThrow().displayName()).isEqualTo("PalmBeach");
+        assertThat(catalog.mapByName("dragonlobby").orElseThrow().displayName()).isEqualTo("DragonLobby");
+        assertThat(catalog.mapByName("memoria").orElseThrow().displayName()).isEqualTo("Memoria");
+    }
+
     @Test
     void theShippedMapHasAtLeastEightRingsIndexedFromZero() {
         MapDefinition map = CatalogLoader.load(RESOURCES).mapByName(ALPHA_MAP).orElseThrow();

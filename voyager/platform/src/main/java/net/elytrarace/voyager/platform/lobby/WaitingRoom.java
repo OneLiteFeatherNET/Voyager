@@ -1,6 +1,7 @@
 package net.elytrarace.voyager.platform.lobby;
 
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
@@ -302,7 +303,8 @@ public final class WaitingRoom {
      */
     private void announce(StartGate.Situation situation, Collection<Player> online, int count) {
         // Every lobby display reads this one board, so the sidebar, the hologram and the boss bar name the same cup.
-        LobbyBoard board = LobbyBoard.of(catalog.current().cup());
+        LoadedCatalog current = catalog.current();
+        LobbyBoard board = LobbyBoard.of(current.cup(), current.snapshot());
         Component title = waitingTitle(situation, count, board);
         Instance waitingPlace = lobby != null ? lobby.instance() : firstMapInstance.get();
         float progress = situation == StartGate.Situation.WAITING ? 1.0f : countdownFraction();
