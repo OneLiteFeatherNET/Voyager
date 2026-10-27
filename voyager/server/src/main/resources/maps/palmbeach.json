@@ -2,6 +2,7 @@
   "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
   "schemaVersion": 1,
   "name": "palmbeach",
+  "displayName": "PalmBeach",
   "world": "PalmBeach",
   "spawn": {
     "x": 19.0,
