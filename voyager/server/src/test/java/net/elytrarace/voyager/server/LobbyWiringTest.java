@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * The lobby as the server wires it: where a joining racer spawns, that the lobby world is loaded when the graph is built,
@@ -93,6 +94,26 @@ class LobbyWiringTest {
 
         assertThat(arrival.instance()).isSameAs(instances.forWorld(FIRST));
         assertThat(arrival.position()).isEqualTo(Vectors.toMinestom(FIRST_SPAWN).asPos());
+    }
+
+    /**
+     * A racer who joins a running cup with no lobby arrives on the first map's spawn, and must look at that map's first
+     * ring as every other arrival does. The first ring here lies 24 blocks west of the spawn, so the facing is yaw 90.
+     */
+    @Test
+    void aJoiningRacerWithoutALobbyFacesTheFirstRingOfTheFirstMap(Env env) throws IOException {
+        writeWorld(env, FIRST, FIRST_SPAWN);
+        MapInstances instances = openWorlds(env);
+        MapDefinition westRing = new MapDefinition("wiring-west", FIRST, FIRST_SPAWN,
+                List.of(new Ring(0, FIRST_SPAWN.plus(new Vec3(-24.0, 8.0, 0.0)), new Vec3(-1.0, 0.0, 0.0), 6.0, 7,
+                        RingType.STANDARD)),
+                Duration.ofSeconds(4), new BoostConfig(12, 25), new GuideLine(List.of(), 4, 2.0));
+
+        JoinArrival.Arrival arrival = JoinArrival.of(Optional.empty(), westRing, instances);
+
+        assertThat(arrival.position().yaw())
+                .describedAs("ring 0 lies 24 blocks west of the spawn, which is yaw 90")
+                .isCloseTo(90.0f, within(1.0f));
     }
 
     @Test

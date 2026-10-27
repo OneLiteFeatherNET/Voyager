@@ -1,7 +1,7 @@
 package net.elytrarace.voyager.server.inject;
 
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.flight.ArrivalFacing;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.minestom.server.coordinate.Pos;
@@ -39,7 +39,6 @@ public final class JoinArrival {
     public static Arrival of(Optional<LobbyTransition> lobby, MapDefinition first, MapInstances instances) {
         return lobby
                 .map(transition -> new Arrival(transition.instance(), transition.spawn()))
-                .orElseGet(() -> new Arrival(instances.forWorld(first.world()),
-                        Vectors.toMinestom(first.spawn()).asPos()));
+                .orElseGet(() -> new Arrival(instances.forWorld(first.world()), ArrivalFacing.at(first)));
     }
 }

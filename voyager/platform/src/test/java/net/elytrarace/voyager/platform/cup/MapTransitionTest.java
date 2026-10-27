@@ -15,6 +15,7 @@ import net.elytrarace.voyager.race.run.RaceRun;
 import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.RelativeFlags;
 import net.minestom.server.event.entity.EntityTeleportEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.Instance;
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * {@link MapTransition} on a live server, because everything it does only exists on one: an instance
@@ -83,6 +85,12 @@ class MapTransitionTest {
     private static final MapDefinition RIDGE_START = map("ridge-start", RIDGE, RIDGE_START_SPAWN);
     private static final MapDefinition DUNE_RUN = map("dune-run", DUNE, DUNE_SPAWN);
     private static final MapDefinition RIDGE_FINALE = map("ridge-finale", RIDGE, RIDGE_FINALE_SPAWN);
+
+    /** A dune course whose first ring lies 24 blocks west of the spawn, so a racer facing it has yaw 90. */
+    private static final MapDefinition DUNE_WEST_RUN = new MapDefinition("dune-west", DUNE, DUNE_SPAWN,
+            List.of(new Ring(0, new Vec3(DUNE_SPAWN.x() - 24.0, DUNE_SPAWN.y() + 8.0, DUNE_SPAWN.z()),
+                    new Vec3(-1.0, 0.0, 0.0), 6.0, 7, RingType.STANDARD)),
+            Duration.ofSeconds(4), new BoostConfig(12, 25), new GuideLine(List.of(), 4, 2.0));
 
     private static final PlacedBlock RIDGE_START_FLOOR = floorUnder(RIDGE_START_SPAWN, Block.GOLD_BLOCK);
     private static final PlacedBlock DUNE_FLOOR = floorUnder(DUNE_SPAWN, Block.DIAMOND_BLOCK);
@@ -193,6 +201,46 @@ class MapTransitionTest {
                 .describedAs("a confirmed teleport carries a real id; an unconfirmed one carries -1")
                 .isPositive();
         assertThat(racer.getLastSentTeleportId()).isEqualTo(arrival.teleportId());
+    }
+
+    /**
+     * A racer who arrives in a map looks down the course, so the first ring is in front of them. The spawn carries no
+     * facing of its own, so this is the placement that must give one: ring 0 lies 90 degrees west of the spawn here.
+     */
+    @Test
+    void aRacerArrivesFacingTheFirstRingOfTheNewMap(Env env) throws IOException {
+        writeWorlds(env);
+
+        MapInstances instances = openWorlds(env);
+        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        Player racer = connectTo(env, instances, RIDGE_START);
+
+        transition.advanceTo(DUNE_WEST_RUN, List.of(racer));
+
+        assertThat(racer.getPosition().yaw())
+                .describedAs("ring 0 is 24 blocks west of the spawn, which is yaw 90")
+                .isCloseTo(90.0f, within(1.0f));
+    }
+
+    /**
+     * The countdown places the racer on the spawn and the GO tick places them there again. The second placement must
+     * leave the racer facing ring 0, not the spawn's default yaw, even though the racer turned away in between.
+     */
+    @Test
+    void aRacerIsFacingTheFirstRingAfterTheGoTransition(Env env) throws IOException {
+        writeWorlds(env);
+
+        MapInstances instances = openWorlds(env);
+        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        Player racer = connectTo(env, instances, RIDGE_START);
+        transition.advanceTo(DUNE_WEST_RUN, List.of(racer));
+        racer.teleport(spawnOf(DUNE_WEST_RUN).withYaw(180.0f), null, RelativeFlags.NONE, true).join();
+
+        transition.advanceTo(DUNE_WEST_RUN, List.of(racer));
+
+        assertThat(racer.getPosition().yaw())
+                .describedAs("the GO placement faces ring 0 again, so the first flight starts looking down the course")
+                .isCloseTo(90.0f, within(1.0f));
     }
 
     /**

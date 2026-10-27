@@ -71,7 +71,7 @@ the same address.
 | The minimum is met | The lobby starts. The boss bar counts it down in whole seconds: `Cup <name> · starts in <n> s`, and its fill is the part of the lobby left. |
 | The server reaches its maximum during the countdown | The countdown is shortened to 10 seconds from that moment. It is never lengthened, and a committed start is not shortened. |
 | The last three seconds of the lobby | The digits 3, 2, 1 and `GO` are shown, and the racer is placed on the spawn facing the first ring with the elytra and the rockets in hand. |
-| GO | The racer is released, not launched. The subtitle `Jump, then deploy your elytra.` appears with the title. The racer jumps and deploys the elytra; a rocket is refused until the racer is gliding, so the rocket comes after the deployment. |
+| GO | The racer is released, not launched, still facing the first ring. The subtitle `Jump, then deploy your elytra.` appears with the title. The racer jumps and deploys the elytra; a rocket is refused until the racer is gliding, so the rocket comes after the deployment. |
 | A racer leaves before the last three seconds | The lobby is cancelled and the room returns to waiting. The remaining racers are told `Start cancelled: <online> of <needed> racers online. Waiting for more.` A new countdown starts from its full length once the minimum is met again. |
 | A racer leaves in the last three seconds | The start is committed. The first map starts for the racers still online, and they are released at GO. |
 | A racer joins while a map is racing | The racer is told `A cup is running. You join at the next map.` and enters the next map when it starts. |
