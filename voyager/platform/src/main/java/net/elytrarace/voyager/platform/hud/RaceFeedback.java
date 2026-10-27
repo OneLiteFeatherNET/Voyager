@@ -12,6 +12,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 
 import java.time.Duration;
+import java.util.Set;
 
 /**
  * Everything discrete a racer hears or is shown for a moment: a ring, the countdown, a result.
@@ -75,6 +76,15 @@ public abstract class RaceFeedback {
     private static final Sound.Source SOURCE = Sound.Source.MASTER;
 
     private RaceFeedback() {
+    }
+
+    /**
+     * The race samples a lobby sound must not share: the ring bell, the last-ring chime, the reset, the DNF, the missed ring
+     * and the countdown beat. The lobby's pling is the GO sample, and that is not in this set, as the lobby's countdown
+     * requires. Read by {@code LobbySoundsDistinctTest}, so a change that makes a lobby sound one of these fails there.
+     */
+    public static Set<Key> sampleKeysLobbyMustNotShare() {
+        return Set.of(RING_BELL, CHALLENGE_COMPLETE, RESET_CHIME, DNF_BIT, MISSED_RING, COUNTDOWN_BEAT);
     }
 
     /**

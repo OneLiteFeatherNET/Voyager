@@ -81,18 +81,28 @@ class LobbyBoardTest {
     }
 
     @Test
-    void aCupOfFifteenMapsShowsTwelveAndAPlusThreeMoreLine() {
+    void aCupOfFifteenMapsShowsNineAndAPlusSixMoreLine() {
         LobbyBoard board = LobbyBoard.of(cup("Long Tour", names(15)), NO_MAPS);
 
         List<Component> lines = board.lines();
 
-        assertThat(lines).hasSize(LobbyBoard.MAX_MAP_LINES + 1);
-        assertThat(plain(lines.subList(0, LobbyBoard.MAX_MAP_LINES)).getLast()).isEqualTo("12. map-12");
+        assertThat(lines).hasSize(LobbyBoard.MAX_MAP_LINES)
+                .as("ten map lines in all: nine maps and one line that says six follow");
+        assertThat(plain(lines.subList(0, LobbyBoard.MAX_MAP_LINES - 1)).getLast()).isEqualTo("9. map-9");
         TranslatableComponent more = (TranslatableComponent) lines.getLast();
         assertThat(more.key()).isEqualTo("voyager.lobby.board.more");
         assertThat(more.arguments()).hasSize(1);
         assertThat(PlainTextComponentSerializer.plainText().serialize(more.arguments().getFirst().asComponent()))
-                .isEqualTo("3");
+                .isEqualTo("6");
+    }
+
+    @Test
+    void aCupOfTenMapsShowsAllTenWithNoMoreLine() {
+        LobbyBoard board = LobbyBoard.of(cup("Ten Tour", names(10)), NO_MAPS);
+
+        assertThat(board.lines()).hasSize(10);
+        assertThat(board.lines().getLast()).isInstanceOfSatisfying(TranslatableComponent.class,
+                map -> assertThat(map.key()).isEqualTo("voyager.lobby.board.map"));
     }
 
     @Test
@@ -118,6 +128,15 @@ class LobbyBoardTest {
     }
 
     private static List<String> plain(List<Component> lines) {
-        return lines.stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
+        return lines.stream().map(LobbyBoardTest::plain).toList();
+    }
+
+    /** A map line reads as its place, a dot, and its name; any other line as its plain text. */
+    private static String plain(Component line) {
+        if (line instanceof TranslatableComponent map && map.key().equals("voyager.lobby.board.map")) {
+            return PlainTextComponentSerializer.plainText().serialize(map.arguments().get(0).asComponent())
+                    + ". " + PlainTextComponentSerializer.plainText().serialize(map.arguments().get(1).asComponent());
+        }
+        return PlainTextComponentSerializer.plainText().serialize(line);
     }
 }

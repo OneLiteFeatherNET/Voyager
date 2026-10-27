@@ -67,10 +67,10 @@ public final class LobbyHologram {
         return entity;
     }
 
-    /** The board as the hologram reads it: the cup's name on the first line, then the maps, one line each. */
+    /** The board as the hologram reads it: the cup's name on the first line, then the map names, one line each. */
     static Component text(LobbyBoard board) {
         Component text = board.title();
-        for (Component line : board.lines()) {
+        for (Component line : board.hologramLines()) {
             text = text.append(Component.newline()).append(line);
         }
         return text;

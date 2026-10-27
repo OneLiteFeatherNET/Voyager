@@ -303,11 +303,19 @@ class MessagesTest {
     // ---------------------------------------------------------------------------------------
 
     @Test
-    void waitingLineNamesOnlineAndNeeded() {
-        Component waiting = Messages.lobbyWaiting(1, 2);
+    void theActionBarWhileWaitingNamesTheRacersStillNeeded() {
+        Component waiting = Messages.lobbyActionBarWaiting(2);
 
-        assertThat(translatable(waiting).key()).isEqualTo("voyager.lobby.waiting");
-        assertThat(argumentsOf(waiting)).containsExactly("1", "2");
+        assertThat(translatable(waiting).key()).isEqualTo("voyager.lobby.actionbar.waiting.other");
+        assertThat(argumentsOf(waiting)).containsExactly("2");
+    }
+
+    @Test
+    void theActionBarHasTheSingularKeyForOneRacerShort() {
+        Component waiting = Messages.lobbyActionBarWaiting(1);
+
+        assertThat(translatable(waiting).key()).isEqualTo("voyager.lobby.actionbar.waiting.one");
+        assertThat(argumentsOf(waiting)).containsExactly("1");
     }
 
     /**
@@ -316,13 +324,13 @@ class MessagesTest {
      */
     @Test
     void countdownShowsWholeSecondsOfTheLobby() {
-        assertThat(argumentsOf(Messages.lobbyCountdown(Duration.ofSeconds(20)))).containsExactly("20");
-        assertThat(argumentsOf(Messages.lobbyCountdown(Duration.ofSeconds(6)))).containsExactly("6");
+        assertThat(argumentsOf(Messages.lobbyActionBarCountdown(Duration.ofSeconds(20)))).containsExactly("20");
+        assertThat(argumentsOf(Messages.lobbyActionBarCountdown(Duration.ofSeconds(6)))).containsExactly("6");
     }
 
     @Test
     void countdownRoundsAPartialSecondUp() {
-        assertThat(argumentsOf(Messages.lobbyCountdown(Duration.ofMillis(5_400)))).containsExactly("6");
+        assertThat(argumentsOf(Messages.lobbyActionBarCountdown(Duration.ofMillis(5_400)))).containsExactly("6");
     }
 
     @Test
@@ -342,19 +350,19 @@ class MessagesTest {
     }
 
     @Test
-    void theWaitingBossBarNamesTheCupTheCountAndTheMinimum() {
-        Component waiting = Messages.lobbyBossBarWaiting("Grand Tour", 1, 2);
+    void theSidebarRacersLineNamesOnlineAndMaximum() {
+        Component racers = Messages.lobbySidebarRacers(3, 16);
 
-        assertThat(translatable(waiting).key()).isEqualTo("voyager.lobby.bossbar.waiting.cup");
-        assertThat(argumentsOf(waiting)).containsExactly("Grand Tour", "1", "2");
+        assertThat(translatable(racers).key()).isEqualTo("voyager.lobby.sidebar.racers");
+        assertThat(argumentsOf(racers)).containsExactly("3", "16");
     }
 
     @Test
-    void theCountdownBossBarNamesTheCupAndTheSecondsLeft() {
-        Component countdown = Messages.lobbyBossBarCountdown("Grand Tour", Duration.ofSeconds(10));
+    void theSidebarStatusCountsTheSecondsToTheStart() {
+        Component starts = Messages.lobbySidebarStatusCountdown(Duration.ofSeconds(12));
 
-        assertThat(translatable(countdown).key()).isEqualTo("voyager.lobby.bossbar.countdown.cup");
-        assertThat(argumentsOf(countdown)).containsExactly("Grand Tour", "10");
+        assertThat(translatable(starts).key()).isEqualTo("voyager.lobby.sidebar.status.countdown");
+        assertThat(argumentsOf(starts)).containsExactly("12");
     }
 
     @Test

@@ -166,15 +166,21 @@ class MessageBundleTest {
     }
 
     @Test
-    void theWaitingLineNamesTheOnlineRacersAndTheNeeded() {
-        assertThat(render(Messages.lobbyWaiting(1, 2)))
-                .isEqualTo("Waiting for racers: 1 of 2 online");
+    void theWaitingActionBarNamesTheRacersStillNeeded() {
+        assertThat(render(Messages.lobbyActionBarWaiting(2)))
+                .isEqualTo("Need 2 more players to start");
     }
 
     @Test
-    void theLobbyCountdownIsWholeSeconds() {
-        assertThat(render(Messages.lobbyCountdown(Duration.ofSeconds(20))))
-                .isEqualTo("Cup starts in 20 s");
+    void theWaitingActionBarHasItsSingularForOneRacer() {
+        assertThat(render(Messages.lobbyActionBarWaiting(1)))
+                .isEqualTo("Need 1 more player to start");
+    }
+
+    @Test
+    void theLobbyCountdownActionBarIsWholeSeconds() {
+        assertThat(render(Messages.lobbyActionBarCountdown(Duration.ofSeconds(20))))
+                .isEqualTo("Start in 20 s");
     }
 
     @Test
@@ -239,10 +245,10 @@ class MessageBundleTest {
      */
     @Test
     void aDisplayNameReadsTheSameInGermanAsInEnglish() {
-        Component bar = Messages.lobbyBossBarWaiting("Testing Cup", 1, 2);
+        Component line = Messages.lobbyBoardMap(1, "Testing Cup");
 
-        assertThat(renderIn(bar, Locale.US)).contains("Testing Cup");
-        assertThat(renderIn(bar, Locale.GERMANY)).contains("Testing Cup");
+        assertThat(renderIn(line, Locale.US)).contains("Testing Cup");
+        assertThat(renderIn(line, Locale.GERMANY)).contains("Testing Cup");
     }
 
     @Test
