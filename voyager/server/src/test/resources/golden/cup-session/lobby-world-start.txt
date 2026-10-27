@@ -6,6 +6,7 @@ describe
     Ada: no run, gliding=false, boost ready, client Pos[x=20.5, y=65.0, z=-12.5, yaw=0.0, pitch=0.0], not simulated
 messages
   Ada actionbar ""
+  Ada actionbar {"translate":"voyager.lobby.actionbar.countdown","with":["4"]}
 logs
   INFO Cup 'grand_tour' started: 2 map(s), mode RACE, lobby PT3.5S, race PT1S, results PT0.2S between maps and PT0.2S after the last
 ## tick 2
@@ -91,6 +92,7 @@ messages
   Ada title-times 0 15 5
   Ada subtitle {"translate":"voyager.countdown.subtitle","with":["ridge-run","1","0:00"]}
   Ada title {"translate":"voyager.countdown.digit","with":["3"]}
+  Ada actionbar ""
 logs
   INFO Map 1/2 'ridge-run' tuning: burn 4, cooldown 9, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5
 ## tick 12
