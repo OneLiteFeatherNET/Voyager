@@ -71,4 +71,17 @@ class LobbyHologramTest {
         return PlainTextComponentSerializer.plainText()
                 .serialize(((TextDisplayMeta) display.getEntityMeta()).getText());
     }
+
+    @Test
+    void theHologramTextHasNoMoreMapsLineAndNamesOnlyTheFirstTenMaps() {
+        List<String> names = java.util.stream.IntStream.rangeClosed(1, 15).mapToObj(index -> "map-" + index).toList();
+        LobbyBoard fifteen = new LobbyBoard("Long Tour", names);
+
+        String text = PlainTextComponentSerializer.plainText().serialize(LobbyHologram.text(fifteen));
+
+        assertThat(text.lines().toList())
+                .as("the title and the first ten map names; the shared entity cannot translate a more-maps line")
+                .containsExactly("Long Tour", "map-1", "map-2", "map-3", "map-4", "map-5", "map-6", "map-7", "map-8",
+                        "map-9", "map-10");
+    }
 }

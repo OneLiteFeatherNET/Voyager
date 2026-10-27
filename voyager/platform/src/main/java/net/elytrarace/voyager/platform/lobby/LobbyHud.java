@@ -1,6 +1,5 @@
 package net.elytrarace.voyager.platform.lobby;
 
-import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -13,81 +12,84 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The boss bar a waiting racer reads in the lobby: how many racers are online and needed, or how long the start has.
+ * What a waiting racer sees of the lobby on their own screen: the action bar line, and the experience bar, whose level is
+ * the whole seconds left of the start and whose fill is the fraction of the lobby that is left.
  *
- * <p>One bar per racer, as {@code RaceHud} keeps one per racer during a race. The bar is shown only while the racer
- * stands in the lobby instance, so the race bar takes over when the racer enters a map, with no coordination between
- * the two. It is sent only when its text or its progress changes, not every tick, following the refresh pattern of
- * {@code RaceHud}.
+ * <p>One state per racer, so each line is rendered in that racer's language. The state is shown only while the racer stands
+ * in the lobby instance, and it is cleared when the racer leaves it or the countdown is cancelled. A packet is sent only when
+ * the line or the bar changes, not every tick. The lobby has no boss bar.
  */
 @NotNullByDefault
 public final class LobbyHud {
 
-    private static final BossBar.Color COLOUR = BossBar.Color.WHITE;
-    private static final BossBar.Overlay OVERLAY = BossBar.Overlay.PROGRESS;
-
-    /** What a racer's bar currently says, so an unchanged state is recognised without a packet. */
-    private record Shown(BossBar bar, Component title, float progress) {
+    /** What a racer's HUD currently shows, so an unchanged state is recognised without a packet. */
+    private record Shown(Component actionBar, int level, float fraction) {
     }
 
-    private final Map<UUID, Shown> bars = new HashMap<>();
+    private final Map<UUID, Shown> shown = new HashMap<>();
 
     /**
-     * Shows the lobby bar to {@code racer} with {@code title} and {@code progress}, if the racer stands in {@code lobby},
-     * and hides it if not.
+     * Shows the lobby HUD to {@code racer} if the racer stands in {@code lobby}, and clears it if not.
      *
-     * @param racer    the racer the bar is for
-     * @param lobby    the lobby instance; the bar shows only while the racer is in it
-     * @param title    the line the bar reads
-     * @param progress the fraction of the lobby that is left, from zero to one
+     * @param racer    the racer the HUD is for
+     * @param lobby    the lobby instance; the HUD shows only while the racer is in it
+     * @param actionBar the line for the action bar
+     * @param level    the experience level: the whole seconds left of the countdown, or zero
+     * @param fraction the experience bar's fill, from zero to one: the fraction of the lobby that is left, or zero
      * @return whether what the racer sees changed, so a caller can count the updates it sent
      */
-    public boolean update(Player racer, Instance lobby, Component title, float progress) {
+    public boolean update(Player racer, Instance lobby, Component actionBar, int level, float fraction) {
         if (racer.getInstance() != lobby) {
             return hide(racer);
         }
         UUID id = racer.getUuid();
-        Shown current = bars.get(id);
-        if (current == null) {
-            BossBar created = BossBar.bossBar(title, progress, COLOUR, OVERLAY);
-            racer.showBossBar(created);
-            bars.put(id, new Shown(created, title, progress));
-            return true;
-        }
-        if (current.title().equals(title) && Float.compare(current.progress(), progress) == 0) {
+        Shown current = shown.get(id);
+        if (current != null && current.actionBar().equals(actionBar) && current.level() == level
+                && Float.compare(current.fraction(), fraction) == 0) {
             return false;
         }
-        current.bar().name(title);
-        current.bar().progress(progress);
-        bars.put(id, new Shown(current.bar(), title, progress));
+        // Each part is sent only when it changes: the action bar line changes once a second at most, while the bar drains
+        // every tick.
+        if (current == null || !current.actionBar().equals(actionBar)) {
+            racer.sendActionBar(actionBar);
+        }
+        if (current == null || current.level() != level) {
+            racer.setLevel(level);
+        }
+        if (current == null || Float.compare(current.fraction(), fraction) != 0) {
+            racer.setExp(fraction);
+        }
+        shown.put(id, new Shown(actionBar, level, fraction));
         return true;
     }
 
     /**
-     * Takes the bar down for {@code racer}, if one is shown.
+     * Clears the HUD for {@code racer}: the action bar goes empty, and the experience level and bar go to zero.
      *
-     * @return whether a bar was shown and is now hidden
+     * @return whether a HUD was shown and is now cleared
      */
     public boolean hide(Player racer) {
-        Shown removed = bars.remove(racer.getUuid());
+        Shown removed = shown.remove(racer.getUuid());
         if (removed == null) {
             return false;
         }
-        racer.hideBossBar(removed.bar());
+        racer.sendActionBar(Component.empty());
+        racer.setLevel(0);
+        racer.setExp(0.0f);
         return true;
     }
 
     /** Drops what is held for a racer who disconnected. */
     public void forget(UUID playerId) {
-        bars.remove(playerId);
+        shown.remove(playerId);
     }
 
     /**
-     * The bar currently shown to {@code playerId}, if any.
+     * The action bar line currently shown to {@code playerId}, if any.
      *
      * <p>Package-private, for {@code LobbyHudTest}. Not part of this class's contract; do not widen it.
      */
-    Optional<BossBar> barOf(UUID playerId) {
-        return Optional.ofNullable(bars.get(playerId)).map(Shown::bar);
+    Optional<Component> actionBarOf(UUID playerId) {
+        return Optional.ofNullable(shown.get(playerId)).map(Shown::actionBar);
     }
 }

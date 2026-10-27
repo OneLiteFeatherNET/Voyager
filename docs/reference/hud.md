@@ -171,14 +171,20 @@ This contrasts with `FireworkBoostComponent`, which is written from both the Net
 
 ## Lobby displays
 
-The rebuild's lobby shows the cup that waiting racers are about to play. Three displays read one board, `LobbyBoard`, so they
-always name the same cup and the same maps in play order (`platform/lobby`, ADR-0033).
+The rebuild's lobby shows the cup that waiting racers are about to play. The sidebar and the hologram read one board,
+`LobbyBoard`, so they always name the same cup and the same maps in play order (`platform/lobby`, ADR-0033). Every lobby line
+is a translation key, rendered in the racer's language, except the cup and map names, which are data.
 
 | Display | Shown when | Text |
 |---|---|---|
-| Sidebar | The room is waiting and the racer stands in the place racers wait: the lobby instance, or the first map with no lobby. Hidden at `RUNNING` and when the racer enters a map. | The cup's name as the title, then one line per map, `1. <map>`. Twelve maps at most; a longer cup ends with `+<n> more`. |
-| Hologram | `VOYAGER_LOBBY_HOLOGRAM` names a position and a lobby world is set. One text display, spawned at boot, never saved with the lobby. | The same lines as the sidebar, the cup's name on the first line. |
-| Boss bar | Waiting and countdown, as before. | `Cup <name> · waiting for racers: <online> of <needed> online`, or `Cup <name> · starts in <n> s`. |
+| Action bar | The room is waiting, or counting down, and the racer stands in the place racers wait. Cleared at `RUNNING`. | `Need <n> more players to start` (`Need 1 more player to start` for one), then `Start in <n> s` during the countdown. |
+| Experience bar | During the countdown. | The level is the whole seconds left; the bar is the fraction of the lobby that is left. Cleared on cancel and on leaving the lobby. |
+| Sidebar | The room is waiting and the racer stands in the place racers wait: the lobby instance, or the first map with no lobby. Hidden at `RUNNING` and when the racer enters a map. | The cup's name as the title; `Racers <online>/<maximum>`; the maps as `<n>. <map>`, ten lines at most, a longer cup showing nine and `+<n> more`; `waiting` or `starts in <n> s`; the footer `Elytra Race`. No score numbers. |
+| Hologram | `VOYAGER_LOBBY_HOLOGRAM` names a position and a lobby world is set. One text display, spawned at boot, never saved with the lobby. | The cup's name, then the first ten map names. No translated line, because one entity is shared by every racer. |
+
+The lobby has no boss bar. A waiting racer holds a leave door (slot 8, `/leave` and `/hub` do the same) and a tutorial book
+(slot 1). The items are given while the room waits and taken before the racer enters the first map. A right click on the book
+opens the tutorial, five dialog pages with Back, Next and Close (ADR-0039).
 
 The cup shown is the cup the catalogue currently holds. A reload that is pending does not change it until a round starts and
 promotes it. A countdown keeps the cup it began with.

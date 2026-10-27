@@ -31,7 +31,7 @@ import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.flow.StartGate.Situation;
-import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Pos;
@@ -513,25 +513,22 @@ class WaitingRoomTest {
     // The fallback: no lobby world, so the racers wait in the first map and the bar is shown there
     // ------------------------------------------------------------------------------------------
 
-    /** With no lobby configured, a waiting racer reads the count on the same boss bar, standing in the first map. */
+    /** With no lobby configured, a waiting racer reads the count on the action bar, standing in the first map. */
     @Test
-    void withoutALobbyTheWaitingCountIsOnTheBossBarInTheFirstMap(Env env) throws IOException {
+    void withoutALobbyTheWaitingCountIsOnTheActionBarInTheFirstMap(Env env) throws IOException {
         Fixture fixture = fixture(env);
         Player racer = fixture.join();
 
         fixture.tick();
 
-        assertThat(fixture.hud.barOf(racer.getUuid()))
-                .describedAs("the racer stands in the first map, which is where the fallback bar is shown")
-                .isPresent()
-                .get()
-                .satisfies(bar -> assertThat(((TranslatableComponent) bar.name()).key())
-                        .isEqualTo("voyager.lobby.bossbar.waiting.cup"));
+        assertThat(keyOf(fixture.hud.actionBarOf(racer.getUuid())))
+                .describedAs("the racer stands in the first map, which is where the fallback action bar is shown")
+                .startsWith("voyager.lobby.actionbar.waiting");
     }
 
     /**
-     * Without a lobby the countdown is on the bar too, and the bar leaves at the commit: from then on the race's own bar
-     * is the only one a racer sees, as it is when a lobby is configured and the racer has entered the first map.
+     * Without a lobby the countdown is on the action bar too, and it clears at the commit: from then on the race's own
+     * displays are the only ones a racer sees, as they are when a lobby is configured and the racer has entered the map.
      */
     @Test
     void withoutALobbyTheCountdownShowsUntilTheStartIsCommitted(Env env) throws IOException {
@@ -539,8 +536,7 @@ class WaitingRoomTest {
         Player racer = fixture.join();
         fixture.join();
         fixture.tick();
-        assertThat(((TranslatableComponent) fixture.hud.barOf(racer.getUuid()).orElseThrow().name()).key())
-                .isEqualTo("voyager.lobby.bossbar.countdown.cup");
+        assertThat(keyOf(fixture.hud.actionBarOf(racer.getUuid()))).isEqualTo("voyager.lobby.actionbar.countdown");
 
         for (int tick = 0; tick < BUDGET && fixture.session.situation(StartGate.COMMIT_WINDOW) != Situation.COMMITTED;
                 tick++) {
@@ -548,7 +544,7 @@ class WaitingRoomTest {
         }
 
         assertThat(fixture.session.situation(StartGate.COMMIT_WINDOW)).isEqualTo(Situation.COMMITTED);
-        assertThat(fixture.hud.barOf(racer.getUuid())).isEmpty();
+        assertThat(fixture.hud.actionBarOf(racer.getUuid())).isEmpty();
     }
 
     /** A reload waits for the next round: the lobby names the cup that is loaded until a round promotes the reload. */
@@ -561,7 +557,7 @@ class WaitingRoomTest {
         fixture.holder.offer(RELOADED);
         fixture.tick();
 
-        assertThat(cupOnBar(fixture.hud.barOf(racer.getUuid()).orElseThrow())).isEqualTo(TOUR.name());
+        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.name());
     }
 
     /** A countdown keeps the cup it began with, even when a reload is applied while it runs. */
@@ -576,13 +572,48 @@ class WaitingRoomTest {
         fixture.holder.offer(RELOADED);
         fixture.tick();
 
-        assertThat(cupOnBar(fixture.hud.barOf(racer.getUuid()).orElseThrow())).isEqualTo(TOUR.name());
+        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.name());
     }
 
-    /** The cup name the boss bar carries, which is the first argument of its translated line. */
-    private static String cupOnBar(BossBar bar) {
-        TranslatableComponent line = (TranslatableComponent) bar.name();
-        return PlainTextComponentSerializer.plainText().serialize(line.arguments().getFirst().asComponent());
+    /** A waiting racer who leaves is handed to the hub, and the room keeps no record that the racer was handed off. */
+    @Test
+    void aWaitingRacerLeavesToTheHubWithoutARecordedHandoff(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.tick();
+
+        assertThat(fixture.room.leaveToHub(racer)).isTrue();
+
+        assertThat(fixture.handedToHub).containsExactly(racer.getUuid());
+        assertThat(fixture.room.describe())
+                .as("the racer is still counted: the room records no hand-off for a leave")
+                .startsWith("room: 1 of ");
+    }
+
+    /** A racer who is racing cannot leave to the hub: the room refuses, and the racer is not handed away. */
+    @Test
+    void aRacerWhoIsRacingCannotLeaveToTheHub(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.join();
+        for (int tick = 0; tick < BUDGET && fixture.session.situation(StartGate.COMMIT_WINDOW) != Situation.RUNNING;
+                tick++) {
+            fixture.tick();
+        }
+
+        assertThat(fixture.room.leaveToHub(racer)).isFalse();
+        assertThat(fixture.handedToHub).isEmpty();
+    }
+
+    /** The cup name the sidebar carries as its title. */
+    private static String cupOnSidebar(Fixture fixture, Player racer) {
+        return PlainTextComponentSerializer.plainText()
+                .serialize(fixture.sidebar.sidebarOf(racer.getUuid()).orElseThrow().getTitle());
+    }
+
+    /** The translation key of an action bar line that is shown. */
+    private static String keyOf(Optional<Component> line) {
+        return ((TranslatableComponent) line.orElseThrow()).key();
     }
 
     // ------------------------------------------------------------------------------------------
@@ -626,9 +657,10 @@ class WaitingRoomTest {
                 message -> {
                     throw new AssertionError("no refused handoff was expected, but got: " + message);
                 });
+        LobbySidebar sidebar = new LobbySidebar();
         WaitingRoom room = new WaitingRoom(session, holder, () -> online, MINIMUM, maximum, lobby, hub, hud,
-                new LobbySidebar(), null, () -> instances.forWorld(ARENA));
-        return new Fixture(session, holder, pipeline, room, hud, runs, instances, env, handedToHub, kicked);
+                sidebar, null, () -> instances.forWorld(ARENA));
+        return new Fixture(session, holder, pipeline, room, hud, sidebar, runs, instances, env, handedToHub, kicked);
     }
 
     /** Writes a world with one floor block under the spawn, through a Falco loader of its own. */
@@ -657,6 +689,7 @@ class WaitingRoomTest {
         private final TickPipeline pipeline;
         private final WaitingRoom room;
         private final LobbyHud hud;
+        private final LobbySidebar sidebar;
         private final RaceRuns runs;
         private final MapInstances instances;
         private final Env env;
@@ -666,13 +699,14 @@ class WaitingRoomTest {
         private final List<Player> kicked;
 
         private Fixture(CupSession session, CatalogHolder holder, TickPipeline pipeline, WaitingRoom room, LobbyHud hud,
-                RaceRuns runs,
+                LobbySidebar sidebar, RaceRuns runs,
                 MapInstances instances, Env env, List<UUID> handedToHub, List<Player> kicked) {
             this.session = session;
             this.holder = holder;
             this.pipeline = pipeline;
             this.room = room;
             this.hud = hud;
+            this.sidebar = sidebar;
             this.runs = runs;
             this.instances = instances;
             this.env = env;

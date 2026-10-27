@@ -30,6 +30,10 @@ import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.elytrarace.voyager.server.persistence.StatsBinding;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
+import net.elytrarace.voyager.platform.text.Messages;
+import net.elytrarace.voyager.platform.tutorial.TutorialBook;
+import net.elytrarace.voyager.server.command.LeaveCommand;
 import net.elytrarace.voyager.platform.cup.TickPipeline;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.hollowcube.minestom.extensions.ExtensionBootstrap;
@@ -39,6 +43,9 @@ import net.minestom.server.adventure.MinestomAdventure;
 import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.GlobalEventHandler;
+import net.minestom.server.event.item.ItemDropEvent;
+import net.minestom.server.event.player.PlayerCustomClickEvent;
+import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
@@ -274,7 +281,8 @@ public final class VoyagerServer {
         // Every player is created with the permission pointer, through the one policy bean (ADR-0026, the CloudNet bridge
         // reads it). Installed before the port binds, so no connection can arrive as a plain Minestom player.
         MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
-        registerEvents(session, waitingRoom, settings, catalog, instances);
+        registerEvents(session, waitingRoom, settings, catalog, instances, graph.get(TutorialBook.class));
+        MinecraftServer.getCommandManager().register(graph.get(LeaveCommand.class));
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         // Open to every sender: a player looks up their own record or another player's, and the leaderboard is public.
         MinecraftServer.getCommandManager().register(graph.get(StatsCommand.class));
@@ -419,7 +427,7 @@ public final class VoyagerServer {
     }
 
     private static void registerEvents(CupSession session, WaitingRoom waitingRoom, ServerSettings settings,
-            CatalogHolder catalog, MapInstances instances) {
+            CatalogHolder catalog, MapInstances instances, TutorialBook tutorial) {
         GlobalEventHandler events = MinecraftServer.getGlobalEventHandler();
 
         events.addListener(AsyncPlayerConfigurationEvent.class, event -> {
@@ -455,6 +463,22 @@ public final class VoyagerServer {
             event.setCancelled(true);
             session.requestBoost(event.getPlayer());
         });
+
+        // The lobby items: the leave door and the tutorial book. Neither can be dropped or swapped (LobbyItems).
+        events.addListener(ItemDropEvent.class, LobbyItems::keepDrop);
+        events.addListener(PlayerSwapItemEvent.class, LobbyItems::keepSwap);
+        events.addListener(PlayerUseItemEvent.class, event -> LobbyItems.kindOf(event.getItemStack()).ifPresent(kind -> {
+            switch (kind) {
+                case LEAVE -> {
+                    if (!waitingRoom.leaveToHub(event.getPlayer())) {
+                        event.getPlayer().sendMessage(Messages.leaveRefused());
+                    }
+                }
+                case TUTORIAL -> tutorial.open(event.getPlayer());
+            }
+        }));
+        events.addListener(PlayerCustomClickEvent.class,
+                event -> tutorial.click(event.getPlayer(), event.getKey()));
 
         events.addListener(PlayerDisconnectEvent.class, event -> {
             session.forget(event.getPlayer().getUuid());

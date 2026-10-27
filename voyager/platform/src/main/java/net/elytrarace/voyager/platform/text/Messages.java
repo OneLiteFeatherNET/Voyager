@@ -56,17 +56,38 @@ public abstract class Messages {
     private static final String MAP_BANNER = "voyager.map.banner";
     private static final String RACE_FINISHED = "voyager.race.finished";
     private static final String JOINED_MID_CUP = "voyager.race.joined.midcup";
-    private static final String LOBBY_WAITING = "voyager.lobby.waiting";
-    private static final String LOBBY_COUNTDOWN = "voyager.lobby.countdown";
+    private static final String LOBBY_ACTIONBAR_WAITING = "voyager.lobby.actionbar.waiting.other";
+    private static final String LOBBY_ACTIONBAR_WAITING_ONE = "voyager.lobby.actionbar.waiting.one";
+    private static final String LOBBY_ACTIONBAR_COUNTDOWN = "voyager.lobby.actionbar.countdown";
+    private static final String LOBBY_SIDEBAR_RACERS = "voyager.lobby.sidebar.racers";
+    private static final String LOBBY_SIDEBAR_WAITING = "voyager.lobby.sidebar.status.waiting";
+    private static final String LOBBY_SIDEBAR_STARTS = "voyager.lobby.sidebar.status.countdown";
+    private static final String LOBBY_SIDEBAR_FOOTER = "voyager.lobby.sidebar.footer";
+    private static final String LOBBY_LEAVE_REFUSED = "voyager.lobby.leave.refused";
+    private static final String LOBBY_ITEM_LEAVE = "voyager.lobby.item.leave";
+    private static final String LOBBY_ITEM_LEAVE_LORE = "voyager.lobby.item.leave.lore";
+    private static final String LOBBY_ITEM_TUTORIAL = "voyager.lobby.item.tutorial";
+    private static final String TUTORIAL_BACK = "voyager.tutorial.button.back";
+    private static final String TUTORIAL_NEXT = "voyager.tutorial.button.next";
+    private static final String TUTORIAL_CLOSE = "voyager.tutorial.button.close";
+    private static final String TUTORIAL_PAGE_1_TITLE = "voyager.tutorial.page.1.title";
+    private static final String TUTORIAL_PAGE_2_TITLE = "voyager.tutorial.page.2.title";
+    private static final String TUTORIAL_PAGE_3_TITLE = "voyager.tutorial.page.3.title";
+    private static final String TUTORIAL_PAGE_4_TITLE = "voyager.tutorial.page.4.title";
+    private static final String TUTORIAL_PAGE_5_TITLE = "voyager.tutorial.page.5.title";
+    private static final String TUTORIAL_PAGE_1_BODY = "voyager.tutorial.page.1.body";
+    private static final String TUTORIAL_PAGE_2_BODY = "voyager.tutorial.page.2.body";
+    private static final String TUTORIAL_PAGE_3_BODY = "voyager.tutorial.page.3.body";
+    private static final String TUTORIAL_PAGE_4_BODY = "voyager.tutorial.page.4.body";
+    private static final String TUTORIAL_PAGE_5_BODY = "voyager.tutorial.page.5.body";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
     private static final String LOBBY_PLAYERS_JOINED = "voyager.lobby.player.joined.many";
     private static final String RING_MISSED = "voyager.race.ring.missed";
     private static final String COM_RACER_NAME = "voyager.com.racer.name";
     private static final String COM_RACER_FINISHED = "voyager.com.racer.finished";
-    private static final String LOBBY_BOSS_BAR_WAITING = "voyager.lobby.bossbar.waiting.cup";
-    private static final String LOBBY_BOSS_BAR_COUNTDOWN = "voyager.lobby.bossbar.countdown.cup";
     private static final String HANDOFF_DISCONNECT = "voyager.handoff.disconnect";
+    private static final String LOBBY_BOARD_MAP = "voyager.lobby.board.map";
     private static final String LOBBY_BOARD_MORE = "voyager.lobby.board.more";
     private static final String RESET_TITLE_OUT_OF_BOUNDS = "voyager.reset.title.outofbounds";
     private static final String RESET_TITLE_LANDED = "voyager.reset.title.landed";
@@ -249,25 +270,6 @@ public abstract class Messages {
         return Component.translatable(JOINED_MID_CUP);
     }
 
-    /** What a waiting racer sees while the minimum is not met: how many are online and how many are needed. */
-    @Contract(pure = true)
-    public static Component lobbyWaiting(int online, int needed) {
-        return Component.translatable(LOBBY_WAITING, Component.text(online), Component.text(needed));
-    }
-
-    /**
-     * What a racer sees while the start countdown runs: the time left in whole seconds, rounded up.
-     *
-     * <p>Seconds and not ticks: a 20 second lobby is 400 ticks, and a racer shown 400 is shown the unit error
-     * issue #101 reported. Rounded up so the figure is never zero while the launch is still ahead.
-     */
-    @Contract(pure = true)
-    public static Component lobbyCountdown(Duration remaining) {
-        long millis = Math.max(0L, remaining.toMillis());
-        return Component.translatable(LOBBY_COUNTDOWN,
-                Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
-    }
-
     /**
      * Sent to every online racer when a racer joins: who joined, how many are online now, and the maximum.
      *
@@ -292,27 +294,53 @@ public abstract class Messages {
     }
 
     /**
-     * The lobby boss bar while the minimum is not met: the cup a racer waits for, and how many racers are online and needed.
+     * The action bar of a waiting racer while the minimum is not met: how many racers are still needed to start. One
+     * racer short has its own key, so the line reads "Need 1 more player", not "Need 1 more players".
      *
-     * @param cup    the cup's name, as the cup shown in the lobby names it
-     * @param online how many racers are online
-     * @param needed how many racers the cup needs to start
+     * @param needed how many racers the cup still needs, at least one
      */
     @Contract(pure = true)
-    public static Component lobbyBossBarWaiting(String cup, int online, int needed) {
-        return Component.translatable(LOBBY_BOSS_BAR_WAITING, Component.text(cup), Component.text(online),
+    public static Component lobbyActionBarWaiting(int needed) {
+        return Component.translatable(needed == 1 ? LOBBY_ACTIONBAR_WAITING_ONE : LOBBY_ACTIONBAR_WAITING,
                 Component.text(needed));
     }
 
     /**
-     * The lobby boss bar during the start countdown: the cup, and the whole seconds left, rounded up, as the action bar had
-     * them.
+     * The action bar during the start countdown: the time left in whole seconds, rounded up, so the figure is never zero
+     * while the launch is still ahead.
      */
     @Contract(pure = true)
-    public static Component lobbyBossBarCountdown(String cup, Duration remaining) {
-        long millis = Math.max(0L, remaining.toMillis());
-        return Component.translatable(LOBBY_BOSS_BAR_COUNTDOWN, Component.text(cup),
-                Component.text((millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND));
+    public static Component lobbyActionBarCountdown(Duration remaining) {
+        return Component.translatable(LOBBY_ACTIONBAR_COUNTDOWN, Component.text(wholeSecondsUp(remaining)));
+    }
+
+    /**
+     * The racers line of the lobby sidebar: how many racers are online, out of the maximum.
+     *
+     * @param online  how many racers are online
+     * @param maximum how many racers make a full server
+     */
+    @Contract(pure = true)
+    public static Component lobbySidebarRacers(int online, int maximum) {
+        return Component.translatable(LOBBY_SIDEBAR_RACERS, Component.text(online), Component.text(maximum));
+    }
+
+    /** The status line of the lobby sidebar while the minimum is not met. */
+    @Contract(pure = true)
+    public static Component lobbySidebarStatusWaiting() {
+        return Component.translatable(LOBBY_SIDEBAR_WAITING);
+    }
+
+    /** The status line of the lobby sidebar during the start countdown: the whole seconds left, rounded up. */
+    @Contract(pure = true)
+    public static Component lobbySidebarStatusCountdown(Duration remaining) {
+        return Component.translatable(LOBBY_SIDEBAR_STARTS, Component.text(wholeSecondsUp(remaining)));
+    }
+
+    /** The last line of the lobby sidebar. */
+    @Contract(pure = true)
+    public static Component lobbySidebarFooter() {
+        return Component.translatable(LOBBY_SIDEBAR_FOOTER);
     }
 
     /** Told to the racers still online when a countdown is cancelled for want of racers. */
@@ -332,15 +360,15 @@ public abstract class Messages {
     }
 
     /**
-     * One map line of the lobby's cup board: its place in the cup and its name. The numbering and the name are data, so the
-     * line is not translated.
+     * One map line of the lobby's cup board: its place in the cup, then its display name. The name is the map's own, so it
+     * is not translated; the place and the layout are.
      *
      * @param position the map's place in play order, from one
-     * @param map      the map's name
+     * @param map      the map's display name
      */
     @Contract(pure = true)
     public static Component lobbyBoardMap(int position, String map) {
-        return Component.text("%d. %s".formatted(position, map));
+        return Component.translatable(LOBBY_BOARD_MAP, Component.text(position), Component.text(map));
     }
 
     /**
@@ -351,6 +379,99 @@ public abstract class Messages {
     @Contract(pure = true)
     public static Component lobbyBoardMore(int more) {
         return Component.translatable(LOBBY_BOARD_MORE, Component.text(more));
+    }
+
+    /**
+     * One map name on the hologram. The hologram is one shared entity, so it carries no translated line: a map's name is
+     * the only text it shows, and that is not a sentence the game wrote.
+     *
+     * @param map the map's display name
+     */
+    @Contract(pure = true)
+    public static Component lobbyHologramName(String map) {
+        return Component.text(map);
+    }
+
+    /** The name of the leave item, the dark oak door in the lobby's hotbar. */
+    @Contract(pure = true)
+    public static Component leaveItemName() {
+        return Component.translatable(LOBBY_ITEM_LEAVE);
+    }
+
+    /** The lore line of the leave item: where it sends the racer. */
+    @Contract(pure = true)
+    public static Component leaveItemLore() {
+        return Component.translatable(LOBBY_ITEM_LEAVE_LORE);
+    }
+
+    /** The name of the tutorial book in the lobby's hotbar. */
+    @Contract(pure = true)
+    public static Component tutorialItemName() {
+        return Component.translatable(LOBBY_ITEM_TUTORIAL);
+    }
+
+    /** Told to a racer who asks to leave while the racer is not waiting in the lobby. */
+    @Contract(pure = true)
+    public static Component leaveRefused() {
+        return Component.translatable(LOBBY_LEAVE_REFUSED);
+    }
+
+    /**
+     * The title of one tutorial page.
+     *
+     * @param page the page, counted from one
+     */
+    @Contract(pure = true)
+    public static Component tutorialPageTitle(int page) {
+        return Component.translatable(switch (page) {
+            case 1 -> TUTORIAL_PAGE_1_TITLE;
+            case 2 -> TUTORIAL_PAGE_2_TITLE;
+            case 3 -> TUTORIAL_PAGE_3_TITLE;
+            case 4 -> TUTORIAL_PAGE_4_TITLE;
+            case 5 -> TUTORIAL_PAGE_5_TITLE;
+            default -> throw new IllegalArgumentException("the tutorial has pages 1 to 5, not %s".formatted(page));
+        });
+    }
+
+    /**
+     * The body of one tutorial page. Its lines are separated by a newline inside the translation value.
+     *
+     * @param page the page, counted from one
+     */
+    @Contract(pure = true)
+    public static Component tutorialPageBody(int page) {
+        return Component.translatable(switch (page) {
+            case 1 -> TUTORIAL_PAGE_1_BODY;
+            case 2 -> TUTORIAL_PAGE_2_BODY;
+            case 3 -> TUTORIAL_PAGE_3_BODY;
+            case 4 -> TUTORIAL_PAGE_4_BODY;
+            case 5 -> TUTORIAL_PAGE_5_BODY;
+            default -> throw new IllegalArgumentException("the tutorial has pages 1 to 5, not %s".formatted(page));
+        });
+    }
+
+    /** The Back button of the tutorial. */
+    @Contract(pure = true)
+    public static Component tutorialBack() {
+        return Component.translatable(TUTORIAL_BACK);
+    }
+
+    /** The Next button of the tutorial. */
+    @Contract(pure = true)
+    public static Component tutorialNext() {
+        return Component.translatable(TUTORIAL_NEXT);
+    }
+
+    /** The Close button of the tutorial, on every page. */
+    @Contract(pure = true)
+    public static Component tutorialClose() {
+        return Component.translatable(TUTORIAL_CLOSE);
+    }
+
+    /** The time left in whole seconds, rounded up and never negative. */
+    private static long wholeSecondsUp(Duration remaining) {
+        long millis = Math.max(0L, remaining.toMillis());
+        return (millis + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND;
     }
 
     /**

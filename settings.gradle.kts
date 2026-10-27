@@ -33,6 +33,11 @@ dependencyResolutionManagement {
             // and aonyx-bom 0.8.9 imports mycelium-bom 1.8.9, which would move it to 26.2. Never upgrade it here.
             version("aonyx-bom-legacy", "0.7.1")
             library("aonyx.bom.legacy", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom-legacy")
+            // Pica, the dialog library the tutorial book uses (ADR-0039, openspec change cygnus-style-lobby). 0.1.6 is the version
+            // Cygnus uses. Its POM depends on Minestom 2026.10.07-26.2, the version aonyx-bom 0.8.9 resolves, and resolves from
+            // repo.onelitefeather.dev/releases without credentials. Pinned here because aonyx-bom 0.8.9 cannot be read anonymously.
+            version("pica", "0.1.6")
+            library("pica", "net.onelitefeather", "pica").versionRef("pica")
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("xerus", "net.theevilreaper", "xerus").withoutVersion()
             library("hibernate.core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")

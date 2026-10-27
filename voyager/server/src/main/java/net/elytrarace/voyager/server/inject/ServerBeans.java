@@ -16,6 +16,8 @@ import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.platform.tutorial.TutorialBook;
+import net.elytrarace.voyager.server.command.LeaveCommand;
 import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsPolicy;
@@ -136,6 +138,21 @@ public final class ServerBeans {
     RaceCommand raceCommand(CupSession session, WaitingRoom room, CatalogReloadService reloads,
             PermissionPolicy policy, @External ServerSettings settings) {
         return new RaceCommand(session, room, settings.devMode(), reloads, policy);
+    }
+
+    /**
+     * {@code /leave} and {@code /hub}, built with the waiting room that decides whether the sender may leave. Registered by
+     * {@code VoyagerServer}, like {@code /race}.
+     */
+    @Bean
+    LeaveCommand leaveCommand(WaitingRoom room) {
+        return new LeaveCommand(room);
+    }
+
+    /** The lobby tutorial book: five dialog pages, built once and shared by every racer. */
+    @Bean
+    TutorialBook tutorialBook() {
+        return new TutorialBook();
     }
 
     /** {@code /stats}, built with the read queue the tick answers from. Registered by {@code VoyagerServer}, like {@code /race}. */

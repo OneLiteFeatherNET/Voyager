@@ -81,6 +81,10 @@ dependencies {
     // it would leave voyager-server unable to resolve a version for Xerus at all.
     api(platform(libs.aonyx.bom))
     api(libs.xerus)
+
+    // Pica, the dialog library behind the tutorial book (ADR-0039). Only net.elytrarace.voyager.platform.tutorial imports it,
+    // and voyager-fitness enforces that. implementation keeps it off the compile classpath of every consumer.
+    implementation(libs.pica)
 }
 
 // VelocityExitCustomTpsTest proves VelocityExit reads ServerFlag.SERVER_TICKS_PER_SECOND rather
