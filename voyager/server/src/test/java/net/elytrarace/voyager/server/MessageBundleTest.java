@@ -61,8 +61,12 @@ class MessageBundleTest {
     }
 
     private static String render(Component component) {
+        return renderIn(component, Locale.US);
+    }
+
+    private static String renderIn(Component component, Locale locale) {
         return PlainTextComponentSerializer.plainText()
-                .serialize(GlobalTranslator.render(component, Locale.US));
+                .serialize(GlobalTranslator.render(component, locale));
     }
 
     @Test
@@ -180,6 +184,18 @@ class MessageBundleTest {
         assertThat(render(Messages.cupTitle())).isEqualTo("CUP COMPLETE");
         assertThat(render(Messages.cupSubtitle(1, 420))).isEqualTo("place 1  ·  420 points");
         assertThat(render(Messages.cupHeading("test_cup"))).isEqualTo("» test_cup — final standings");
+    }
+
+    /**
+     * A display name is a proper noun and is never translated: the German bar and the English bar name the cup the
+     * same way.
+     */
+    @Test
+    void aDisplayNameReadsTheSameInGermanAsInEnglish() {
+        Component bar = Messages.lobbyBossBarWaiting("Testing Cup", 1, 2);
+
+        assertThat(renderIn(bar, Locale.US)).contains("Testing Cup");
+        assertThat(renderIn(bar, Locale.GERMANY)).contains("Testing Cup");
     }
 
     @Test

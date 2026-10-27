@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.lobby;
 
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -12,6 +13,7 @@ import net.minestom.testing.EnvTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,7 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LobbySidebarTest {
 
     private static final LobbyBoard BOARD = LobbyBoard.of(
-            new CupDefinition("Grand Tour", List.of("alpha", "bravo", "charlie"), GameMode.RACE));
+            new CupDefinition("Grand Tour", List.of("alpha", "bravo", "charlie"), GameMode.RACE),
+            new CatalogSnapshot(Map.of(), Map.of()));
 
     @Test
     void theSidebarShowsWhileTheRoomWaits(Env env) {

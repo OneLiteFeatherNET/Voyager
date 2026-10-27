@@ -627,7 +627,7 @@ public final class CupSession implements RacePhaseListener {
         }
         MapDefinition map = enterMap(mapIndex, mapName);
         Component subtitle = Messages.countdownSubtitle(
-                map.name(), map.rings().size(), map.referenceTime());
+                map.displayName(), map.rings().size(), map.referenceTime());
         HudState armed = HudStates.of(MapFigures.starting(map, mapIndex + 1, cup.mapNames().size()));
         for (Player racer : players.get()) {
             RaceFeedback.countdown(racer, digit, subtitle);
@@ -699,7 +699,7 @@ public final class CupSession implements RacePhaseListener {
         for (Player racer : racers) {
             Racers.faceCourse(racer, map);
         }
-        announcer.broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), map.name(),
+        announcer.broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), map.displayName(),
                 map.rings().size(), map.referenceTime()));
         return map;
     }

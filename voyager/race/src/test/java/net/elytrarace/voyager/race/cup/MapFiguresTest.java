@@ -7,6 +7,7 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalBrackets;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.progress.RingProgress;
 import net.elytrarace.voyager.race.run.RaceRun;
@@ -86,6 +87,26 @@ class MapFiguresTest {
         assertThat(figures.mapName()).isEqualTo("two-ring");
         assertThat(figures.outlook())
                 .isEqualTo(MedalCountdown.outlook(Duration.ZERO, MAP.referenceTime(), MedalBrackets.DEFAULT));
+    }
+
+    @Test
+    void startingNamesTheMapByItsDisplayNameNotItsId() {
+        MapDefinition named = new MapDefinition("two-ring", "world_a", Vec3.ZERO, List.of(ring(0, 9), ring(1, 25)),
+                Duration.ofSeconds(60), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0),
+                RingEffectTuning.DEFAULT, "Two Ring Course");
+
+        assertThat(MapFigures.starting(named, 1, 2).mapName()).isEqualTo("Two Ring Course");
+    }
+
+    @Test
+    void inFlightNamesTheMapByItsDisplayNameNotItsId() {
+        MapDefinition named = new MapDefinition("two-ring", "world_a", Vec3.ZERO, List.of(ring(0, 9), ring(1, 25)),
+                Duration.ofSeconds(60), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0),
+                RingEffectTuning.DEFAULT, "Two Ring Course");
+        RaceRun running = new RaceRun(new RingProgress(0, 0), null, List.of(), Optional.empty(), null);
+
+        assertThat(MapFigures.inFlight(running, new RaceClock(10, STEP), named, 1, 2).mapName())
+                .isEqualTo("Two Ring Course");
     }
 
     private static Ring ring(int index, int points) {

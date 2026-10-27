@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.lobby;
 
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
@@ -14,6 +15,7 @@ import net.minestom.testing.EnvTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,10 +29,12 @@ class LobbyHologramTest {
 
     private static final Pos POSITION = new Pos(0.5, 70.0, 0.5);
 
+    private static final CatalogSnapshot NO_MAPS = new CatalogSnapshot(Map.of(), Map.of());
+
     private static final LobbyBoard GRAND_TOUR = LobbyBoard.of(
-            new CupDefinition("Grand Tour", List.of("alpha", "bravo"), GameMode.RACE));
+            new CupDefinition("Grand Tour", List.of("alpha", "bravo"), GameMode.RACE), NO_MAPS);
     private static final LobbyBoard GRAND_TOUR_II = LobbyBoard.of(
-            new CupDefinition("Grand Tour II", List.of("delta", "echo"), GameMode.RACE));
+            new CupDefinition("Grand Tour II", List.of("delta", "echo"), GameMode.RACE), NO_MAPS);
 
     @Test
     void theHologramStandsAtTheConfiguredPositionInTheLobbyInstance(Env env) {

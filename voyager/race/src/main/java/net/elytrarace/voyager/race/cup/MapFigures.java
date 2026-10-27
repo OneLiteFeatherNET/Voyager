@@ -24,7 +24,7 @@ import java.util.List;
  * @param lastRingTick the game tick of the most recently passed ring, or {@code 0} before any
  * @param mapNumber the one-based number of the map in the cup
  * @param mapCount how many maps the cup has
- * @param mapName the map's name
+ * @param mapName the map's display name, the name players read
  * @param outlook the medal the time shown is in, and how long until it is lost
  */
 public record MapFigures(int gameTick, Duration elapsed, int ringsPassed, int ringCount, int lastRingTick,
@@ -36,12 +36,12 @@ public record MapFigures(int gameTick, Duration elapsed, int ringsPassed, int ri
         List<Integer> ringTicks = run.passedOnGameTick();
         int lastRingTick = ringTicks.isEmpty() ? 0 : ringTicks.getLast();
         return new MapFigures(clock.gameTick(), elapsed, run.progress().passedCount(), map.rings().size(),
-                lastRingTick, mapNumber, mapCount, map.name(), outlookAt(elapsed, map));
+                lastRingTick, mapNumber, mapCount, map.displayName(), outlookAt(elapsed, map));
     }
 
     /** The figures shown while the start countdown runs: nothing flown yet, and the best medal on offer. */
     public static MapFigures starting(MapDefinition map, int mapNumber, int mapCount) {
-        return new MapFigures(0, Duration.ZERO, 0, map.rings().size(), 0, mapNumber, mapCount, map.name(),
+        return new MapFigures(0, Duration.ZERO, 0, map.rings().size(), 0, mapNumber, mapCount, map.displayName(),
                 outlookAt(Duration.ZERO, map));
     }
 

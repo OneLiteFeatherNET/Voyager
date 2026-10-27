@@ -161,9 +161,14 @@ class CupSessionTest {
 
     /** The catalogue the fixture plays: both maps, and the one cup that plays them in order. */
     private static CatalogHolder holder(MapDefinition ridge) {
+        return holder(ridge, CUP);
+    }
+
+    /** As {@link #holder(MapDefinition)}, playing the cup given rather than the standard one. */
+    private static CatalogHolder holder(MapDefinition ridge, CupDefinition cup) {
         return new CatalogHolder(new LoadedCatalog(
-                new CatalogSnapshot(Map.of("ridge-run", ridge, "dune-run", DUNE_RUN), Map.of(CUP.name(), CUP)),
-                CUP, Instant.EPOCH));
+                new CatalogSnapshot(Map.of("ridge-run", ridge, "dune-run", DUNE_RUN), Map.of(cup.name(), cup)),
+                cup, Instant.EPOCH));
     }
 
     private static final Duration STEP = Duration.ofMillis(50);
@@ -789,6 +794,49 @@ class CupSessionTest {
     }
 
     /**
+     * The chat banner names the map by its display name, not by its id.
+     *
+     * <p>A player reads the banner, not the file, so the id {@code ridge-run} must not reach the chat at all: the
+     * banner is compared with the one {@code Messages} builds from the display name.
+     */
+    @Test
+    void theChatBannerNamesTheMapByItsDisplayName(Env env) throws IOException {
+        MapDefinition named = new MapDefinition("ridge-run", RIDGE, RIDGE_SPAWN, RIDGE_RUN.rings(),
+                RIDGE_RUN.referenceTime(), RIDGE_BOOST, new GuideLine(List.of(), 2, 1.0),
+                RingEffectTuning.DEFAULT, "Blue & Red");
+        Fixture fixture = start(env, TIMINGS, named);
+        Collector<SystemChatPacket> chat = fixture.connection.trackIncoming(SystemChatPacket.class);
+
+        fixture.runUntilRacing();
+
+        Component banner = Messages.mapBanner(1, 2, "Blue & Red", named.rings().size(), named.referenceTime());
+        assertThat(chat.collect().stream().map(SystemChatPacket::message))
+                .describedAs("the banner names the map by its display name")
+                .contains(banner);
+    }
+
+    /**
+     * The cup heading names the cup by its display name, as the lobby does.
+     */
+    @Test
+    void theCupHeadingNamesTheCupByItsDisplayName(Env env) throws IOException {
+        CupDefinition named = new CupDefinition("grand_tour", List.of("ridge-run", "dune-run"), GameMode.RACE,
+                "Grand Tour");
+        Fixture fixture = start(env, TIMINGS, RIDGE_RUN, named);
+        Collector<SystemChatPacket> chat = fixture.connection.trackIncoming(SystemChatPacket.class);
+
+        fixture.run(tick -> {
+            if (fixture.session.describe().contains("ridge-run") && tick == 5) {
+                fixture.teleport(RIDGE_SPAWN.plus(new Vec3(0, 8, 20)));
+            }
+        });
+
+        assertThat(chat.collect().stream().map(SystemChatPacket::message))
+                .describedAs("the standings heading names the cup by its display name")
+                .contains(Messages.cupHeading("Grand Tour"));
+    }
+
+    /**
      * The window the countdown opened, and the reason {@code mapStarted} still runs the transition.
      *
      * <p>Moving the racers three seconds early means a player can connect <em>between</em> the move
@@ -1336,6 +1384,11 @@ class CupSessionTest {
 
     /** As {@link #start(Env, RaceTimings)}, on the ridge course given rather than the standard one. */
     private Fixture start(Env env, RaceTimings timings, MapDefinition ridge) throws IOException {
+        return start(env, timings, ridge, CUP);
+    }
+
+    /** As {@link #start(Env, RaceTimings, MapDefinition)}, playing the cup given rather than the standard one. */
+    private Fixture start(Env env, RaceTimings timings, MapDefinition ridge, CupDefinition cup) throws IOException {
         writeWorld(env, RIDGE, RIDGE_SPAWN, RIDGE_FLOOR);
         writeWorld(env, DUNE, DUNE_SPAWN, DUNE_FLOOR);
 
@@ -1355,10 +1408,10 @@ class CupSessionTest {
         // Mutable, because a player joining while a cup is already running is a case worth testing
         // and a fixed field could not produce one.
         List<Player> field = new ArrayList<>(List.of(racer));
-        CupWiring.Cup cup = CupWiring.assemble(holder(ridge), instances, transition, runs, new FlightTracker(),
+        CupWiring.Cup wiring = CupWiring.assemble(holder(ridge, cup), instances, transition, runs, new FlightTracker(),
                 timings, STEP, () -> field);
-        cup.session().start(false);
-        return new Fixture(instances, runs, cup.session(), cup.pipeline(), racer, connection, field, env);
+        wiring.session().start(false);
+        return new Fixture(instances, runs, wiring.session(), wiring.pipeline(), racer, connection, field, env);
     }
 
     // ------------------------------------------------------------------------------------------

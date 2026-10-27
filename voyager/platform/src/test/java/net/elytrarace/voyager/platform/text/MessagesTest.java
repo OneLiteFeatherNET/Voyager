@@ -140,6 +140,17 @@ class MessagesTest {
         assertThat(argumentsOf(banner)).containsExactly("1", "3", "skylift", "35", "1:00");
     }
 
+    /**
+     * A display name is data: a name written with MiniMessage tags reaches the banner as the literal text, so the
+     * tags are shown and never applied.
+     */
+    @Test
+    void aMapNameWithAngleBracketsIsPassedAsPlainTextAndNotParsed() {
+        Component banner = Messages.mapBanner(1, 3, "<rainbow>Blue</rainbow>", 35, Duration.ofSeconds(60));
+
+        assertThat(argumentsOf(banner)).contains("<rainbow>Blue</rainbow>");
+    }
+
     @Test
     void aFinishCarriesTheCourseAndTheTimeToATenth() {
         Component finished = Messages.finished("skylift", Duration.ofMillis(58_400));
