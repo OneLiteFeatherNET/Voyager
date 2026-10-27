@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Reads one cup file: a name, a mode, and the maps of its rotation in order.
+ * Reads one cup file: a name, a mode, the maps of its rotation in order, and the optional display name players read.
  *
  * <p>The order of {@code mapNames} is the rotation, so the list is built in file order and never
  * sorted. The names are not resolved here — a cup that names an unknown map is a cross-catalogue
@@ -42,6 +42,7 @@ public final class CupDefinitionAdapter implements JsonDeserializer<CupDefinitio
 
         String modeName = JsonFields.string(json, "mode", what);
         return new CupDefinition(name, mapNames, GameMode.byName(modeName).orElseThrow(
-                () -> new JsonParseException("%s has the unrecognised mode '%s'".formatted(what, modeName))));
+                () -> new JsonParseException("%s has the unrecognised mode '%s'".formatted(what, modeName))),
+                JsonFields.displayName(json, what));
     }
 }

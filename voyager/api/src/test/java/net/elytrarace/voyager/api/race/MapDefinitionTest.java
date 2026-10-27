@@ -67,6 +67,33 @@ class MapDefinitionTest {
     }
 
     @Test
+    void aMapWithoutADisplayNameDisplaysItsId() {
+        MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
+
+        assertThat(map.displayName()).isEqualTo("nether-sprint");
+    }
+
+    @Test
+    void aBlankDisplayNameDisplaysTheId() {
+        MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES,
+                RingEffectTuning.DEFAULT, "");
+
+        assertThat(map.displayName()).isEqualTo("nether-sprint");
+    }
+
+    @Test
+    void keepsTheDisplayNameItIsGiven() {
+        MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES,
+                RingEffectTuning.DEFAULT, "Blue & Red");
+
+        assertThat(map.displayName()).isEqualTo("Blue & Red");
+        assertThat(map.name()).isEqualTo("nether-sprint");
+    }
+
+    @Test
     void rejectsRingsWhoseIndicesAreOutOfOrder() {
         // A loader that sorts by file order rather than by index would produce exactly this, and a
         // tracker testing rings.get(passedCount) would then demand them in the wrong sequence.

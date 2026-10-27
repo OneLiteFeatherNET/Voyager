@@ -18,6 +18,12 @@ import org.jetbrains.annotations.Nullable;
  */
 final class JsonFields {
 
+    /**
+     * The longest display name a cup or map may have, in characters. It keeps the map banner and the lobby sidebar
+     * readable; a longer name is a file error.
+     */
+    static final int DISPLAY_NAME_LIMIT = 40;
+
     private JsonFields() {
     }
 
@@ -86,6 +92,29 @@ final class JsonFields {
     /** An optional number with no default: {@code null} when the field is not stated, meaning no value. */
     static @Nullable Double numberOrNull(JsonObject json, String field, String what) {
         return present(json, field) ? number(json, field, what) : null;
+    }
+
+    /**
+     * The optional {@code displayName} of a cup or a map, as written, or {@code null} when the file gives none.
+     *
+     * <p>A blank value is the same as an absent one: both mean the id is shown. A value longer than
+     * {@link #DISPLAY_NAME_LIMIT} characters is refused rather than truncated, so no player ever reads a name
+     * that a file did not write. The text is kept as written: MiniMessage tags in it are plain characters.
+     */
+    static @Nullable String displayName(JsonObject json, String what) {
+        if (!present(json, "displayName")) {
+            return null;
+        }
+        String displayName = string(json, "displayName", what);
+        if (displayName.isBlank()) {
+            return null;
+        }
+        int length = displayName.codePointCount(0, displayName.length());
+        if (length > DISPLAY_NAME_LIMIT) {
+            throw new JsonParseException("%s field 'displayName' is %d characters long, and the limit is %d"
+                    .formatted(what, length, DISPLAY_NAME_LIMIT));
+        }
+        return displayName;
     }
 
     static JsonArray array(JsonObject json, String field, String what) {

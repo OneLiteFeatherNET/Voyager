@@ -132,6 +132,71 @@ class CatalogLoaderTest {
         assertThat(snapshotOf(data).cupByName("weekly")).isEmpty();
     }
 
+    @Test
+    void readsACupDisplayNameBesideItsId(@TempDir Path data) {
+        CatalogFixtures.write(data.resolve("cups"), "cup.json", CatalogFixtures.CUP.formatted("test_cup", "RACE", "\"blue\"")
+                .replaceFirst("\\{", "{\n  \"displayName\": \"Test Cup\","));
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+
+        CupDefinition cup = snapshotOf(data).cupByName("test_cup").orElseThrow();
+
+        assertThat(cup.name()).isEqualTo("test_cup");
+        assertThat(cup.displayName()).isEqualTo("Test Cup");
+    }
+
+    @Test
+    void readsAMapDisplayNameBesideItsId(@TempDir Path data) {
+        CatalogFixtures.write(data.resolve("maps"), "blue.json", CatalogFixtures.MAP.formatted("blue", "ElytraraceBlueAndRed")
+                .replaceFirst("\\{", "{\n  \"displayName\": \"Blue & Red\","));
+
+        MapDefinition map = snapshotOf(data).mapByName("blue").orElseThrow();
+
+        assertThat(map.name()).isEqualTo("blue");
+        assertThat(map.displayName()).isEqualTo("Blue & Red");
+    }
+
+    @Test
+    void aMapWithoutADisplayNameDisplaysItsId(@TempDir Path data) {
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+
+        assertThat(snapshotOf(data).mapByName("blue").orElseThrow().displayName()).isEqualTo("blue");
+    }
+
+    @Test
+    void aDisplayNameOfExactlyFortyCharactersIsKept(@TempDir Path data) {
+        String fortyCharacters = "x".repeat(40);
+        CatalogFixtures.write(data.resolve("maps"), "blue.json", CatalogFixtures.MAP.formatted("blue", "ElytraraceBlueAndRed")
+                .replaceFirst("\\{", "{\n  \"displayName\": \"%s\",".formatted(fortyCharacters)));
+
+        assertThat(snapshotOf(data).mapByName("blue").orElseThrow().displayName()).isEqualTo(fortyCharacters);
+    }
+
+    @Test
+    void refusesACupDisplayNameLongerThanFortyCharactersNamingTheFieldAndTheFile(@TempDir Path data) {
+        String fortyOneCharacters = "x".repeat(41);
+        CatalogFixtures.write(data.resolve("cups"), "long-name.json", CatalogFixtures.CUP.formatted("test_cup", "RACE", "\"blue\"")
+                .replaceFirst("\\{", "{\n  \"displayName\": \"%s\",".formatted(fortyOneCharacters)));
+        CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
+
+        assertThatThrownBy(() -> CatalogLoader.load(data))
+                .isInstanceOf(MalformedCatalogFileException.class)
+                .hasMessageContaining("displayName")
+                .hasMessageContaining("long-name.json");
+    }
+
+    @Test
+    void refusesAMapDisplayNameLongerThanFortyCharactersNamingTheFieldAndTheFile(@TempDir Path data) {
+        String fortyOneCharacters = "x".repeat(41);
+        CatalogFixtures.write(data.resolve("maps"), "long-name.json", CatalogFixtures.MAP.formatted("blue", "ElytraraceBlueAndRed")
+                .replaceFirst("\\{", "{\n  \"displayName\": \"%s\",".formatted(fortyOneCharacters)));
+        writeValidCup(data);
+
+        assertThatThrownBy(() -> CatalogLoader.load(data))
+                .isInstanceOf(MalformedCatalogFileException.class)
+                .hasMessageContaining("displayName")
+                .hasMessageContaining("long-name.json");
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Refusals a definition file can cause
     // ---------------------------------------------------------------------------------------------

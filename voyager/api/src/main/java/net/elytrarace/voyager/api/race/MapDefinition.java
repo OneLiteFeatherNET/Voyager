@@ -36,16 +36,26 @@ import java.util.List;
  * <p>{@link #ringEffects()} holds the velocity factors of this course's {@code BOOST} and {@code SLOW}
  * rings. A map that states none has {@link RingEffectTuning#DEFAULT}, the factors every course used
  * before they were per map.
+ *
+ * <p>{@link #name()} is the map's id, the key of the catalogue. {@link #displayName()} is the name players read; a
+ * blank or absent one is the id, so it is never null.
  */
 public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
-        BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects) {
+        BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects, String displayName) {
 
     /**
-     * The map as it was built before ring effects were per map: the {@link RingEffectTuning#DEFAULT} factors.
+     * The map as it was built before ring effects were per map: the {@link RingEffectTuning#DEFAULT} factors, and
+     * the id as its display name.
      */
     public MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
             BoostConfig boostConfig, GuideLine guideLine) {
-        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, RingEffectTuning.DEFAULT);
+        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, RingEffectTuning.DEFAULT, name);
+    }
+
+    /** The map as it was built before display names: the id is its display name. */
+    public MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
+            BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects) {
+        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, ringEffects, name);
     }
 
     public MapDefinition {
@@ -73,5 +83,6 @@ public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> ri
                 throw InvalidMapException.guideOutsideTheCourse(guide.orderIndex(), rings.size());
             }
         }
+        displayName = displayName == null || displayName.isBlank() ? name : displayName;
     }
 }

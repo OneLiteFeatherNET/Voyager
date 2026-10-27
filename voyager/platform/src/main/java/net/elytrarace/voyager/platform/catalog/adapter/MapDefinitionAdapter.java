@@ -79,7 +79,8 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
                 Duration.ofMillis(Math.round(seconds * 1000.0)),
                 boostConfig(json, what),
                 guideLine(json, what),
-                ringEffects(json, what));
+                ringEffects(json, what),
+                JsonFields.displayName(json, what));
     }
 
     /**
