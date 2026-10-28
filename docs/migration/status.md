@@ -177,6 +177,14 @@ only. The old map and cup display names now have a field in the rebuild's defini
 cup and map file, shown to players in place of the id. The shipped catalogue names its cups and maps with it, and the
 names are no longer kept only in the `notes`.
 
+### Catalogue keys
+
+A map or cup is identified by an Adventure key in the `elytrarace` namespace, such as `elytrarace:blue_and_red`, and not by
+the flat id it had before. The shipped files are schema version 2 and state a `key`; version 1 files with a flat `name` still
+load, as `elytrarace:<name>`. The shipped catalogue carries the approved authors. The statistics rows written under a flat id are
+rewritten to the key by Flyway version 2. The format is described in [map and cup files](../reference/map-and-cup-files.md),
+and the decision in [ADR-0040](../decisions/0040-catalogue-keys.md), which is Proposed until the owner accepts it.
+
 ### Validation
 
 ```
