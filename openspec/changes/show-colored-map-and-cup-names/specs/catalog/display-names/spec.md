@@ -3,21 +3,21 @@
 ## Purpose
 
 A map and a cup have a display name that players read. The display name is an optional MiniMessage string in the catalogue
-(`displayName`, added by `add-display-names`), so an author can colour it. A name without a colour gets one from a palette
-of vivid hues that never includes red, because the course marks its finish in red. This delta changes the plain-text rule
-of `add-display-names`: a display name is MiniMessage, restricted to colour and decoration tags.
+(`displayName`, added by `add-display-names`), so an author can colour it. A name without a colour of its own gets one of six
+bright hues. This delta changes the plain-text rule of `add-display-names`: a display name is MiniMessage, and any colour is
+allowed in it, red included. Only error lines keep a fixed red.
 
 ## ADDED Requirements
 
-### Requirement: A display name is MiniMessage with colour and decoration tags only
+### Requirement: A display name is MiniMessage with colour, rainbow, decoration and reset tags only
 **MoSCoW:** Must. THE SYSTEM SHALL read a display name as MiniMessage and accept only the colour tags (named colours, hexadecimal
-colours and `gradient`), the decoration tags (`bold`, `italic`, `underlined`, `strikethrough`, `obfuscated`) and `reset`.
-IF a display name contains any other tag, THEN THE SYSTEM SHALL refuse the file and the message SHALL name the file, the field
-and the tag.
+colours, `gradient` and `rainbow`), the decoration tags (`bold`, `italic`, `underlined`, `strikethrough`, `obfuscated`) and
+`reset`. IF a display name contains any other tag, THEN THE SYSTEM SHALL refuse the file and the message SHALL name the file, the
+field and the tag.
 
 #### Scenario: A coloured name loads
-- **WHEN** a map file states `"displayName": "<blue>Blue</blue> & <red>Red</red>"`
-- **THEN** the file is not refused for its tags, subject to the red rule below
+- **WHEN** a map file states `"displayName": "<blue>Blue</blue> & <gold>Gold</gold>"`
+- **THEN** the file loads and the name is shown with those colours
 
 #### Scenario: A click tag is refused
 - **WHEN** a cup file states `"displayName": "<click:run_command:/stop>Alpha</click>"`
@@ -40,24 +40,22 @@ the field. A name is never cut short.
 - **WHEN** a display name shows forty-one characters after its tags are removed
 - **THEN** the file is refused and the message names `displayName` and the file
 
-### Requirement: A display name may not claim red
-**MoSCoW:** Must. THE SYSTEM SHALL refuse a display name that uses the red colour in any form: the named colours `red` and
-`dark_red`, a hexadecimal colour whose hue is in the red band, or a gradient or rainbow with a red stop. The refusal names the
-file, the field and the colour. The course's finish is red, and no screen surface may claim red (`Palette`).
+### Requirement: A display name may use any colour, including red
+**MoSCoW:** Must. THE SYSTEM SHALL accept a display name in any colour, red included, and SHALL NOT refuse a name for its hue. Error
+lines are the only lines that keep a fixed red, and a display name never changes that.
 
-#### Scenario: A named red is refused
+#### Scenario: A named red loads
 - **WHEN** a map file states `"displayName": "<red>Red</red>"`
-- **THEN** the file is refused and the message names the file, `displayName` and the colour `red`
+- **THEN** the file loads and the name is shown in red
 
-#### Scenario: A hexadecimal red is refused
-- **WHEN** a cup file states `"displayName": "<#e0201a>Rush</#e0201a>"`
-- **THEN** the file is refused, because the hue is in the red band
+#### Scenario: A rainbow loads
+- **WHEN** a cup file states `"displayName": "<rainbow>Rush</rainbow>"`
+- **THEN** the file loads and the name is shown in a rainbow
 
-### Requirement: A name without a colour is shown in a palette hue chosen by its key
-**MoSCoW:** Must. WHEN a display name sets no colour, THE SYSTEM SHALL colour it with one hue from the name palette, chosen by a
-stable hash of the key, so the same key gets the same hue on every server and every boot. The name palette holds only hues
-that are not red and are not the colour of any other role in `Palette`. The hue applies to the whole name, and a colour the
-name sets itself is kept.
+### Requirement: A name without a colour of its own takes one of six bright hues, chosen by its key
+**MoSCoW:** Must. WHEN a display name sets no colour, THE SYSTEM SHALL colour the whole name with one hue of the default palette,
+chosen by a stable hash of the key. THE PALETTE SHALL be the six hues listed in the scenarios, each at a contrast ratio of at least
+6:1 on `#1A1A1A`.
 
 #### Scenario: The same key gets the same hue
 - **WHEN** the map `elytrarace:blue_and_red` with no colour is shown on two servers
@@ -66,6 +64,10 @@ name sets itself is kept.
 #### Scenario: A coloured name keeps its colour
 - **WHEN** a display name sets `<gold>` on its first word and nothing on the second
 - **THEN** the first word is gold and the second word takes the palette hue
+
+#### Scenario: Every palette hue is readable
+- **WHEN** each hue of the palette is measured against `#1A1A1A`
+- **THEN** every hue reaches a contrast ratio of 6:1 or more
 
 ### Requirement: A missing display name is shown as the key's value in title case, never as the key
 **MoSCoW:** Must. WHEN a map or cup has no display name, THE SYSTEM SHALL show its key's value with each underscore or hyphen

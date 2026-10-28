@@ -2,24 +2,16 @@
 
 ## Purpose
 
-When a cup ends, each racer is told their place in one large title with fireworks and a sound that fits the place, and the
-standings name the cup and its maps in colour. The celebration fits inside the results linger that already runs before the
-hand-off to the hub (`WaitingRoom.RESULTS_LINGER_TICKS`, 200 ticks, 10 s). This change does not lengthen that linger.
+When a cup ends, each racer is told their place in one large title with a sound that fits the place, fireworks mark the top
+three, and the standings name the cup and its maps in colour. The celebration fits inside the results linger that already runs
+before the hand-off to the hub (`WaitingRoom.RESULTS_LINGER_TICKS`, 200 ticks, 10 s). This change does not lengthen that linger.
 
 ## ADDED Requirements
 
-### Requirement: Each racer is told their own place in a large title with a sound
+### Requirement: Each racer is told their own place in a large title
 **MoSCoW:** Must. WHEN a cup ends, THE SYSTEM SHALL show each racer who is online a title for their own place, translated in their
 language: "Victory!" or "Sieg!" for first place, "2nd place" or "Platz 2", "3rd place" or "Platz 3", and "Place <n>" or "Platz <n>"
 for every other place. The subtitle SHALL give the racer's points.
-
-#### Scenario: The title stays long enough to read
-- **WHEN** a placement title is shown
-- **THEN** it stays on screen for at least four seconds and no more than six
-
-#### Scenario: The sound fits the place
-- **WHEN** a cup ends
-- **THEN** a fanfare plays for first place, a shorter one for second and third, and a soft chime for every other place
 
 #### Scenario: The winner's title
 - **WHEN** a German-speaking racer finishes first
@@ -27,32 +19,54 @@ for every other place. The subtitle SHALL give the racer's points.
 
 #### Scenario: Fourth place
 - **WHEN** an English-speaking racer finishes fourth
-- **THEN** the title is "Place 4" and only the soft chime plays
+- **THEN** the title is "Place 4"
 
 #### Scenario: A racer who has left
 - **WHEN** a racer disconnected before the cup ended
 - **THEN** no title is sent to them and their place still appears in the standings as "(left)"
 
-### Requirement: The fireworks mark the place, and the winner's are the largest
-**MoSCoW:** Must. WHEN a cup ends, THE SYSTEM SHALL launch fireworks at the position of each racer with a place of first, second or
-third, with five bursts for first place, two for second and two for third, spread over no more than four seconds. No fireworks SHALL
-launch for any other place. Fireworks SHALL be visible to every racer in range, and the sound SHALL play for the racer only.
+### Requirement: The title stays on screen for a readable time
+**MoSCoW:** Must. THE SYSTEM SHALL keep each placement title on screen for at least four seconds and no more than six.
 
-#### Scenario: The winner's fireworks
-- **WHEN** the cup ends and a racer finishes first
-- **THEN** five bursts launch at that racer's position within four seconds
+#### Scenario: Title duration
+- **WHEN** a placement title is shown
+- **THEN** it stays on screen for at least four seconds and no more than six
 
-#### Scenario: No fireworks for fourth place
+### Requirement: A sound fits the place
+**MoSCoW:** Must. WHEN a cup ends, THE SYSTEM SHALL play to each racer a fanfare for first place, a shorter fanfare for second and third,
+and a soft chime for every other place.
+
+#### Scenario: The sound for first place
+- **WHEN** a racer finishes first
+- **THEN** the fanfare plays for that racer only
+
+#### Scenario: The sound for fourth place
 - **WHEN** a racer finishes fourth
-- **THEN** no firework is launched for that racer
+- **THEN** only the soft chime plays for that racer
+
+### Requirement: Fireworks mark the top three, and the winner's are the largest
+**MoSCoW:** Must. WHEN a cup ends, THE SYSTEM SHALL burst fireworks at the position of each racer with a place of first, second
+or third: five bursts for first place, two for second and two for third, within four seconds. No other place gets a burst.
+
+#### Scenario: The winner's bursts
+- **WHEN** the cup ends and a racer finishes first
+- **THEN** five bursts appear at that racer's position within four seconds
+
+#### Scenario: No burst for fourth place
+- **WHEN** a racer finishes fourth
+- **THEN** no burst is made for that racer
+
+#### Scenario: The fallback
+- **WHEN** the pinned Minestom API cannot set a firework explosion
+- **THEN** the bursts are particles at the same positions and times, and the sound is unchanged
 
 ### Requirement: The celebration ends within the results linger
-**MoSCoW:** Must. THE SYSTEM SHALL start the title, the sound and the fireworks on the tick the cup ends, so that all of them finish
-before the hand-off to the hub at the end of the results linger. The results linger SHALL stay at 200 ticks.
+**MoSCoW:** Must. THE SYSTEM SHALL start the title, the sound and the bursts on the tick the cup ends, so that all of them finish before
+the hand-off to the hub at the end of the results linger. The results linger SHALL stay at 200 ticks.
 
 #### Scenario: Timing against the linger
 - **WHEN** a cup ends
-- **THEN** the last firework burst occurs within four seconds, the title is removed by six seconds, and the hand-off to the hub happens at ten seconds
+- **THEN** the last burst occurs within four seconds, the title is removed by six seconds, and the hand-off to the hub happens at ten seconds
 
 ### Requirement: The standings are coloured by place and name the cup and its maps
 **MoSCoW:** Must. THE SYSTEM SHALL write the standings heading with the coloured cup display name, and a line that lists the cup's maps
@@ -67,15 +81,19 @@ and bronze, and write every other place without colour.
 - **WHEN** the standings have three racers
 - **THEN** the first place is gold, the second silver and the third bronze
 
-### Requirement: Each standings line shows points, best time and rings hit
-**MoSCoW:** Must. THE SYSTEM SHALL write each racer's line with the place, the name, the points, the best time of the cup, and the rings
-hit as "<passed>/<total>", where `<total>` is the number of rings of every map of the cup and `<passed>` is the number of rings the racer
-passed across the cup's maps. A racer with no best time shows "—". The line SHALL no longer show the count of maps finished. THE SYSTEM
-SHALL track the rings hit in the cup score.
+### Requirement: Each standings line shows points, best time, rings hit and maps finished
+**MoSCoW:** Must. THE SYSTEM SHALL write each racer's line with the place, the name, the points, the best time of the cup, the maps
+finished, and the rings hit as "<passed>/<total>". `<passed>` is the number of rings the racer passed across the cup's maps, and
+`<total>` is the number of rings of every map of the cup, whether or not the racer played it. A racer with no best time shows "—".
+THE SYSTEM SHALL track the rings passed in the cup score.
 
 #### Scenario: A racer's line
-- **WHEN** a racer passed 58 of 70 rings across a two-map cup with 35 rings each and has a best time of 1:44.3 and 365 points
-- **THEN** the line shows the place, the name, "365 points", "1:44.3" and "58/70"
+- **WHEN** a racer passed 58 of 70 rings across a two-map cup with 35 rings each, finished both maps, and has a best time of 1:44.3 and 365 points
+- **THEN** the line shows the place, the name, "365 points", "1:44.3", the maps finished "2/2" and "58/70"
+
+#### Scenario: A late joiner's total
+- **WHEN** a racer joined at the second map and passed 30 of its 35 rings
+- **THEN** the line shows "30/70", because the total counts every ring of the cup
 
 #### Scenario: A racer with no best time
 - **WHEN** a racer finished no map
