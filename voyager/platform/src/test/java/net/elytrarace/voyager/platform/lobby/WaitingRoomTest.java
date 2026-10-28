@@ -21,6 +21,7 @@ import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
+import net.elytrarace.voyager.platform.lobby.sound.LobbyCountdownSounds;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
@@ -42,6 +43,7 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.Material;
+import net.minestom.server.network.packet.server.play.SoundEffectPacket;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.server.world.DimensionType;
 import net.minestom.testing.Collector;
@@ -481,6 +483,36 @@ class WaitingRoomTest {
         assertThat(chat.collect().stream().map(SystemChatPacket::message).toList())
                 .as("the two joins after the first are one line, counted past the maximum")
                 .contains(Messages.playersJoined(2, 3, 2));
+    }
+
+    /** A join plays the soft join sound to the racers already waiting, so they hear the room fill up. */
+    @Test
+    void aRacerAlreadyWaitingHearsTheJoinSoundWhenAnotherRacerJoins(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        TestConnection waiting = env.createConnection();
+        Collector<SoundEffectPacket> sounds = waiting.trackIncoming(SoundEffectPacket.class);
+        fixture.join(waiting);
+
+        fixture.join();
+
+        assertThat(sounds.collect().stream().map(packet -> packet.soundEvent().key()).toList())
+                .as("the racer already waiting hears the join sound once")
+                .containsOnlyOnce(LobbyCountdownSounds.joinSound().name());
+    }
+
+    /** The racer who joins hears no join sound: the sound marks the join for the racers who were already there. */
+    @Test
+    void theRacerWhoJoinsHearsNoJoinSound(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.join();
+        TestConnection joining = env.createConnection();
+        Collector<SoundEffectPacket> sounds = joining.trackIncoming(SoundEffectPacket.class);
+
+        fixture.join(joining);
+
+        assertThat(sounds.collect().stream().map(packet -> packet.soundEvent().key()).toList())
+                .as("the joining racer hears no join sound")
+                .doesNotContain(LobbyCountdownSounds.joinSound().name());
     }
 
     /** A full lobby with fifteen seconds of its countdown left is shortened to ten seconds from that tick. */
