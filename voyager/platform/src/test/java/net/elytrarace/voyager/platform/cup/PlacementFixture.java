@@ -18,6 +18,7 @@ import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.ChunkLoader;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.platform.world.SynchronousChunkLoader;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.minestom.server.coordinate.Pos;
@@ -118,7 +119,7 @@ final class PlacementFixture implements AutoCloseable {
      * Opens a cup with {@code timings}, and starts it with its first lobby, so the lobby ticks count down the lobby.
      */
     static PlacementFixture open(Env env, Path root, RaceTimings timings) throws IOException {
-        return open(env, root, timings, ChunkLoader.MINESTOM);
+        return open(env, root, timings, new SynchronousChunkLoader());
     }
 
     /**

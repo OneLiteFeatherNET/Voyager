@@ -3,6 +3,7 @@ package net.elytrarace.voyager.platform.cup;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.platform.world.ChunkLoader;
 import net.elytrarace.voyager.platform.world.ChunkState;
+import net.elytrarace.voyager.platform.world.SynchronousChunkLoader;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -51,13 +52,16 @@ class GlideOutSessionTest {
      */
     private final AtomicBoolean holdNextMap = new AtomicBoolean();
 
+    /** The first map's chunks load as the placement starts them, so no placement waits on a real chunk load. */
+    private final SynchronousChunkLoader synchronous = new SynchronousChunkLoader();
+
     /** The first map's placements load normally; after {@link #holdNextMap} is set, every chunk stays loading. */
     private ChunkLoader holdingNextMap() {
         return new ChunkLoader() {
             @Override
             public void start(Instance instance, int chunkX, int chunkZ) {
                 if (!holdNextMap.get()) {
-                    ChunkLoader.MINESTOM.start(instance, chunkX, chunkZ);
+                    synchronous.start(instance, chunkX, chunkZ);
                 }
             }
 
@@ -65,7 +69,7 @@ class GlideOutSessionTest {
             public ChunkState state(Instance instance, int chunkX, int chunkZ) {
                 return holdNextMap.get()
                         ? ChunkState.LOADING
-                        : ChunkLoader.MINESTOM.state(instance, chunkX, chunkZ);
+                        : ChunkState.PRESENT;
             }
         };
     }

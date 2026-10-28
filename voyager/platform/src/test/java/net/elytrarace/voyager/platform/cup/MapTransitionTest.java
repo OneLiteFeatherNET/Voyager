@@ -11,6 +11,7 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.PendingArrival;
 import net.elytrarace.voyager.platform.world.PendingArrival.Outcome;
+import net.elytrarace.voyager.platform.world.SynchronousChunkLoader;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.minestom.server.coordinate.ChunkRange;
@@ -370,7 +371,7 @@ class MapTransitionTest {
 
         MapInstances instances = openWorlds(env);
         RaceRuns runs = new RaceRuns();
-        MapTransition transition = new MapTransition(instances, runs);
+        MapTransition transition = new MapTransition(instances, runs, new SynchronousChunkLoader());
         Player racer = connectTo(env, instances, RIDGE_START);
         advanceTo(env, transition, runs, RIDGE_START, List.of(racer));
         AtomicReference<Optional<RaceRun>> heldDuringTheMove = new AtomicReference<>();
@@ -481,8 +482,9 @@ class MapTransitionTest {
      */
     private static void advanceTo(Env env, MapTransition transition, RaceRuns runs, MapDefinition map,
             List<Player> racers) {
-        List<PendingArrival> placements = racers.stream().map(racer -> transition.place(racer, map)).toList();
+        // The previous map ends before the next map's placements begin, as the cup orders them in production.
         transition.endMap();
+        List<PendingArrival> placements = racers.stream().map(racer -> transition.place(racer, map)).toList();
         for (int tick = 0; tick < PLACEMENT_BUDGET; tick++) {
             List<Outcome> outcomes = placements.stream().map(PendingArrival::tick).toList();
             if (outcomes.contains(Outcome.FAILED)) {
