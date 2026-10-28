@@ -16,7 +16,7 @@ dependencies {
     runtimeOnly(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql)
     // Minestom and the platform log through slf4j; the writer's warnings go through the same facade.
-    compileOnly("org.slf4j:slf4j-api:2.0.19")
+    compileOnly("org.slf4j:slf4j-api:2.0.20")
 }
 
 // Integration tests start real PostgreSQL containers. They have their own source set so that `test` stays free of
