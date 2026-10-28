@@ -143,6 +143,27 @@ The cue, in the tick the skip is detected (`RaceHud.missedRing`):
 
 There is no proximity cue. A near miss needs a distance test against the ring plane that the course data does not yet provide.
 
+## Finish, wait and freeze
+
+A racer's flight over one map ends in four steps, each with its own cue. The constants are in `RaceFeedback` and `Racers`,
+and the timing is in the tick, not in a scheduler.
+
+- **Finish.** A racer who passes the last ring sees one firework burst at the ring, and hears the finish sound once:
+  `entity.firework_rocket.blast` at pitch 1.0 and volume 0.9, from `RaceFeedback.finish`. It is not the countdown beat, the
+  ring bell or the lobby chime.
+- **Glide-out.** For 2.5 seconds (50 ticks) the racer keeps flying, and the server damps the speed to a quarter of what it
+  was on the finish tick. The speed never reaches zero during the glide and the direction is kept. A racer still in the air
+  when the map's time runs out gets the same glide-out. A racer who is not flying gets none.
+- **Hold and wait.** After its glide-out the racer's elytra is off and the racer is held where the glide ended. A racer who
+  is not flying when the map ends is stood down at once. The next map's chunks load in the background, so no tick waits for
+  them, and the racer is placed on the next map's spawn as soon as they are there. The wait before the next map is when
+  this happens, not the three seconds before GO.
+- **Freeze.** From placement until GO the racer stands at the next map's spawn, facing its first ring, without gliding. A
+  racer who moves more than a tenth of a block from the spawn is returned to it with no velocity, and a jump and deploy
+  before GO does not lift them off it. GO releases the racer with no velocity and no glide, as before (ADR-0028).
+
+The race's own feedback is not changed: the ring cues, the missed ring and the reset run as described above.
+
 ## Results and joins
 
 - The map result: the breakdown is in chat. The title is the medal word. The subtitle is the next goal in seconds, for example `0.8 s faster for Gold`, and it is omitted for Diamond. A DNF's subtitle is `23 of 35 rings`.
