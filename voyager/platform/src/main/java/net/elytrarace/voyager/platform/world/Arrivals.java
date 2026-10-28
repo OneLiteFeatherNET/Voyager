@@ -1,6 +1,5 @@
 package net.elytrarace.voyager.platform.world;
 
-import net.elytrarace.voyager.platform.world.exception.ArrivalFailedException;
 import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -11,54 +10,18 @@ import net.minestom.server.instance.Instance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 /**
- * The arrival step every move between spawns shares: a racer goes into an instance, or within one, only once the
- * chunks around the spawn are there and the teleport is confirmed.
+ * The arrival step a move within one world shares: a racer is moved onto a spawn only once the chunks around it are
+ * there, and the teleport is confirmed by the client before its position packets are believed again.
  *
- * <p>Both the map transition and the lobby transition move racers this way, so the hazard and its two guards are
- * written down once, here. The failure being avoided is Minestom issue #2017: a player moved before the chunks are
- * there has no ground under the client, and falls. {@link #arrive} waits for the chunks before it moves the player,
- * because Minestom's own {@code setInstance} waits on a latch that only a successful load releases, and a failed chunk
- * there would block the tick thread for good. The teleport is confirmed by the client before its position packets
- * are believed again.
- *
- * <p>Calls block, and that is deliberate: the racers are moved on the tick thread, once per move, with nobody flying.
+ * <p>A move between two worlds is {@link PendingArrival}'s, which does not block the tick. {@link #reposition} is the one
+ * move that still waits: a reset inside a map, which is a single racer moved within a world they already stand in. It is
+ * noted for a later change, and it keeps its join.
  */
 public final class Arrivals {
 
     private Arrivals() {
-    }
-
-    /**
-     * Moves {@code player} onto {@code spawn} in {@code target}, the instance of the world named {@code world}.
-     *
-     * <p>Identity, not equality: {@link MapInstances} hands out one instance object per world name, so "already in this
-     * world" is "the same object", and Minestom's own {@code setInstance} guard compares the same way. A player already
-     * in {@code target} is repositioned within it.
-     *
-     * @param player the racer to move
-     * @param world  the name of the world {@code target} holds, for the message of a failure
-     * @param target the instance to move into
-     * @param spawn  where the racer stands once the move returns
-     * @throws ArrivalFailedException if a chunk around the spawn fails to load; the racer is not moved
-     */
-    public static void arrive(Player player, String world, Instance target, Pos spawn) {
-        if (player.getInstance() == target) {
-            reposition(player, spawn);
-            return;
-        }
-        // The range is the one setInstance itself uses: its view distance is the player's setting capped by the
-        // target instance's, which is not the view distance the player has in their current instance. Loading the
-        // chunks first means setInstance finds them all present and spawns the racer synchronously.
-        int viewDistance = Math.min(player.getSettings().viewDistance(), target.viewDistance()) + 1;
-        try {
-            awaitChunksAround(target, spawn, viewDistance);
-        } catch (CompletionException exception) {
-            throw new ArrivalFailedException(world, spawn, exception.getCause());
-        }
-        player.setInstance(target, spawn).join();
     }
 
     /**

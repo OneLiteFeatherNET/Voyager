@@ -17,14 +17,17 @@ import org.jetbrains.annotations.ApiStatus;
  * each site — a single place to look when a velocity turns up that should not have.
  *
  * <p><strong>The list of those forces has changed three times and is written here rather than guessed.</strong>
- * It is currently two:
+ * It is currently three:
  *
  * <ol>
  *   <li>a zero, which ends a racer's velocity: when a map ends ({@code Racers.standDown}) and when a racer is
  *       reset ({@code RunResetter}), so a fall is not carried into the target;</li>
  *   <li>a ring {@code BOOST}/{@code SLOW} effect, written by the cup's ring step ({@code CupSession}) with the
  *       velocity {@code RingEffectSequence} computes, which is the simulated velocity times the map's factors and
- *       capped by the map's speed cap if it has one. Only a ring writes it; rockets and normal flight never do.</li>
+ *       capped by the map's speed cap if it has one. Only a ring writes it; rockets and normal flight never do;</li>
+ *   <li>a damped glide-out, sent for 50 ticks after a finish and after a map's time limit to a racer still in the air:
+ *       the speed falls to a quarter of the finish speed and the direction is kept ({@code GlideOut}, driven by
+ *       {@code CupSession}). It is the second kind of server-sent velocity; see ADR-0041.</li>
  * </ol>
  *
  * <p>The launch that used to start a map, and the impulse a reset gave, are gone: a racer takes off by deploying

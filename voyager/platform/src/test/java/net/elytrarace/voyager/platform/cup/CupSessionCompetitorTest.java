@@ -95,6 +95,10 @@ class CupSessionCompetitorTest {
     private static final CupDefinition CUP = new CupDefinition("grand_tour", List.of(MAP.name()), GameMode.RACE);
 
     /** No lobby and a one-tick race, so a cup ends within a handful of explicit ticks. */
+    /** Two seconds of lobby, then five race ticks: a human placed during the lobby has time to be placed before GO. */
+    private static final RaceTimings PLACED_LOBBY_RACE = new RaceTimings(
+            STEP.multipliedBy(40), STEP.multipliedBy(5), Duration.ZERO, Duration.ZERO);
+
     private static final RaceTimings ONE_TICK_RACE = new RaceTimings(
             Duration.ZERO, STEP, Duration.ZERO, Duration.ZERO);
 
@@ -209,7 +213,8 @@ class CupSessionCompetitorTest {
         TestConnection connection = env.createConnection();
         Player human = connection.connect(env.createFlatInstance(), new Pos(0, 41, 0));
         humans.add(human);
-        CupSession session = openSession(env, new RaceRuns(), field, FIVE_TICK_RACE, List.of(human));
+        // The human is placed on the map during the lobby, so the lobby is long enough for the placement to finish.
+        CupSession session = openSession(env, new RaceRuns(), field, PLACED_LOBBY_RACE, List.of(human));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
 
         session.start(true);

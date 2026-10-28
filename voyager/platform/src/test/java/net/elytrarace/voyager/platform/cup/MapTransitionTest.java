@@ -8,8 +8,9 @@ import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.platform.convert.Vectors;
-import net.elytrarace.voyager.platform.cup.exception.MapArrivalException;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.platform.world.PendingArrival;
+import net.elytrarace.voyager.platform.world.PendingArrival.Outcome;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.minestom.server.coordinate.ChunkRange;
@@ -143,7 +144,7 @@ class MapTransitionTest {
         MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
 
-        transition.advanceTo(DUNE_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_RUN, List.of(racer));
 
         assertThat(racer.getInstance())
                 .describedAs("the instance the dune world is cached under, not a second one")
@@ -166,10 +167,11 @@ class MapTransitionTest {
         writeWorlds(env);
 
         MapInstances instances = openWorlds(env);
-        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
 
-        transition.advanceTo(DUNE_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_RUN, List.of(racer));
 
         assertChunksLoadedAround(instances.forWorld(DUNE), spawnOf(DUNE_RUN), racer.effectiveViewDistance());
     }
@@ -185,13 +187,14 @@ class MapTransitionTest {
         writeWorlds(env);
 
         MapInstances instances = openWorlds(env);
-        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
         TestConnection connection = env.createConnection();
         Player racer = connect(env, connection, instances, RIDGE_START);
         Collector<PlayerPositionAndLookPacket> teleports =
                 connection.trackIncoming(PlayerPositionAndLookPacket.class);
 
-        transition.advanceTo(DUNE_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_RUN, List.of(racer));
 
         List<PlayerPositionAndLookPacket> sent = teleports.collect();
         assertThat(sent).isNotEmpty();
@@ -212,10 +215,11 @@ class MapTransitionTest {
         writeWorlds(env);
 
         MapInstances instances = openWorlds(env);
-        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
 
-        transition.advanceTo(DUNE_WEST_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_WEST_RUN, List.of(racer));
 
         assertThat(racer.getPosition().yaw())
                 .describedAs("ring 0 is 24 blocks west of the spawn, which is yaw 90")
@@ -231,12 +235,13 @@ class MapTransitionTest {
         writeWorlds(env);
 
         MapInstances instances = openWorlds(env);
-        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
-        transition.advanceTo(DUNE_WEST_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_WEST_RUN, List.of(racer));
         racer.teleport(spawnOf(DUNE_WEST_RUN).withYaw(180.0f), null, RelativeFlags.NONE, true).join();
 
-        transition.advanceTo(DUNE_WEST_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_WEST_RUN, List.of(racer));
 
         assertThat(racer.getPosition().yaw())
                 .describedAs("the GO placement faces ring 0 again, so the first flight starts looking down the course")
@@ -259,7 +264,7 @@ class MapTransitionTest {
         Player racer = connectTo(env, instances, RIDGE_START);
         Instance ridge = instances.forWorld(RIDGE);
 
-        transition.advanceTo(RIDGE_FINALE, List.of(racer));
+        advanceTo(env, transition, runs, RIDGE_FINALE, List.of(racer));
 
         assertThat(racer.getInstance()).isSameAs(ridge);
         assertThat(racer.getPosition()).isEqualTo(spawnOf(RIDGE_FINALE));
@@ -277,13 +282,14 @@ class MapTransitionTest {
         writeWorlds(env);
 
         MapInstances instances = openWorlds(env);
-        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
         TestConnection connection = env.createConnection();
         Player racer = connect(env, connection, instances, RIDGE_START);
         Collector<PlayerPositionAndLookPacket> teleports =
                 connection.trackIncoming(PlayerPositionAndLookPacket.class);
 
-        transition.advanceTo(RIDGE_FINALE, List.of(racer));
+        advanceTo(env, transition, runs, RIDGE_FINALE, List.of(racer));
 
         PlayerPositionAndLookPacket arrival = teleports.collect().getLast();
         assertThat(arrival.position()).isEqualTo(spawnOf(RIDGE_FINALE));
@@ -307,7 +313,8 @@ class MapTransitionTest {
         writeWorlds(env);
 
         MapInstances instances = openWorlds(env);
-        MapTransition transition = new MapTransition(instances, new RaceRuns());
+        RaceRuns runs = new RaceRuns();
+        MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
         Instance ridge = instances.forWorld(RIDGE);
         Pos finale = spawnOf(RIDGE_FINALE);
@@ -319,7 +326,7 @@ class MapTransitionTest {
             }
         });
 
-        transition.advanceTo(RIDGE_FINALE, List.of(racer));
+        advanceTo(env, transition, runs, RIDGE_FINALE, List.of(racer));
 
         assertThat(missingWhenTheMoveBegan.get())
                 .describedAs("the teleport event fired, so the moment before the move was observed")
@@ -341,12 +348,12 @@ class MapTransitionTest {
         RaceRuns runs = new RaceRuns();
         MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
-        transition.advanceTo(RIDGE_START, List.of(racer));
+        advanceTo(env, transition, runs, RIDGE_START, List.of(racer));
         runs.advance(racer.getUuid(), RIDGE_START, RaceClock.startingAt(TICK).advanced(),
                 RIDGE_START_SPAWN, true, false);
         assertThat(runs.of(racer.getUuid())).isNotEqualTo(Optional.of(RaceRun.atStart()));
 
-        transition.advanceTo(DUNE_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_RUN, List.of(racer));
 
         assertThat(runs.of(racer.getUuid())).contains(RaceRun.atStart());
     }
@@ -365,12 +372,12 @@ class MapTransitionTest {
         RaceRuns runs = new RaceRuns();
         MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
-        transition.advanceTo(RIDGE_START, List.of(racer));
+        advanceTo(env, transition, runs, RIDGE_START, List.of(racer));
         AtomicReference<Optional<RaceRun>> heldDuringTheMove = new AtomicReference<>();
         env.process().eventHandler().addListener(PlayerSpawnEvent.class,
                 event -> heldDuringTheMove.compareAndSet(null, runs.of(event.getPlayer().getUuid())));
 
-        transition.advanceTo(DUNE_RUN, List.of(racer));
+        advanceTo(env, transition, runs, DUNE_RUN, List.of(racer));
 
         assertThat(heldDuringTheMove.get())
                 .describedAs("the spawn event fired, so the window was actually observed")
@@ -389,7 +396,7 @@ class MapTransitionTest {
         Player leader = connectTo(env, instances, RIDGE_START);
         Player chaser = connectTo(env, instances, RIDGE_START);
 
-        transition.advanceTo(DUNE_RUN, List.of(leader, chaser));
+        advanceTo(env, transition, runs, DUNE_RUN, List.of(leader, chaser));
 
         assertThat(leader.getUuid()).isNotEqualTo(chaser.getUuid());
         for (Player racer : List.of(leader, chaser)) {
@@ -412,12 +419,12 @@ class MapTransitionTest {
         RaceRuns runs = new RaceRuns();
         MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
-        transition.advanceTo(RIDGE_START, List.of(racer));
+        advanceTo(env, transition, runs, RIDGE_START, List.of(racer));
         RaceRun inProgress = runs.advance(racer.getUuid(), RIDGE_START,
                 RaceClock.startingAt(TICK).advanced(), RIDGE_START_SPAWN, true, false);
         MapDefinition missing = map("ghost-run", "no_such_world", DUNE_SPAWN);
 
-        assertThatThrownBy(() -> transition.advanceTo(missing, List.of(racer)))
+        assertThatThrownBy(() -> transition.place(racer, missing))
                 .isInstanceOf(UnknownWorldException.class);
 
         assertThat(runs.of(racer.getUuid())).contains(inProgress);
@@ -426,17 +433,17 @@ class MapTransitionTest {
     }
 
     /**
-     * A chunk that cannot be read must end the arrival with an exception, not a frozen server. Minestom's
-     * {@code Player#setInstance} waits on a latch that only counts down when every chunk future completes
-     * normally, so a failed chunk left it blocked on the tick thread for good. The region file is truncated
-     * to its header after the world is written, so the spawn chunk's data lies past the end of the file: the
-     * same shape a torn write leaves behind.
+     * A chunk that cannot be read ends the placement as {@link Outcome#FAILED}, and the tick is not interrupted. Minestom's
+     * {@code Player#setInstance} waits on a latch that only counts down when every chunk future completes normally, so a
+     * failed chunk left a joined move blocked on the tick thread for good. The region file is truncated to its header
+     * after the world is written, so the spawn chunk's data lies past the end of the file: the same shape a torn write
+     * leaves behind.
      *
-     * <p>The timeout is a hang guard, not a wait: the test completes in milliseconds when the arrival fails.
+     * <p>The timeout is a hang guard, not a wait: the test completes in milliseconds when the placement fails.
      */
     @Test
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
-    void aChunkThatFailsToLoadOnArrivalThrowsInsteadOfFreezingTheTick(Env env) throws IOException {
+    void aChunkThatFailsToLoadOnArrivalHoldsTheRacerInsteadOfThrowingIntoTheTick(Env env) throws IOException {
         writeWorlds(env);
         truncateRegionFile(DUNE, "r.-1.0.mca", 8192);
 
@@ -444,14 +451,19 @@ class MapTransitionTest {
         RaceRuns runs = new RaceRuns();
         MapTransition transition = new MapTransition(instances, runs);
         Player racer = connectTo(env, instances, RIDGE_START);
+        PendingArrival placement = transition.place(racer, DUNE_RUN);
 
-        assertThatThrownBy(() -> transition.advanceTo(DUNE_RUN, List.of(racer)))
-                .describedAs("the arrival fails and names the world it was trying to enter")
-                .isInstanceOf(MapArrivalException.class)
-                .hasMessageContaining(DUNE);
+        // Minestom reports a region it cannot read as not loaded, not as failed, so the placement fails when its load
+        // budget runs out, and the test waits for that budget.
+        Outcome outcome = Outcome.WAITING;
+        for (int tick = 0; tick <= PendingArrival.LOAD_BUDGET_TICKS && outcome == Outcome.WAITING; tick++) {
+            outcome = placement.tick();
+            env.tick();
+        }
 
+        assertThat(outcome).describedAs("the placement reports the chunk that never loaded").isEqualTo(Outcome.FAILED);
         assertThat(racer.getInstance())
-                .describedAs("a racer whose arrival failed stays where they were")
+                .describedAs("a racer whose placement failed stays where they were")
                 .isSameAs(instances.forWorld(RIDGE));
         assertThat(racer.getPosition()).isEqualTo(spawnOf(RIDGE_START));
     }
@@ -459,6 +471,31 @@ class MapTransitionTest {
     // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
+
+    /** How many environment ticks a placement may take before the test calls it stuck. */
+    private static final int PLACEMENT_BUDGET = 200;
+
+    /**
+     * Places {@code racers} on {@code map} as the cup does, ticks the environment until every placement is complete, and
+     * then gives each racer the run the cup gives at GO. The map before is dropped first, as its phase end drops it.
+     */
+    private static void advanceTo(Env env, MapTransition transition, RaceRuns runs, MapDefinition map,
+            List<Player> racers) {
+        List<PendingArrival> placements = racers.stream().map(racer -> transition.place(racer, map)).toList();
+        transition.endMap();
+        for (int tick = 0; tick < PLACEMENT_BUDGET; tick++) {
+            List<Outcome> outcomes = placements.stream().map(PendingArrival::tick).toList();
+            if (outcomes.contains(Outcome.FAILED)) {
+                throw new AssertionError("a placement failed: %s".formatted(outcomes));
+            }
+            if (outcomes.stream().allMatch(outcome -> outcome == Outcome.PLACED)) {
+                racers.forEach(racer -> runs.startFresh(racer.getUuid()));
+                return;
+            }
+            env.tick();
+        }
+        throw new AssertionError("the placements did not complete within %s ticks".formatted(PLACEMENT_BUDGET));
+    }
 
     private static void assertChunksLoadedAround(Instance instance, Pos spawn, int viewDistance) {
         assertThat(chunksMissingAround(instance, spawn, viewDistance))

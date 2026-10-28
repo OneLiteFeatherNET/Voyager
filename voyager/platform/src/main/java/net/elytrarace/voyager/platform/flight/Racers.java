@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.convert.VelocityExit;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
@@ -51,6 +52,9 @@ import org.jetbrains.annotations.ApiStatus;
  */
 @ApiStatus.Internal
 public abstract class Racers {
+
+    /** How far a held racer may drift from the point they are held at before they are returned to it, in blocks. */
+    private static final double PIN_TOLERANCE_BLOCKS = 0.1;
 
     private Racers() {
     }
@@ -133,5 +137,23 @@ public abstract class Racers {
     public static void standDown(Player player) {
         player.setFlyingWithElytra(false);
         VelocityExit.send(player, Vec3.ZERO);
+    }
+
+    /**
+     * Holds a racer at {@code at} until they are released: not gliding, and back at {@code at} with no velocity if they
+     * have moved more than a tenth of a block from it.
+     *
+     * <p>Called every tick for a racer who has glided out and is waiting to be placed on the next map, and for a racer
+     * placed on a map who waits there for GO. A jump and a deployed elytra are turned off on the same tick, so the racer
+     * is not lifted off the spawn. The elytra stays in the racer's hand, as {@link #faceCourse} gave it.
+     *
+     * @param at where the racer is held
+     */
+    public static void pin(Player player, Pos at) {
+        player.setFlyingWithElytra(false);
+        if (player.getPosition().distance(at) > PIN_TOLERANCE_BLOCKS) {
+            player.teleport(at);
+            VelocityExit.send(player, Vec3.ZERO);
+        }
     }
 }

@@ -38,6 +38,7 @@ import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
+import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
@@ -493,12 +494,26 @@ class CupSessionGoldenMasterTest {
             return lobby.instance();
         }
 
-        private void seat(String name, Instance instance, Pos spawn) {
+        /** Loads every chunk within {@code viewDistance} of {@code spawn}, as the preload of a placement would have them. */
+    private static void preloadAround(Instance world, Vec3 spawn, int viewDistance) {
+        preloadAround(world, new Pos(spawn.x(), spawn.y(), spawn.z()), viewDistance);
+    }
+
+    /** As {@link #preloadAround(Instance, Vec3, int)}, from a position. */
+    private static void preloadAround(Instance world, Pos spawn, int viewDistance) {
+        ChunkRange.chunksInRange(spawn, viewDistance, (chunkX, chunkZ) -> world.loadChunk(chunkX, chunkZ).join());
+    }
+
+    private void seat(String name, Instance instance, Pos spawn) {
             instance.loadChunk(spawn.chunkX(), spawn.chunkZ()).join();
             TestConnection connection = env.createConnection(new GameProfile(
                     UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)), name));
             Player racer = connection.connect(instance, spawn);
             Racers.prepare(racer);
+            // Production preloads the chunks around each spawn during the wait, so a racer is placed before GO. The harness
+            // has the same chunks present up front, so placements finish within the transcript's ticks.
+            preloadAround(instance, spawn, racer.effectiveViewDistance());
+            preloadAround(worlds.forWorld(DUNE), DUNE_SPAWN, racer.effectiveViewDistance());
             connections.put(name, connection);
             racers.put(name, racer);
             field.add(racer);

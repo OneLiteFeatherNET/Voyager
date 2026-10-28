@@ -237,8 +237,8 @@ class ApiPurityTest {
                     .should().callMethodWhere(SET_VELOCITY_ON_A_MINESTOM_TYPE)
                     .because("normal elytra flight is client-authoritative and the server simulates "
                             + "silently alongside it; a velocity reaches Minestom only as a zero when a "
-                            + "map ends or a racer is reset, or for a ring BOOST/SLOW effect, and all of "
-                            + "them go through "
+                            + "map ends or a racer is reset, for a ring BOOST/SLOW effect, or for the "
+                            + "damped glide-out after a finish, and all of them go through "
                             + "net.elytrarace.voyager.platform.convert.VelocityExit. The firework "
                             + "boost is not among them: it spawns a real rocket entity and lets the "
                             + "client apply Vanilla's own impulse")

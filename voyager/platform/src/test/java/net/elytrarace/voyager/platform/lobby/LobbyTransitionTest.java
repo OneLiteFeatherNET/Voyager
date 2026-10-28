@@ -11,6 +11,7 @@ import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.platform.world.PendingArrival;
 import net.minestom.server.instance.LightingChunk;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.minestom.server.coordinate.Pos;
@@ -78,18 +79,26 @@ class LobbyTransitionTest {
                 .isInstanceOf(LightingChunk.class);
     }
 
+    /**
+     * The placement of a racer from the lobby onto the first map completes on the ticks it takes, and the racer stands on
+     * the first map's world. The run a racer starts with is the cup's, given at GO, and is tested with the cup.
+     */
     @Test
-    void aRacerMovesFromTheLobbyToTheFirstMapWithAFreshRun(Env env) throws IOException {
+    void aRacerMovesFromTheLobbyOntoTheFirstMapsWorldOnTheTicksThePlacementTakes(Env env) throws IOException {
         writeWorlds(env);
         MapInstances instances = openWorlds(env);
         LobbyTransition lobby = new LobbyTransition(instances, new LobbyDefinition(LOBBY, LOBBY_SPAWN));
         Player racer = connectTo(env, lobby.instance(), Vectors.toMinestom(LOBBY_SPAWN).asPos());
-        RaceRuns runs = new RaceRuns();
+        PendingArrival placement = new MapTransition(instances, new RaceRuns()).place(racer, firstMap());
 
-        new MapTransition(instances, runs).advanceTo(firstMap(), List.of(racer));
+        PendingArrival.Outcome outcome = PendingArrival.Outcome.WAITING;
+        for (int tick = 0; tick < 200 && outcome != PendingArrival.Outcome.PLACED; tick++) {
+            outcome = placement.tick();
+            env.tick();
+        }
 
+        assertThat(outcome).as("the placement completes").isEqualTo(PendingArrival.Outcome.PLACED);
         assertThat(racer.getInstance()).isSameAs(instances.forWorld(FIRST));
-        assertThat(runs.of(racer.getUuid())).contains(RaceRun.atStart());
     }
 
     /**

@@ -32,6 +32,7 @@ import net.elytrarace.voyager.platform.flight.Rockets;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.component.DataComponents;
+import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
@@ -332,10 +333,15 @@ class CupSessionTest {
         Fixture fixture = start(env);
 
         fixture.runUntil(tick -> fixture.session.describe().contains("phase END"));
+        // A racer still gliding when the map's time runs out glides out for 50 ticks before the hold (finish-glide-out).
+        fixture.runUntil(tick -> tick >= GLIDE_OUT_TICKS);
 
         assertThat(fixture.racer.isFlyingWithElytra()).isFalse();
         assertThat(fixture.racer.getVelocity()).isEqualTo(Vec.ZERO);
     }
+
+    /** The glide-out after a finish or at the time limit: 50 ticks, 2.5 s. */
+    private static final int GLIDE_OUT_TICKS = 50;
 
     /**
      * The flight simulation is pointed at the world being raced. Nothing else would notice if it were
@@ -1399,11 +1405,15 @@ class CupSessionTest {
 
         Instance first = instances.forWorld(RIDGE);
         Pos spawn = spawnOf(ridge);
-        first.loadChunk(spawn.chunkX(), spawn.chunkZ()).join();
         TestConnection connection = env.createConnection();
         Player racer = connection.connect(first, spawn);
         racers.add(racer);
         Racers.prepare(racer);
+        // Production preloads the chunks around each spawn during the wait, so a racer is placed before GO. The
+        // fixture has the same chunks present up front, so the placement completes within the test's short lobby.
+        loadAround(first, spawn, racer.effectiveViewDistance());
+        loadAround(instances.forWorld(DUNE), new Pos(DUNE_SPAWN.x(), DUNE_SPAWN.y(), DUNE_SPAWN.z()),
+                racer.effectiveViewDistance());
 
         // Mutable, because a player joining while a cup is already running is a case worth testing
         // and a fixed field could not produce one.
@@ -1678,6 +1688,12 @@ class CupSessionTest {
 
     private static Pos spawnOf(MapDefinition map) {
         return new Pos(map.spawn().x(), map.spawn().y(), map.spawn().z());
+    }
+
+    /** Loads every chunk within {@code viewDistance} of {@code spawn}, as the preload of a placement would have them. */
+    private static void loadAround(Instance world, Pos spawn, int viewDistance) {
+        ChunkRange.chunksInRange(spawn, viewDistance,
+                (chunkX, chunkZ) -> world.loadChunk(chunkX, chunkZ).join());
     }
 
     private static Block blockUnder(Player racer) {

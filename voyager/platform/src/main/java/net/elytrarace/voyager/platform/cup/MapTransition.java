@@ -1,130 +1,107 @@
 package net.elytrarace.voyager.platform.cup;
 
 import net.elytrarace.voyager.api.race.MapDefinition;
-import net.elytrarace.voyager.platform.cup.exception.MapArrivalException;
 import net.elytrarace.voyager.platform.flight.ArrivalFacing;
 import net.elytrarace.voyager.platform.world.Arrivals;
+import net.elytrarace.voyager.platform.world.ChunkLoader;
 import net.elytrarace.voyager.platform.world.MapInstances;
-import net.elytrarace.voyager.platform.world.exception.ArrivalFailedException;
+import net.elytrarace.voyager.platform.world.PendingArrival;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 
-import java.util.Collection;
-
 /**
- * Moves every racer onto the next map: into its world, onto its spawn, with a fresh run.
+ * Moves racers onto the next map: the cup's runs are dropped when a map's game phase ends, and each racer is placed on
+ * the next map's spawn on their own schedule.
  *
- * <p><strong>This is the operation the rebuild exists for.</strong> The tree being replaced loads
- * map two of a cup and never runs it; E3's state machine is the first that advances, and this is the
- * step that makes the players actually arrive there.
+ * <p><strong>This is the operation the rebuild exists for.</strong> The tree being replaced loads map two of a cup and
+ * never runs it; E3's state machine is the first that advances, and this is the step that makes the players actually
+ * arrive there.
+ *
+ * <h2>Placing is per racer, and it does not block</h2>
+ *
+ * <p>A racer is placed on the next map as soon as their own wait has started: when they finished the previous map and
+ * their glide-out has ended, or when the previous map's game phase ends. {@link #place} begins that move and returns
+ * a {@link PendingArrival}, which the cup ticks until the racer is on the spawn. The tick never waits for a chunk and
+ * never waits for the teleport, so the other racers' ticks run as usual while one racer's chunks load.
  *
  * <h2>The hazard: arriving before the ground does</h2>
  *
- * <p>Minestom issue <a href="https://github.com/Minestom/Minestom/issues/2017">#2017</a> — players
- * falling below the map on an instance switch — is closed without a framework fix; the reporter
- * solved it with a chunk check and confirmed teleports. Both mechanisms exist in
- * {@code 2026.08.28-26.2} and this class uses both <em>deliberately</em>, which is not the same as
- * assuming they happen:
- *
- * <ul>
- *   <li><strong>The chunks are waited for.</strong> {@link Player#setInstance(Instance, Pos)} loads
- *       every chunk within the player's effective view distance of the spawn before it spawns them
- *       (Player.java, the {@code ChunkRange.chunksInRange} loop in {@code setInstance}), but it
- *       reports that through a {@link CompletableFuture} and does the spawn itself on the scheduler's
- *       next process. A caller that fires and forgets has done nothing at all by the time it
- *       returns. {@link #advanceTo} blocks on that future, so "returned" means "arrived".</li>
- *   <li><strong>The teleport is confirmed.</strong> A confirmed teleport takes a teleport id, and
- *       until the client echoes it back through {@code ClientTeleportConfirmPacket}
- *       ({@code PacketListenerManager} wires it to
- *       {@code PlayerPositionListener::teleportConfirmListener}) every position packet from that
- *       client is discarded — {@code processMovement} returns early while
- *       {@code getLastSentTeleportId() != getLastReceivedTeleportId()}. That is what stops a
- *       position still describing the previous map from dragging the player back off the new
- *       spawn.</li>
- * </ul>
- *
- * <p>The failure being avoided is specific: a player moved before the chunks are there has no ground
- * under the client, and falls. In a flight game that reads as a physics bug and is not one.
+ * <p>Minestom issue <a href="https://github.com/Minestom/Minestom/issues/2017">#2017</a> — players falling below the
+ * map on an instance switch — is closed without a framework fix; the reporter solved it with a chunk check and confirmed
+ * teleports. {@link PendingArrival} uses both mechanisms deliberately: it loads every chunk around the spawn before it
+ * moves the racer, and the move is a confirmed teleport. A racer moved before the chunks are there has no ground under
+ * the client, and falls.
  *
  * <h2>Two maps in one world need no switch at all</h2>
  *
- * <p>{@link MapInstances} caches one instance per world <em>name</em>, because one world backs more
- * than one map. Two maps naming the same world therefore resolve to the same instance, and
- * {@link Player#setInstance(Instance, Pos)} rejects that outright —
- * {@code Check.argCondition(currentInstance == instance, ...)}. So the same-world case takes the
- * other branch: the chunks around the new spawn are loaded here, explicitly, because a teleport
- * inside one instance loads only the destination chunk and the client needs the ones around it just
- * as much; then a confirmed teleport, written out in full rather than left to
- * {@link Player#teleport(Pos)}'s default, so a change to that default cannot silently turn the
- * confirmation off.
+ * <p>{@link MapInstances} caches one instance per world <em>name</em>, because one world backs more than one map. Two
+ * maps naming the same world therefore resolve to the same instance, and {@link Player#setInstance(Instance,
+ * net.minestom.server.coordinate.Pos)} rejects that outright. {@link PendingArrival} takes the same-world branch in that
+ * case, a confirmed teleport within the instance, with the chunks around the spawn loaded first.
  *
- * <h2>Why this blocks</h2>
+ * <h2>A failed load holds the racer and is reported</h2>
  *
- * <p>{@link #advanceTo} is synchronous, and that is deliberate. {@link RaceRuns} is single-threaded
- * like the rest of the tick path, so completing the move on a chunk-loader thread would write the
- * run map off the tick thread. Minestom supports the blocking shape directly — {@code setInstance}'s
- * returned future overrides {@code join()} to await the chunk latch and then drive the scheduler
- * when it is called from the thread that started the move, precisely so a caller on the tick thread
- * does not deadlock. A transition happens once per map, between phases, with nobody flying.
- *
- * <p>A player is given their run only once they have arrived, so a move that throws part-way leaves
- * the players it did reach holding a run for the map they are standing on, rather than every player
- * holding one for a map most of them never reached.
+ * <p>A chunk that fails to load does not throw into the tick. The racer is held where they stand, the failure is logged
+ * once with the world's name, and the placement is retried at the next wait. See {@link PendingArrival}.
  */
 public final class MapTransition {
 
     private final MapInstances instances;
     private final RaceRuns runs;
+    private final ChunkLoader chunks;
 
     /**
      * @param instances the world cache the map's world is resolved through
-     * @param runs the per-player run state this transition empties and refills
+     * @param runs the per-player run state this transition empties
      */
     public MapTransition(MapInstances instances, RaceRuns runs) {
-        this.instances = instances;
-        this.runs = runs;
+        this(instances, runs, ChunkLoader.MINESTOM);
     }
 
     /**
-     * Moves every player to {@code map}'s spawn and gives each of them a run at the start of it.
-     *
-     * <p>Returns once every player has arrived: standing on the spawn, with the chunks around it
-     * loaded and a confirmed teleport sent.
-     *
-     * <p>Every previously held run is dropped <em>before</em> anybody moves. A transition that moved
-     * first and cleared afterwards would leave a window in which a run over the previous map could
-     * be advanced with a position on the new one — passing rings the player never flew through.
-     *
-     * @param map the course being entered
-     * @param players everyone taking part; a player already in the map's world is moved within it
-     * @throws net.elytrarace.voyager.platform.world.exception.UnknownWorldException if the map names
-     *     a world with no region data behind it
+     * @param instances the world cache the map's world is resolved through
+     * @param runs the per-player run state this transition empties
+     * @param chunks starts each chunk's load and reports its state; production passes {@link ChunkLoader#MINESTOM}
      */
-    public void advanceTo(MapDefinition map, Collection<Player> players) {
-        // Resolved before anything is dropped, so a map naming a world that is not there fails with
-        // every racer still holding the run they had, rather than half-way into a move that cannot
-        // finish.
+    MapTransition(MapInstances instances, RaceRuns runs, ChunkLoader chunks) {
+        this.instances = instances;
+        this.runs = runs;
+        this.chunks = chunks;
+    }
+
+    /**
+     * Begins moving {@code racer} onto {@code map}'s spawn, facing its first ring, and returns without waiting.
+     *
+     * <p>The chunks around the spawn load in the background. The returned placement is ticked by the cup until the racer
+     * is on the spawn; it is not placed when this returns.
+     *
+     * @param racer the racer to place
+     * @param map the course being entered
+     * @return the placement, not yet placed
+     * @throws net.elytrarace.voyager.platform.world.exception.UnknownWorldException if the map names a world with no
+     *     region data behind it
+     */
+    public PendingArrival place(Player racer, MapDefinition map) {
         Instance target = instances.forWorld(map.world());
-        // The spawn is built with the facing of the first ring, so the GO placement does not turn a racer
-        // back to the north the bare position would give them. See ArrivalFacing.
-        Pos spawn = ArrivalFacing.at(map);
+        // The spawn is built with the facing of the first ring, so the placement does not turn a racer back to the
+        // north the bare position would give them. See ArrivalFacing.
+        return PendingArrival.start(racer, map.world(), target, ArrivalFacing.at(map), chunks);
+    }
 
+    /**
+     * Drops every run, because the map they were over is no longer being played.
+     *
+     * <p>Called once, when the map's game phase ends, after every racer has been scored. It is not called per racer:
+     * a racer placed on the next map while others still race this one must not lose their run.
+     */
+    public void endMap() {
         runs.clearAll();
-
-        for (Player player : players) {
-            try {
-                Arrivals.arrive(player, map.world(), target, spawn);
-            } catch (ArrivalFailedException exception) {
-                throw new MapArrivalException(map.world(), spawn, exception.getCause());
-            }
-            runs.startFresh(player.getUuid());
-        }
     }
 
     /**
      * Moves {@code player} to {@code target} within the world they already stand in. The arrival step is
-     * {@link Arrivals#reposition}, shared with the lobby.
+     * {@link net.elytrarace.voyager.platform.world.Arrivals#reposition}, shared with the lobby.
      *
      * <p>Public because a course reset moves a racer the same way a map start does.
      */
