@@ -25,8 +25,9 @@ Not measured on a server yet.
 - `WaitingRoom.tick()` starts the linger on that tick (`WaitingRoom.java:236`). `RESULTS_LINGER_TICKS` is 200, so every racer is
   handed to the hub 10 s after the standings appear.
 
-The celebration is planned to fit in those 10 s, and the owner chose no longer pause. The restart of the ElytraRace service that
-the owner saw after the standings is an open risk (open question 6).
+The celebration is planned to fit in those 10 s, and the owner chose no longer pause. The owner checked read-only on mc01 that
+nothing stops the ElytraRace service after a cup: the cup finished at 13:55:38, the racer was handed off 10 s later, and the service
+kept running for over an hour. The restarts the owner saw were deploy restarts. The linger is still verified in the code PR (task 8.2).
 
 ## Decisions
 
@@ -36,7 +37,7 @@ the owner saw after the standings is an open risk (open question 6).
    file with an unusable name is refused with the file and the field named. `MiniMessage.deserialize` is called only in
    `platform.text`, which `message-fitness` already requires.
 2. **Any colour is allowed, including red and rainbow.** The owner's decision reverses the earlier red rule. A rainbow is accepted
-   with the other colour tags. The only fixed red is the error colour of error lines (decision 16).
+   with the other colour tags.
 3. **Visible length is measured on the stripped text.** `MiniMessage.stripTags` gives the characters a player sees, and the
    limit of forty code points applies to them. This replaces the raw-length check in `JsonFields.displayName`.
 4. **A name without its own colour takes a hue from the default palette.** `NamePalette` holds the six hues in this order:
@@ -45,7 +46,7 @@ the owner saw after the standings is an open risk (open question 6).
    key gets the same hue on every server. Measured against the dark chat background `#1A1A1A` the contrast ratios are: turquoise
    11.1:1, violet 6.0:1, gold 12.1:1, sky blue 9.3:1, pink 7.3:1, lime 14.5:1. The test asserts each is at least 6:1.
    Gold is close to the medal gold `#FFCC33` of `Palette.GOLD`; a line that shows a gold name and a gold medal word is accepted,
-   because the owner chose gold for names (open question 1).
+   because the owner chose gold for names (open risk 1).
 5. **A missing name is the key's value in title case.** `MapDefinition` and `CupDefinition` store, when the name is absent, the
    key's value with `_` and `-` replaced by spaces and each word capitalised: `elytrarace:dragon_lobby` is "Dragon Lobby". This
    replaces the #346 fallback to the id. The boot check logs one warning per played map or cup without a name, in English, with
@@ -81,8 +82,8 @@ the owner saw after the standings is an open risk (open question 6).
 15. **Fireworks: verified in the code PR, with a fallback.** Firework rocket entities with an explosion are used when the pinned
     Minestom API can set the explosion. Otherwise the same bursts are drawn as particles with the same sound and timing. The first
     task of the code PR verifies which one applies, and records it in the pull request.
-16. **Error lines keep a fixed red.** The error colour of `Palette` is red. Today it is `Palette.WARN`, which is magenta
-    `#FF3DA1`, so this changes that colour. The exact hex is open question 2.
+16. **The error colour is unchanged.** `Palette.WARN` stays `#FF3DA1`. A display name may use any colour, and no line's error colour
+    changes.
 17. **Rings hit and maps finished are counted per racer across the cup.** `CupRound.record` gains the rings a racer passed on a
     map, and `CupScore` (`race/scoring`) gains `ringsPassed`. The total is the sum of the ring counts of every map of the cup, read
     from the cup's loaded maps when the standings are announced, whether or not the racer played them. "Maps finished" stays on each
@@ -141,18 +142,11 @@ enters `race`.
 
 1. **Gold collision.** The owner chose gold for names. It is close to the medal gold `#FFCC33`, so a gold name and a gold medal
    can share a line. Accepted for now; the owner may pick a different gold.
-2. **The error red.** `Palette.WARN` is magenta today. The owner decided that error lines keep a fixed red. The exact hex is to be
-   confirmed before the code PR; the code PR sets it in `Palette`. The course's finish is red too, so the error red and the
-   finish red share a hue. The owner is asked to confirm that this is intended.
-3. **Intro title timing.** Fade in 10, stay 60, fade out 20 ticks, as decided. The countdown must be at least 90 ticks; the dev
+2. **Intro title timing.** Fade in 10, stay 60, fade out 20 ticks, as decided. The countdown must be at least 90 ticks; the dev
    timings are checked in the code PR.
-4. **Fireworks API.** Whether the pinned Minestom version can set a firework explosion on a rocket entity is verified in the code
+3. **Fireworks API.** Whether the pinned Minestom version can set a firework explosion on a rocket entity is verified in the code
    PR. Particles and sound are the fallback.
-5. **Sixth tutorial page.** Confirmed by the owner as the place for the authors.
-6. **Open risk: the ElytraRace restart.** The owner saw the service stop and restart right after the standings. The code path read
-   here hands racers to the hub after the 10 s linger. If the restart is triggered at the cup's end, the celebration is cut.
-   Open risk, not a decision. The code PR has a task that verifies on a local run that the 10 s linger completes before the hub
-   hand-off. The restart trigger is not in this repository's code that was read, so the owner checks it on the server.
-7. **Archive order.** `add-display-names` is archived before this change (decision in "Migration and archive order").
-8. **Pulse review.** The colour, the fanfare and the timing have not yet been reviewed by the game psychologist role, as
+4. **Sixth tutorial page.** Decided by the owner: the authors go on a new tutorial page.
+5. **Archive order.** `add-display-names` is archived before this change (see "Migration and archive order").
+6. **Pulse review.** The colour, the fanfare and the timing have not yet been reviewed by the game psychologist role, as
    `CLAUDE.md` asks for every gameplay and UI decision. The owner decides whether that review happens before the code PR.

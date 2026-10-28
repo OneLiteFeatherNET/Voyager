@@ -21,8 +21,6 @@ moment for every racer.
   without a colour of its own takes one of six bright hues: turquoise `#2EE6D6`, violet `#B47CFF`, gold `#FFD23F`, sky blue
   `#5CC8FF`, pink `#FF7AC6` and lime `#B8FF4D`, chosen by a stable hash of the key. **BREAKING** for a file that used a tag
   outside the allowed set; no shipped file does.
-- Error lines keep one fixed red. This reverses the current magenta error colour (`Palette.WARN`), and the change is in the
-  code pull request (open question 2).
 - The map announce line, the finish line, the map result line, a new map intro title, the boss bar, the lobby sidebar and the
   hologram name the map in its colour. The intro title and the sidebar name the authors.
 - The intro title fades in for 10 ticks, stays 60 and fades out in 20, and shows "by <authors>" or "von <Autoren>".
@@ -55,8 +53,7 @@ shown in the palette hue until the owner adds a tag.
 
 ### Modified Capabilities
 
-- `message-style`: the one-accent rule does not count a display name's colour, and error lines use the fixed error red. The
-  rule that red is never used is removed.
+- `message-style`: the one-accent rule does not count a display name's colour. The bundle rules are unchanged.
 - `race/lobby-cup-display`: the sidebar holds ten map lines, not twelve, as the code already does.
 
 ### Related capabilities that are not changed here
@@ -85,5 +82,5 @@ shown in the palette hue until the owner adds a tag.
   `tutorial/TutorialBook`, the stats replies, a fireworks helper and the placement sounds.
 - `voyager/server`: the golden transcripts that print a name. Every changed transcript is listed in the pull request, with the
   reason.
-- `docs/reference/message-style-guide.md` and `docs/reference/hud.md`: the name colours, the error red, the placement titles, the
+- `docs/reference/message-style-guide.md` and `docs/reference/hud.md`: the name colours, the placement titles, the
   intro title timing and the new sixth tutorial page.

@@ -5,7 +5,7 @@
 A map and a cup have a display name that players read. The display name is an optional MiniMessage string in the catalogue
 (`displayName`, added by `add-display-names`), so an author can colour it. A name without a colour of its own gets one of six
 bright hues. This delta changes the plain-text rule of `add-display-names`: a display name is MiniMessage, and any colour is
-allowed in it, red included. Only error lines keep a fixed red.
+allowed in it, red included.
 
 ## ADDED Requirements
 
@@ -41,8 +41,7 @@ the field. A name is never cut short.
 - **THEN** the file is refused and the message names `displayName` and the file
 
 ### Requirement: A display name may use any colour, including red
-**MoSCoW:** Must. THE SYSTEM SHALL accept a display name in any colour, red included, and SHALL NOT refuse a name for its hue. Error
-lines are the only lines that keep a fixed red, and a display name never changes that.
+**MoSCoW:** Must. THE SYSTEM SHALL accept a display name in any colour, red included, and SHALL NOT refuse a name for its hue.
 
 #### Scenario: A named red loads
 - **WHEN** a map file states `"displayName": "<red>Red</red>"`

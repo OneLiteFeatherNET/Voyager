@@ -66,32 +66,27 @@ Archive order: archive `add-display-names` before this change. Nothing is archiv
 - [ ] 6.4 Green: the standings heading, the map line, the coloured rows and the viewer's line in `CupAnnouncer` (`feat(race)`)
 - [ ] 6.5 Refactor: remove the old "CUP COMPLETE" title use if no other code path reads it (`feat(race)`)
 
-## 7. Error colour
+## 7. Verification tasks for the code pull request
 
-- [ ] 7.1 Red: `PaletteTest` asserts that the error colour is the fixed red of the owner's confirmed hex, and that no other role takes it (`feat(race)`)
-- [ ] 7.2 Green: set the error colour in `Palette` to the confirmed red, and update `message-style-guide.md` (`feat(race)`)
+- [ ] 7.1 Verify firework support: a Minestom test or a short spike shows whether a firework rocket entity can carry an explosion on the pinned Minestom version. Record the result and which path (entities or particles) the code uses, in the pull request (`test`)
+- [ ] 7.2 Verify the results linger: on a local run with a short cup, confirm that the 10 s linger completes, with the title, the sound and the bursts finished, before the hub hand-off. Record the observed times in the pull request (`test`)
+- [ ] 7.3 Confirm that the countdown of the development and production timings is at least 90 ticks, so the intro finishes before the first digit (`test`)
 
-## 8. Verification tasks for the code pull request
+## 8. Golden masters and checks
 
-- [ ] 8.1 Verify firework support: a Minestom test or a short spike shows whether a firework rocket entity can carry an explosion on the pinned Minestom version. Record the result and which path (entities or particles) the code uses, in the pull request (`test`)
-- [ ] 8.2 Verify the results linger: on a local run with a short cup, confirm that the 10 s linger completes, with the title, the sound and the bursts finished, before the hub hand-off. Record the observed times in the pull request (`test`)
-- [ ] 8.3 Confirm that the countdown of the development and production timings is at least 90 ticks, so the intro finishes before the first digit (`test`)
+- [ ] 8.1 Run the golden masters, and record each changed transcript in the pull request with its reason, as `design.md` lists them (`test`)
+- [ ] 8.2 Run `./gradlew :voyager:fitness:test` and `./gradlew build` on both trees, and the bundle parity test for the new keys (`test`)
 
-## 9. Golden masters and checks
+## 9. Docs
 
-- [ ] 9.1 Run the golden masters, and record each changed transcript in the pull request with its reason, as `design.md` lists them (`test`)
-- [ ] 9.2 Run `./gradlew :voyager:fitness:test` and `./gradlew build` on both trees, and the bundle parity test for the new keys (`test`)
+- [ ] 9.1 Update `docs/reference/message-style-guide.md`: the name colours, the one-accent exception for names, the placement titles and the medal words (`docs`)
+- [ ] 9.2 Update `docs/reference/hud.md`: the intro title and its timing, the boss bar name, the sidebar lines (ten map lines) and the sixth tutorial page (`docs`)
+- [ ] 9.3 Update the catalogue file reference: the MiniMessage display name, its tag set, its forty visible characters and the colour rule (`docs`)
 
-## 10. Docs
+## 10. Smoke boot
 
-- [ ] 10.1 Update `docs/reference/message-style-guide.md`: the name colours, the one-accent exception for names, the error red, the placement titles and the medal words (`docs`)
-- [ ] 10.2 Update `docs/reference/hud.md`: the intro title and its timing, the boss bar name, the sidebar lines (ten map lines) and the sixth tutorial page (`docs`)
-- [ ] 10.3 Update the catalogue file reference: the MiniMessage display name, its tag set, its forty visible characters and the colour rule (`docs`)
+- [ ] 10.1 Build the server shadow jar, boot it in a scratch directory with the shipped data copied and `VOYAGER_CUP=alpha_cup`, drive a short cup with a test racer, and quote the chat lines of the finish, the result and the standings in the pull request (`test`)
 
-## 11. Smoke boot
+## 11. Ship
 
-- [ ] 11.1 Build the server shadow jar, boot it in a scratch directory with the shipped data copied and `VOYAGER_CUP=alpha_cup`, drive a short cup with a test racer, and quote the chat lines of the finish, the result and the standings in the pull request (`test`)
-
-## 12. Ship
-
-- [ ] 12.1 Open the code pull request under the title `feat(race): show coloured map and cup names with authors and a placement finale`. Its description lists each changed golden transcript, the firework path chosen in 8.1, the linger timings from 8.2, and the error colour hex from 7.1. It ends with the referral line of the repository's pull request rule. Do not add a session link (`feat(race)`)
+- [ ] 11.1 Open the code pull request under the title `feat(race): show coloured map and cup names with authors and a placement finale`. Its description lists each changed golden transcript, the firework path chosen in 7.1 and the linger timings from 7.2. It ends with the referral line of the repository's pull request rule. Do not add a session link (`feat(race)`)
