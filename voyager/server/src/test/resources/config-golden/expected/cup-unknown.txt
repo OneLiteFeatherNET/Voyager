@@ -26,7 +26,7 @@ WARN  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] Skipping a chunk which i
 WARN  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] Skipping a chunk which is not fully generated chunk=[-32,-55] status=features region=worlds/DragonLobby/region dim=minecraft:overworld
 INFO  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] Closing the anvil loader after 9429 loaded, 11051 skipped and 0 saved chunks with 0 errors, 0 unknown blocks and 0 unknown biomes region=worlds/DragonLobby/region dim=minecraft:overworld
 WARN  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] The anvil loader skipped 11051 chunks: 0 had no region file, 6210 had no entry in their region file and 4841 are not fully generated (biomes x416, features x400, liquid_carvers x408, structure_starts x3617) region=worlds/DragonLobby/region dim=minecraft:overworld
-ERROR system property VOYAGER_CUP VOYAGER_CUP: no cup named 'no_such_cup' in the catalogue; it holds [alpha_cup, legacy_cup]
+ERROR system property VOYAGER_CUP VOYAGER_CUP: no cup named 'elytrarace:no_such_cup' in the catalogue; it holds [elytrarace:alpha_cup, elytrarace:legacy_cup]
 WARNING system property VOYAGER_LOBBY_WORLD VOYAGER_LOBBY_WORLD: no lobby world is set, so waiting racers stand at the first map's spawn; set VOYAGER_LOBBY_WORLD and VOYAGER_LOBBY_SPAWN to give them a lobby (ADR-0029)
 config check failed: 1 error(s)
 exit=1
