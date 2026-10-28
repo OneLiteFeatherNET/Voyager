@@ -2,12 +2,14 @@
 
 This reference lists every field of the two data files the server reads at boot, what each field defaults to, what the loader refuses, and which test holds each rule.
 
-The files live in the data directory the server is started with: one definition per `.json` file under `maps/` and `cups/`. Subdirectories are not read. The file name is free; the definition's `name` is its identity, and a cup's `mapNames` refer to map names, not file names.
+The files live in the data directory the server is started with: one definition per `.json` file under `maps/` and `cups/`. Subdirectories are not read. The file name is free; the definition's `key` is its identity, and a cup's `mapNames` refer to map keys, not file names.
+
+A map or cup is identified by an Adventure key in the `elytrarace` namespace, written in full as `elytrarace:<value>`, for example `elytrarace:blue_and_red`. The value is lower case letters, digits, underscores and hyphens, at most 32 characters, and starts with a letter or digit. Version 2 files state the key in a `key` field. Version 1 files state a flat `name`, which is read as the key `elytrarace:<name>`. The decision is recorded in [ADR-0040](../decisions/0040-catalogue-keys.md).
 
 A file the loader refuses stops the server at boot. The refusal names the file, followed by the cause:
 
 ```text
-/data/maps/sky-drift.json is not a valid definition: map 'sky-drift' declares schemaVersion 2, but this server reads up to schemaVersion 1
+/data/maps/sky-drift.json is not a valid definition: map 'elytrarace:sky-drift' declares schemaVersion 3, but this server reads up to schemaVersion 2
 ```
 
 ## Map file
@@ -15,10 +17,12 @@ A file the loader refuses stops the server at boot. The refusal names the file, 
 | Field | Type | Required | Default or derivation | Refused when |
 |---|---|---|---|---|
 | `$schema` | string | No | None. The loader ignores it. | Never. The editor schema checks it as a relative path. |
-| `schemaVersion` | integer | No | `1` when absent. | Not a whole number of 1 or more, or above `1`. The refusal names the declared version and the highest supported version. |
-| `name` | string | Yes | None. | Missing, or blank. |
-| `displayName` | string | No | The map's `name`. | Longer than 40 characters. The refusal names the field and the file. |
-| `world` | string | No | The map's `name`, exactly as written, including case. | Present and blank. At boot, a world with no region data under the worlds path stops the server and the message names the resolved world. |
+| `schemaVersion` | integer | No | `1` when absent. | Not a whole number of 1 or more, or above `2`. The refusal names the declared version and the highest supported version. |
+| `key` | string | Yes in version 2 | None. | Missing in version 2, not in the `elytrarace` namespace, or a value outside the rule above. The refusal names the field and the file. A version 2 file that also states `name` is refused. |
+| `name` | string | Yes in version 1 | None. | Missing in version 1, a value outside the rule above (for example capitals or spaces), or present in version 2. A version 1 file that states `key` is refused. |
+| `displayName` | string | No | The map's key in full, for example `elytrarace:blue_and_red`. | Longer than 40 characters. The refusal names the field and the file. |
+| `authors` | array of objects | No | None. | An author without a canonical UUID, a name outside `[A-Za-z0-9_]{1,16}`, more than eight authors, or one UUID stated twice. The refusal names the file and the field. |
+| `world` | string | No | The value of the map's key, exactly as written, including case. | Present and blank. At boot, a world with no region data under the worlds path stops the server and the message names the resolved world. |
 | `spawn` | vector | Yes | None. | Missing, or a component is missing. |
 | `referenceTimeSeconds` | number | Yes | None. A fraction is kept. | Missing, not finite, or zero or negative. |
 | `boostConfig` | object | Yes | None. | Missing, or either field below is missing. |
@@ -91,10 +95,12 @@ Two fields may be left out because the loader can compute them. Leaving one out 
 | Field | Rule | Test that holds the rule |
 |---|---|---|
 | Ring `index` | Left out, the index is the position. Declared, it must equal the position. | `MapDefinitionAdapterTest.readsARingWithoutIndexAsItsPositionInTheRingsArray`, `MapDefinitionAdapterTest.refusesARingWhoseDeclaredIndexIsNotItsPosition`, `MapDefinitionAdapterTest.readsTheSameMapWithOrWithoutItsRingIndexes`, `RingAdapterTest.takesTheIndexFromThePositionWhenTheFileLeavesItOut` |
-| `world` | Left out, the world is the map's `name`, byte for byte. Declared, it is used as written. | `MapDefinitionAdapterTest.readsAMapWithoutWorldAsItsNameExactlyAsWritten`, `MapDefinitionAdapterTest.keepsAnExplicitWorldUnchangedWhenItDiffersFromTheName`, `MapDefinitionAdapterTest.refusesAPresentButBlankWorldNamingTheField` |
-| `schemaVersion` | Left out, the version is `1`. Declared, it must be a whole number from 1 to the supported maximum. | `MapDefinitionAdapterTest.readsAMapWithoutSchemaVersionAsVersionOne`, `MapDefinitionAdapterTest.refusesSchemaVersionAboveTheSupportedMaximumNamingBothNumbers` |
+| `world` | Left out, the world is the value of the map's key, byte for byte (`blue_and_red` for `elytrarace:blue_and_red`; the flat `name` in version 1). Declared, it is used as written. | `MapDefinitionAdapterTest.readsAMapWithoutWorldAsItsNameExactlyAsWritten`, `MapDefinitionAdapterTest.aVersionTwoMapWithoutWorldTakesTheValueOfItsKeyAsItsWorld`, `MapDefinitionAdapterTest.keepsAnExplicitWorldUnchangedWhenItDiffersFromTheName`, `MapDefinitionAdapterTest.refusesAPresentButBlankWorldNamingTheField` |
+| `schemaVersion` | Left out, the version is `1`. Declared, it must be a whole number from 1 to the supported maximum, which is `2`. | `MapDefinitionAdapterTest.readsAMapWithoutSchemaVersionAsVersionOne`, `MapDefinitionAdapterTest.refusesSchemaVersionAboveTheSupportedMaximumNamingBothNumbers`, `CatalogValidationTest.reportsASchemaVersionAboveTheSupportedMaximumAsAProblemNamingTheFile` |
+| `key` and `name` | A version 1 file states `name`, which becomes the key `elytrarace:<name>`. A version 2 file states `key`. | `MapDefinitionAdapterTest.aVersionOneFlatNameWithCapitalsIsRefusedNamingTheName`, `MapDefinitionAdapterTest.aVersionTwoMapWithAKeyInAnotherNamespaceIsRefusedNamingTheKey`, `MapDefinitionAdapterTest.aVersionTwoMapThatStatesANameIsRefusedNamingTheName`, `CatalogKeysTest` |
+| `displayName` | Left out, the display name is the key in full, `elytrarace:blue_and_red`. | `MapDefinitionTest.aMapWithoutADisplayNameDisplaysItsId` |
 
-The world default is case-sensitive on Linux, so a directory named `ElytraraceBlueAndRed` needs an explicit `"world": "ElytraraceBlueAndRed"` in its map file. The committed course does this.
+The world default is case-sensitive on Linux, so a directory named `ElytraraceBlueAndRed` needs an explicit `"world": "ElytraraceBlueAndRed"` in its map file. The shipped maps do this.
 
 ## Cup file
 
@@ -102,41 +108,58 @@ The world default is case-sensitive on Linux, so a directory named `ElytraraceBl
 |---|---|---|---|---|
 | `$schema` | string | No | None. The loader ignores it. | Never. |
 | `schemaVersion` | integer | No | `1` when absent. | The same rule as for maps. |
-| `name` | string | Yes | None. | Missing, or blank. |
-| `displayName` | string | No | The cup's `name`. | Longer than 40 characters. The refusal names the field and the file. |
+| `key` | string | Yes in version 2 | None. | The same rule as for maps. |
+| `name` | string | Yes in version 1 | None. | The same rule as for maps. |
+| `displayName` | string | No | The cup's key in full. | Longer than 40 characters. The refusal names the field and the file. |
+| `authors` | array of objects | No | None. | The same rule as for maps. |
 | `mode` | string | Yes | None. | Missing, or not `RACE` or `PRACTICE`. |
-| `mapNames` | array of strings | Yes | None. The order is the rotation. | Missing, not an array, empty, or an entry that is not a string. |
+| `mapNames` | array of strings | Yes | None. The order is the rotation. A flat id is read as its key. | Missing, not an array, empty, or an entry that is not a string. |
 | `notes` | array of strings | No | None. The loader ignores it. | Never. |
 
-At boot, every name in `mapNames` must match the `name` of a loaded map. An unknown name stops the server.
+At boot, every entry of `mapNames` must match the `key` of a loaded map. An unknown entry stops the server.
+
+## Operator inputs
+
+The cup named by the `VOYAGER_CUP` setting, and the map named by `/leaderboard`, accept either form: the key `elytrarace:alpha_cup`, or the flat id `alpha_cup`, which is read as `elytrarace:alpha_cup`. The flat form is kept until the owner removes it. Operator output prints the key, so an operator can copy it into a command.
 
 ## Display names
 
-`name` is the id: the key of the catalogue, the name an operator types and the name in the file. `displayName` is the name a player reads, on the boss bar, the map banner, the lobby sidebar and hologram, and the results.
+`key` is the identifier: the key of the catalogue, the name an operator types and the value in the file. `displayName` is the name a player reads, on the boss bar, the map banner, the lobby sidebar and hologram, and the results.
 
-- A file that leaves `displayName` out, or gives it blank, shows the id.
+- A file that leaves `displayName` out, or gives it blank, shows the key in full.
 - The text is shown as written and is never translated, so a German and an English player read the same name. MiniMessage tags in it are shown as plain characters.
 - A name longer than 40 characters is refused at boot, rather than cut short.
-- Operator output (command replies, the validation report and log lines) keeps the id, so an operator can find the file.
+- Operator output (command replies, the validation report and log lines) keeps the key, so an operator can find the file.
 
-The shipped catalogue names `alpha_cup` "Alpha Cup", `legacy_cup` "Testing Cup", and the maps `elytraraceblueandred` "Blue & Red", `palmbeach` "PalmBeach", `dragonlobby` "DragonLobby" and `memoria` "Memoria". Those tests are `ShippedCatalogueTest.theShippedCatalogueNamesItsCupsAndMapsForPlayers` and `CatalogLoaderTest` for the loader rules.
+The shipped catalogue names `alpha_cup` "Alpha Cup", `legacy_cup` "Testing Cup", and the maps `blue_and_red` "Blue & Red", `palm_beach` "PalmBeach", `dragon_lobby` "DragonLobby" and `memoria` "Memoria". The tests are `ShippedCatalogueTest.theShippedCatalogueNamesItsCupsAndMapsForPlayers` and `CatalogLoaderTest` for the loader rules.
+
+## Authors
+
+A map or cup may state who built it in `authors`: an array of objects, each with a `uuid` and a `name`.
+
+- `uuid` is a UUID in the canonical 8-4-4-4-12 form, in either letter case. It is stored in lower case and compared by value.
+- `name` is a Minecraft username, `[A-Za-z0-9_]{1,16}`, kept as written. The loader does not look it up, so a rename in Mojang's service does not change the file.
+- At most eight authors, and no UUID twice.
+
+The shipped maps credit TheMeinerLP on `blue_and_red` and Seelenretterin on `palm_beach`, `dragon_lobby` and `memoria`. The shipped cups have no authors. Authors are data: they are not translated.
 
 ## Schema version
 
-`schemaVersion` tells the loader which rules a file was written under. The server reads version 1 only.
+`schemaVersion` tells the loader which rules a file was written under. The server reads versions 1 and 2.
 
 - A file without the field is version 1.
+- Version 2 states `key` (see above). Version 1 states `name`.
 - A file that declares a version above the highest version the server reads is refused. The message names the file, the declared version and the highest supported version, so an older server reports a newer file plainly rather than misreading it.
 - A version that is not a whole number of 1 or more is refused, whether it is zero, fractional or written as text.
 
-The files the converter writes declare `"schemaVersion": 1`.
+The files the converter in `tools/map-converter` writes still declare `"schemaVersion": 1`, and version 1 files still load.
 
 ## JSON Schema
 
 The JSON Schema documents for both file kinds are in the platform module:
 
-- `voyager/platform/src/main/resources/schema/map.schema.json`
-- `voyager/platform/src/main/resources/schema/cup.schema.json`
+- `voyager/platform/src/main/resources/schema/map.schema.json` and `cup.schema.json`, for version 2;
+- `voyager/platform/src/main/resources/schema/map-v1.schema.json` and `cup-v1.schema.json`, for version 1.
 
 Both use draft 2020-12. Each file in the committed data declares its schema with a relative `$schema` path, so an editor that supports `$schema` offers completion and reports errors while the file is edited. For a file in the repository the path resolves from the file's own location. A file copied into a data directory outside the repository does not resolve it, so the editor must be given the schema another way.
 

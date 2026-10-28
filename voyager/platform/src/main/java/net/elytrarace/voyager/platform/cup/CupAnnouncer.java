@@ -74,7 +74,7 @@ public final class CupAnnouncer {
         if (run.finished() && !wasFinished) {
             racer.sendMessage(Messages.finished(map.displayName(), clock.elapsed()));
             LOGGER.info("{} finished '{}' on tick {} ({})",
-                    racer.getUsername(), map.name(), clock.gameTick(), seconds(clock.elapsed()));
+                    racer.getUsername(), map.key().asString(), clock.gameTick(), seconds(clock.elapsed()));
         }
     }
 
@@ -144,7 +144,7 @@ public final class CupAnnouncer {
             entries.add(new Entry(null, computer, 0, computer.mapsFinished(), computer.bestTime()));
         }
         entries.sort(STANDING_ORDER);
-        LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.name(), entries.size());
+        LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.key().asString(), entries.size());
         broadcast(Messages.cupHeading(cup.displayName()));
         int mapCount = cup.mapNames().size();
         int place = 1;

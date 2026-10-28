@@ -48,7 +48,7 @@ class CupBootValidationTest {
             assertThat(log.warnings()).hasSize(1);
             assertThat(log.warnings().getFirst())
                     .contains("a-broken.json")
-                    .contains("cup 'other_cup' plays 'no-such-map'");
+                    .contains("cup 'elytrarace:other_cup' plays 'elytrarace:no-such-map'");
         }
     }
 
@@ -72,7 +72,7 @@ class CupBootValidationTest {
 
         BeanScope graph = VoyagerServer.openGraph(settings(data));
 
-        assertThat(graph.get(CatalogHolder.class).current().cup().name()).isEqualTo("test_cup");
+        assertThat(graph.get(CatalogHolder.class).current().cup().key().asString()).isEqualTo("elytrarace:test_cup");
     }
 
     @Test
@@ -84,7 +84,7 @@ class CupBootValidationTest {
         assertThatThrownBy(() -> VoyagerServer.openGraph(settings(data)))
                 .satisfies(refusal -> assertThat(causeOf(refusal, UnresolvedCupMapException.class))
                         .hasMessage("2 cup entries do name a map no map definition provides: "
-                                + "cup 'test_cup' plays 'no-such-map-a'; cup 'test_cup' plays 'no-such-map-b'")
+                                + "cup 'elytrarace:test_cup' plays 'elytrarace:no-such-map-a'; cup 'elytrarace:test_cup' plays 'elytrarace:no-such-map-b'")
                         .satisfies(exception -> assertThat(exception.getMessage()).doesNotContain("other_cup")));
     }
 
@@ -99,8 +99,8 @@ class CupBootValidationTest {
         BeanScope graph = VoyagerServer.openGraph(settings(data));
 
         CupDefinition played = graph.get(CatalogHolder.class).current().cup();
-        assertThat(played.name()).isEqualTo("test_cup");
-        assertThat(played.mapNames()).containsExactly("elytraraceblueandred");
+        assertThat(played.key().asString()).isEqualTo("elytrarace:test_cup");
+        assertThat(played.mapNames()).containsExactly("elytrarace:blue_and_red");
     }
 
     /**
@@ -142,6 +142,6 @@ class CupBootValidationTest {
     }
 
     private static final String PLAYED_CUP = """
-            {"name": "test_cup", "mode": "RACE", "mapNames": ["elytraraceblueandred"]}
+            {"name": "test_cup", "mode": "RACE", "mapNames": ["blue_and_red"]}
             """;
 }

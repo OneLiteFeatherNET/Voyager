@@ -27,9 +27,9 @@ class CupDefinitionAdapterTest {
     void readsTheNameModeAndRotation() {
         CupDefinition cup = Adapters.GSON.fromJson(CUP, CupDefinition.class);
 
-        assertThat(cup.name()).isEqualTo("test_cup");
+        assertThat(cup.key().asString()).isEqualTo("elytrarace:test_cup");
         assertThat(cup.mode()).isEqualTo(GameMode.PRACTICE);
-        assertThat(cup.mapNames()).containsExactly("sprint", "blue", "cathedral");
+        assertThat(cup.mapNames()).containsExactly("elytrarace:sprint", "elytrarace:blue", "elytrarace:cathedral");
     }
 
     @Test
@@ -57,7 +57,7 @@ class CupDefinitionAdapterTest {
 
     @Test
     void readsACupWithoutSchemaVersionAsVersionOne() {
-        assertThat(Adapters.GSON.fromJson(CUP, CupDefinition.class).name()).isEqualTo("test_cup");
+        assertThat(Adapters.GSON.fromJson(CUP, CupDefinition.class).key().asString()).isEqualTo("elytrarace:test_cup");
     }
 
     @Test
@@ -69,10 +69,10 @@ class CupDefinitionAdapterTest {
 
     @Test
     void refusesCupSchemaVersionAboveTheSupportedMaximumNamingBothNumbers() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("2"), CupDefinition.class))
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("3"), CupDefinition.class))
                 .isInstanceOf(JsonParseException.class)
-                .hasMessageContaining("cup 'test_cup' declares schemaVersion 2")
-                .hasMessageContaining("up to schemaVersion 1");
+                .hasMessageContaining("cup 'test_cup' declares schemaVersion 3")
+                .hasMessageContaining("up to schemaVersion 2");
     }
 
     private static String withCupSchemaVersion(String value) {
@@ -93,6 +93,82 @@ class CupDefinitionAdapterTest {
                 CUP.replace("[ \"sprint\", \"blue\", \"cathedral\" ]", "\"sprint\""), CupDefinition.class))
                 .isInstanceOf(JsonParseException.class)
                 .hasMessageContaining("must be an array");
+    }
+
+    @Test
+    void aVersionOneFlatNameIsReadAsAKeyInTheElytraraceNamespace() {
+        CupDefinition cup = Adapters.GSON.fromJson(CUP.replace("test_cup", "palm_cup"), CupDefinition.class);
+
+        assertThat(cup.key().asString()).isEqualTo("elytrarace:palm_cup");
+    }
+
+    @Test
+    void aVersionTwoCupReadsItsKeyAndNoName() {
+        CupDefinition cup = Adapters.GSON.fromJson(withCupSchemaVersion("2")
+                .replace("\"name\": \"test_cup\"", "\"key\": \"elytrarace:alpha_cup\""), CupDefinition.class);
+
+        assertThat(cup.key().asString()).isEqualTo("elytrarace:alpha_cup");
+    }
+
+    @Test
+    void aVersionTwoCupWithAKeyInAnotherNamespaceIsRefusedNamingTheKey() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("2")
+                        .replace("\"name\": \"test_cup\"", "\"key\": \"other:alpha_cup\""), CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'key'");
+    }
+
+    @Test
+    void aVersionOneFlatNameWithCapitalsIsRefusedNamingTheField() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(CUP.replace("test_cup", "TestCup"), CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'name'");
+    }
+
+    @Test
+    void aVersionTwoCupThatStatesBothKeyAndNameIsRefusedNamingTheName() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("2")
+                        .replaceFirst("\"name\": \"test_cup\",", "\"name\": \"test_cup\", \"key\": \"elytrarace:test_cup\","),
+                CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'name'");
+    }
+
+    @Test
+    void aVersionTwoCupWithoutAKeyIsRefusedNamingTheKey() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("2")
+                        .replace("\"name\": \"test_cup\",", ""), CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'key'");
+    }
+
+    @Test
+    void readsTheAuthorsOfACupWithTheirUuidInLowerCase() {
+        CupDefinition cup = Adapters.GSON.fromJson(CUP.replaceFirst("\\{", "{\n  \"authors\": [ { \"uuid\": "
+                + "\"05BF52C6-7BB0-4F13-8951-0E1FD803DF35\", \"name\": \"TheMeinerLP\" } ],"), CupDefinition.class);
+
+        assertThat(cup.authors()).singleElement()
+                .satisfies(author -> {
+                    assertThat(author.uuid().toString()).isEqualTo("05bf52c6-7bb0-4f13-8951-0e1fd803df35");
+                    assertThat(author.name()).isEqualTo("TheMeinerLP");
+                });
+    }
+
+    @Test
+    void anAuthorWhoseUuidIsNotAUuidIsRefusedNamingTheField() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(CUP.replaceFirst("\\{", "{\n  \"authors\": [ { \"uuid\": "
+                + "\"not-a-uuid\", \"name\": \"TheMeinerLP\" } ],"), CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'uuid'");
+    }
+
+    @Test
+    void aCupWhoseAuthorsRepeatAUuidIsRefusedNamingTheField() {
+        String author = "{ \"uuid\": \"05bf52c6-7bb0-4f13-8951-0e1fd803df35\", \"name\": \"TheMeinerLP\" }";
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(CUP.replaceFirst("\\{",
+                        "{\n  \"authors\": [ " + author + ", " + author + " ],"), CupDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'authors'");
     }
 
     @Test

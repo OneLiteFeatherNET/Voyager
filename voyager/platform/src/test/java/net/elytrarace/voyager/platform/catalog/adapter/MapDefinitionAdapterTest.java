@@ -136,7 +136,7 @@ class MapDefinitionAdapterTest {
     void readsTheNameWorldSpawnAndReferenceTime() {
         MapDefinition map = Adapters.GSON.fromJson(MAP, MapDefinition.class);
 
-        assertThat(map.name()).isEqualTo("elytraraceblueandred");
+        assertThat(map.key().asString()).isEqualTo("elytrarace:elytraraceblueandred");
         assertThat(map.world()).isEqualTo("ElytraraceBlueAndRed");
         assertThat(map.spawn()).isEqualTo(new Vec3(109, -62, 54));
         // 46.7 s, not 46 and not 47: the value is a lap time a designer edits, and rounding it to
@@ -320,9 +320,9 @@ class MapDefinitionAdapterTest {
     void ignoresTheNotesTheConversionLeftForTheReader() {
         // The notes say which values were seeded rather than measured. They are for a person, and a
         // reader that choked on them would make an explanation an error.
-        assertThat(Adapters.GSON.fromJson(MAP, MapDefinition.class).name()).isEqualTo("elytraraceblueandred");
+        assertThat(Adapters.GSON.fromJson(MAP, MapDefinition.class).key().asString()).isEqualTo("elytrarace:elytraraceblueandred");
         assertThat(Adapters.GSON.fromJson(MAP.replace("\"notes\"", "\"somethingElseEntirely\""),
-                MapDefinition.class).name()).isEqualTo("elytraraceblueandred");
+                MapDefinition.class).key().asString()).isEqualTo("elytrarace:elytraraceblueandred");
     }
 
     @Test
@@ -395,13 +395,13 @@ class MapDefinitionAdapterTest {
 
     @Test
     void readsAMapWithoutSchemaVersionAsVersionOne() {
-        assertThat(Adapters.GSON.fromJson(MAP, MapDefinition.class).name()).isEqualTo("elytraraceblueandred");
+        assertThat(Adapters.GSON.fromJson(MAP, MapDefinition.class).key().asString()).isEqualTo("elytrarace:elytraraceblueandred");
     }
 
     @Test
     void readsSchemaVersionOne() {
-        assertThat(Adapters.GSON.fromJson(withSchemaVersion("1"), MapDefinition.class).name())
-                .isEqualTo("elytraraceblueandred");
+        assertThat(Adapters.GSON.fromJson(withSchemaVersion("1"), MapDefinition.class).key().asString())
+                .isEqualTo("elytrarace:elytraraceblueandred");
     }
 
     @Test
@@ -427,10 +427,78 @@ class MapDefinitionAdapterTest {
 
     @Test
     void refusesSchemaVersionAboveTheSupportedMaximumNamingBothNumbers() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("2"), MapDefinition.class))
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("3"), MapDefinition.class))
                 .isInstanceOf(JsonParseException.class)
-                .hasMessageContaining("map 'elytraraceblueandred' declares schemaVersion 2")
-                .hasMessageContaining("up to schemaVersion 1");
+                .hasMessageContaining("map 'elytraraceblueandred' declares schemaVersion 3")
+                .hasMessageContaining("up to schemaVersion 2");
+    }
+
+    @Test
+    void aVersionTwoMapWithoutWorldTakesTheValueOfItsKeyAsItsWorld() {
+        MapDefinition map = Adapters.GSON.fromJson(versionTwo("\"key\": \"elytrarace:sky_drift\","), MapDefinition.class);
+
+        assertThat(map.key().asString()).isEqualTo("elytrarace:sky_drift");
+        assertThat(map.world()).isEqualTo("sky_drift");
+    }
+
+    @Test
+    void aVersionTwoMapKeepsAnExplicitWorldWhenItStatesOne() {
+        MapDefinition map = Adapters.GSON.fromJson(versionTwo("\"key\": \"elytrarace:blue_and_red\", \"world\": "
+                + "\"ElytraraceBlueAndRed\","), MapDefinition.class);
+
+        assertThat(map.world()).isEqualTo("ElytraraceBlueAndRed");
+    }
+
+    @Test
+    void aVersionTwoMapWithAKeyInAnotherNamespaceIsRefusedNamingTheKey() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(versionTwo("\"key\": \"other:blue_and_red\","),
+                MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'key'");
+    }
+
+    @Test
+    void aVersionTwoMapThatStatesANameIsRefusedNamingTheName() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(versionTwo("\"key\": \"elytrarace:blue_and_red\", "
+                + "\"name\": \"blue_and_red\","), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'name'");
+    }
+
+    @Test
+    void aVersionOneFlatNameWithCapitalsIsRefusedNamingTheName() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(MAP.replace("elytraraceblueandred", "ElytraraceBlueAndRed"),
+                MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'name'");
+    }
+
+    @Test
+    void theAuthorsOfAMapAreReadWithTheirUuidInLowerCase() {
+        MapDefinition map = Adapters.GSON.fromJson(MAP.replaceFirst("\\{", "{\n  \"authors\": [ { \"uuid\": "
+                + "\"05BF52C6-7BB0-4F13-8951-0E1FD803DF35\", \"name\": \"TheMeinerLP\" } ],"), MapDefinition.class);
+
+        assertThat(map.authors()).singleElement()
+                .satisfies(author -> assertThat(author.uuid().toString())
+                        .isEqualTo("05bf52c6-7bb0-4f13-8951-0e1fd803df35"));
+    }
+
+    @Test
+    void aMapWithoutAuthorsIsNotRefused() {
+        assertThat(Adapters.GSON.fromJson(MAP, MapDefinition.class).authors()).isEmpty();
+    }
+
+    @Test
+    void anAuthorWithAUuidThatIsNotInTheCanonicalFormIsRefusedNamingTheField() {
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(MAP.replaceFirst("\\{", "{\n  \"authors\": [ { \"uuid\": "
+                + "\"05bf52c6-7bb0-4f13-8951-0e1fd803df3\", \"name\": \"TheMeinerLP\" } ],"), MapDefinition.class))
+                .isInstanceOf(JsonParseException.class)
+                .hasMessageContaining("field 'uuid'");
+    }
+
+    private static String versionTwo(String identity) {
+        return MAP.replaceFirst("\"name\": \"elytraraceblueandred\",", "\"schemaVersion\": 2, " + identity)
+                .replaceFirst("\"world\": \"ElytraraceBlueAndRed\",", "");
     }
 
     private static String withSchemaVersion(String value) {

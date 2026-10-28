@@ -1,5 +1,7 @@
 package net.elytrarace.voyager.api.race;
 
+import net.elytrarace.voyager.api.race.exception.InvalidAuthorException;
+import net.elytrarace.voyager.api.race.exception.InvalidCatalogKeyException;
 import net.elytrarace.voyager.api.race.exception.InvalidCupException;
 
 import org.junit.jupiter.api.Test;
@@ -18,8 +20,8 @@ class CupDefinitionTest {
     void keepsWhatItWasGiven() {
         CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
 
-        assertThat(cup.name()).isEqualTo("winter-cup");
-        assertThat(cup.mapNames()).containsExactlyElementsOf(MAP_NAMES);
+        assertThat(cup.key().asString()).isEqualTo("elytrarace:winter-cup");
+        assertThat(cup.mapNames()).containsExactly("elytrarace:nether-sprint", "elytrarace:sky-loop", "elytrarace:canyon-run");
         assertThat(cup.mode()).isEqualTo(GameMode.RACE);
     }
 
@@ -27,14 +29,14 @@ class CupDefinitionTest {
     void aCupWithoutADisplayNameDisplaysItsId() {
         CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
 
-        assertThat(cup.displayName()).isEqualTo("winter-cup");
+        assertThat(cup.displayName()).isEqualTo("elytrarace:winter-cup");
     }
 
     @Test
     void aBlankDisplayNameDisplaysTheId() {
         CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE, "   ");
 
-        assertThat(cup.displayName()).isEqualTo("winter-cup");
+        assertThat(cup.displayName()).isEqualTo("elytrarace:winter-cup");
     }
 
     @Test
@@ -42,7 +44,60 @@ class CupDefinitionTest {
         CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE, "Winter Cup");
 
         assertThat(cup.displayName()).isEqualTo("Winter Cup");
-        assertThat(cup.name()).isEqualTo("winter-cup");
+        assertThat(cup.key().asString()).isEqualTo("elytrarace:winter-cup");
+    }
+
+    @Test
+    void aCupBuiltWithAKeyReturnsThatKey() {
+        CupDefinition cup = new CupDefinition(CatalogKeys.of("alpha_cup"), MAP_NAMES, GameMode.RACE, "Alpha Cup",
+                List.of());
+
+        assertThat(cup.key().asString()).isEqualTo("elytrarace:alpha_cup");
+        assertThat(cup.key().namespace()).isEqualTo("elytrarace");
+    }
+
+    @Test
+    void aCupDisplayingItsIdShowsTheKeyInItsFullForm() {
+        CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
+
+        assertThat(cup.displayName()).isEqualTo("elytrarace:winter-cup");
+    }
+
+    @Test
+    void aCupKeyInAnotherNamespaceIsRefused() {
+        assertThatThrownBy(() -> new CupDefinition(net.kyori.adventure.key.Key.key("other", "alpha_cup"),
+                MAP_NAMES, GameMode.RACE, null, List.of()))
+                .isInstanceOf(InvalidCatalogKeyException.class)
+                .hasMessageContaining("key");
+    }
+
+    @Test
+    void aCupWithoutAuthorsHasNone() {
+        CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
+
+        assertThat(cup.authors()).isEmpty();
+    }
+
+    @Test
+    void aCupKeepsItsAuthorsInTheOrderGiven() {
+        Author first = new Author(java.util.UUID.fromString("05bf52c6-7bb0-4f13-8951-0e1fd803df35"), "TheMeinerLP");
+        Author second = new Author(java.util.UUID.fromString("e1dff87a-1059-47f1-bc7d-533f072bf8c7"), "Seelenretterin");
+
+        CupDefinition cup = new CupDefinition(CatalogKeys.of("alpha_cup"), MAP_NAMES, GameMode.RACE, null,
+                List.of(first, second));
+
+        assertThat(cup.authors()).containsExactly(first, second);
+    }
+
+    @Test
+    void aCupWithNineAuthorsIsRefused() {
+        List<Author> nine = java.util.stream.IntStream.range(0, 9)
+                .mapToObj(index -> new Author(new java.util.UUID(0L, index + 1L), "Builder" + index))
+                .toList();
+
+        assertThatThrownBy(() -> new CupDefinition(CatalogKeys.of("alpha_cup"), MAP_NAMES, GameMode.RACE, null, nine))
+                .isInstanceOf(InvalidAuthorException.class)
+                .hasMessageContaining("authors");
     }
 
     @Test

@@ -135,7 +135,7 @@ class LeaveCommandTest {
             this.waitingPlace = env.createFlatInstance();
             this.elsewhere = env.createFlatInstance();
             CatalogHolder catalog = new CatalogHolder(new LoadedCatalog(
-                    new CatalogSnapshot(Map.of("leave-run", RUN), Map.of(CUP.name(), CUP)), CUP, Instant.EPOCH));
+                    new CatalogSnapshot(Map.of("leave-run", RUN), Map.of(CUP.key().asString(), CUP)), CUP, Instant.EPOCH));
             MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
             RaceRuns runs = new RaceRuns();
             CurrentMapBlocks blocks = new CurrentMapBlocks();

@@ -60,7 +60,7 @@ public final class CatalogReloadService {
                         reply.accept(Messages.reloadWarning(warning));
                     }
                     LOGGER.info("Catalogue reload accepted for cup '{}'; it plays from the next round",
-                            applied.loaded().cup().name());
+                            applied.loaded().cup().key().asString());
                     reply.accept(Messages.reloadPending());
                 }
                 case ReloadOutcome.Rejected rejected -> {

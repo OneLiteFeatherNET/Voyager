@@ -18,7 +18,7 @@ class CatalogSnapshotTest {
         CatalogSnapshot snapshot = new CatalogSnapshot(
                 maps("blue", "sprint"), cups("weekly"));
 
-        assertThat(snapshot.mapByName("blue")).contains(CatalogFixtures.mapNamed("blue"));
+        assertThat(snapshot.mapByName("elytrarace:blue")).contains(CatalogFixtures.mapNamed("blue"));
     }
 
     @Test
@@ -32,7 +32,7 @@ class CatalogSnapshotTest {
     void answersACupByItsName() {
         CatalogSnapshot snapshot = new CatalogSnapshot(maps("blue"), cups("weekly"));
 
-        assertThat(snapshot.cupByName("weekly")).contains(CatalogFixtures.cupNamed("weekly", "blue"));
+        assertThat(snapshot.cupByName("elytrarace:weekly")).contains(CatalogFixtures.cupNamed("weekly", "elytrarace:blue"));
     }
 
     @Test
@@ -46,14 +46,14 @@ class CatalogSnapshotTest {
     void listsTheMapNamesItWasBuiltWithInTheOrderTheyWereGiven() {
         CatalogSnapshot snapshot = new CatalogSnapshot(maps("sprint", "blue", "cathedral"), cups());
 
-        assertThat(snapshot.mapNames()).containsExactly("sprint", "blue", "cathedral");
+        assertThat(snapshot.mapNames()).containsExactly("elytrarace:sprint", "elytrarace:blue", "elytrarace:cathedral");
     }
 
     @Test
     void listsTheCupNamesItWasBuiltWithInTheOrderTheyWereGiven() {
         CatalogSnapshot snapshot = new CatalogSnapshot(maps(), cups("weekly", "casual"));
 
-        assertThat(snapshot.cupNames()).containsExactly("weekly", "casual");
+        assertThat(snapshot.cupNames()).containsExactly("elytrarace:weekly", "elytrarace:casual");
     }
 
     @Test
@@ -80,7 +80,7 @@ class CatalogSnapshotTest {
         source.put("sprint", CatalogFixtures.mapNamed("sprint"));
         source.remove("blue");
 
-        assertThat(snapshot.mapNames()).containsExactly("blue");
+        assertThat(snapshot.mapNames()).containsExactly("elytrarace:blue");
     }
 
     private static Map<String, MapDefinition> maps(String... names) {

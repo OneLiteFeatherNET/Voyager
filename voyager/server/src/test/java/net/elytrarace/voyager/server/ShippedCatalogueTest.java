@@ -27,9 +27,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class ShippedCatalogueTest {
 
     private static final Path RESOURCES = Path.of("src", "main", "resources");
-    private static final String ALPHA_CUP = "alpha_cup";
-    private static final String LEGACY_CUP = "legacy_cup";
-    private static final String ALPHA_MAP = "elytraraceblueandred";
+    private static final String ALPHA_CUP = "elytrarace:alpha_cup";
+    private static final String LEGACY_CUP = "elytrarace:legacy_cup";
+    private static final String ALPHA_MAP = "elytrarace:blue_and_red";
 
     @Test
     void theShippedCatalogueHoldsExactlyTheAlphaCupAndTheLegacyCup() {
@@ -55,7 +55,7 @@ class ShippedCatalogueTest {
 
         assertThat(cup.mapNames())
                 .as("the maps legacy_cup plays, in order")
-                .containsExactly("palmbeach", "dragonlobby", "memoria");
+                .containsExactly("elytrarace:palm_beach", "elytrarace:dragon_lobby", "elytrarace:memoria");
     }
 
     /**
@@ -69,8 +69,8 @@ class ShippedCatalogueTest {
         assertThat(catalog.cupByName(ALPHA_CUP).orElseThrow().displayName()).isEqualTo("Alpha Cup");
         assertThat(catalog.cupByName(LEGACY_CUP).orElseThrow().displayName()).isEqualTo("Testing Cup");
         assertThat(catalog.mapByName(ALPHA_MAP).orElseThrow().displayName()).isEqualTo("Blue & Red");
-        assertThat(catalog.mapByName("palmbeach").orElseThrow().displayName()).isEqualTo("PalmBeach");
-        assertThat(catalog.mapByName("dragonlobby").orElseThrow().displayName()).isEqualTo("DragonLobby");
+        assertThat(catalog.mapByName("palm_beach").orElseThrow().displayName()).isEqualTo("PalmBeach");
+        assertThat(catalog.mapByName("dragon_lobby").orElseThrow().displayName()).isEqualTo("DragonLobby");
         assertThat(catalog.mapByName("memoria").orElseThrow().displayName()).isEqualTo("Memoria");
     }
 
@@ -97,10 +97,10 @@ class ShippedCatalogueTest {
         assertThat(checkpointIndices(catalog.mapByName(ALPHA_MAP).orElseThrow()))
                 .as("the CHECKPOINT ring indices of %s", ALPHA_MAP)
                 .containsExactly(7, 15, 23, 31);
-        assertThat(checkpointIndices(catalog.mapByName("palmbeach").orElseThrow()))
+        assertThat(checkpointIndices(catalog.mapByName("palm_beach").orElseThrow()))
                 .as("the CHECKPOINT ring indices of palmbeach")
                 .containsExactly(7, 15, 23);
-        assertThat(checkpointIndices(catalog.mapByName("dragonlobby").orElseThrow()))
+        assertThat(checkpointIndices(catalog.mapByName("dragon_lobby").orElseThrow()))
                 .as("the CHECKPOINT ring indices of dragonlobby")
                 .containsExactly(7, 15, 23);
         assertThat(checkpointIndices(catalog.mapByName("memoria").orElseThrow()))

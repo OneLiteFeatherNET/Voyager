@@ -75,6 +75,6 @@ class VoyagerStartupTest {
         assertThat(problems).extracting(ConfigProblem::key).contains("file", "world");
         assertThat(problems).extracting(ConfigProblem::source)
                 .contains(data.resolve("maps").resolve("a-broken.json").toAbsolutePath().toString(),
-                        data.resolve("maps").resolve("elytraraceblueandred.json").toAbsolutePath().toString());
+                        data.resolve("maps").resolve("blue_and_red.json").toAbsolutePath().toString());
     }
 }

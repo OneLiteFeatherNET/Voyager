@@ -124,8 +124,8 @@ class VoyagerGraphTest {
         try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
             LoadedCatalog boot = scope.get(CatalogHolder.class).current();
 
-            assertThat(boot.cup().name()).isEqualTo("alpha_cup");
-            assertThat(boot.snapshot().mapByName("elytraraceblueandred")).isPresent();
+            assertThat(boot.cup().key().asString()).isEqualTo("elytrarace:alpha_cup");
+            assertThat(boot.snapshot().mapByName("blue_and_red")).isPresent();
             assertThat(boot.snapshot().mapByName("no-such-map")).isEmpty();
         }
     }
@@ -133,7 +133,7 @@ class VoyagerGraphTest {
     @Test
     void buildsTheSessionForTheCupTheSettingsName(Env env) throws IOException {
         try (BeanScope scope = VoyagerServer.openGraph(settings(Optional.of("alpha_cup")))) {
-            assertThat(scope.get(CupSession.class).cup().name()).isEqualTo("alpha_cup");
+            assertThat(scope.get(CupSession.class).cup().key().asString()).isEqualTo("elytrarace:alpha_cup");
         }
     }
 

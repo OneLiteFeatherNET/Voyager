@@ -32,9 +32,9 @@ class LobbyHologramTest {
     private static final CatalogSnapshot NO_MAPS = new CatalogSnapshot(Map.of(), Map.of());
 
     private static final LobbyBoard GRAND_TOUR = LobbyBoard.of(
-            new CupDefinition("Grand Tour", List.of("alpha", "bravo"), GameMode.RACE), NO_MAPS);
+            new CupDefinition("grand-tour", List.of("alpha", "bravo"), GameMode.RACE, "Grand Tour"), NO_MAPS);
     private static final LobbyBoard GRAND_TOUR_II = LobbyBoard.of(
-            new CupDefinition("Grand Tour II", List.of("delta", "echo"), GameMode.RACE), NO_MAPS);
+            new CupDefinition("grand-tour-ii", List.of("delta", "echo"), GameMode.RACE, "Grand Tour II"), NO_MAPS);
 
     @Test
     void theHologramStandsAtTheConfiguredPositionInTheLobbyInstance(Env env) {

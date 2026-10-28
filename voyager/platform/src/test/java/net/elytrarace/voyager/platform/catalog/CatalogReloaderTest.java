@@ -38,9 +38,9 @@ class CatalogReloaderTest {
 
         LoadedCatalog loaded = reloader.loadInitial(data, Optional.of("tour"));
 
-        assertThat(loaded.cup().name()).isEqualTo("tour");
+        assertThat(loaded.cup().key().asString()).isEqualTo("elytrarace:tour");
         assertThat(loaded.loadedAt()).isEqualTo(NOW);
-        assertThat(loaded.rotation()).extracting(map -> map.name()).containsExactly("ridge", "dune");
+        assertThat(loaded.rotation()).extracting(map -> map.key().asString()).containsExactly("elytrarace:ridge", "elytrarace:dune");
     }
 
     @Test
@@ -50,7 +50,7 @@ class CatalogReloaderTest {
 
         assertThatThrownBy(() -> reloader.loadInitial(data, Optional.of("summer")))
                 .isInstanceOf(UnresolvedCupException.class)
-                .hasMessageContaining("summer");
+                .hasMessageContaining("elytrarace:summer");
     }
 
     @Test
@@ -69,7 +69,7 @@ class CatalogReloaderTest {
         CatalogFixtures.write(data.resolve("cups"), "spare.json", "{ not json");
         CatalogReloader reloader = new CatalogReloader(CLOCK, new FakeWorldOpener());
 
-        assertThat(reloader.loadInitial(data, Optional.of("tour")).cup().name()).isEqualTo("tour");
+        assertThat(reloader.loadInitial(data, Optional.of("elytrarace:tour")).cup().key().asString()).isEqualTo("elytrarace:tour");
     }
 
     // ---- reload: the outcome --------------------------------------------------------------------
@@ -133,7 +133,7 @@ class CatalogReloaderTest {
 
         List<String> problems = rejectedBy(reloader.reload(data, Optional.of("tour")));
 
-        assertThat(String.join("\n", problems)).contains("missing-map");
+        assertThat(String.join("\n", problems)).contains("elytrarace:missing-map");
     }
 
     @Test
@@ -157,7 +157,7 @@ class CatalogReloaderTest {
 
         List<String> problems = rejectedBy(reloader.reload(data, Optional.of("summer")));
 
-        assertThat(String.join("\n", problems)).contains("summer");
+        assertThat(String.join("\n", problems)).contains("elytrarace:summer");
     }
 
     @Test
@@ -194,7 +194,7 @@ class CatalogReloaderTest {
 
         assertThat(outcome).isInstanceOf(ReloadOutcome.Applied.class);
         assertThat(((ReloadOutcome.Applied) outcome).warnings())
-                .singleElement().asString().contains("spare").contains("missing-map");
+                .singleElement().asString().contains("elytrarace:spare").contains("elytrarace:missing-map");
     }
 
     // ---- reload: worlds -------------------------------------------------------------------------

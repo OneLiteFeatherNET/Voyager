@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/OneLiteFeatherNET/Voyager/main/voyager/platform/src/main/resources/schema/map.schema.json",
   "title": "Voyager map file",
-  "description": "A racecourse: spawn, rings in race order, the racing line and the boost tuning. Describes the format the catalogue adapters in voyager-platform read. The loader does not validate against this document at runtime; the adapters are the runtime check. Derived fields: a ring's index defaults to its position in rings, and world defaults to name.",
+  "description": "A racecourse: spawn, rings in race order, the racing line and the boost tuning. Describes the format the catalogue adapters in voyager-platform read. The loader does not validate against this document at runtime; the adapters are the runtime check. Derived fields: a ring's index defaults to its position in rings, and world defaults to the value of key.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["name", "spawn", "referenceTimeSeconds", "boostConfig", "guideLine", "rings"],
+  "required": ["key", "spawn", "referenceTimeSeconds", "boostConfig", "guideLine", "rings"],
   "properties": {
     "$schema": {
       "type": "string",
@@ -14,13 +14,19 @@
     "schemaVersion": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 1,
-      "description": "The version of the file format this file is written in. Absent means 1. This schema describes version 1 only."
+      "maximum": 2,
+      "description": "The version of the file format this file is written in. Absent means 1. This schema describes version 2, the version that states a key; version 1 files are described by map-v1.schema.json."
     },
-    "name": {
+    "key": {
       "type": "string",
-      "pattern": "\\S",
-      "description": "The map's name. Must not be blank."
+      "pattern": "^elytrarace:[a-z0-9][a-z0-9_-]{0,31}$",
+      "description": "The map's identifier: elytrarace:<value>, where the value is lower case letters, digits, underscores and hyphens, at most 32 characters. Statistics and operator commands name the map by this key."
+    },
+    "authors": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/author" },
+      "description": "The players who built the map, at most eight, none repeated. Optional. Shown as data, never translated."
     },
     "displayName": {
       "type": "string",
@@ -54,6 +60,23 @@
     }
   },
   "$defs": {
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uuid", "name"],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+          "description": "The player's UUID in the canonical 8-4-4-4-12 form, in either letter case."
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_]{1,16}$",
+          "description": "The player's name, as a Minecraft username is written. Kept as written; not looked up at load."
+        }
+      }
+    },
     "vec3": {
       "type": "object",
       "required": ["x", "y", "z"],

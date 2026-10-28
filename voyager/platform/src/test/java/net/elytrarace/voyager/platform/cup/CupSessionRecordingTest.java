@@ -140,7 +140,7 @@ class CupSessionRecordingTest {
         playUntilCupFinishes();
 
         assertThat(recorder.races).as("completions recorded, one per map").extracting(RaceCompletion::mapKey)
-                .containsExactly(FIRST_MAP, SECOND_MAP);
+                .containsExactly("elytrarace:" + FIRST_MAP, "elytrarace:" + SECOND_MAP);
     }
 
     @Test
@@ -161,7 +161,7 @@ class CupSessionRecordingTest {
 
         assertThat(recorder.cups).as("cup completions recorded").hasSize(1);
         CupCompletion cup = recorder.cups.get(0);
-        assertThat(cup.cupKey()).as("cup key").isEqualTo(CUP);
+        assertThat(cup.cupKey()).as("cup key").isEqualTo("elytrarace:" + CUP);
         assertThat(cup.racers()).as("racers in the cup completion").hasSize(1);
         assertThat(cup.racers().get(0).finalPosition()).as("final position of the only racer").isEqualTo(1);
     }

@@ -5,10 +5,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
+import net.elytrarace.voyager.api.race.Author;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.platform.catalog.DraftFixtures;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,8 +25,33 @@ class MapDraftJsonWriterTest {
         JsonObject json = parse(MapDraftJsonWriter.toJson(DraftFixtures.complete(ID)));
 
         assertThat(json.keySet()).containsExactly(
-                "schemaVersion", "name", "world", "spawn", "referenceTimeSeconds", "boostConfig", "guideLine", "rings");
-        assertThat(json.get("schemaVersion").getAsInt()).isEqualTo(1);
+                "schemaVersion", "key", "world", "spawn", "referenceTimeSeconds", "boostConfig", "guideLine", "rings");
+        assertThat(json.get("schemaVersion").getAsInt()).isEqualTo(2);
+        assertThat(json.get("key").getAsString()).isEqualTo("elytrarace:skyfortress");
+    }
+
+    @Test
+    void theDisplayNameAndTheAuthorsAreWrittenAfterTheWorldWhenSet() {
+        MapDraft base = DraftFixtures.complete(ID);
+        MapDraft named = new MapDraft(base.id(), base.world(), base.spawn(), base.rings(), base.referenceTimeSeconds(),
+                base.boostConfig(), base.guideLine(), base.ringEffects(), "Sky Fortress",
+                List.of(new Author(UUID.fromString("05bf52c6-7bb0-4f13-8951-0e1fd803df35"), "TheMeinerLP")));
+
+        JsonObject json = parse(MapDraftJsonWriter.toJson(named));
+
+        assertThat(json.keySet()).containsSubsequence("key", "world", "displayName", "authors", "spawn");
+        assertThat(json.get("displayName").getAsString()).isEqualTo("Sky Fortress");
+        JsonObject author = json.getAsJsonArray("authors").get(0).getAsJsonObject();
+        assertThat(author.get("uuid").getAsString()).isEqualTo("05bf52c6-7bb0-4f13-8951-0e1fd803df35");
+        assertThat(author.get("name").getAsString()).isEqualTo("TheMeinerLP");
+    }
+
+    @Test
+    void aDraftWithoutADisplayNameOrAuthorsWritesNeitherKey() {
+        JsonObject json = parse(MapDraftJsonWriter.toJson(DraftFixtures.complete(ID)));
+
+        assertThat(json.has("displayName")).isFalse();
+        assertThat(json.has("authors")).isFalse();
     }
 
     /** A draft that states none of the optional fields writes exactly the file it wrote before they existed. */

@@ -84,7 +84,7 @@ class MapFiguresTest {
         assertThat(figures.ringCount()).isEqualTo(2);
         assertThat(figures.mapNumber()).isEqualTo(1);
         assertThat(figures.mapCount()).isEqualTo(2);
-        assertThat(figures.mapName()).isEqualTo("two-ring");
+        assertThat(figures.mapName()).isEqualTo("elytrarace:two-ring");
         assertThat(figures.outlook())
                 .isEqualTo(MedalCountdown.outlook(Duration.ZERO, MAP.referenceTime(), MedalBrackets.DEFAULT));
     }

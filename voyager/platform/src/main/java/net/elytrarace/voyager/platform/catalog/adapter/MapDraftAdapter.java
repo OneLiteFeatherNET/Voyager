@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.race.Ring;
+import net.kyori.adventure.key.Key;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,11 +42,11 @@ public final class MapDraftAdapter {
 
     private static MapDraft readDraft(JsonElement element) {
         JsonObject json = JsonFields.object(element, "a draft");
-        String name = JsonFields.string(json, "name", "a draft");
-        String what = "draft '%s'".formatted(name);
-        SchemaVersion.read(json, what);
+        String what = CatalogIdentity.describe(json, "draft");
+        int version = SchemaVersion.read(json, what);
+        Key key = CatalogIdentity.read(json, version, what);
 
-        String world = JsonFields.present(json, "world") ? JsonFields.string(json, "world", what) : name;
+        String world = JsonFields.present(json, "world") ? JsonFields.string(json, "world", what) : key.value();
         @Nullable Vec3 spawn = JsonFields.present(json, "spawn") ? Vec3Adapter.read(json.get("spawn")) : null;
 
         JsonArray ringElements = JsonFields.array(json, "rings", what);
@@ -55,13 +56,15 @@ public final class MapDraftAdapter {
         }
 
         return new MapDraft(
-                new MapId(name),
+                new MapId(key.value()),
                 world,
                 spawn,
                 rings,
                 JsonFields.number(json, "referenceTimeSeconds", what),
                 MapDefinitionAdapter.boostConfig(json, what),
                 MapDefinitionAdapter.guideLine(json, what),
-                MapDefinitionAdapter.ringEffects(json, what));
+                MapDefinitionAdapter.ringEffects(json, what),
+                JsonFields.displayName(json, what),
+                CatalogIdentity.authors(json, what));
     }
 }

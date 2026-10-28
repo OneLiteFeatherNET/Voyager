@@ -26,7 +26,7 @@ WARN  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] Skipping a chunk which i
 WARN  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] Skipping a chunk which is not fully generated chunk=[-32,-55] status=features region=worlds/DragonLobby/region dim=minecraft:overworld
 INFO  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] Closing the anvil loader after 9429 loaded, 11051 skipped and 0 saved chunks with 0 errors, 0 unknown blocks and 0 unknown biomes region=worlds/DragonLobby/region dim=minecraft:overworld
 WARN  [net.onelitefeather.falco.anvil.FalcoAnvilLoader] The anvil loader skipped 11051 chunks: 0 had no region file, 6210 had no entry in their region file and 4841 are not fully generated (biomes x416, features x400, liquid_carvers x408, structure_starts x3617) region=worlds/DragonLobby/region dim=minecraft:overworld
-ERROR <WORK>/catalog/cups VOYAGER_CUP: the cup directory holds 2 cup file(s) [alpha_cup.json, legacy_cup.json] and none was chosen; set -Pcup=<name> (Gradle) or -DVOYAGER_CUP=<name> (java -jar); the cups that parsed are [alpha_cup, legacy_cup]
+ERROR <WORK>/catalog/cups VOYAGER_CUP: the cup directory holds 2 cup file(s) [alpha_cup.json, legacy_cup.json] and none was chosen; set -Pcup=<name> (Gradle) or -DVOYAGER_CUP=<name> (java -jar); the cups that parsed are [elytrarace:alpha_cup, elytrarace:legacy_cup]
 ERROR <WORK>/worlds/NoSuchWorld VOYAGER_LOBBY_WORLD: the lobby world 'NoSuchWorld' is not a folder; looked for <WORK>/worlds/NoSuchWorld
 config check failed: 2 error(s)
 exit=1

@@ -17,6 +17,8 @@ import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 
+import net.kyori.adventure.key.Key;
+
 import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.reflect.Type;
@@ -38,8 +40,8 @@ import java.util.List;
  * can honour — the rounding would be invisible in the file and visible in the race. The conversion
  * happened once, in {@code tools/map-converter}, and the committed file carries the answer.
  *
- * <p>Two fields may be left out because the loader derives them: {@code world}, which is the map's
- * {@code name}, and each ring's {@code index}, which is its position in the array. Every other field this
+ * <p>Two fields may be left out because the loader derives them: {@code world}, which is the value of the map's
+ * key, and each ring's {@code index}, which is its position in the array. Every other field this
  * record needs is required by name above, so a misspelt one already fails as an absent one — with
  * {@code world} the misspelling is not caught here, and the boot check that the world directory exists
  * is what catches it.
@@ -56,9 +58,9 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
     @Override
     public MapDefinition deserialize(JsonElement element, Type type, JsonDeserializationContext context) {
         JsonObject json = JsonFields.object(element, "a map");
-        String name = JsonFields.string(json, "name", "a map");
-        String what = "map '%s'".formatted(name);
-        SchemaVersion.read(json, what);
+        String what = CatalogIdentity.describe(json, "map");
+        int version = SchemaVersion.read(json, what);
+        Key key = CatalogIdentity.read(json, version, what);
 
         JsonArray ringElements = JsonFields.array(json, "rings", what);
         List<Ring> rings = new ArrayList<>();
@@ -72,28 +74,30 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
         }
 
         return new MapDefinition(
-                name,
-                world(json, name, what),
+                key,
+                world(json, key.value(), what),
                 context.deserialize(JsonFields.required(json, "spawn", what), Vec3.class),
                 rings,
                 Duration.ofMillis(Math.round(seconds * 1000.0)),
                 boostConfig(json, what),
                 guideLine(json, what),
                 ringEffects(json, what),
-                JsonFields.displayName(json, what));
+                JsonFields.displayName(json, what),
+                CatalogIdentity.authors(json, what));
     }
 
     /**
      * Reads the world directory the map races in.
      *
-     * <p>When the file omits {@code world} the world is the map's {@code name}, byte for byte. A stated
-     * world is kept exactly as written, including when it differs from the name, because the shipped
-     * course's world directory is named with capitals its map name does not have. A stated world that is
-     * blank is refused here, naming the field, rather than left to the record's less specific message.
+     * <p>When the file omits {@code world} the world is the value of the map's key, byte for byte: the flat name
+     * of a version 1 file, or the part after the colon of a version 2 key. A stated world is kept exactly as
+     * written, including when it differs from the name, because the shipped course's world directory is named with
+     * capitals its map name does not have. A stated world that is blank is refused here, naming the field, rather
+     * than left to the record's less specific message.
      */
-    private static String world(JsonObject json, String name, String what) {
+    private static String world(JsonObject json, String defaultWorld, String what) {
         if (!JsonFields.present(json, "world")) {
-            return name;
+            return defaultWorld;
         }
         String world = JsonFields.string(json, "world", what);
         if (world.isBlank()) {

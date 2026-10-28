@@ -1,8 +1,11 @@
 {
   "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
-  "schemaVersion": 1,
-  "name": "palmbeach",
+  "schemaVersion": 2,
+  "key": "elytrarace:palm_beach",
   "displayName": "PalmBeach",
+  "authors": [
+    { "uuid": "e1dff87a-1059-47f1-bc7d-533f072bf8c7", "name": "Seelenretterin" }
+  ],
   "world": "PalmBeach",
   "spawn": {
     "x": 19.0,

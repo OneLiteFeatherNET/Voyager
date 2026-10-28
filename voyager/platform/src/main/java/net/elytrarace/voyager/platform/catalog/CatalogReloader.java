@@ -63,7 +63,7 @@ public final class CatalogReloader {
         }
         CupDefinition played = CupResolution.resolve(reading, chosen);
         Optional<UnresolvedCupMapException> unresolved = CatalogConsistency.unresolvedCupMaps(
-                reading.snapshot().maps(), Map.of(played.name(), played));
+                reading.snapshot().maps(), Map.of(played.key().asString(), played));
         if (unresolved.isPresent()) {
             throw unresolved.get();
         }
@@ -97,7 +97,7 @@ public final class CatalogReloader {
         // As boot does: the cross-check runs for the played cup only, and only when no map or directory is broken.
         // A map that does not parse would otherwise be reported as a dangling entry of every cup that names it.
         if (played.isPresent() && reading.catalogueProblems().isEmpty()) {
-            CatalogConsistency.unresolvedCupMaps(reading.snapshot().maps(), Map.of(played.get().name(), played.get()))
+            CatalogConsistency.unresolvedCupMaps(reading.snapshot().maps(), Map.of(played.get().key().asString(), played.get()))
                     .ifPresent(unresolved -> problems.add(problem(
                             dataDirectory.resolve("cups").toString(), "cup", unresolved.getMessage())));
         }
@@ -110,7 +110,7 @@ public final class CatalogReloader {
         for (String world : needed) {
             if (!worlds.holdsRegionData(world)) {
                 problems.add(problem(world, "world", "holds no region data; the maps of cup '%s' need it"
-                        .formatted(cup.name())));
+                        .formatted(cup.key().asString())));
             }
         }
         if (!problems.isEmpty()) {

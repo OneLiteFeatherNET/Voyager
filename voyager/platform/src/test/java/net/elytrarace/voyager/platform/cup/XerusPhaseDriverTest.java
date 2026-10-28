@@ -155,10 +155,10 @@ class XerusPhaseDriverTest {
         assertThat(listener.lobbyRemaining().getFirst()).isEqualTo(TIMINGS.lobby().minus(STEP));
         assertThat(listener.lobbyRemaining().getLast()).isEqualTo(STEP);
         assertThat(listener.lobbyRemaining()).doesNotContain(Duration.ZERO);
-        assertThat(listener.events()).contains("mapStarted 0 ember-ascent");
-        assertThat(listener.events().indexOf("mapStarted 0 ember-ascent"))
+        assertThat(listener.events()).contains("mapStarted 0 elytrarace:ember-ascent");
+        assertThat(listener.events().indexOf("mapStarted 0 elytrarace:ember-ascent"))
                 .as("every lobby tick is reported before the map starts")
-                .isGreaterThan(listener.events().indexOf("lobbyTick 0 ember-ascent %s".formatted(STEP.toMillis())));
+                .isGreaterThan(listener.events().indexOf("lobbyTick 0 elytrarace:ember-ascent %s".formatted(STEP.toMillis())));
     }
 
     /** The second map's lobby names the second map, so a countdown cannot announce the wrong course. */
@@ -172,7 +172,7 @@ class XerusPhaseDriverTest {
             driver.onUpdate();
         }
 
-        assertThat(listener.events()).contains("lobbyTick 1 glacier-chicane %s".formatted(
+        assertThat(listener.events()).contains("lobbyTick 1 elytrarace:glacier-chicane %s".formatted(
                 TIMINGS.lobby().minus(STEP).toMillis()));
     }
 
@@ -206,10 +206,10 @@ class XerusPhaseDriverTest {
                 .filter(event -> !event.startsWith("raceTick") && !event.startsWith("lobbyTick"))
                 .toList())
                 .containsExactly(
-                        "mapStarted 0 ember-ascent",
-                        "mapFinished 0 ember-ascent @40",
-                        "mapStarted 1 glacier-chicane",
-                        "mapFinished 1 glacier-chicane @40");
+                        "mapStarted 0 elytrarace:ember-ascent",
+                        "mapFinished 0 elytrarace:ember-ascent @40",
+                        "mapStarted 1 elytrarace:glacier-chicane",
+                        "mapFinished 1 elytrarace:glacier-chicane @40");
         assertThat(listener.raceTicks()).hasSize(2 * GAME_TICKS);
     }
 
@@ -225,8 +225,8 @@ class XerusPhaseDriverTest {
         // before advancing the phase would slip one into the LOBBY -> GAME transition tick and land
         // on GAME_TICKS + 1 here.
         List<String> events = listener.events();
-        int started = events.indexOf("mapStarted 0 ember-ascent");
-        int finished = events.indexOf("mapFinished 0 ember-ascent @40");
+        int started = events.indexOf("mapStarted 0 elytrarace:ember-ascent");
+        int finished = events.indexOf("mapFinished 0 elytrarace:ember-ascent @40");
         assertThat(started).isNotNegative();
         assertThat(finished).isGreaterThan(started);
         assertThat(events.subList(started + 1, finished)).hasSize(GAME_TICKS);
@@ -299,8 +299,8 @@ class XerusPhaseDriverTest {
 
         // The state machine sees the flag on the tick after the tenth, so the tenth is the last
         // movement tick of map one.
-        assertThat(listener.events()).contains("mapFinished 0 ember-ascent @10");
-        assertThat(listener.events()).contains("mapFinished 1 glacier-chicane @40");
+        assertThat(listener.events()).contains("mapFinished 0 elytrarace:ember-ascent @10");
+        assertThat(listener.events()).contains("mapFinished 1 elytrarace:glacier-chicane @40");
         assertThat(listener.raceTicks()).hasSize(10 + GAME_TICKS);
     }
 
@@ -367,7 +367,7 @@ class XerusPhaseDriverTest {
 
         // The driver stopped playing movement ticks on exactly the tick the run finished on, and the
         // clock it reported the map finished with is the run's own finish clock.
-        assertThat(racer.events()).contains("mapFinished 0 ember-ascent @6", "mapFinished 1 glacier-chicane @9");
+        assertThat(racer.events()).contains("mapFinished 0 elytrarace:ember-ascent @6", "mapFinished 1 elytrarace:glacier-chicane @9");
         assertThat(racer.raceTicks()).hasSize(6 + 9);
         assertThat(racer.raceTicks()).extracting(RaceClock::gameTick)
                 .containsExactly(1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 7, 8, 9);

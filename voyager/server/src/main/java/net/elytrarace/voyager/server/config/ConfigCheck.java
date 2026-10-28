@@ -200,7 +200,7 @@ public final class ConfigCheck {
     private static List<ConfigProblem> playedCupProblems(ServerSettings settings, InstanceManager instances,
             Optional<CupDefinition> played, Function<String, String> sources) {
         Predicate<MapDefinition> playedMap = played
-                .<Predicate<MapDefinition>>map(cup -> map -> cup.mapNames().contains(map.name()))
+                .<Predicate<MapDefinition>>map(cup -> map -> cup.mapNames().contains(map.key().asString()))
                 .orElse(map -> false);
         return problems(settings, instances, playedMap, sources);
     }
@@ -250,7 +250,7 @@ public final class ConfigCheck {
             return errors;
         }
         CatalogReading reading = CatalogLoader.read(settings.dataPath());
-        Path playedFile = reading.cupFilesByName().get(played.get().name()).toAbsolutePath().normalize();
+        Path playedFile = reading.cupFilesByName().get(played.get().key().asString()).toAbsolutePath().normalize();
         Path cupsDirectory = settings.dataPath().resolve("cups").toAbsolutePath().normalize();
         return errors.stream()
                 .filter(problem -> !isOtherCupFile(problem.source(), cupsDirectory, playedFile))
@@ -346,7 +346,7 @@ public final class ConfigCheck {
         if (played.isPresent()) {
             return List.of(error(ServerSettings.LOBBY_WORLD_PROPERTY, sources.apply(ServerSettings.LOBBY_WORLD_PROPERTY),
                     "%s names world '%s', which map '%s' plays; a racer waiting in a map's world is inside that map's race"
-                            .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, world, played.get().name())));
+                            .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, world, played.get().key().asString())));
         }
         String folder = settings.worldsPath().resolve(world).toAbsolutePath().toString();
         return switch (WorldFolders.check(settings.worldsPath(), world)) {

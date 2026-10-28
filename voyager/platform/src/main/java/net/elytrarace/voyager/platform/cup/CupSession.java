@@ -386,7 +386,7 @@ public final class CupSession implements RacePhaseListener {
         driver = next;
         next.start();
         LOGGER.info("Cup '{}' started: {} map(s), mode {}, lobby {}, race {}, results {} between maps "
-                        + "and {} after the last", cup.name(), cup.mapNames().size(), cup.mode(),
+                        + "and {} after the last", cup.key().asString(), cup.mapNames().size(), cup.mode(),
                 played.lobby(), played.race(), played.endBetweenMaps(), played.endAfterLastMap());
     }
 
@@ -711,7 +711,7 @@ public final class CupSession implements RacePhaseListener {
 
         WorldHealth health = instances.healthOf(map.world());
         LOGGER.info("Map {}/{} '{}' started on world '{}' with {} racer(s) — {}",
-                mapIndex + 1, cup.mapNames().size(), map.name(), map.world(), racers.size(), health.describe());
+                mapIndex + 1, cup.mapNames().size(), map.key().asString(), map.world(), racers.size(), health.describe());
         if (!health.isSound()) {
             LOGGER.warn("World '{}' is not sound: {}", map.world(), health.describe());
         }
@@ -738,7 +738,7 @@ public final class CupSession implements RacePhaseListener {
         placedOn.values().removeIf(placed -> placed != mapIndex);
         tally.clear();
         ringEffects = RingEffectRegistry.create(map.ringEffects());
-        LOGGER.info("Map {}/{} '{}' tuning: {}", mapIndex + 1, cup.mapNames().size(), map.name(), tuningOf(map));
+        LOGGER.info("Map {}/{} '{}' tuning: {}", mapIndex + 1, cup.mapNames().size(), map.key().asString(), tuningOf(map));
         Instance instance = instances.forWorld(map.world());
         blocks.follow(instance);
         announcer.broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), map.displayName(),
@@ -752,7 +752,7 @@ public final class CupSession implements RacePhaseListener {
         return pinned().snapshot().mapByName(name).orElseThrow(() -> new IllegalStateException(
                 ("cup '%s' plays a map named '%s' that the round's catalogue does not hold; "
                         + "CatalogReloader checks the played cup's maps and should have refused this cup")
-                        .formatted(cup.name(), name)));
+                        .formatted(cup.key().asString(), name)));
     }
 
     @Override
@@ -973,7 +973,7 @@ public final class CupSession implements RacePhaseListener {
                 MapScore score = MapScorer.score(held.get().progress(), map, held.get().timeOnCourse(timings.race()));
                 racers.add(new RaceParticipant(competitor, "COM", true, held.get(), score, 0, 0, Duration.ZERO));
             }
-            RaceCompletion completion = RaceCompletions.of(map.name(), LayoutVersion.of(map), cup.mode(), cup.name(),
+            RaceCompletion completion = RaceCompletions.of(map.key().asString(), LayoutVersion.of(map), cup.mode(), cup.key().asString(),
                     mapStartedAt, clock.instant(), racers);
             if (completion.racers().isEmpty()) {
                 // A map nobody raced is not stored: an empty session would only count a map that was never played.
@@ -981,7 +981,7 @@ public final class CupSession implements RacePhaseListener {
             }
             recorder.recordRace(completion);
         } catch (RuntimeException failure) {
-            LOGGER.warn("Map '{}' was not recorded for statistics: {}", map.name(), failure.getMessage(), failure);
+            LOGGER.warn("Map '{}' was not recorded for statistics: {}", map.key().asString(), failure.getMessage(), failure);
         }
     }
 
@@ -991,7 +991,7 @@ public final class CupSession implements RacePhaseListener {
      */
     private void recordCup() {
         try {
-            CupCompletion completion = CupCompletions.of(cup.name(), cup.mode(), cupStartedAt, clock.instant(),
+            CupCompletion completion = CupCompletions.of(cup.key().asString(), cup.mode(), cupStartedAt, clock.instant(),
                     round.order(), round::of, this::nameOf);
             if (completion.racers().isEmpty()) {
                 // A cup nobody raced is not stored, in the same way as a map nobody raced.
@@ -999,7 +999,7 @@ public final class CupSession implements RacePhaseListener {
             }
             recorder.recordCup(completion);
         } catch (RuntimeException failure) {
-            LOGGER.warn("Cup '{}' was not recorded for statistics: {}", cup.name(), failure.getMessage(), failure);
+            LOGGER.warn("Cup '{}' was not recorded for statistics: {}", cup.key().asString(), failure.getMessage(), failure);
         }
     }
 
@@ -1067,7 +1067,7 @@ public final class CupSession implements RacePhaseListener {
             }
             glides.remove(id);
             Racers.standDown(racer);
-            LOGGER.debug("Racer {} glided out after the map '{}'", racer.getUsername(), glide.map().name());
+            LOGGER.debug("Racer {} glided out after the map '{}'", racer.getUsername(), glide.map().key().asString());
             if (followingMapIndex(glide.mapIndex()) != NO_MAP) {
                 holds.put(id, racer.getPosition());
                 glidedOut.add(id);
@@ -1227,16 +1227,16 @@ public final class CupSession implements RacePhaseListener {
         XerusPhaseDriver current = driver;
         if (current == null) {
             return "cup '%s' (%s map(s), %s) — armed, waiting for enough racers\n%s"
-                    .formatted(cup.name(), cup.mapNames().size(), cup.mode(), catalogueLine());
+                    .formatted(cup.key().asString(), cup.mapNames().size(), cup.mode(), catalogueLine());
         }
         StringBuilder text = new StringBuilder();
         text.append(catalogueLine());
         text.append("collision world: %s\n".formatted(blocks.hasWorld() ? "attached" : "none"));
         text.append("cup '%s' %s — map %s/%s '%s', phase %s after %s, race clock %s (%s tick(s))\n".formatted(
-                cup.name(),
+                cup.key().asString(),
                 current.state().cupFinished() ? "FINISHED" : (current.isRunning() ? "running" : "stopped"),
                 current.state().mapIndex() + 1, cup.mapNames().size(),
-                currentMap == null ? "-" : currentMap.name(),
+                currentMap == null ? "-" : currentMap.key().asString(),
                 current.state().phase(), CupAnnouncer.seconds(current.state().inPhase()),
                 CupAnnouncer.seconds(current.clock().elapsed()), current.clock().gameTick()));
         for (Player racer : players.get()) {

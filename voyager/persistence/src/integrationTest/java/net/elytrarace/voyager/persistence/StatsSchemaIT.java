@@ -41,7 +41,7 @@ class StatsSchemaIT extends DockerRequiredIT {
             applied = FlywayMigrator.migrate(pool);
         }
 
-        assertThat(applied).as("version 1 is the only migration and it runs on an empty database").isEqualTo(1);
+        assertThat(applied).as("versions 1 and 2 are the migrations, and both run on an empty database").isEqualTo(2);
         try (Connection connection = connect(url)) {
             assertThat(tableNames(connection))
                     .as("schema voyager holds the eight tables of design D4 and Flyway's history table")
@@ -49,8 +49,8 @@ class StatsSchemaIT extends DockerRequiredIT {
                             "player", "player_statistics", "race_session", "race_result", "race_split",
                             "cup_session", "cup_result", "map_personal_best", "flyway_schema_history");
             assertThat(successfulVersions(connection))
-                    .as("Flyway recorded version 1 as successful, once")
-                    .containsExactly("1");
+                    .as("Flyway recorded versions 1 and 2 as successful, once")
+                    .containsExactly("1", "2");
         }
     }
 
@@ -64,7 +64,7 @@ class StatsSchemaIT extends DockerRequiredIT {
             int secondStart = FlywayMigrator.migrate(pool);
 
             assertThat(secondStart)
-                    .as("the database is already at version 1, so the second start applies nothing")
+                    .as("the database is already at version 2, so the second start applies nothing")
                     .isZero();
         }
     }

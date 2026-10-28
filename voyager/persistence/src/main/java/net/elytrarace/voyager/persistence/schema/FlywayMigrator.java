@@ -1,7 +1,10 @@
 package net.elytrarace.voyager.persistence.schema;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.output.MigrateResult;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import javax.sql.DataSource;
 
@@ -30,15 +33,29 @@ public final class FlywayMigrator {
      * @throws org.flywaydb.core.api.FlywayException when a migration fails or the schema history does not validate
      */
     public static int migrate(DataSource dataSource) {
-        MigrateResult result = Flyway.configure()
+        return migrateTo(dataSource, null);
+    }
+
+    /**
+     * Applies the pending migrations up to and including {@code version}, so a test can reach an older schema, write
+     * rows the way that schema holds them, and then apply the rest.
+     *
+     * @param dataSource the pool shared with the session factory; it stays open after this call
+     * @param version    the last version to apply, such as {@code "1"}; {@code null} applies every pending migration
+     * @return the number of migrations this call applied
+     */
+    public static int migrateTo(DataSource dataSource, @Nullable String version) {
+        FluentConfiguration configuration = Flyway.configure()
                 .dataSource(dataSource)
                 .schemas(SCHEMA)
                 .createSchemas(true)
                 .baselineOnMigrate(false)
                 .validateOnMigrate(true)
-                .cleanDisabled(true)
-                .load()
-                .migrate();
+                .cleanDisabled(true);
+        if (version != null) {
+            configuration.target(MigrationVersion.fromVersion(version));
+        }
+        MigrateResult result = configuration.load().migrate();
         return result.migrationsExecuted;
     }
 }

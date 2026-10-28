@@ -1,8 +1,11 @@
 {
   "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
-  "schemaVersion": 1,
-  "name": "elytraraceblueandred",
+  "schemaVersion": 2,
+  "key": "elytrarace:blue_and_red",
   "displayName": "Blue & Red",
+  "authors": [
+    { "uuid": "05bf52c6-7bb0-4f13-8951-0e1fd803df35", "name": "TheMeinerLP" }
+  ],
   "world": "ElytraraceBlueAndRed",
   "spawn": {
     "x": 109.0,

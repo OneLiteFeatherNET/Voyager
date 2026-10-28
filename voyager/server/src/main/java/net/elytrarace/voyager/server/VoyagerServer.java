@@ -422,7 +422,7 @@ public final class VoyagerServer {
         for (MapDefinition map : rotation) {
             instances.forWorld(map.world());
             LOGGER.info("Opened world '{}' for map '{}' ({} rings, spawn {})",
-                    map.world(), map.name(), map.rings().size(), map.spawn());
+                    map.world(), map.key().asString(), map.rings().size(), map.spawn());
         }
     }
 

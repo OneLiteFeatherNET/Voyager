@@ -56,7 +56,7 @@ class CommittedMapDataTest {
     @Test
     void theCommittedRacecourseLoadsThroughTheRealCatalogue() {
         MapDefinition map = CatalogLoader.load(RESOURCES)
-                .mapByName("elytraraceblueandred").orElseThrow();
+                .mapByName("blue_and_red").orElseThrow();
 
         assertThat(map.world()).isEqualTo("ElytraraceBlueAndRed");
         assertThat(map.spawn()).isEqualTo(new Vec3(109, -62, 54));
@@ -68,7 +68,7 @@ class CommittedMapDataTest {
     @Test
     void everyRingOfTheCommittedRacecourseCarriesAUnitNormalAndTheOctagonRadius() {
         MapDefinition map = CatalogLoader.load(RESOURCES)
-                .mapByName("elytraraceblueandred").orElseThrow();
+                .mapByName("blue_and_red").orElseThrow();
 
         for (Ring ring : map.rings()) {
             assertThat(ring.normal().length())
@@ -97,7 +97,7 @@ class CommittedMapDataTest {
         // this is the one ring whose answer can be checked against something outside the ring data
         // itself — the authored spawn in the world's level.dat.
         MapDefinition map = CatalogLoader.load(RESOURCES)
-                .mapByName("elytraraceblueandred").orElseThrow();
+                .mapByName("blue_and_red").orElseThrow();
         Ring first = map.rings().getFirst();
 
         assertThat(first.center()).isEqualTo(new Vec3(85, -54, 54));
@@ -111,7 +111,7 @@ class CommittedMapDataTest {
         // and the notes in the file say as much. Pinning them means a balancing pass is a visible
         // change to this test rather than a number that moved without anyone noticing.
         MapDefinition map = CatalogLoader.load(RESOURCES)
-                .mapByName("elytraraceblueandred").orElseThrow();
+                .mapByName("blue_and_red").orElseThrow();
 
         assertThat(map.referenceTime()).isEqualTo(Duration.ofSeconds(60));
         assertThat(map.rings()).extracting(Ring::points).containsOnly(10);
@@ -129,7 +129,7 @@ class CommittedMapDataTest {
     @Test
     void theCommittedBoostTuningIsTheOldFilesCooldownAndTheVanillaDerivedBurn() {
         MapDefinition map = CatalogLoader.load(RESOURCES)
-                .mapByName("elytraraceblueandred").orElseThrow();
+                .mapByName("blue_and_red").orElseThrow();
 
         assertThat(map.boostConfig()).isEqualTo(new BoostConfig(30, 40));
         assertThat(map.boostConfig().burnDurationTicks()).isEqualTo(BoostConfig.VANILLA_BURN_TICKS);
@@ -145,10 +145,10 @@ class CommittedMapDataTest {
         CupDefinition cup = catalog.cupByName("alpha_cup").orElseThrow();
 
         assertThat(cup.mode()).isEqualTo(GameMode.RACE);
-        assertThat(cup.mapNames()).containsExactly("elytraraceblueandred");
+        assertThat(cup.mapNames()).containsExactly("elytrarace:blue_and_red");
         // load() runs the cross-catalogue check, so this returning at all is the assertion that the
         // committed cup resolves against the committed map.
-        assertThat(catalog.mapByName("elytraraceblueandred")).isPresent();
+        assertThat(catalog.mapByName("blue_and_red")).isPresent();
     }
     /**
      * The sixteen guide points of the committed course, and the pair that share a gap.
@@ -269,7 +269,7 @@ class CommittedMapDataTest {
     }
 
     private static MapDefinition committedCourse() {
-        return CatalogLoader.load(RESOURCES).mapByName("elytraraceblueandred").orElseThrow();
+        return CatalogLoader.load(RESOURCES).mapByName("blue_and_red").orElseThrow();
     }
 
 }
