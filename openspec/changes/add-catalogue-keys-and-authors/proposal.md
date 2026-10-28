@@ -40,6 +40,22 @@ server drops the name from a map file. This change makes the writer keep it.
   Proposed, in `design.md` of this change (the precedent is ADR-0039, which was written in its change's design and moved
   to `docs/decisions/` by the code pull request).
 
+## Migration of the shipped catalogue
+
+Approved by the owner. Author UUIDs are the dashed form of the public Mojang profile lookup (`GET
+https://api.mojang.com/users/profiles/minecraft/<name>`), resolved on 2026-10-28.
+
+| Current id | Key | Authors (name, UUID) |
+|---|---|---|
+| `alpha_cup` (cup) | `elytrarace:alpha_cup`, unchanged | none |
+| `legacy_cup` (cup) | `elytrarace:legacy_cup`, unchanged | none |
+| `elytraraceblueandred` | `elytrarace:blue_and_red` | TheMeinerLP, `05bf52c6-7bb0-4f13-8951-0e1fd803df35` |
+| `palmbeach` | `elytrarace:palm_beach` | Seelenretterin, `e1dff87a-1059-47f1-bc7d-533f072bf8c7` |
+| `dragonlobby` | `elytrarace:dragon_lobby` | Seelenretterin, `e1dff87a-1059-47f1-bc7d-533f072bf8c7` |
+| `memoria` | `elytrarace:memoria`, unchanged | Seelenretterin, `e1dff87a-1059-47f1-bc7d-533f072bf8c7` |
+
+Every map keeps its explicit `world`. A one-time Flyway migration rewrites the statistics rows of the flat ids to these keys.
+
 ## Capabilities
 
 ### New Capabilities

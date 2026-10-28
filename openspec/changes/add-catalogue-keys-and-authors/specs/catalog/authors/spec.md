@@ -51,3 +51,16 @@ the field `authors`.
 #### Scenario: Nine authors
 - **WHEN** a cup lists nine authors
 - **THEN** the cup file is refused and the message names the file and `authors`
+
+### Requirement: The shipped maps name their authors as approved by the owner
+**MoSCoW:** Must. THE SYSTEM SHALL ship `elytrarace:blue_and_red` with the author TheMeinerLP, and `elytrarace:palm_beach`,
+`elytrarace:dragon_lobby` and `elytrarace:memoria` with the author Seelenretterin, using the UUIDs of the migration table in
+`proposal.md`. The shipped cups have no authors.
+
+#### Scenario: The shipped map with its author
+- **WHEN** the shipped catalogue is loaded
+- **THEN** the map `elytrarace:blue_and_red` has the author TheMeinerLP with UUID `05bf52c6-7bb0-4f13-8951-0e1fd803df35`
+
+#### Scenario: The three legacy maps share their author
+- **WHEN** the shipped catalogue is loaded
+- **THEN** `elytrarace:palm_beach`, `elytrarace:dragon_lobby` and `elytrarace:memoria` each have the author Seelenretterin with UUID `e1dff87a-1059-47f1-bc7d-533f072bf8c7`

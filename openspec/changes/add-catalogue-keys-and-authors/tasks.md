@@ -40,8 +40,8 @@ ticked in the follow-up pull request, never in the code pull request.
 
 - [ ] 3.1 Red: schema test that a version 2 map with `key` validates against `map.schema.json`, and a version 1 file validates against `map-v1.schema.json` (`feat(catalog)`)
 - [ ] 3.2 Green: write `map.schema.json` and `cup.schema.json` at version 2, and add `map-v1.schema.json` and `cup-v1.schema.json` (`feat(catalog)`)
-- [ ] 3.3 Green: rewrite `cups/alpha_cup.json`, `cups/legacy_cup.json`, and the four maps to version 2 with the keys and explicit worlds of the design table, and rename the files to their values (`feat(catalog)`)
-- [ ] 3.4 Green: add `authors` to the shipped files only for the authors the owner provided (open question 2) (`feat(catalog)`)
+- [ ] 3.3 Green: rewrite `cups/alpha_cup.json`, `cups/legacy_cup.json`, and the four maps to version 2 with the keys and explicit worlds of the design table; rename `elytraraceblueandred.json`, `palmbeach.json` and `dragonlobby.json` to `blue_and_red.json`, `palm_beach.json` and `dragon_lobby.json`, and keep `memoria.json` and both cup files (`feat(catalog)`)
+- [ ] 3.4 Green: add `authors` to the shipped map files as the migration table of `proposal.md` lists them: TheMeinerLP on `blue_and_red`, Seelenretterin on `palm_beach`, `dragon_lobby` and `memoria`; no cup has authors (`feat(catalog)`)
 - [ ] 3.5 Red then Green: `CatalogLoader` test over the shipped data: no problem, and the snapshot holds the six keys of the design table (`feat(catalog)`)
 
 ## 4. Statistics

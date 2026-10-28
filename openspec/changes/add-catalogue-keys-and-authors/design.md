@@ -120,25 +120,26 @@ read the migrated shipped catalogue and a version 1 file, and assert the key of 
 
 ### Shipped catalogue
 
-The table is a proposal, and the owner confirms it (open question 1). The world of each map is written explicitly, so
-the rename does not move a world folder.
+The owner approved this table (keys and authors). The world of each map is written explicitly, so the rename does not move
+a world folder. Author UUIDs are the dashed form of the public Mojang profile lookup
+`GET https://api.mojang.com/users/profiles/minecraft/<name>`, resolved on 2026-10-28.
 
-| Current file and id | Key | `world` (explicit, unchanged) |
-|---|---|---|
-| `cups/alpha_cup.json`, `alpha_cup` | `elytrarace:alpha_cup` | — |
-| `cups/legacy_cup.json`, `legacy_cup` | `elytrarace:legacy_cup` | — |
-| `maps/elytraraceblueandred.json`, `elytraraceblueandred` | `elytrarace:blue_and_red` | `ElytraraceBlueAndRed` |
-| `maps/palmbeach.json`, `palmbeach` | `elytrarace:palm_beach` | `PalmBeach` |
-| `maps/dragonlobby.json`, `dragonlobby` | `elytrarace:dragon_lobby` | `DragonLobby` |
-| `maps/memoria.json`, `memoria` | `elytrarace:memoria` | `Memoria` |
+| Current file and id | Key | `world` (explicit, unchanged) | Authors |
+|---|---|---|---|
+| `cups/alpha_cup.json`, `alpha_cup` | `elytrarace:alpha_cup` | — | none |
+| `cups/legacy_cup.json`, `legacy_cup` | `elytrarace:legacy_cup` | — | none |
+| `maps/elytraraceblueandred.json`, `elytraraceblueandred` | `elytrarace:blue_and_red` | `ElytraraceBlueAndRed` | TheMeinerLP, `05bf52c6-7bb0-4f13-8951-0e1fd803df35` |
+| `maps/palmbeach.json`, `palmbeach` | `elytrarace:palm_beach` | `PalmBeach` | Seelenretterin, `e1dff87a-1059-47f1-bc7d-533f072bf8c7` |
+| `maps/dragonlobby.json`, `dragonlobby` | `elytrarace:dragon_lobby` | `DragonLobby` | Seelenretterin, `e1dff87a-1059-47f1-bc7d-533f072bf8c7` |
+| `maps/memoria.json`, `memoria` | `elytrarace:memoria` (unchanged) | `Memoria` | Seelenretterin, `e1dff87a-1059-47f1-bc7d-533f072bf8c7` |
 
 Steps, each its own commit under `feat(catalog)` or `docs`:
 
 1. Rewrite each shipped file to `"schemaVersion": 2`, `"key"`, the explicit `world`, and the `$schema` of the version 2
-   schema. The file name becomes the value (`blue_and_red.json`). `displayName` stays as it is.
+   schema. The file name becomes the value (`blue_and_red.json`, `palm_beach.json`, `dragon_lobby.json`; `memoria.json` and
+   the two cup files keep their names). `displayName` stays as it is.
 2. Rewrite the `mapNames` of `alpha_cup` and `legacy_cup` to the keys.
-3. Authors are added only when the owner provides them. A UUID cannot be invented, so the shipped files carry no
-   `authors` until then (open question 2).
+3. Add the `authors` of the table to the map files. Cups have no authors in the shipped data.
 4. `CatalogLoader` boot check: the shipped catalogue loads with no problem, and `CatalogConsistency` finds each `mapNames`
    entry.
 
@@ -180,10 +181,10 @@ the platform. The new `Author` and `Key` types are API types, so no platform typ
 
 These are not settled by the code and the owner decides them before the code PR is opened.
 
-1. **Shipped key values.** The table above uses `blue_and_red` (the owner's example), `palm_beach` and `dragon_lobby`
-   (proposed). Confirm the six values.
-2. **Authors of the shipped maps and cups.** The owner gives each author's Minecraft UUID and name. Without them the
-   shipped catalogue has no authors, and the display change has nothing to show.
+1. **Shipped key values. Resolved by the owner:** `blue_and_red`, `palm_beach` and `dragon_lobby`; `memoria`, `alpha_cup`
+   and `legacy_cup` stay unchanged.
+2. **Authors of the shipped maps. Resolved by the owner:** TheMeinerLP for `blue_and_red`; Seelenretterin for `palm_beach`,
+   `dragon_lobby` and `memoria`. The UUIDs are in the migration table. The cups have no authors.
 3. **Setup commands for the new fields.** The setup server can keep and write `displayName` and `authors`, but nothing in
    the setup commands sets them. Recommendation: a follow-up change adds `/map name` and `/map author`. Including them
    now grows this change by a command set and two bundle parity sets.
