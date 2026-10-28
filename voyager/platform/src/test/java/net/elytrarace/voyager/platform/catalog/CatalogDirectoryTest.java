@@ -31,9 +31,9 @@ class CatalogDirectoryTest {
         CatalogFixtures.map(maps, "alpha.json", "first", "W1");
         CatalogFixtures.map(maps, "mike.json", "second", "W2");
 
-        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, MapDefinition::name, new ArrayList<>());
+        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, map -> map.key().asString(), new ArrayList<>());
 
-        assertThat(read.keySet()).containsExactly("first", "second", "third");
+        assertThat(read.keySet()).containsExactly("elytrarace:first", "elytrarace:second", "elytrarace:third");
     }
 
     @Test
@@ -42,14 +42,14 @@ class CatalogDirectoryTest {
         CatalogFixtures.map(maps, "zulu.json", "blue", "ADifferentWorld");
         List<CatalogProblem> problems = new ArrayList<>();
 
-        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, MapDefinition::name, problems);
+        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, map -> map.key().asString(), problems);
 
-        assertThat(read.get("blue").world()).isEqualTo("ElytraraceBlueAndRed");
+        assertThat(read.get("elytrarace:blue").world()).isEqualTo("ElytraraceBlueAndRed");
         assertThat(problems).hasSize(1);
         assertThat(problems.getFirst().source()).isEqualTo(maps.resolve("zulu.json"));
         assertThat(problems.getFirst().cause()).isInstanceOf(DuplicateCatalogEntryException.class);
         assertThat(problems.getFirst().message())
-                .contains("'blue'", "alpha.json", "zulu.json");
+                .contains("'elytrarace:blue'", "alpha.json", "zulu.json");
     }
 
     @Test
@@ -58,9 +58,9 @@ class CatalogDirectoryTest {
         CatalogFixtures.write(maps, "alpha.json.bak", "{ not json at all");
         CatalogFixtures.write(maps, "notes.md", "# the maps");
 
-        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, MapDefinition::name, new ArrayList<>());
+        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, map -> map.key().asString(), new ArrayList<>());
 
-        assertThat(read.keySet()).containsExactly("blue");
+        assertThat(read.keySet()).containsExactly("elytrarace:blue");
     }
 
     @Test
@@ -70,9 +70,9 @@ class CatalogDirectoryTest {
         CatalogFixtures.map(maps, "alpha.json", "blue", "ElytraraceBlueAndRed");
         CatalogFixtures.write(maps.resolve("old-layout"), "map.json", "{ \"uuid\": {} }");
 
-        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, MapDefinition::name, new ArrayList<>());
+        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, map -> map.key().asString(), new ArrayList<>());
 
-        assertThat(read.keySet()).containsExactly("blue");
+        assertThat(read.keySet()).containsExactly("elytrarace:blue");
     }
 
     @Test
@@ -82,16 +82,16 @@ class CatalogDirectoryTest {
         CatalogFixtures.map(maps, "alpha.json", "blue", "ElytraraceBlueAndRed");
         CatalogFixtures.write(maps.resolve("archive.json"), "old.json", "{}");
 
-        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, MapDefinition::name, new ArrayList<>());
+        Map<String, MapDefinition> read = read(maps, "map", MapDefinition.class, map -> map.key().asString(), new ArrayList<>());
 
-        assertThat(read.keySet()).containsExactly("blue");
+        assertThat(read.keySet()).containsExactly("elytrarace:blue");
     }
 
     @Test
     void recordsAMissingDirectoryAsOneProblemAndReadsNothing(@TempDir Path root) {
         List<CatalogProblem> problems = new ArrayList<>();
 
-        Map<String, CupDefinition> read = read(root.resolve("nothing"), "cup", CupDefinition.class, CupDefinition::name, problems);
+        Map<String, CupDefinition> read = read(root.resolve("nothing"), "cup", CupDefinition.class, cup -> cup.key().asString(), problems);
 
         assertThat(read).isEmpty();
         assertThat(problems).hasSize(1);

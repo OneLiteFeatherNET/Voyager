@@ -39,8 +39,8 @@ class FileSchemaTest {
     private static final String VALID_MAP = """
             {
               "$schema": "../schema/map.schema.json",
-              "schemaVersion": 1,
-              "name": "sky-drift",
+              "schemaVersion": 2,
+              "key": "elytrarace:sky-drift",
               "spawn": { "x": 0.0, "y": 80.0, "z": 0.0 },
               "referenceTimeSeconds": 60.0,
               "boostConfig": { "burnDurationTicks": 30, "cooldownTicks": 40 },
@@ -60,8 +60,8 @@ class FileSchemaTest {
     private static final String VALID_CUP = """
             {
               "$schema": "../schema/cup.schema.json",
-              "schemaVersion": 1,
-              "name": "sky_cup",
+              "schemaVersion": 2,
+              "key": "elytrarace:sky_cup",
               "mode": "RACE",
               "mapNames": [ "sky-drift" ],
               "notes": [ "hand-written" ]
@@ -70,7 +70,7 @@ class FileSchemaTest {
 
     @Test
     void committedMapValidatesAgainstMapSchema() {
-        assertThat(errors(mapSchema(), readCommitted("maps/elytraraceblueandred.json"))).isEmpty();
+        assertThat(errors(mapSchema(), readCommitted("maps/blue_and_red.json"))).isEmpty();
     }
 
     @Test
@@ -80,17 +80,17 @@ class FileSchemaTest {
 
     @Test
     void committedMapDeclaresSchemaVersionOne() {
-        assertThat(readCommitted("maps/elytraraceblueandred.json").get("schemaVersion").asInt()).isEqualTo(1);
+        assertThat(readCommitted("maps/blue_and_red.json").get("schemaVersion").asInt()).isEqualTo(2);
     }
 
     @Test
     void committedCupDeclaresSchemaVersionOne() {
-        assertThat(readCommitted("cups/alpha_cup.json").get("schemaVersion").asInt()).isEqualTo(1);
+        assertThat(readCommitted("cups/alpha_cup.json").get("schemaVersion").asInt()).isEqualTo(2);
     }
 
     @Test
     void everyShippedFileResolvesItsSchemaPathToTheSchemaOfItsKind() {
-        assertResolvesTo("maps/elytraraceblueandred.json", "map.schema.json");
+        assertResolvesTo("maps/blue_and_red.json", "map.schema.json");
         assertResolvesTo("cups/alpha_cup.json", "cup.schema.json");
     }
 
@@ -107,14 +107,14 @@ class FileSchemaTest {
 
     @Test
     void aMapWithAStringDisplayNameValidates() {
-        String named = VALID_MAP.replace("\"name\": \"sky-drift\",", "\"name\": \"sky-drift\",\n  \"displayName\": \"Sky Drift\",");
+        String named = VALID_MAP.replace("\"key\": \"elytrarace:sky-drift\",", "\"key\": \"elytrarace:sky-drift\",\n  \"displayName\": \"Sky Drift\",");
 
         assertThat(errors(mapSchema(), JSON.readTree(named))).isEmpty();
     }
 
     @Test
     void aCupWithAStringDisplayNameValidates() {
-        String named = VALID_CUP.replace("\"name\": \"sky_cup\",", "\"name\": \"sky_cup\",\n  \"displayName\": \"Sky Cup\",");
+        String named = VALID_CUP.replace("\"key\": \"elytrarace:sky_cup\",", "\"key\": \"elytrarace:sky_cup\",\n  \"displayName\": \"Sky Cup\",");
 
         assertThat(errors(cupSchema(), JSON.readTree(named))).isEmpty();
     }
@@ -145,10 +145,51 @@ class FileSchemaTest {
     }
 
     @Test
-    void schemaVersionTwoIsOutOfRangeInTheMapSchema() {
-        String version2 = VALID_MAP.replace("\"schemaVersion\": 1", "\"schemaVersion\": 2");
+    void aVersionOneMapWithAFlatNameValidatesAgainstTheVersionOneSchema() {
+        String version1 = VALID_MAP.replace("\"schemaVersion\": 2", "\"schemaVersion\": 1")
+                .replace("\"key\": \"elytrarace:sky-drift\"", "\"name\": \"sky-drift\"");
 
-        assertThat(errors(mapSchema(), JSON.readTree(version2))).anySatisfy(
+        assertThat(errors(mapV1Schema(), JSON.readTree(version1))).isEmpty();
+    }
+
+    @Test
+    void aVersionOneMapWithAFlatNameIsRefusedByTheVersionTwoSchema() {
+        String version1 = VALID_MAP.replace("\"schemaVersion\": 2", "\"schemaVersion\": 1")
+                .replace("\"key\": \"elytrarace:sky-drift\"", "\"name\": \"sky-drift\"");
+
+        assertThat(errors(mapSchema(), JSON.readTree(version1))).isNotEmpty();
+    }
+
+    @Test
+    void aVersionTwoCupWithoutAKeyIsRejectedNamingTheKey() {
+        String withoutKey = VALID_CUP.replace("\"key\": \"elytrarace:sky_cup\",", "");
+
+        assertThat(errors(cupSchema(), JSON.readTree(withoutKey))).anySatisfy(
+                error -> assertThat(error.getMessage()).contains("key"));
+    }
+
+    @Test
+    void aKeyInAnotherNamespaceIsRejectedByTheSchema() {
+        String otherNamespace = VALID_MAP.replace("elytrarace:sky-drift", "other:sky-drift");
+
+        assertThat(errors(mapSchema(), JSON.readTree(otherNamespace))).anySatisfy(
+                error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/key"));
+    }
+
+    @Test
+    void anAuthorWithAUuidThatIsNotAUuidIsRejected() {
+        String badAuthor = VALID_MAP.replace("\"notes\"", "\"authors\": [ { \"uuid\": \"not-a-uuid\", "
+                + "\"name\": \"TheMeinerLP\" } ],\n  \"notes\"");
+
+        assertThat(errors(mapSchema(), JSON.readTree(badAuthor))).anySatisfy(
+                error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/authors/0/uuid"));
+    }
+
+    @Test
+    void schemaVersionThreeIsOutOfRangeInTheMapSchema() {
+        String version3 = VALID_MAP.replace("\"schemaVersion\": 2", "\"schemaVersion\": 3");
+
+        assertThat(errors(mapSchema(), JSON.readTree(version3))).anySatisfy(
                 error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/schemaVersion"));
     }
 
@@ -259,6 +300,10 @@ class FileSchemaTest {
 
     private static Schema cupSchema() {
         return schema("cup.schema.json");
+    }
+
+    private static Schema mapV1Schema() {
+        return schema("map-v1.schema.json");
     }
 
     private static Schema schema(String name) {

@@ -85,7 +85,7 @@ class ConfigCheckRunTest {
         ShippedCatalogue.copyMapsInto(data);
         ShippedCatalogue.copyCupsInto(data);
         Files.createDirectories(worlds);
-        Path mapFile = data.resolve("maps/elytraraceblueandred.json");
+        Path mapFile = data.resolve("maps/blue_and_red.json");
 
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
         int exit = ConfigCheck.run(settings(data, worlds, "alpha_cup"), env.process().instance(), stream(captured));
@@ -237,7 +237,7 @@ class ConfigCheckRunTest {
                 env.process().instance());
 
         assertThat(refusals).extracting(ConfigProblem::source, ConfigProblem::key).containsExactly(
-                tuple(played.toAbsolutePath().toString(), "no-such-map"));
+                tuple(played.toAbsolutePath().toString(), "elytrarace:no-such-map"));
     }
 
     /**
@@ -316,9 +316,9 @@ class ConfigCheckRunTest {
 
     /** Adds a second cup, beta_cup, that plays a copy of the shipped map on a world of its own, cut short on disk. */
     private static void addBetaCupOnItsOwnWorld(Env env, Path data, Path worlds) throws IOException {
-        Path shipped = data.resolve("maps").resolve("elytraraceblueandred.json");
+        Path shipped = data.resolve("maps").resolve("blue_and_red.json");
         Files.writeString(data.resolve("maps").resolve("beta.json"), Files.readString(shipped)
-                .replace("\"elytraraceblueandred\"", "\"beta-map\"")
+                .replace("\"elytrarace:blue_and_red\"", "\"elytrarace:beta-map\"")
                 .replace("\"ElytraraceBlueAndRed\"", "\"BetaWorld\""));
         Files.writeString(data.resolve("cups").resolve("beta_cup.json"), """
                 {"name": "beta_cup", "mode": "RACE", "mapNames": ["beta-map"]}

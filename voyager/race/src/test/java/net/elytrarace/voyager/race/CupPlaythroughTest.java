@@ -200,14 +200,14 @@ class CupPlaythroughTest {
     private static final String CUP_NAME = "frostfire-cup";
 
     private static final CupDefinition FROSTFIRE_CUP = new CupDefinition(CUP_NAME,
-            List.of(EMBER_ASCENT.name(), GLACIER_CHICANE.name()), GameMode.RACE);
+            List.of(EMBER_ASCENT.key().asString(), GLACIER_CHICANE.key().asString()), GameMode.RACE);
 
     /**
      * The in-memory catalogs the ports were designed for: {@code voyager-race} is handed a catalog
      * rather than loading one, so a whole cup resolves here without Gson or a filesystem.
      */
     private static final MapCatalog MAP_CATALOG = name -> List.of(EMBER_ASCENT, GLACIER_CHICANE).stream()
-            .filter(map -> map.name().equals(name))
+            .filter(map -> map.key().asString().equals(name))
             .findFirst();
 
     private static final CupCatalog CUP_CATALOG =
@@ -352,7 +352,7 @@ class CupPlaythroughTest {
         for (Placement<String> awarded : PlacementBonus.award(beforePlacement, mode)) {
             Racing racing = runs.get(awarded.key());
             RaceRun run = racing.run();
-            RESULTS.add(new Result(mapIndex, map.name(), awarded.key(), run.progress(),
+            RESULTS.add(new Result(mapIndex, map.key().asString(), awarded.key(), run.progress(),
                     run.passedOnGameTick(), run.finishedAt().map(RaceClock::gameTick).orElse(NOT_FINISHED),
                     awarded.score(), racing.velocity(), racing.effectsApplied()));
         }
@@ -401,8 +401,8 @@ class CupPlaythroughTest {
                 .containsExactly(0, 1);
 
         assertThat(RESULTS).extracting(Result::mapName)
-                .containsExactly("ember-ascent", "ember-ascent", "ember-ascent",
-                        "glacier-chicane", "glacier-chicane", "glacier-chicane");
+                .containsExactly("elytrarace:ember-ascent", "elytrarace:ember-ascent", "elytrarace:ember-ascent",
+                        "elytrarace:glacier-chicane", "elytrarace:glacier-chicane", "elytrarace:glacier-chicane");
 
         // Not just loaded: raced. Map two's rings were passed, on map two's own ring count of four.
         assertThat(resultFor(1, "Rook").progress().passedCount()).isEqualTo(4);

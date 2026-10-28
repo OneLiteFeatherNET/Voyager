@@ -210,7 +210,7 @@ class CupSessionLobbyTest {
         MapTransition transition = new MapTransition(instances, runs);
         CupDefinition cup = new CupDefinition("lobby_cup", List.of("arena-run"), mode);
         CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
-                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(cup.name(), cup)),
+                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(cup.key().asString(), cup)),
                 cup, Instant.EPOCH));
         RaceTimings timings = new RaceTimings(lobby, race, Duration.ofMillis(100), Duration.ofMillis(100));
         List<Player> field = racers;

@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.catalog.writer;
 
 import com.google.gson.stream.JsonWriter;
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.Author;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
@@ -16,15 +17,16 @@ import java.io.StringWriter;
 import java.io.UncheckedIOException;
 
 /**
- * Writes a draft in the key order of the shipped map: {@code schemaVersion} first, then {@code name}, {@code world},
- * {@code spawn} (left out while no spawn is set), {@code referenceTimeSeconds}, {@code boostConfig}, {@code guideLine}
- * and {@code rings}. Every ring writes {@code index}, always.
+ * Writes a draft in the key order of the shipped map: {@code schemaVersion} first, then {@code key}, {@code world},
+ * {@code displayName} and {@code authors} (each left out when not set), {@code spawn} (left out while no spawn is set),
+ * {@code referenceTimeSeconds}, {@code boostConfig}, {@code guideLine} and {@code rings}. Every ring writes
+ * {@code index}, always.
  */
 @ApiStatus.Internal
 public abstract class MapDraftJsonWriter {
 
-    /** The schema version this writer produces; the adapter of the game server reads version 1. */
-    static final int SCHEMA_VERSION = 1;
+    /** The schema version this writer produces; the adapter of the game server reads version 2 (ADR-0040). */
+    static final int SCHEMA_VERSION = 2;
 
     private MapDraftJsonWriter() {
     }
@@ -49,8 +51,21 @@ public abstract class MapDraftJsonWriter {
     private static void writeDraft(JsonWriter json, MapDraft draft) throws IOException {
         json.beginObject();
         json.name("schemaVersion").value(SCHEMA_VERSION);
-        json.name("name").value(draft.id().value());
+        json.name("key").value(draft.key().asString());
         json.name("world").value(draft.world());
+        if (draft.displayName() != null && !draft.displayName().isBlank()) {
+            json.name("displayName").value(draft.displayName());
+        }
+        if (!draft.authors().isEmpty()) {
+            json.name("authors").beginArray();
+            for (Author author : draft.authors()) {
+                json.beginObject()
+                        .name("uuid").value(author.uuid().toString())
+                        .name("name").value(author.name())
+                        .endObject();
+            }
+            json.endArray();
+        }
         if (draft.spawn() != null) {
             json.name("spawn");
             vector(json, draft.spawn());

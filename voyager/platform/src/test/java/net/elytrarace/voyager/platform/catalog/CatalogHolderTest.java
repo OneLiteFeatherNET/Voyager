@@ -107,7 +107,7 @@ class CatalogHolderTest {
 
     private static LoadedCatalog catalog(String tag) {
         MapDefinition map = CatalogFixtures.mapNamed("map-" + tag);
-        CupDefinition cup = CatalogFixtures.cupNamed("cup-" + tag, map.name());
-        return new LoadedCatalog(new CatalogSnapshot(Map.of(map.name(), map), Map.of(cup.name(), cup)), cup, EPOCH);
+        CupDefinition cup = CatalogFixtures.cupNamed("cup-" + tag, map.key().asString());
+        return new LoadedCatalog(new CatalogSnapshot(Map.of(map.key().asString(), map), Map.of(cup.key().asString(), cup)), cup, EPOCH);
     }
 }

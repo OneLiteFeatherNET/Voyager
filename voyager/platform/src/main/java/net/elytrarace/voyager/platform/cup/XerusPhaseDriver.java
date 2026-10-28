@@ -69,7 +69,7 @@ public final class XerusPhaseDriver extends TickedPhase {
      */
     public XerusPhaseDriver(CupDefinition cup, RaceTimings timings, Duration step,
             BooleanSupplier everyPlayerFinished, RacePhaseListener listener) {
-        super("race-%s".formatted(cup.name()));
+        super("race-%s".formatted(cup.key().asString()));
         this.cup = cup;
         this.timings = timings;
         this.step = step;

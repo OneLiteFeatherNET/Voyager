@@ -71,7 +71,7 @@ class ConfigCheckLobbyTest {
         assertThat(problems).anySatisfy(problem -> {
             assertThat(problem.severity()).isEqualTo(Severity.ERROR);
             assertThat(problem.key()).isEqualTo(ServerSettings.LOBBY_WORLD_PROPERTY);
-            assertThat(problem.format()).contains(ServerSettings.LOBBY_WORLD_PROPERTY).contains(map.name());
+            assertThat(problem.format()).contains(ServerSettings.LOBBY_WORLD_PROPERTY).contains(map.key().asString());
         });
     }
 

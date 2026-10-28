@@ -135,7 +135,7 @@ public final class GuideLineRenderer {
         if (!refreshesOn(gameTick, refreshTicksOf(style.particle()))) {
             return;
         }
-        RacingLine line = linesByMap.computeIfAbsent(map.name(), name -> RacingLine.of(map));
+        RacingLine line = linesByMap.computeIfAbsent(map.key().asString(), name -> RacingLine.of(map));
         List<Vec3> stretch = stretch(line, passedCount, lookAheadOf(style));
         if (stretch.size() < 2) {
             return;

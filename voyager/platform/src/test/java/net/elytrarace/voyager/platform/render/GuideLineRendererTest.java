@@ -344,7 +344,7 @@ class GuideLineRendererTest {
     /** The shipped course, read the way the game server reads it, from the file the server ships. */
     private static MapDefinition readShippedCourse() {
         try {
-            Path file = Path.of("..", "server", "src", "main", "resources", "maps", "elytraraceblueandred.json");
+            Path file = Path.of("..", "server", "src", "main", "resources", "maps", "blue_and_red.json");
             Gson gson = new GsonBuilder()
                     .registerTypeAdapter(Vec3.class, new Vec3Adapter())
                     .registerTypeAdapter(MapDefinition.class, new MapDefinitionAdapter())

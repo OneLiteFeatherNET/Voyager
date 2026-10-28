@@ -28,8 +28,8 @@ class CatalogConsistencyTest {
                 CatalogFixtures.cupNamed("casual", "sprint"));
 
         assertThat(messageOf(maps("blue"), cups))
-                .contains("cup 'weekly' plays 'cathedral'")
-                .contains("cup 'casual' plays 'sprint'")
+                .contains("cup 'elytrarace:weekly' plays 'elytrarace:cathedral'")
+                .contains("cup 'elytrarace:casual' plays 'elytrarace:sprint'")
                 .contains("2 cup entries");
     }
 
@@ -47,7 +47,7 @@ class CatalogConsistencyTest {
         Map<String, CupDefinition> cups = cups(CatalogFixtures.cupNamed("weekly", "blue", "sprint", "cathedral"));
 
         assertThat(messageOf(maps("blue", "sprint"), cups))
-                .contains("cup 'weekly' plays 'cathedral'");
+                .contains("cup 'elytrarace:weekly' plays 'elytrarace:cathedral'");
     }
 
     @Test
@@ -56,7 +56,7 @@ class CatalogConsistencyTest {
         // operator reads at boot.
         assertThat(messageOf(
                 maps("blue"), cups(CatalogFixtures.cupNamed("weekly", "blue", "cathedral"))))
-                .isEqualTo("1 cup entry does name a map no map definition provides: cup 'weekly' plays 'cathedral'");
+                .isEqualTo("1 cup entry does name a map no map definition provides: cup 'elytrarace:weekly' plays 'elytrarace:cathedral'");
     }
 
     @Test
@@ -65,7 +65,7 @@ class CatalogConsistencyTest {
         Map<String, CupDefinition> cups = cups(selected, CatalogFixtures.cupNamed("broken", "cathedral"));
 
         assertThat(CatalogConsistency.unresolvedInOtherCups(selected, maps("blue"), cups))
-                .containsExactly("cup 'broken' plays 'cathedral'");
+                .containsExactly("cup 'elytrarace:broken' plays 'elytrarace:cathedral'");
     }
 
     @Test
@@ -89,10 +89,10 @@ class CatalogConsistencyTest {
     void selectedCupWithUnresolvedMapIsRefusedListingOnlyItsEntries() {
         CupDefinition selected = CatalogFixtures.cupNamed("played", "blue", "cathedral", "sprint");
 
-        assertThat(CatalogConsistency.unresolvedCupMaps(maps("blue"), Map.of(selected.name(), selected)))
+        assertThat(CatalogConsistency.unresolvedCupMaps(maps("blue"), Map.of(selected.key().asString(), selected)))
                 .hasValueSatisfying(refusal -> assertThat(refusal.getMessage())
                         .isEqualTo("2 cup entries do name a map no map definition provides: "
-                                + "cup 'played' plays 'cathedral'; cup 'played' plays 'sprint'"));
+                                + "cup 'elytrarace:played' plays 'elytrarace:cathedral'; cup 'elytrarace:played' plays 'elytrarace:sprint'"));
     }
 
     /** The message of the exception the check raises; fails if the check finds nothing dangling. */
@@ -103,7 +103,7 @@ class CatalogConsistencyTest {
     private static Map<String, MapDefinition> maps(String... names) {
         Map<String, MapDefinition> maps = new LinkedHashMap<>();
         for (String name : names) {
-            maps.put(name, CatalogFixtures.mapNamed(name));
+            maps.put(CatalogFixtures.mapNamed(name).key().asString(), CatalogFixtures.mapNamed(name));
         }
         return maps;
     }
@@ -111,7 +111,7 @@ class CatalogConsistencyTest {
     private static Map<String, CupDefinition> cups(CupDefinition... definitions) {
         Map<String, CupDefinition> cups = new LinkedHashMap<>();
         for (CupDefinition cup : definitions) {
-            cups.put(cup.name(), cup);
+            cups.put(cup.key().asString(), cup);
         }
         return cups;
     }

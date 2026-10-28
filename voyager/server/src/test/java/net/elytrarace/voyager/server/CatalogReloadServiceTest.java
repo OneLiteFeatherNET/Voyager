@@ -49,7 +49,7 @@ class CatalogReloadServiceTest {
         service.request(replies::add);
 
         assertThat(holder.pending()).contains(changed);
-        assertThat(holder.current().cup().name()).isEqualTo("tour-one");
+        assertThat(holder.current().cup().key().asString()).isEqualTo("elytrarace:tour-one");
         assertThat(replies).singleElement().satisfies(reply -> assertThat(key(reply)).isEqualTo(PENDING));
     }
 

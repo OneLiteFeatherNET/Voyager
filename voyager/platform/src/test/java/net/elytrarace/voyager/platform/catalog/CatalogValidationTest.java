@@ -122,7 +122,7 @@ class CatalogValidationTest {
 
         // Sorted by source, so cups/ comes before maps/.
         assertThat(problems).extracting(ConfigProblem::source, ConfigProblem::key).containsExactly(
-                tuple(data().resolve("cups/c.json").toAbsolutePath().toString(), "no-such-map"),
+                tuple(data().resolve("cups/c.json").toAbsolutePath().toString(), "elytrarace:no-such-map"),
                 tuple(data().resolve("maps/a-broken.json").toAbsolutePath().toString(), "file"));
     }
 
@@ -136,7 +136,7 @@ class CatalogValidationTest {
 
         assertThat(problems).singleElement().satisfies(problem -> {
             assertThat(problem.source()).isEqualTo(data().resolve("cups/c.json").toAbsolutePath().toString());
-            assertThat(problem.key()).isEqualTo("no-such-map");
+            assertThat(problem.key()).isEqualTo("elytrarace:no-such-map");
             assertThat(problem.severity()).isEqualTo(Severity.ERROR);
         });
     }
@@ -144,7 +144,7 @@ class CatalogValidationTest {
     @Test
     void reportsASchemaVersionAboveTheSupportedMaximumAsAProblemNamingTheFile() throws IOException {
         String future = CatalogFixtures.MAP.formatted("future", "ElytraraceFuture")
-                .replace("\"name\"", "\"schemaVersion\": 2,\n  \"name\"");
+                .replace("\"name\"", "\"schemaVersion\": 3,\n  \"name\"");
         write(data().resolve("maps"), "future.json", future);
         map(data().resolve("maps"), "ok.json", "ok", "ElytraraceOk");
         cup(data().resolve("cups"), "c.json", "c", "RACE", "ok");
@@ -155,7 +155,7 @@ class CatalogValidationTest {
         assertThat(problems).singleElement().satisfies(problem -> {
             assertThat(problem.source()).isEqualTo(data().resolve("maps/future.json").toAbsolutePath().toString());
             assertThat(problem.severity()).isEqualTo(Severity.ERROR);
-            assertThat(problem.message()).contains("schemaVersion 2").contains("up to schemaVersion 1");
+            assertThat(problem.message()).contains("schemaVersion 3").contains("up to schemaVersion 2");
         });
     }
 
@@ -237,7 +237,7 @@ class CatalogValidationTest {
         CountingHealth health = new CountingHealth();
 
         List<ConfigProblem> problems = CatalogValidation.validate(data(), worlds(),
-                map -> map.name().equals("played"), health);
+                map -> map.key().asString().equals("elytrarace:played"), health);
 
         assertThat(problems).isEmpty();
         assertThat(health.asked).containsExactly("ElytracePlayed");

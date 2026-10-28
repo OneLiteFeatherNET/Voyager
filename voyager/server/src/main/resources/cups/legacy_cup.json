@@ -1,13 +1,13 @@
 {
   "$schema": "../../../../../platform/src/main/resources/schema/cup.schema.json",
-  "schemaVersion": 1,
-  "name": "legacy_cup",
+  "schemaVersion": 2,
+  "key": "elytrarace:legacy_cup",
   "displayName": "Testing Cup",
   "mode": "RACE",
   "mapNames": [
-    "palmbeach",
-    "dragonlobby",
-    "memoria"
+    "elytrarace:palm_beach",
+    "elytrarace:dragon_lobby",
+    "elytrarace:memoria"
   ],
   "notes": [
     "Legacy cup 'Testing' (<rainbow>Testing Cup</rainbow>) from the old plugin: the three converted legacy maps."

@@ -29,7 +29,7 @@ public record LoadedCatalog(CatalogSnapshot snapshot, CupDefinition cup, Instant
         Objects.requireNonNull(cup, "cup must not be null");
         Objects.requireNonNull(loadedAt, "loadedAt must not be null");
         Optional<UnresolvedCupMapException> unresolved = CatalogConsistency.unresolvedCupMaps(
-                snapshot.maps(), Map.of(cup.name(), cup));
+                snapshot.maps(), Map.of(cup.key().asString(), cup));
         if (unresolved.isPresent()) {
             throw unresolved.get();
         }
@@ -39,7 +39,7 @@ public record LoadedCatalog(CatalogSnapshot snapshot, CupDefinition cup, Instant
     public List<MapDefinition> rotation() {
         return cup.mapNames().stream()
                 .map(name -> snapshot.mapByName(name).orElseThrow(() -> new IllegalStateException(
-                        "cup '%s' plays a map named '%s' the catalogue does not hold".formatted(cup.name(), name))))
+                        "cup '%s' plays a map named '%s' the catalogue does not hold".formatted(cup.key().asString(), name))))
                 .toList();
     }
 }

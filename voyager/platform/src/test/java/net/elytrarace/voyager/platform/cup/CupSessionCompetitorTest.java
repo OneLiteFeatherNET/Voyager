@@ -94,7 +94,7 @@ class CupSessionCompetitorTest {
     private static final RaceTimings FIVE_TICK_RACE = new RaceTimings(
             Duration.ZERO, STEP.multipliedBy(5), Duration.ZERO, Duration.ZERO);
 
-    private static final CupDefinition CUP = new CupDefinition("grand_tour", List.of(MAP.name()), GameMode.RACE);
+    private static final CupDefinition CUP = new CupDefinition("grand_tour", List.of(MAP.key().asString()), GameMode.RACE);
 
     /** No lobby and a one-tick race, so a cup ends within a handful of explicit ticks. */
     /** Two seconds of lobby, then five race ticks: a human placed during the lobby has time to be placed before GO. */
@@ -131,7 +131,7 @@ class CupSessionCompetitorTest {
         RaceRuns runs = new RaceRuns();
         CupSession session = openSession(env, runs, field, ONE_TICK_RACE);
 
-        session.mapStarted(0, MAP.name());
+        session.mapStarted(0, MAP.key().asString());
 
         assertThat(field.prepareCalls)
                 .as("the field is asked once, for the map that starts")
@@ -149,7 +149,7 @@ class CupSessionCompetitorTest {
         CupSession session = openSession(env, runs, field, ONE_TICK_RACE);
         RaceClock clock = new RaceClock(1, STEP);
 
-        session.mapStarted(0, MAP.name());
+        session.mapStarted(0, MAP.key().asString());
         session.raceTick(clock);
 
         RaceRun expected = RaceRun.atStart().advance(MAP, clock, flown, true, false);
@@ -167,7 +167,7 @@ class CupSessionCompetitorTest {
         RaceRuns runs = new RaceRuns();
         CupSession session = openSession(env, runs, field, ONE_TICK_RACE);
 
-        session.mapStarted(0, MAP.name());
+        session.mapStarted(0, MAP.key().asString());
         session.raceTick(new RaceClock(1, STEP));
 
         assertThat(runs.of(STRANGER))
@@ -317,7 +317,7 @@ class CupSessionCompetitorTest {
                     (chunkX, chunkZ) -> mapWorld.loadChunk(chunkX, chunkZ).join());
         }
         LoadedCatalog catalog = new LoadedCatalog(
-                new CatalogSnapshot(Map.of(MAP.name(), MAP), Map.of(CUP.name(), CUP)), CUP, Instant.EPOCH);
+                new CatalogSnapshot(Map.of(MAP.key().asString(), MAP), Map.of(CUP.key().asString(), CUP)), CUP, Instant.EPOCH);
         CurrentMapBlocks blocks = new CurrentMapBlocks();
         FireworkBoostTracker boosts = new FireworkBoostTracker();
         FlightTickDriver flight = new FlightTickDriver(

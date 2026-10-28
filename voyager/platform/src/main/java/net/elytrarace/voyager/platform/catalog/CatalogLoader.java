@@ -69,10 +69,10 @@ public final class CatalogLoader {
         Map<String, Path> cupFilesByName = new LinkedHashMap<>();
         Map<String, Path> mapFilesByName = new LinkedHashMap<>();
         Map<String, CupDefinition> cups = CatalogDirectory.readAll(
-                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, CupDefinition::name, problems, cupFiles,
+                dataDirectory.resolve(CUPS), "cup", CupDefinition.class, cup -> cup.key().asString(), problems, cupFiles,
                 cupFilesByName);
         Map<String, MapDefinition> maps = CatalogDirectory.readAll(
-                dataDirectory.resolve(MAPS), "map", MapDefinition.class, MapDefinition::name, problems,
+                dataDirectory.resolve(MAPS), "map", MapDefinition.class, map -> map.key().asString(), problems,
                 new ArrayList<>(), mapFilesByName);
         return new CatalogReading(new CatalogSnapshot(maps, cups), problems, cupFiles, mapFilesByName,
                 cupFilesByName);

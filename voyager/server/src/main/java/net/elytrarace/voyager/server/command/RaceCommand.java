@@ -64,7 +64,7 @@ public final class RaceCommand extends Command {
                 return;
             }
             session.start(true);
-            sender.sendMessage(Messages.cupRestarted(session.cup().name()));
+            sender.sendMessage(Messages.cupRestarted(session.cup().key().asString()));
         }, ArgumentType.Literal("start"));
         addSyntax((sender, context) -> {
             if (!may(policy, sender, PermissionNode.VOYAGER_COMMAND_RACE_SKIP)) {

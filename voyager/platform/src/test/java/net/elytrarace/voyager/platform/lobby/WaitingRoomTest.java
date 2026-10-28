@@ -109,7 +109,7 @@ class WaitingRoomTest {
     private static final CupDefinition RELOADED_TOUR = new CupDefinition("waiting_tour_two",
             List.of("arena-run", "other-run"), GameMode.RACE);
     private static final LoadedCatalog RELOADED = new LoadedCatalog(new CatalogSnapshot(
-            Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(RELOADED_TOUR.name(), RELOADED_TOUR)),
+            Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(RELOADED_TOUR.key().asString(), RELOADED_TOUR)),
             RELOADED_TOUR, Instant.EPOCH);
 
     /** Lobby 10 s (200 ticks), race 5 s (100 ticks), results 100 ms. */
@@ -621,7 +621,7 @@ class WaitingRoomTest {
         fixture.holder.offer(RELOADED);
         fixture.tick();
 
-        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.name());
+        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.key().asString());
     }
 
     /** A countdown keeps the cup it began with, even when a reload is applied while it runs. */
@@ -636,7 +636,7 @@ class WaitingRoomTest {
         fixture.holder.offer(RELOADED);
         fixture.tick();
 
-        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.name());
+        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.key().asString());
     }
 
     /** A waiting racer who leaves is handed to the hub, and the room keeps no record that the racer was handed off. */
@@ -701,7 +701,7 @@ class WaitingRoomTest {
         RaceRuns runs = new RaceRuns();
         MapTransition transition = new MapTransition(instances, runs);
         CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
-                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(TOUR.name(), TOUR)),
+                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(TOUR.key().asString(), TOUR)),
                 TOUR, Instant.EPOCH));
 
         CurrentMapBlocks blocks = new CurrentMapBlocks();

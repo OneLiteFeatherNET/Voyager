@@ -162,7 +162,7 @@ public final class ComField implements CompetitorField {
 
     /** The racing line of {@code map}, built on first use and shared by every racer that runs it. */
     private ComPath pathFor(MapDefinition map) {
-        return paths.computeIfAbsent(map.name(),
+        return paths.computeIfAbsent(map.key().asString(),
                 name -> ComPath.fromGrid(map.spawn(), RacingLine.of(map), map.rings()));
     }
 
