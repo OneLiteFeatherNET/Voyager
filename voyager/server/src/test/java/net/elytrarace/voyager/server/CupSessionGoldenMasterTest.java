@@ -512,8 +512,10 @@ class CupSessionGoldenMasterTest {
             Racers.prepare(racer);
             // Production preloads the chunks around each spawn during the wait, so a racer is placed before GO. The harness
             // has the same chunks present up front, so placements finish within the transcript's ticks.
-            preloadAround(instance, spawn, racer.effectiveViewDistance());
-            preloadAround(worlds.forWorld(DUNE), DUNE_SPAWN, racer.effectiveViewDistance());
+            // A placement into another world uses the smaller of the racer's setting and that world's view distance, plus one.
+            int viewDistance = Math.min(racer.getSettings().viewDistance(), worlds.forWorld(RIDGE).viewDistance()) + 1;
+            preloadAround(worlds.forWorld(RIDGE), RIDGE_SPAWN, viewDistance);
+            preloadAround(worlds.forWorld(DUNE), DUNE_SPAWN, viewDistance);
             connections.put(name, connection);
             racers.put(name, racer);
             field.add(racer);

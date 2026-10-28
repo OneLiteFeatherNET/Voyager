@@ -24,8 +24,10 @@ import net.elytrarace.voyager.race.run.RaceRun;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TranslatableComponent;
+import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
+import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
@@ -306,6 +308,14 @@ class CupSessionCompetitorTest {
             List<Player> humans) throws IOException {
         writeWorld(env);
         worlds = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
+        // A placement needs every chunk around the spawn present. The preload is done here, before the cup starts, so the
+        // placement does not depend on how long a real chunk load takes on its own thread.
+        Instance mapWorld = worlds.forWorld(WORLD);
+        for (Player human : humans) {
+            int viewDistance = Math.min(human.getSettings().viewDistance(), mapWorld.viewDistance()) + 1;
+            ChunkRange.chunksInRange(new Pos(SPAWN.x(), SPAWN.y(), SPAWN.z()), viewDistance,
+                    (chunkX, chunkZ) -> mapWorld.loadChunk(chunkX, chunkZ).join());
+        }
         LoadedCatalog catalog = new LoadedCatalog(
                 new CatalogSnapshot(Map.of(MAP.name(), MAP), Map.of(CUP.name(), CUP)), CUP, Instant.EPOCH);
         CurrentMapBlocks blocks = new CurrentMapBlocks();
