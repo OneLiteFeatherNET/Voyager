@@ -13,6 +13,19 @@ the finish tick. THE SYSTEM SHALL NOT set the speed to zero during the window an
 - **WHEN** the racer's glide-out is in progress at tick 10 of 50
 - **THEN** the speed is still above a quarter of the finish speed, and the racer is still gliding
 
+### Requirement: A racer still airborne when the map's time runs out gets the same glide-out
+**MoSCoW:** Must. WHEN a map's game phase ends on its time limit, THE SYSTEM SHALL give each racer who is still gliding the same
+50-tick damped glide-out, starting on the tick the phase ends. A racer who is not gliding on that tick SHALL NOT receive a
+glide-out.
+
+#### Scenario: Airborne at the limit
+- **WHEN** the time limit ends while a racer is gliding at 1.2 blocks per tick
+- **THEN** the racer glides out for 50 ticks with the same damping as a finisher
+
+#### Scenario: On the ground at the limit
+- **WHEN** the time limit ends while a racer stands on the ground
+- **THEN** the racer receives no glide-out and is placed as soon as the wait allows
+
 ### Requirement: The finish has a firework and a sound, distinct from the countdown and the ring bell
 **MoSCoW:** Must. WHEN a racer passes the last ring, THE SYSTEM SHALL show one firework burst at the finish ring and play a
 finish sound, and the finish sound SHALL NOT be the countdown beat, the ring bell or the lobby chime.
@@ -21,23 +34,15 @@ finish sound, and the finish sound SHALL NOT be the countdown beat, the ring bel
 - **WHEN** a racer passes the last ring
 - **THEN** exactly one firework burst is shown at the finish ring, and the finish sound plays once
 
-### Requirement: The stand-down happens at the end of the glide-out, at the spawn of the map just finished
-**MoSCoW:** Must. WHEN a finisher's glide-out ends, THE SYSTEM SHALL turn the elytra off, set the velocity to zero and place
-the racer at the spawn of the map they finished, without elytra, where they wait until the next map's arrival. THE SYSTEM
-SHALL NOT stand down a finisher at the moment the game phase ends.
+### Requirement: After its glide-out, a racer is held in place until placed on the next map
+**MoSCoW:** Must. WHEN a racer's glide-out ends, THE SYSTEM SHALL turn the elytra off, set the velocity to zero and hold the
+racer at the position where the glide-out ended, without gliding, until the racer is placed on the next map. THE SYSTEM SHALL
+NOT place a finisher at the spawn of the map just finished.
 
-#### Scenario: The map ends on the last finish
-- **WHEN** every racer has finished, so the game phase ends on the tick of the last finish
-- **THEN** each finisher keeps gliding until their own glide-out ends, and is then placed at the spawn with the elytra off
+#### Scenario: Finisher waits while others race
+- **WHEN** a finisher's glide-out ends while two other racers are still racing the map
+- **THEN** the finisher is held in place, not gliding, and the next map's preload runs for them
 
-#### Scenario: The map ends with a racer still airborne
-- **WHEN** the time limit ends with a racer who has not finished still in the air
-- **THEN** that racer is stood down on the tick the phase ends, as today
-
-### Requirement: The glide-out completes inside the END window
-**MoSCoW:** Should. THE SYSTEM SHALL complete every finisher's glide-out before the END phase that follows the map ends, so that
-no racer is still gliding when the next map's lobby begins.
-
-#### Scenario: Production END window
-- **WHEN** a finisher passes the last ring at the start of the game phase's end
-- **THEN** the glide-out ends within the 8-second END window, before the next map's lobby begins
+#### Scenario: Glide-out ends after the map's end
+- **WHEN** the game phase ends and a racer's glide-out ends later in the same wait
+- **THEN** the racer is held in place until their placement

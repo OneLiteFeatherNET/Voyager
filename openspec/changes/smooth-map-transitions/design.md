@@ -2,153 +2,159 @@
 
 ## Context
 
-Three edges of a map are rough. The root causes are in the proposal's table. This design decides how each is fixed and where
-the new code lives.
+### The timeline, as the code runs it
 
-### The timeline between two maps, as the code runs it
+`race/flow/RaceTimings.java:53-54` gives the production timings: a lobby of 20 s before each map (`RaceStateMachine.java:62`,
+`69-70`, and the move to the next map's lobby at `105`), an END of 8 s when another map follows, and 20 s after the last map.
+Development timings are shorter (`server/config/ServerSettings.java:154-156`: lobby 10 s, END 5 s). The start countdown is
+three seconds at the end of the lobby (`race/flow/StartGate.java`, `COMMIT_WINDOW`).
 
-`race/flow/RaceTimings.java:53-54` gives the production timings: a lobby of 20 s before every map (`RaceStateMachine.java:62`
-and `69-70` apply `timings.lobby()` to every LOBBY phase, and `105` moves to the next map's lobby), an END of 8 s when another
-map follows, and of 20 s after the last map (`endBetweenMaps`, `endAfterLastMap`). The development timings are shorter (`server/config/ServerSettings.java:154-156`:
-lobby 10 s, between maps 5 s). The start countdown is three seconds (`flow/StartGate.java`, `COMMIT_WINDOW`), so the arrival of
-the next map is at GO minus three seconds, inside the lobby.
+The wait before a map is therefore the END of the previous map plus its lobby: 28 s in production. The next GO is at the
+end of that wait.
 
-For a racer who finishes a map, the time to the next GO is the END (8 s) plus the lobby (20 s), 28 s in production. The
-glide-out (2.5 s) fits inside the END window, and so does the between-maps countdown of `competitive-race-feedback`.
+### Where the racer is placed today
 
-### Where the freeze and the view distance meet
+`CupSession.lobbyTick` (`platform/cup/CupSession.java:620-636`) enters the map at the first countdown digit, three seconds
+before GO. `enterMap` (`680-702`) sets the cup's current map, calls `MapTransition.advanceTo` (`698`) and `Racers.faceCourse`
+(`700`). `MapTransition.advanceTo` (`platform/cup/MapTransition.java:104-123`) clears every run with `runs.clearAll()`
+(`113`) and then moves each racer with `Arrivals.arrive`. Both `Arrivals` waits block the tick: `awaitChunksAround` joins every
+chunk future (`platform/world/Arrivals.java:81-90`), and `arrive` joins the teleport (`61`).
 
-`platform/world/Arrivals.java:47-62` (`arrive`) loads every chunk within `min(player view distance, target view distance) + 1`
-of the spawn, and only then calls `setInstance(...).join()` (line 61). Both waits are blocking, and they run on the server tick
-(`CupSession.java:698`, inside `enterMap`, called from `lobbyTick` at 620-636). The preload radius therefore sets how long the
-tick stalls before the racer can be placed.
+With the deployment's view distance, the preload radius is `min(client, instance) + 1`, up to 17 chunks in each direction
+(`Arrivals.java:55`). That is up to 35 x 35 = 1,225 chunks, against 361 at radius 9 (a view distance of 8 plus one, for
+comparison). The owner set `-Dminestom.chunk-view-distance=16` and `-Dminestom.entity-view-distance=10` as JVM flags. These are
+deployment settings: the code does not read them. Voyager's own settings still go through avaje-config.
 
-The deployment's JVM flags now raise the view distance: `-Dminestom.chunk-view-distance=16` and
-`-Dminestom.entity-view-distance=10`. The effect on this design:
+### Why the arrival moves to the start of the wait
 
-- The preload radius is `min(client, 16) + 1`, so up to 17 chunks in each direction. That is up to 35 x 35 = 1,225 chunks,
-  against 19 x 19 = 361 at radius 9 (a view distance of 8 plus one, for comparison). The preload is larger by up to about
-  3.4 times, and it runs on the tick that also counts the three-second countdown.
-- The racer must wait frozen while the chunks load. Because the preload is a blocking `join()` on the tick, the whole
-  server pauses while it loads, including the countdown digits. The racer is not yet in the new world during that wait,
-  so the freeze is in the old world's position until the move succeeds. The freeze requirement covers that wait.
-- The entity view distance (10) is not used by the preload. It decides which racers a racer sees, not which chunks load.
-
-These are deployment settings. The code does not read them: they are set on the server's launch command, and Voyager's own
-settings still go through avaje-config, not `System.getProperty`. No requirement in this change depends on the value. The
-owner asked for them as a deployment choice, so they are recorded here, and the code PR measures the preload on the playtest
-server at 16 and 10 (task 4.4).
-
-A larger preload makes the pre-GO window the place where a stall is most visible. Open question 2 asks whether the arrival
-should move earlier, into the lobby, so that the freeze is longer but the countdown is not blocked.
+Three seconds is too short for a preload at view distance 16. Placing the racer at the start of the wait gives the chunks
+28 seconds, and the freeze then lasts that long. The freeze's cost is nothing to the race: the racer is not flying.
 
 ## Decisions
 
-### 1. Finish glide-out: the racer keeps flying, and their speed is damped
+### 1. The arrival moves to the start of the wait, per racer
 
-When the finish ring is passed, the racer enters a glide-out of 50 ticks (2.5 s). During it:
+The wait before a map starts when the previous map's game phase ends (`mapFinished`), or, for the first map of a cup, at its
+first lobby tick. A racer is placed on the next map as early as they can be:
 
-- The racer keeps the elytra and keeps flying on the client. The server does not turn gliding off.
-- The server sends a damped velocity each tick, through the same channel as the boosts (`VelocityExit`). The speed at tick
-  `t` of the window is `v0 * k^t`, with `k` chosen so that the speed at tick 50 is one quarter of `v0`, where `v0` is the speed
-  at the finish tick. The speed is estimated from the racer's last two positions. The curve is a pure function in
-  `voyager/race` (`race/glide`), with no Minestom import, and it is tested without a server.
-- A finish firework and a finish sound play at the finish ring, once. The sound is not the countdown beat, the ring bell or
-  the lobby chime, so it respects "each sound means one thing" (`race-feedback`).
-- No ring effect and no reset apply to a finished racer. This is already true (`CupSession.java:808`, `776`) and stays.
+- A racer who finished the previous map is placed when their own glide-out ends. Other racers may still be racing that map.
+- A racer who was still airborne when the previous map's time ran out gets the same glide-out, then is placed when it ends.
+- A racer who was not gliding when the map ended (on the ground, or not flying) is placed when the map ends, with no glide-out.
+- A racer who joins during a wait is placed when their own preload completes.
 
-At the end of the window the racer stands down: the elytra is turned off, the velocity is zero, and the racer is placed at
-the spawn of the map they just finished (not at the lobby hub), without elytra. The racer then waits there until the next
-map's arrival, which is the same place the freeze uses.
+Placing is per racer. The cup-wide part of the move (the current map, the block source, the ring effects and the tally) happens
+once, when the previous map's game phase ends. `MapTransition.advanceTo` is split: `runs.clearAll()` (`113`) and the cup-wide
+state move to the phase end, and `Arrivals.arrive` moves to the per-racer placement. `runs.clearAll` must not run while another
+racer still races the previous map, because it would drop their run.
 
-The stand-down is deferred. `CupSession.mapFinished` (line 857) currently calls `Racers.standDown` for every racer when the
-game phase ends. The change keeps that call for every racer who is not gliding out, and moves a finisher's stand-down to the
-end of their glide-out. The game phase may end on the last finish (`RaceStateMachine.java:79-80`) while the glide-out runs;
-the glide-out is ticked in the END phase as well as in GAME, so it completes in the END window (8 s, 5 s in development, both
-longer than 2.5 s).
+### 2. A placed racer leaves the previous map's race
 
-#### Options considered
+A racer placed on the next map is marked as having left the previous map. `CupSession.raceTick` (`platform/cup/CupSession.java:708`)
+skips a racer marked as having left: no run advance, no HUD for the previous map, no guide line for the previous map. Their
+run is kept, so that `mapFinished` can still score it when the phase ends (`round.recordMap` at `CupSession.java:850-857`).
 
-| Option | Pro | Con |
-|---|---|---|
-| A. Damped server velocity over 50 ticks (chosen) | Uses the channel boosts already use. Reads as a braking, not a stop. Testable as a pure curve. | The client's own elytra physics runs too, so the damping is an approximation the owner must feel in play. |
-| B. Slow Falling for 50 ticks | One potion effect, no per-tick packets. | Slow Falling reduces the fall, not the forward speed. The racer floats, which does not read as braking. |
-| C. Keep the stand-down at the finish (today) | No new code. | The owner's complaint: an abrupt cut-off. |
+`mapStarted` (`CupSession.java:639-668`) re-runs the transition on GO. It must place only the racers not yet placed on this map,
+so that it does not move a racer who is already standing at the spawn.
 
-Option A is recommended. Option B is kept as the fallback if the damped velocity fights the client's flight in the smoke test.
+### 3. The glide-out, and the hold after it
 
-### 2. Velocity authority: a second kind of server-sent velocity
+The glide-out (2.5 s, 50 ticks) applies to a finisher from their finish tick, and to a racer airborne at the time limit from
+the phase end. The damping is the pure curve of decision 4 in `race/glide`.
 
-`CLAUDE.md` says velocity is sent only for external forces: firework boosts, ring boost and slow effects, and out-of-bounds
-resets. The glide-out is a braking applied by the course's end, so it is a new external force of the same kind. It needs a
-MADR decision (Proposed, not accepted), so the owner can accept it before the code PR. The number is the next free one after
-the decisions already in flight (ADR-0040 is held by `add-catalogue-keys-and-authors`). Task 3.2 writes it.
+After the glide-out, the racer's elytra is turned off and their velocity is zero, and they are held in place (position pinned,
+see decision 5) until they are placed. The hold uses the racer's current position, not the spawn of the map just finished,
+because the next map's spawn is not yet loaded. The finish firework and sound play once, at the finish ring, when the racer
+passes the last ring.
 
-### 3. Spawn freeze: pinned until GO, on every map
+The glide-out captures the map it started on (the `MapDefinition` at the finish), not `currentMap`, because the cup's current
+map changes at the phase end while the glide-out may still run.
 
-From the moment a racer is placed on a map (`enterMap`) until the GO tick:
+### 4. The damping curve
 
-- The racer is pinned to the spawn. Each tick, if the racer's position differs from the spawn by more than a small tolerance
-  (0.1 block, a value the code PR may tighten), the server returns them to the spawn and sends a zero velocity.
-- The racer is not gliding. Each tick before GO the server turns flying off, so a racer who jumps and deploys is pulled
-  back and stays on the ground. The elytra stays in the racer's hand, as `Racers.faceCourse` documents (`Racers.java:101-107`),
-  because the racer is meant to see it during the count.
-- The racer faces ring 1. This is already the behaviour of `Racers.faceCourse` and is kept.
-- GO releases the racer as before. There is no impulse at GO and the racer is not set gliding (#311, `0c9166d`).
-- The freeze holds while the preload runs. The racer is not in the new world before the preload finishes, so they are held in
-  their previous place. A failed preload (`ArrivalFailedException`) leaves the racer where they were, as `Arrivals.arrive`
-  documents.
+The speed at tick `t` of the glide is `v0 * k^t`, where `v0` is the speed at the finish tick and `k` is chosen so that the speed
+at tick 50 is one quarter of `v0`. The speed is estimated from the racer's last two positions. The curve is a pure function in
+`voyager-race` (`race/glide`, no Minestom import), so it is tested without a server.
 
-The freeze is per racer and per map, so it applies to every map of a cup. It is not tied to the first map's lobby, which
-`waiting-lobby` covers separately.
+The velocity is sent through the channel that boosts use (`VelocityExit`). `CLAUDE.md` names the external forces that justify
+a server-sent velocity; braking after the finish is one more, and the decision record below records it.
 
-The pin is applied in the platform module. The rule that decides "is this racer pinned at this tick" is a pure function of
-the map, the spawn, the racer's position and the clock, and is tested without a server. This keeps `race` free of Minestom.
+Option B (Slow Falling) was considered and rejected, because it lowers the fall and not the forward speed. It is the fallback if
+the damped velocity fights the client's flight in the smoke test.
 
-### 4. The guide line starts at the last ring passed
+### 5. The preload does not block the tick
 
-`GuideLineRenderer.stretch` draws from `max(passedCount - 1, 0)` instead of `passedCount`, in both `FULL` and `WINDOW` modes.
-The stretch then covers the segment the racer is flying, from the last ring passed to the next one. The segment is dropped
-when the next ring is passed, which is the moment the racer has actually flown through it.
+`Arrivals.arrive` and `awaitChunksAround` block the tick today (`Arrivals.java:61`, `89`). The new path does not:
 
-The comment at `CupSession.java:739-742`, which says the racer must not be shown the stretch they have just flown out of, is
-wrong for the segment in front of the last ring and is replaced. The rule it protected (no flown stretch behind the racer) still
-holds for everything before the last ring passed.
+- The preload is started with `Instance.loadOptionalChunk` for every chunk in range, and the futures are kept, not joined.
+  This is the same call `awaitChunksAround` makes (`Arrivals.java:84`).
+- A `PendingArrival` holds the racer, the target instance, the spawn and the futures. It is ticked once per server tick by the
+  race loop. Each tick it checks `allOf(...).isDone()`, and does nothing until then.
+- When every future is done without an exception, the tick calls `player.setInstance(target, spawn)`. The placement is done by
+  the next tick's check that the teleport future has completed. The tick never waits on it.
+- If any future completed exceptionally, the arrival is failed. The racer stays held in place, the failure is logged once with
+  the world name, and the arrival is retried on the next wait. Nothing is thrown into the tick.
+- The chunk load is injected through a `ChunkLoader` functional interface (`load(Instance, int chunkX, int chunkZ)` returning
+  `CompletableFuture<?>`). Production passes `Instance::loadOptionalChunk`. A test passes a loader that completes futures by hand.
+  This follows the Injectable Creator rule (rule 7 of the ten design rules in `CLAUDE.md`).
 
-`lookAheadOf` (`FULL` reaches to the last ring) and the reach cull are unchanged. The cost is one more ring of points per
-refresh.
+`Arrivals.reposition` (used for a reset inside a map) keeps its blocking join. It is out of scope and is noted in the proposal.
 
-### 5. The race logic stays pure
+With the view distance at 16 a preload of up to 1,225 chunks runs in the background over the wait, and the tick does not stall.
+The chunks of one instance are loaded once for all racers placed there.
 
-- `race/glide`: the damping curve and the glide-out length. No Minestom import.
-- `race/line`: no change. The line's `between` is reused.
-- `platform/flight`: the freeze pin and the stand-down position, using `Racers`.
-- `platform/cup`: the glide-out ticker and the `mapFinished` change.
-- `platform/render`: the stretch start.
+### 6. Freeze from placement until GO
 
-Fitness: `voyager-fitness` already requires that `race` has no platform imports. The new pure curve needs one test in the
-`race` module. No new fitness rule is added, because no new boundary is created.
+From a racer's placement until the GO tick, the racer is pinned to the spawn facing ring 1, without gliding:
+
+- Each tick, if the racer's position differs from the spawn by more than 0.1 block, the server returns them to the spawn and sends
+  a zero velocity.
+- Each tick before GO the server turns gliding off, so a jump and deploy does not lift the racer off the spawn. The elytra stays in
+  the racer's hand, as `Racers.faceCourse` (`Racers.java:101-107`) documents.
+- GO releases the racer with no velocity and no gliding, as before (`waiting-lobby`).
+
+The freeze is per racer and per map, so it applies to every map of a cup.
+
+### 7. Computer racers
+
+A computer racer has no client and is not placed. It is counted in the places and gaps of `competitive-race-feedback`. The
+glide-out curve is applied to its simulated speed only if the competitor model exposes that speed. The code PR checks it. If it
+does not, computer racers stop at the time limit as they do today, and the code PR says so.
+
+### 8. Deployment setting: the view distance
+
+`-Dminestom.chunk-view-distance=16` and `-Dminestom.entity-view-distance=10` are set on the server's launch command. They
+change how far the preload reaches (decision 5) and how many entities a racer sees. The code does not depend on their values.
+The code PR measures the longest tick during a preload on the playtest server (task 4.4) to confirm the tick does not stall.
 
 ## Architecture
 
 | Type or change | Module | Package |
 |---|---|---|
-| `GlideOut` (length, damping, speed at tick t) | `voyager-race` | `net.elytrarace.voyager.race.glide` (with `package-info` @NotNullByDefault) |
-| Glide-out ticker and deferred stand-down | `voyager-platform` | `net.elytrarace.voyager.platform.cup` (`CupSession`) |
-| Freeze pin and spawn stand-down | `voyager-platform` | `net.elytrarace.voyager.platform.flight` (`Racers`) |
+| `GlideOut` (50 ticks, damping to a quarter, speed at tick t) | `voyager-race` | `net.elytrarace.voyager.race.glide` (with `package-info` @NotNullByDefault) |
+| `ChunkLoader`, `PendingArrival`, the tick check | `voyager-platform` | `net.elytrarace.voyager.platform.world` |
+| Per-racer placement, cup-wide split of `MapTransition` | `voyager-platform` | `net.elytrarace.voyager.platform.cup` |
+| Glide-out ticker, the left-the-map mark, the hold | `voyager-platform` | `net.elytrarace.voyager.platform.cup` (`CupSession`) |
+| Freeze pin | `voyager-platform` | `net.elytrarace.voyager.platform.flight` (`Racers`) |
 | Finish firework and sound | `voyager-platform` | `net.elytrarace.voyager.platform.hud` (`RaceFeedback`) |
 | Stretch start | `voyager-platform` | `net.elytrarace.voyager.platform.render` (`GuideLineRenderer`) |
 
-Dependency direction holds: `race` does not import `platform`, and `platform` calls `race`.
+Dependency direction holds: `race` does not import `platform`, and `platform` calls `race`. No new fitness rule is needed,
+because no new boundary is created. If the code PR finds that `ChunkLoader` must be imported by `race`, the boundary changes
+and a rule is added in the same PR.
+
+## Decision record
+
+Decision 6 (a second kind of server-sent velocity: braking after the finish and after the time limit) is a MADR decision with
+status Proposed. Its number is the next free one after the decisions in flight; ADR-0040 is held by `add-catalogue-keys-and-authors`. Task 3.2 writes it.
 
 ## Open questions
 
-1. **DNF at the time limit.** A racer still airborne when the time limit ends is stood down at once, as today. Should they get
-   the same glide-out? Recommendation: yes, for the same reason, but it is a separate decision and this change does not do it.
-2. **Arrival earlier.** The preload runs on the tick that counts the countdown. At radius 17 it may stall the countdown. Should
-   the arrival move into the lobby, about 17 s before GO, so the freeze is longer and the countdown is not blocked? The code PR
-   measures the preload time on the playtest server first (task 4.4) and the owner decides.
-3. **Damping feel.** The quarter-speed target is a first estimate. The owner decides after the playtest whether a shorter or
-   longer glide is right, within the 2 to 3 s the owner asked for.
-4. **Pulse review.** `CLAUDE.md` requires the game-psychologist review of a gameplay change. It has not happened for this
-   change, and the owner decides whether it happens before the code PR.
+1. **The first map's wait.** The owner's request names the start of the wait before the next map. For the first map there is no
+   earlier wait, so this design places racers at the first lobby tick, twenty seconds before GO rather than three. Recommendation:
+   accept. The owner confirms before the code PR.
+2. **A late preload.** If a preload is not done by GO, the racer is placed when it is done, and misses the start. Recommendation:
+   accept, and report it in the playtest. The 28-second wait makes it unlikely with the owner's view distance.
+3. **Damping feel.** The quarter-speed target is a first estimate. The owner decides after the playtest whether a shorter or longer
+   glide is right, within the 2 to 3 s the owner asked for.
+4. **Pulse review.** `CLAUDE.md` requires the game-psychologist review of a gameplay change. The owner decides whether it happens
+   before the code PR.
