@@ -156,10 +156,33 @@ class CatalogLoaderTest {
     }
 
     @Test
-    void aMapWithoutADisplayNameDisplaysItsId(@TempDir Path data) {
+    void aMapWithoutADisplayNameShowsItsKeyValueInTitleCase(@TempDir Path data) {
         CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
 
-        assertThat(snapshotOf(data).mapByName("elytrarace:blue").orElseThrow().displayName()).isEqualTo("elytrarace:blue");
+        assertThat(snapshotOf(data).mapByName("elytrarace:blue").orElseThrow().displayName()).isEqualTo("Blue");
+    }
+
+    @Test
+    void refusesAMapDisplayNameWithAClickTagNamingTheFieldTheFileAndTheTag(@TempDir Path data) {
+        CatalogFixtures.write(data.resolve("maps"), "click-name.json", CatalogFixtures.MAP.formatted("blue", "ElytraraceBlueAndRed")
+                .replaceFirst("\\{", "{\n  \"displayName\": \"<click:run_command:/stop>Blue</click>\","));
+        writeValidCup(data);
+
+        assertThatThrownBy(() -> CatalogLoader.load(data))
+                .isInstanceOf(MalformedCatalogFileException.class)
+                .hasMessageContaining("displayName")
+                .hasMessageContaining("click-name.json")
+                .hasMessageContaining("click");
+    }
+
+    @Test
+    void aDisplayNameWhoseTagsMakeItLongerThanFortyCharactersIsKeptWhenItsVisibleTextIsForty(@TempDir Path data) {
+        String visibleForty = "x".repeat(40);
+        CatalogFixtures.write(data.resolve("maps"), "blue.json", CatalogFixtures.MAP.formatted("blue", "ElytraraceBlueAndRed")
+                .replaceFirst("\\{", "{\n  \"displayName\": \"<gradient:#00c2ff:#5bff8f>%s</gradient>\",".formatted(visibleForty)));
+
+        assertThat(snapshotOf(data).mapByName("elytrarace:blue").orElseThrow().displayName())
+                .isEqualTo("<gradient:#00c2ff:#5bff8f>%s</gradient>".formatted(visibleForty));
     }
 
     @Test
