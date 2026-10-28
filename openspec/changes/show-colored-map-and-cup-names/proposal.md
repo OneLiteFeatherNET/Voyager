@@ -31,7 +31,8 @@ moment for every racer.
 - The standings heading uses the coloured cup name, and a line lists the maps. Places one to three are gold, silver and
   bronze. Each line shows points, best time, maps finished and rings hit "passed/total", where the total is every ring of the
   cup's maps. The viewer's own line is bold with a marker.
-- The sidebar keeps ten map lines, and `race/lobby-cup-display` is corrected from twelve to ten.
+- The sidebar keeps ten map lines, and `race/lobby-cup-display` is corrected from twelve to ten. The sidebar's footer line
+  ("Elytra Race" / "Elytra-Rennen") is removed: the title already names the cup, and the sidebar ends with its status line.
 - A map or cup without a display name is shown as its key's value in title case, never as the raw key, and each one played
   without a name is warned about once at boot.
 

@@ -65,7 +65,9 @@ kept running for over an hour. The restarts the owner saw were deploy restarts. 
    finish line carries the name's colour and one accent tag for the medal word.
 10. **Authors are plain text, joined with ", ".** The sidebar shows the first author and " +n" for the rest. A map line whose text
     would exceed forty visible characters drops the author list, so the name is never cut. The sidebar keeps ten map lines, so
-    title, racers, ten maps, status and footer make fourteen lines under the fifteen-line cap.
+    racers line, a blank, ten maps, a blank and the status line make fourteen lines under the fifteen-line cap. The footer
+    line is removed (`race/lobby-cup-display`, "The sidebar ends with its status line and has no footer"), because the title
+    already names the cup.
 11. **The tutorial gets a sixth page with the authors.** `TutorialPages.COUNT` becomes 6. The page is built per racer from the cup
     the room is waiting for, and it is the only page that depends on the cup. The `cygnus-style-lobby` tutorial spec ("five pages in
     a fixed order") is replaced by this change's sixth page once that spec is archived.
@@ -104,7 +106,7 @@ These transcripts change, and the pull request lists each one with its reason:
   form ("Grand Tour").
 - The standings transcript changes its rows (points, best time, rings hit), gains the heading colour and the map line, and
   shows the medal colours.
-- The lobby board transcript changes its sidebar title and map lines.
+- The lobby board transcript changes its sidebar title and map lines, and loses the footer line.
 - Operator output (`config-golden`) keeps the key from `add-catalogue-keys-and-authors`. It does not change in this change.
 
 ## Architecture

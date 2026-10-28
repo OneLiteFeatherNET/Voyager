@@ -35,10 +35,11 @@ Archive order: archive `add-display-names` before this change. Nothing is archiv
 - [ ] 3.2 Red: `MessagesTest`: the finish line "Finished Blue & Red in 1:44.3" and the result line contain no enumeration name, and the medal word is "Finish" in English and "Ziel" in German, in sentence case (`feat(race)`)
 - [ ] 3.3 Red: `CupAnnouncerTest` or `RaceFeedbackTest`: the intro title fades in for 10 ticks, stays for 60 and fades out for 20; its subtitle is "by TheMeinerLP" in English and "von TheMeinerLP" in German; no subtitle without authors (`feat(race)`)
 - [ ] 3.4 Red: `RaceHudTest`: the boss bar reads "Map 1/1 · Blue & Red · Gold · 12 s left" with the name coloured and the rest unchanged (`feat(race)`)
-- [ ] 3.5 Red: `LobbySidebarTest`: the title "Alpha Cup" in its colour, the line "1. Blue & Red · by TheMeinerLP", and at most ten map lines and fifteen lines in total (`feat(race)`)
+- [ ] 3.5 Red: `LobbySidebarTest`: the title "Alpha Cup" in its colour, the line "1. Blue & Red · by TheMeinerLP", and at most ten map lines and fourteen lines in total (`feat(race)`)
 - [ ] 3.6 Red: `TutorialPagesTest`: six pages, the sixth names the cup, its maps and their authors; pages one to five unchanged (`feat(race)`)
 - [ ] 3.7 Red: `StatsRepliesTest`: a leaderboard reply names the map in its colour and prints no `elytrarace:` (`feat(race)`)
-- [ ] 3.8 Red: confirm 3.1 to 3.7 fail for the stated reason, and record the messages in the pull request
+- [ ] 3.8 Red: `LobbySidebarTest`: the sidebar's last line is the status line, no line reads "Elytra Race" or "Elytra-Rennen", and no blank line follows the status line (`feat(race)`)
+- [ ] 3.9 Red: confirm 3.1 to 3.8 fail for the stated reason, and record the messages in the pull request
 
 ## 4. Green: the map surfaces
 
@@ -48,6 +49,7 @@ Archive order: archive `add-display-names` before this change. Nothing is archiv
 - [ ] 4.4 Green: the author rule and the forty-character line rule in `LobbyBoard` and `LobbySidebar` (`feat(race)`)
 - [ ] 4.5 Green: the stats replies name the map by its coloured name (`feat(race)`)
 - [ ] 4.6 Green: the German and English bundle keys, each checked by the parity test (`feat(race)`)
+- [ ] 4.7 Green: remove the footer line from `LobbySidebar.lines` and its key `voyager.lobby.sidebar.footer` from both bundles, so the sidebar ends with its status line (`feat(race)`)
 
 ## 5. Red: the cup finale
 
@@ -80,7 +82,7 @@ Archive order: archive `add-display-names` before this change. Nothing is archiv
 ## 9. Docs
 
 - [ ] 9.1 Update `docs/reference/message-style-guide.md`: the name colours, the one-accent exception for names, the placement titles and the medal words (`docs`)
-- [ ] 9.2 Update `docs/reference/hud.md`: the intro title and its timing, the boss bar name, the sidebar lines (ten map lines) and the sixth tutorial page (`docs`)
+- [ ] 9.2 Update `docs/reference/hud.md`: the intro title and its timing, the boss bar name, the sidebar lines (ten map lines, no footer) and the sixth tutorial page (`docs`)
 - [ ] 9.3 Update the catalogue file reference: the MiniMessage display name, its tag set, its forty visible characters and the colour rule (`docs`)
 
 ## 10. Smoke boot
