@@ -12,6 +12,18 @@
 - **WHEN** a shipped map's `guideLine` names no `particle`
 - **THEN** the shipped-catalogue test fails and names the map
 
+### Requirement: palm_beach is drawn in deep violet, and the other shipped maps in white
+**MoSCoW:** Must. THE SYSTEM SHALL ship the map `elytrarace:palm_beach` with particle `DUST` and colour `#7A1FB8`, and SHALL ship
+`elytrarace:dragon_lobby`, `elytrarace:blue_and_red` and `elytrarace:memoria` with particle `END_ROD`.
+
+#### Scenario: palm_beach
+- **WHEN** the shipped `elytrarace:palm_beach` is loaded
+- **THEN** its line is drawn as `DUST` in `#7A1FB8`
+
+#### Scenario: The other shipped maps
+- **WHEN** a shipped map other than `elytrarace:palm_beach` is loaded
+- **THEN** its line is drawn as `END_ROD`
+
 ### Requirement: A map that names no particle is drawn as END_ROD
 **MoSCoW:** Must. WHEN a map's `guideLine` names no `particle`, THE SYSTEM SHALL draw its line as `END_ROD`, as
 `catalog/map-file-format` states. This default is not changed by this change.
