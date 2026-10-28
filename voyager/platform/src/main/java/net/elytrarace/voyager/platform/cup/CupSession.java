@@ -736,10 +736,9 @@ public final class CupSession implements RacePhaseListener {
             }
             hud.render(racer, HudStates.of(MapFigures.inFlight(shown, clock, map, preparedMapIndex + 1,
                     cup.mapNames().size())));
-            // After the advance, not before it: a racer who passed a ring on this tick is heading for
-            // the next one from this tick, and showing them the stretch they have just flown out of
-            // for another four ticks is the one moment the line would be visibly wrong. A racer who was
-            // sent back on this tick is shown the run they were sent back with, for the same reason.
+            // After the advance, so the line is for the ring the racer is heading for now. The stretch
+            // starts at the last ring passed, so the segment being flown stays drawn until the next ring
+            // is passed. A racer who was sent back on this tick is shown the run they were sent back with.
             lines.render(racer, map, shown.progress().passedCount(), clock.gameTick());
         }
         // Competitors are advanced after the human loop: they are not in the players supplier, and nothing

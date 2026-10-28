@@ -90,18 +90,18 @@ class GuideLineRendererTest {
     }
 
     @Test
-    void startsTheWindowAtTheRingAheadOfTheRacer() {
+    void startsTheWindowAtTheLastRingPassed() {
         List<Vec3> stretch = stretchOf(LINE, 2, WINDOW_STYLE);
 
-        assertThat(stretch.getFirst()).isEqualTo(RINGS.get(2).center());
-        assertThat(stretch).doesNotContain(RINGS.get(1).center(), AROUND_THE_CLIFF.position());
+        assertThat(stretch.getFirst()).isEqualTo(RINGS.get(1).center());
+        assertThat(stretch).doesNotContain(RINGS.get(0).center());
     }
 
     @Test
     void movesTheWindowForwardAsRingsArePassed() {
         assertThat(stretchOf(LINE, 0, WINDOW_STYLE).getFirst()).isEqualTo(RINGS.get(0).center());
-        assertThat(stretchOf(LINE, 1, WINDOW_STYLE).getFirst()).isEqualTo(RINGS.get(1).center());
-        assertThat(stretchOf(LINE, 2, WINDOW_STYLE).getFirst()).isEqualTo(RINGS.get(2).center());
+        assertThat(stretchOf(LINE, 1, WINDOW_STYLE).getFirst()).isEqualTo(RINGS.get(0).center());
+        assertThat(stretchOf(LINE, 2, WINDOW_STYLE).getFirst()).isEqualTo(RINGS.get(1).center());
 
         assertThat(stretchOf(LINE, 1, WINDOW_STYLE).getLast()).isEqualTo(RINGS.get(3).center());
         assertThat(stretchOf(LINE, 2, WINDOW_STYLE).getLast()).isEqualTo(RINGS.get(4).center());
@@ -129,27 +129,28 @@ class GuideLineRendererTest {
 
     @Test
     void showsNothingOnceThereIsNothingAheadInTheWindow() {
-        // Heading for the last ring: one point is what the geometry says and fewer than two is what
-        // render() declines to draw.
-        assertThat(stretchOf(LINE, 4, WINDOW_STYLE)).containsExactly(RINGS.get(4).center());
+        // Heading for the last ring: the stretch runs from the last ring passed to the last ring.
+        assertThat(stretchOf(LINE, 4, WINDOW_STYLE).getFirst()).isEqualTo(RINGS.get(3).center());
+        assertThat(stretchOf(LINE, 4, WINDOW_STYLE).getLast()).isEqualTo(RINGS.get(4).center());
 
         // Every ring passed: the racer has finished.
         assertThat(stretchOf(LINE, 5, WINDOW_STYLE)).isEmpty();
     }
 
     @Test
-    void aFullLineSendsTheStretchFromTheNextRingToTheLast() {
+    void aFullLineSendsTheStretchFromTheLastRingPassedToTheLast() {
         List<Vec3> stretch = stretchOf(LINE, 1, FULL_STYLE);
 
-        assertThat(stretch.getFirst()).isEqualTo(RINGS.get(1).center());
+        assertThat(stretch.getFirst()).isEqualTo(RINGS.get(0).center());
         assertThat(stretch.getLast()).isEqualTo(RINGS.get(4).center());
     }
 
     @Test
-    void aFullLineSendsNothingBehindTheNextRing() {
+    void aFullLineSendsNothingBehindTheLastRingPassed() {
         List<Vec3> stretch = stretchOf(LINE, 2, FULL_STYLE);
 
-        assertThat(stretch).doesNotContain(RINGS.get(0).center(), RINGS.get(1).center(), AROUND_THE_CLIFF.position());
+        assertThat(stretch).doesNotContain(RINGS.get(0).center());
+        assertThat(stretch.getFirst()).isEqualTo(RINGS.get(1).center());
     }
 
     @Test
@@ -258,8 +259,8 @@ class GuideLineRendererTest {
         renderer.render(racer, WINDOW_COURSE, 1, 5);
         // A refresh tick, but the racer has finished the course.
         renderer.render(racer, WINDOW_COURSE, 5, 6);
-        // A refresh tick, and the racer is heading for the last ring: one point is not a line.
-        renderer.render(racer, WINDOW_COURSE, 4, 12);
+        // A later refresh tick, and the racer has finished the course: nothing is ahead of them.
+        renderer.render(racer, WINDOW_COURSE, 5, 12);
 
         assertThat(particles.collect()).isEmpty();
     }

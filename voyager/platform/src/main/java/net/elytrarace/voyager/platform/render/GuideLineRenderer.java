@@ -31,13 +31,13 @@ import java.util.Map;
  *
  * <h2>What decides the stretch</h2>
  *
- * <p>The map's {@code mode} decides it, and both modes start at the ring the racer is heading for, never
- * at a ring they have already flown. {@code FULL}, the default, runs from there to the last ring: the
- * whole course ahead, as the old game drew it. {@code WINDOW} runs from there {@code lookAheadRings} rings
- * on, for a course where the whole line is too much. The line a racer has already flown is not drawn in
- * either mode. ADR-0030 chose the whole course and reversed the old argument that a ball of string does
- * not say which strand is next: a racer plans from the strands ahead of them, and the flown part was the
- * one part that could not help.
+ * <p>The map's {@code mode} decides it, and both modes start at the last ring the racer passed, one ring
+ * behind the ring they are heading for, so the segment they are flying stays drawn until the next ring is
+ * passed. {@code FULL}, the default, runs from there to the last ring: the whole course ahead, as the old game
+ * drew it. {@code WINDOW} runs from there {@code lookAheadRings} rings on, for a course where the whole line is
+ * too much. The line behind the last ring passed is not drawn in either mode. ADR-0030 chose the whole course
+ * and reversed the old argument that a ball of string does not say which strand is next: a racer plans from
+ * the strands ahead of them, and the flown part was the one part that could not help.
  *
  * <h2>What the particle, the colour and the refresh are</h2>
  *
@@ -162,8 +162,11 @@ public final class GuideLineRenderer {
     }
 
     /**
-     * The stretch of line a racer at {@code passedCount} rings is shown, reaching {@code lookAheadRings} rings
-     * on and clamped to the last ring.
+     * The stretch of line a racer at {@code passedCount} rings is shown: from the last ring passed, through the
+     * ring they are heading for, reaching {@code lookAheadRings} rings on and clamped to the last ring.
+     *
+     * <p>The stretch starts one ring behind the ring being headed for, so the segment the racer is flying stays
+     * drawn until the next ring is passed. Before the first ring is passed it starts at the first ring.
      *
      * <p>Package-private because it is this class's policy and nothing outside needs it, and because it is
      * the half of this class a test can reach: which points go out is decidable with no server anywhere.
@@ -175,8 +178,9 @@ public final class GuideLineRenderer {
         if (passedCount < 0 || passedCount >= line.ringCount()) {
             return List.of();
         }
+        int firstRing = Math.max(passedCount - 1, 0);
         int lastRing = Math.min(passedCount + lookAheadRings, line.ringCount() - 1);
-        return line.between(passedCount, lastRing);
+        return line.between(firstRing, lastRing);
     }
 
     /** Whether a point is close enough to a racer to be sent to them. See {@link #REACH_BLOCKS}. */
