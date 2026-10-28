@@ -5,6 +5,23 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.17.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.17.0...v1.17.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **race:** play a chime when the lobby fills and keep lobby items until go ([#352](https://github.com/OneLiteFeatherNET/Voyager/issues/352)) ([416ddc6](https://github.com/OneLiteFeatherNET/Voyager/commit/416ddc6d08a62c51f89ff84b39b7a340fdce8f63))
+
+
+### Tests
+
+* **lobby:** cover leave command, tutorial book and join sound ([#350](https://github.com/OneLiteFeatherNET/Voyager/issues/350)) ([d60bd55](https://github.com/OneLiteFeatherNET/Voyager/commit/d60bd55e8d3c57faca1601d39d1a0148a00d67f1))
+
+
+### Documentation
+
+* **openspec:** propose refine-lobby-countdown-feedback ([#349](https://github.com/OneLiteFeatherNET/Voyager/issues/349)) ([2c0e8e5](https://github.com/OneLiteFeatherNET/Voyager/commit/2c0e8e522f562819c68749361b3b1380124dcf20))
+
 ## [1.17.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.16.0...v1.17.0) (2026-10-27)
 
 
