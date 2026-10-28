@@ -156,7 +156,7 @@ class CatalogWriterTest {
 
     @Test
     void writesAnEmptyPointsArrayForACourseWithNoGuides() {
-        MapDefinition noGuides = new MapDefinition(MAP.name(), MAP.world(), MAP.spawn(), MAP.rings(),
+        MapDefinition noGuides = new MapDefinition(MAP.key().value(), MAP.world(), MAP.spawn(), MAP.rings(),
                 MAP.referenceTime(), MAP.boostConfig(), new GuideLine(List.of(), 2, 1.0));
 
         JsonObject line = CatalogWriter.toJson(noGuides, List.of("a note")).getAsJsonObject("guideLine");
