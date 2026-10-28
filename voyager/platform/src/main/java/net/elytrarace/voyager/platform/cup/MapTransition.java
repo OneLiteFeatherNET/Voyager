@@ -64,7 +64,7 @@ public final class MapTransition {
      * @param runs the per-player run state this transition empties
      * @param chunks starts each chunk's load and reports its state; production passes {@link ChunkLoader#MINESTOM}
      */
-    MapTransition(MapInstances instances, RaceRuns runs, ChunkLoader chunks) {
+    public MapTransition(MapInstances instances, RaceRuns runs, ChunkLoader chunks) {
         this.instances = instances;
         this.runs = runs;
         this.chunks = chunks;
