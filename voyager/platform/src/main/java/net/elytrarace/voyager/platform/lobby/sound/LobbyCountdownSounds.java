@@ -14,8 +14,9 @@ import java.util.Optional;
  *
  * <p>The pling table is Cygnus's {@code LobbyCountdownSoundTask}, unchanged: the note-block pling at ten, five, three, two,
  * one and zero seconds left, each with its own volume and pitch. The join sound and the full-lobby sound were chosen in the
- * design of {@code cygnus-style-lobby}. The full-lobby sound is the xylophone, not the chime: the chime is the race's reset
- * sound, and a lobby sound may not share a meaning with a race sound.
+ * design of {@code cygnus-style-lobby}. The full-lobby sound is the Cygnus chime, as the owner chose in
+ * {@code refine-lobby-countdown-feedback}. It is the race's reset sound too, the one lobby sound allowed to share a race
+ * sample: the two are heard in different phases, and no other lobby sound may share one.
  */
 @ApiStatus.Internal
 @NotNullByDefault
@@ -33,7 +34,7 @@ public final class LobbyCountdownSounds {
 
     private static final Key PLING = Key.key("block.note_block.pling");
     private static final Key JOIN = Key.key("entity.item.pickup");
-    private static final Key FULL_LOBBY = Key.key("block.note_block.xylophone");
+    private static final Key FULL_LOBBY = Key.key("block.note_block.chime");
     private static final Sound.Source SOURCE = Sound.Source.MASTER;
 
     /** The marked seconds, from the Cygnus table, in the order they fall. */

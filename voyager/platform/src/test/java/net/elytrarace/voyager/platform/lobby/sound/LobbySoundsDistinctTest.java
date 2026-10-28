@@ -13,13 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class LobbySoundsDistinctTest {
 
+    /** The full-lobby chime is excepted: see {@link #theFullLobbyChimeIsTheOnlyLobbySoundThatSharesARaceSample()}. */
     @Test
     void noLobbySoundIsARaceSample() {
         assertThat(RaceFeedback.sampleKeysLobbyMustNotShare())
                 .as("the race's ring bell, last-ring chime, reset, DNF, missed-ring and countdown beat samples")
                 .doesNotContain(LobbyCountdownSounds.pling(new LobbyCountdownSounds.Pling(10, 0.5f, 1.0f)).name())
-                .doesNotContain(LobbyCountdownSounds.joinSound().name())
-                .doesNotContain(LobbyCountdownSounds.fullLobbySound().name());
+                .doesNotContain(LobbyCountdownSounds.joinSound().name());
     }
 
     /**
