@@ -24,8 +24,12 @@ public abstract class CupScorer {
     private CupScorer() {
     }
 
-    /** Accumulates one player's {@code perMap} scores, one entry per map in the cup, into a {@link CupScore}. */
-    public static CupScore accumulate(List<MapScore> perMap) {
+    /**
+     * Accumulates one player's {@code perMap} scores, one entry per map in the cup, into a {@link CupScore}.
+     *
+     * @param ringsPassed the rings the player passed across the cup's maps, which the scores do not carry
+     */
+    public static CupScore accumulate(List<MapScore> perMap, int ringsPassed) {
         int totalPoints = 0;
         int mapsFinished = 0;
         Duration bestTime = null;
@@ -40,6 +44,6 @@ public abstract class CupScorer {
                 bestTime = completed.get();
             }
         }
-        return new CupScore(totalPoints, Optional.ofNullable(bestTime), mapsFinished);
+        return new CupScore(totalPoints, Optional.ofNullable(bestTime), mapsFinished, ringsPassed);
     }
 }

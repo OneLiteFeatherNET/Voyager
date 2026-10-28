@@ -31,6 +31,25 @@ class CupStandingsTest {
     private static final UUID CARLA = UUID.fromString("0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d");
 
     @Test
+    void ringsPassedAreSummedAcrossTheMapsOfTheCup() {
+        CupStandings standings = new CupStandings();
+        standings.record(ALICE, 0, finished(70, MedalTier.GOLD, 12.500));
+        standings.record(ALICE, 1, dnf(20));
+        standings.recordRings(ALICE, 0, 35);
+        standings.recordRings(ALICE, 1, 23);
+
+        assertThat(standings.totalOf(ALICE).ringsPassed()).isEqualTo(58);
+    }
+
+    @Test
+    void aRacerWithNoRecordedRingsHasNoRingsPassed() {
+        CupStandings standings = new CupStandings();
+        standings.record(BRUNO, 0, dnf(30));
+
+        assertThat(standings.totalOf(BRUNO).ringsPassed()).isZero();
+    }
+
+    @Test
     void keepsEachPlayersScorePerMap() {
         CupStandings standings = new CupStandings();
 

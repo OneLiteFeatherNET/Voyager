@@ -13,6 +13,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CupScorerTest {
 
     @Test
+    void aCupScoreCarriesTheRingsPassedItIsGiven() {
+        MapScore map = new MapScore(40, 10, 0, Optional.of(Duration.ofSeconds(90)), MedalTier.GOLD);
+
+        CupScore cup = CupScorer.accumulate(List.of(map), 35);
+
+        assertThat(cup.ringsPassed()).isEqualTo(35);
+    }
+
+    @Test
     void sumsTotalPointsAcrossThreeMapsWithDifferentPerMapScores() {
         // Each map has a different ring/medal/placement mix so a scorer that only read one field, or
         // only the first/last map, could not pass by coincidence: 71 + 93 + 35.
@@ -20,7 +29,7 @@ class CupScorerTest {
         MapScore mapB = new MapScore(30, 60, 3, Optional.of(Duration.ofSeconds(20)), MedalTier.DIAMOND);
         MapScore mapC = new MapScore(10, 15, 10, Optional.of(Duration.ofSeconds(80)), MedalTier.BRONZE);
 
-        CupScore cup = CupScorer.accumulate(List.of(mapA, mapB, mapC));
+        CupScore cup = CupScorer.accumulate(List.of(mapA, mapB, mapC), 0);
 
         assertThat(cup.totalPoints()).isEqualTo(199);
         assertThat(cup.mapsFinished()).isEqualTo(3);
@@ -35,7 +44,7 @@ class CupScorerTest {
         MapScore mapB = new MapScore(30, 60, 3, Optional.of(Duration.ofSeconds(20)), MedalTier.DIAMOND);
         MapScore mapC = new MapScore(10, 15, 10, Optional.of(Duration.ofSeconds(80)), MedalTier.BRONZE);
 
-        CupScore cup = CupScorer.accumulate(List.of(mapA, mapB, mapC));
+        CupScore cup = CupScorer.accumulate(List.of(mapA, mapB, mapC), 0);
 
         assertThat(cup.bestTime()).contains(Duration.ofSeconds(20));
     }
@@ -54,7 +63,7 @@ class CupScorerTest {
         MapScore dnf = new MapScore(10, 0, 0, Optional.of(Duration.ofSeconds(1)), MedalTier.DNF);
         MapScore finishedLast = new MapScore(30, 60, 0, Optional.of(Duration.ofSeconds(25)), MedalTier.DIAMOND);
 
-        CupScore cup = CupScorer.accumulate(List.of(finishedFirst, dnf, finishedLast));
+        CupScore cup = CupScorer.accumulate(List.of(finishedFirst, dnf, finishedLast), 0);
 
         assertThat(cup.totalPoints()).as("DNF map's ring points (10) still count").isEqualTo(165);
         assertThat(cup.mapsFinished()).isEqualTo(2);
@@ -68,7 +77,7 @@ class CupScorerTest {
         MapScore dnf2 = new MapScore(20, 0, 0, Optional.empty(), MedalTier.DNF);
         MapScore dnf3 = new MapScore(0, 0, 0, Optional.empty(), MedalTier.DNF);
 
-        CupScore cup = CupScorer.accumulate(List.of(dnf1, dnf2, dnf3));
+        CupScore cup = CupScorer.accumulate(List.of(dnf1, dnf2, dnf3), 0);
 
         assertThat(cup.totalPoints()).as("ring points from every DNF still sum").isEqualTo(30);
         assertThat(cup.mapsFinished()).isZero();
