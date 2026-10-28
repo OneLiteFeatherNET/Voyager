@@ -2,7 +2,7 @@
   "$schema": "../../../../../platform/src/main/resources/schema/cup.schema.json",
   "schemaVersion": 2,
   "key": "elytrarace:legacy_cup",
-  "displayName": "Testing Cup",
+  "displayName": "<rainbow>Testing Cup</rainbow>",
   "mode": "RACE",
   "mapNames": [
     "elytrarace:palm_beach",
