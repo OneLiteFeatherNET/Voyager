@@ -20,6 +20,7 @@
   "guideLine": {
     "lookAheadRings": 2,
     "particleSpacing": 2.0,
+    "particle": "END_ROD",
     "points": [
       {
         "orderIndex": 150,
@@ -723,7 +724,7 @@
     "guideLine.points — 16 point(s), carried from the old guides.json exactly as written. They are not rings: nothing is scored at one, and they exist only to pull the line off a straight ring-to-ring segment that would cut through terrain. orderIndex places a point between two rings, where ring i sits at i * 100; more than one guide between the same pair of rings is normal.",
     "guideLine.lookAheadRings - used by the WINDOW mode only. The shipped course is FULL (the default): a racer is shown the line from the ring they are heading for to the last ring, and the part already flown is not drawn. A map that sets mode WINDOW draws 2 ring(s) past the ring a racer is heading for, a few seconds of flight on this course.",
     "guideLine.particleSpacing - 2.0 block(s) between particles (owner decision, ADR-0030), from 1.0. It is a budget decision: at 2.0, sixteen racers on this course stay within 30,000 packets per second in total and 2,000 for any one racer, with the 160-block reach applied (design.md D6). At 1.0 they do not.",
-    "guideLine.particle and guideLine.mode are not set: the defaults are END_ROD and FULL. The particle refresh is set by the particle, not by this file (END_ROD every 6 ticks, DUST every 4); see design.md D4.",
+    "guideLine.particle is END_ROD, named explicitly (the default for a map that names none). guideLine.mode is not set: the default is FULL. The particle refresh is set by the particle, not by this file (END_ROD every 6 ticks, DUST every 4); see design.md D4.",
     "This file is data, not code: edit the seeds above here rather than in the server.",
     "35 rings, indexed 0..34.",
     "rings 0, 18 and 27 — PROVISIONAL BOOST rings, chosen from the map's geometry, not by taste. Rule: take each straight segment (centre to centre, ring i to ring i+1, with no guide point in the gap, since a guide bends the drawn line off the direct run), rank them by length, and take the rings above the largest gap in that ranking. The largest gap falls between 72.95 and 56.80 blocks, so the rings are 27 (96.99 blocks), 0 (87.42) and 18 (72.95). The final ring is never a BOOST ring. The BOOST speed multiplier (1.5) is a code constant in RingEffectRegistry, not a per-map value. Tune after playtest.",
