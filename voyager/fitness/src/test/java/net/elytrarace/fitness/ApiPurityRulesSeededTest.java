@@ -16,6 +16,13 @@ class ApiPurityRulesSeededTest {
 
     private static final JavaClasses SEEDED = new ClassFileImporter().importPackages("net.elytrarace.voyager.seeded");
 
+    private static final JavaClasses SEEDED_API = new ClassFileImporter().importPackages("net.elytrarace.voyager.api.seeded");
+
+    @Test
+    void anAdventureTypeOtherThanAKeyInTheApiIsCaught() {
+        assertRuleCatches(ApiPurityTest.apiUsesAdventureOnlyForKeys, SEEDED_API);
+    }
+
     @Test
     void aTranslationKeyNamedOutsideTheMessageLayerIsCaught() {
         assertRuleCatches(ApiPurityTest.onlyTheTextPackageNamesATranslationKey);
@@ -32,7 +39,11 @@ class ApiPurityRulesSeededTest {
     }
 
     private static void assertRuleCatches(ArchRule rule) {
-        assertThatThrownBy(() -> rule.check(SEEDED))
+        assertRuleCatches(rule, SEEDED);
+    }
+
+    private static void assertRuleCatches(ArchRule rule, JavaClasses classes) {
+        assertThatThrownBy(() -> rule.check(classes))
                 .as("the rule must match its seeded violation, or it is vacuously true")
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("SeededViolations");

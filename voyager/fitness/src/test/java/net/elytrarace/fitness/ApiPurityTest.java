@@ -59,6 +59,19 @@ class ApiPurityTest {
                     .because("voyager-api declares configuration types and never loads them")
                     .allowEmptyShould(false);
 
+    /**
+     * The API takes Adventure only for its {@code Key}, which names a map or a cup (ADR-0040). Text, components and
+     * MiniMessage belong to the platform's text layer, so an Adventure type of any other package is refused here.
+     */
+    @ArchTest
+    static final ArchRule apiUsesAdventureOnlyForKeys =
+            noClasses().that().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should().dependOnClassesThat(JavaClass.Predicates.resideInAPackage("net.kyori..")
+                            .and(DescribedPredicate.not(JavaClass.Predicates.resideInAPackage("net.kyori.adventure.key.."))))
+                    .because("voyager-api names its catalogue entries with Adventure keys and nothing else from Adventure; "
+                            + "text is the platform's job")
+                    .allowEmptyShould(false);
+
     @ArchTest
     static final ArchRule physicsDoesNotDependOnMinestomOrItsWorldLoader =
             noClasses().that().resideInAPackage("net.elytrarace.voyager.physics..")
