@@ -51,7 +51,7 @@ public final class CatalogWriter {
     public static JsonObject toJson(MapDefinition map, List<String> notes) {
         JsonObject json = new JsonObject();
         json.addProperty("schemaVersion", SCHEMA_VERSION);
-        json.addProperty("name", map.name());
+        json.addProperty("name", map.key().value());
         json.addProperty("world", map.world());
         json.add("spawn", vector(map.spawn()));
         // Seconds rather than an ISO-8601 duration string: this number is meant to be edited by a
@@ -77,11 +77,11 @@ public final class CatalogWriter {
     public static JsonObject toJson(CupDefinition cup, List<String> notes) {
         JsonObject json = new JsonObject();
         json.addProperty("schemaVersion", SCHEMA_VERSION);
-        json.addProperty("name", cup.name());
+        json.addProperty("name", cup.key().value());
         json.addProperty("mode", cup.mode().name());
 
         JsonArray mapNames = new JsonArray();
-        cup.mapNames().forEach(mapNames::add);
+        cup.mapNames().forEach(key -> mapNames.add(key.substring(key.indexOf(':') + 1)));
         json.add("mapNames", mapNames);
         json.add("notes", notes(notes));
         return json;
