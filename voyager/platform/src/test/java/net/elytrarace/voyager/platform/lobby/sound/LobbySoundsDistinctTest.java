@@ -13,13 +13,30 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class LobbySoundsDistinctTest {
 
+    /** The full-lobby chime is excepted: see {@link #theFullLobbyChimeIsTheOnlyLobbySoundThatSharesARaceSample()}. */
     @Test
     void noLobbySoundIsARaceSample() {
         assertThat(RaceFeedback.sampleKeysLobbyMustNotShare())
                 .as("the race's ring bell, last-ring chime, reset, DNF, missed-ring and countdown beat samples")
                 .doesNotContain(LobbyCountdownSounds.pling(new LobbyCountdownSounds.Pling(10, 0.5f, 1.0f)).name())
-                .doesNotContain(LobbyCountdownSounds.joinSound().name())
-                .doesNotContain(LobbyCountdownSounds.fullLobbySound().name());
+                .doesNotContain(LobbyCountdownSounds.joinSound().name());
+    }
+
+    /**
+     * The full-lobby chime is the one lobby sound allowed to share a race sample: it is the reset chime, by the owner's choice
+     * (race/lobby-feedback). Every other lobby sound is checked by {@link #noLobbySoundIsARaceSample()}.
+     */
+    @Test
+    void theFullLobbyChimeIsTheOnlyLobbySoundThatSharesARaceSample() {
+        assertThat(RaceFeedback.sampleKeysLobbyMustNotShare())
+                .as("the full-lobby chime is the reset chime, which is one of the race samples")
+                .contains(LobbyCountdownSounds.fullLobbySound().name());
+        assertThat(LobbyCountdownSounds.pling(new LobbyCountdownSounds.Pling(10, 0.5f, 1.0f)).name())
+                .as("the pling shares no race sample")
+                .isNotIn(RaceFeedback.sampleKeysLobbyMustNotShare());
+        assertThat(LobbyCountdownSounds.joinSound().name())
+                .as("the join sound shares no race sample")
+                .isNotIn(RaceFeedback.sampleKeysLobbyMustNotShare());
     }
 
     @Test

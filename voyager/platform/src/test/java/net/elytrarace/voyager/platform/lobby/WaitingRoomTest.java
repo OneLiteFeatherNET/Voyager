@@ -18,6 +18,7 @@ import net.elytrarace.voyager.platform.cup.TickStep;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
+import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
@@ -232,6 +233,37 @@ class WaitingRoomTest {
 
         assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.RUNNING);
         assertThat(fixture.runs.of(first.getUuid())).isPresent();
+    }
+
+    /**
+     * The lobby items stay in the hotbar through the committed window, which begins three seconds before GO, and are removed
+     * on the GO tick itself: the first tick the situation is RUNNING.
+     */
+    @Test
+    void theLobbyItemsAreStillHeldInTheCommittedWindowAndRemovedOnTheGoTick(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        Player racer = fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.ticks(199);
+        assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.COMMITTED);
+
+        assertThat(LobbyItems.kindOf(racer.getInventory().getItemStack(LobbyItems.LEAVE_SLOT)))
+                .as("three seconds before GO the start is committed, and the leave door is still in slot 8")
+                .contains(LobbyItems.Kind.LEAVE);
+        assertThat(LobbyItems.kindOf(racer.getInventory().getItemStack(LobbyItems.TUTORIAL_SLOT)))
+                .as("three seconds before GO the start is committed, and the tutorial book is still in slot 1")
+                .contains(LobbyItems.Kind.TUTORIAL);
+
+        fixture.tick();
+
+        assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.RUNNING);
+        assertThat(LobbyItems.kindOf(racer.getInventory().getItemStack(LobbyItems.LEAVE_SLOT)))
+                .as("the GO tick removes the leave door")
+                .isEmpty();
+        assertThat(LobbyItems.kindOf(racer.getInventory().getItemStack(LobbyItems.TUTORIAL_SLOT)))
+                .as("the GO tick removes the tutorial book")
+                .isEmpty();
     }
 
     // ------------------------------------------------------------------------------------------

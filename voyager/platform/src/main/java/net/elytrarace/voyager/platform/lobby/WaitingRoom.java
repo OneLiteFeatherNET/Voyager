@@ -359,7 +359,8 @@ public final class WaitingRoom {
         Component actionBar = actionBar(situation, count);
         float fraction = status.countdown() == null ? 0.0f : countdownFraction();
         int level = status.countdown() == null ? 0 : (int) status.countdown().toSeconds();
-        boolean takeItems = situation == StartGate.Situation.COMMITTED || situation == StartGate.Situation.RUNNING;
+        // The items stay through the committed window and go on the GO tick, the first tick the situation is RUNNING.
+        boolean takeItems = situation == StartGate.Situation.RUNNING;
         for (Player racer : online) {
             sidebar.update(racer, waitingPlace, board, status, waiting);
             if (actionBar == null) {

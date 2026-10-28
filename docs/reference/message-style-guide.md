@@ -107,7 +107,8 @@ Rules (enforced by `MessageStyleTest` in `voyager-fitness`):
 ## Sound
 
 - Each meaning has one sound. The countdown beat is for a countdown digit only. The ring bell and the last-ring chime
-  are for a ring pass only. A reset, a DNF and a missed ring each have their own sound.
+  are for a ring pass only. A reset, a DNF and a missed ring each have their own sound. The one exception is the waiting
+  room's full-lobby chime, which shares the reset chime sample; the two are heard in different phases (`race/lobby-feedback`).
 - A loss is quieter than a gain, and informational rather than punishing.
 - A sound that plays more than ten times in one race varies in pitch, timing or timbre.
 
