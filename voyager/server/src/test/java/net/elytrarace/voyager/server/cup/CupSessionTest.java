@@ -32,6 +32,7 @@ import net.elytrarace.voyager.platform.flight.Rockets;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.component.DataComponents;
+import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
@@ -327,15 +328,50 @@ class CupSessionTest {
      * flight, carrying the velocity they finished on, and the next map would start from whatever that had become
      * — which makes every map after the first start differently.
      */
+    /**
+     * Reproduces the wrong-map label: while map one's end is shown, the cup must still name map one, not the map that
+     * follows. The next map is prepared when its own lobby begins.
+     */
     @Test
-    void standsTheRacerDownWhenAMapEnds(Env env) throws IOException {
-        Fixture fixture = start(env);
+    void theEndOfAMapStillNamesThatMapNotTheOneThatFollows(Env env) throws IOException {
+        Fixture fixture = start(env, new RaceTimings(TIMINGS.lobby(), TIMINGS.race(), Duration.ofSeconds(3),
+                TIMINGS.endAfterLastMap()));
 
         fixture.runUntil(tick -> fixture.session.describe().contains("phase END"));
 
-        assertThat(fixture.racer.isFlyingWithElytra()).isFalse();
+        assertThat(fixture.session.describe())
+                .describedAs("the cup's end still names map one, the map that just finished")
+                .contains("map 1/2 'ridge-run', phase END");
+    }
+
+    @Test
+    void aRacerGlidingWhenTheMapsTimeRunsOutIsStoodDownOnTheFiftiethGlideTick(Env env) throws IOException {
+        // The end window is longer than the glide, as in production (8 s against 2.5 s), so the glide completes in it.
+        Fixture fixture = start(env, new RaceTimings(TIMINGS.lobby(), TIMINGS.race(), Duration.ofSeconds(3),
+                TIMINGS.endAfterLastMap()));
+
+        fixture.runUntil(tick -> fixture.session.describe().contains("phase END"));
+        assertThat(fixture.racer.isFlyingWithElytra())
+                .describedAs("the racer is gliding when the map's time runs out")
+                .isTrue();
+
+        for (int tick = 1; tick < GLIDE_OUT_TICKS; tick++) {
+            fixture.tickOnce();
+        }
+        assertThat(fixture.racer.isFlyingWithElytra())
+                .describedAs("still gliding on glide tick %s of %s, the glide-out after the map's time runs out",
+                        GLIDE_OUT_TICKS - 1, GLIDE_OUT_TICKS)
+                .isTrue();
+
+        fixture.tickOnce();
+        assertThat(fixture.racer.isFlyingWithElytra())
+                .describedAs("stood down on glide tick %s, the last tick of the glide-out", GLIDE_OUT_TICKS)
+                .isFalse();
         assertThat(fixture.racer.getVelocity()).isEqualTo(Vec.ZERO);
     }
+
+    /** The glide-out after a finish or at the time limit: 50 ticks, 2.5 s. */
+    private static final int GLIDE_OUT_TICKS = 50;
 
     /**
      * The flight simulation is pointed at the world being raced. Nothing else would notice if it were
@@ -1399,11 +1435,16 @@ class CupSessionTest {
 
         Instance first = instances.forWorld(RIDGE);
         Pos spawn = spawnOf(ridge);
-        first.loadChunk(spawn.chunkX(), spawn.chunkZ()).join();
         TestConnection connection = env.createConnection();
         Player racer = connection.connect(first, spawn);
         racers.add(racer);
         Racers.prepare(racer);
+        // Production preloads the chunks around each spawn during the wait, so a racer is placed before GO. The
+        // fixture has the same chunks present up front, so the placement completes within the test's short lobby.
+        loadAround(first, spawn, racer.effectiveViewDistance());
+        // The second map is another world, so its placement uses the smaller of the setting and that world's view distance.
+        int crossWorld = Math.min(racer.getSettings().viewDistance(), instances.forWorld(DUNE).viewDistance()) + 1;
+        loadAround(instances.forWorld(DUNE), new Pos(DUNE_SPAWN.x(), DUNE_SPAWN.y(), DUNE_SPAWN.z()), crossWorld);
 
         // Mutable, because a player joining while a cup is already running is a case worth testing
         // and a fixed field could not produce one.
@@ -1678,6 +1719,12 @@ class CupSessionTest {
 
     private static Pos spawnOf(MapDefinition map) {
         return new Pos(map.spawn().x(), map.spawn().y(), map.spawn().z());
+    }
+
+    /** Loads every chunk within {@code viewDistance} of {@code spawn}, as the preload of a placement would have them. */
+    private static void loadAround(Instance world, Pos spawn, int viewDistance) {
+        ChunkRange.chunksInRange(spawn, viewDistance,
+                (chunkX, chunkZ) -> world.loadChunk(chunkX, chunkZ).join());
     }
 
     private static Block blockUnder(Player racer) {

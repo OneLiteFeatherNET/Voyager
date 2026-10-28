@@ -74,6 +74,11 @@ dependencies {
     // settings.gradle.kts). Never on runtimeClasspath: the adapters are the only runtime check.
     testImplementation(libs.json.schema.validator)
 
+    // The log4j2 appender LogCapture attaches, so a test asserts the line a failure logs (AsyncPreloadTest). Test
+    // scope only: the runtime classpath gets log4j from the composition roots, as it did before.
+    testImplementation(libs.log4j2.core)
+    testRuntimeOnly(libs.log4j2.slf4j2)
+
     // Xerus resolves its version from the aonyx-bom platform, same as the tree being replaced
     // (see legacy/server/build.gradle.kts). The BOM constraint has to be `api`, not `implementation`:
     // voyager-server consumes voyager-platform's unversioned `libs.xerus` transitively, and an

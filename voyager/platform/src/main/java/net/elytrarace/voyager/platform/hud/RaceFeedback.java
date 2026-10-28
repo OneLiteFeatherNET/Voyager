@@ -1,12 +1,17 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.MedalTier;
+import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
+import net.minestom.server.network.packet.server.play.ParticlePacket;
+import net.minestom.server.particle.Particle;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -54,6 +59,12 @@ public abstract class RaceFeedback {
     private static final Key RESET_CHIME = Key.key("block.note_block.chime");
     private static final Key DNF_BIT = Key.key("block.note_block.bit");
     private static final Key MISSED_RING = Key.key("block.note_block.didgeridoo");
+    private static final Key FINISH_BLAST = Key.key("entity.firework_rocket.blast");
+
+    /** The finish burst: a spread of a block, a fast spray, and forty particles from one packet. */
+    private static final Vec FINISH_BURST_SPREAD = Vectors.toMinestom(new Vec3(1.0, 1.0, 1.0));
+    private static final float FINISH_BURST_SPEED = 0.2f;
+    private static final int FINISH_BURST_COUNT = 40;
 
     /**
      * The bottom of the ring ladder and how far it climbs.
@@ -156,6 +167,20 @@ public abstract class RaceFeedback {
             case 2 -> 1.2f;
             default -> 1.4f;
         };
+    }
+
+    /**
+     * A racer has passed the last ring of a map: one firework burst at the finish ring, and the finish sound, once.
+     *
+     * <p>The burst is one particle packet, so it is one burst for the one racer it is sent to. The sound is a firework's
+     * blast, which is none of the countdown beat, the ring bell or the lobby chime.
+     *
+     * @param finishRing the centre of the last ring, where the burst is shown
+     */
+    public static void finish(Player racer, Vec3 finishRing) {
+        racer.sendPacket(new ParticlePacket(Particle.FIREWORK, true, true, Vectors.toMinestom(finishRing),
+                FINISH_BURST_SPREAD, FINISH_BURST_SPEED, FINISH_BURST_COUNT));
+        racer.playSound(Sound.sound(FINISH_BLAST, SOURCE, 0.9f, 1.0f));
     }
 
     /**

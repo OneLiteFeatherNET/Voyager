@@ -123,6 +123,7 @@ pull request that changes it.
 | Reset | `block.note_block.chime` | 0.7 | 0.8 | falling, not the beat |
 | DNF | `block.note_block.bit` | 0.6 | 0.6 | quieter than any medal |
 | Missed ring | `block.note_block.didgeridoo` | 0.5 | 0.5 | quiet, not the bell or the beat |
+| Finish | `entity.firework_rocket.blast` | 1.0 | 0.9 | once, with one firework burst at the last ring; not the beat, the bell or the lobby chime |
 | Medal | `ui.toast.challenge_complete`, `entity.player.levelup`, `block.note_block.pling` | as in `RaceFeedback` | 0.9 to 1.0 | none is the countdown beat |
 
 ## German

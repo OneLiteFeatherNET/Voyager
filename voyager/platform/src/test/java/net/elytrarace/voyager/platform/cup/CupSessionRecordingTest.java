@@ -96,9 +96,12 @@ class CupSessionRecordingTest {
     /** Far under the world's floor, so a racer there is outside the bounds a reset is due for. */
     private static final Vec3 BELOW_THE_WORLD = FIRST_SPAWN.plus(new Vec3(0, -200, 0));
 
-    /** Lobby zero for the first map, race ten seconds (200 ticks), results 100 ms: a map ends by its skip, never by time. */
+    /**
+     * A one-second lobby and a one-second wait between maps, so a racer has time to be placed on each map before its GO;
+     * race ten seconds (200 ticks). A map ends by its skip, never by time.
+     */
     private static final RaceTimings TIMINGS = new RaceTimings(
-            Duration.ZERO, Duration.ofSeconds(10), Duration.ofMillis(100), Duration.ofMillis(100));
+            Duration.ofSeconds(1), Duration.ofSeconds(10), Duration.ofSeconds(1), Duration.ofSeconds(1));
 
     /** How many ticks a cup may take before the test gives up, so a hang fails instead of running on. */
     private static final int BUDGET = 2_000;
@@ -113,6 +116,8 @@ class CupSessionRecordingTest {
 
     private MapInstances worlds;
     private CupSession session;
+    /** The test environment, ticked with the cup so that a placement's Minestom futures complete. */
+    private Env env;
 
     @AfterEach
     void releaseTheWorlds() {
@@ -166,7 +171,7 @@ class CupSessionRecordingTest {
         startTwoMapCup(env, recorder);
 
         for (int tick = 1; tick <= 10; tick++) {
-            session.advancePhase();
+            tick();
             assertThat(recorder.races).as("completions after tick %s, while the map is still racing", tick).isEmpty();
         }
         assertThat(recorder.cups).as("cup completions while the map is still racing").isEmpty();
@@ -198,15 +203,15 @@ class CupSessionRecordingTest {
         untilGameStarts();
         racer.setFlyingWithElytra(true);
         moveTo(racer, FRONT_OF_RING);
-        session.advancePhase();
+        tick();
         moveTo(racer, FRONT_OF_RING);
-        session.advancePhase();
+        tick();
         moveTo(racer, BEHIND_RING);
-        session.advancePhase();
+        tick();
         moveTo(racer, FAR_BEHIND_RING);
-        session.advancePhase();
+        tick();
         moveTo(racer, FAR_BEHIND_RING);
-        session.advancePhase();
+        tick();
         playUntilCupFinishes();
 
         RacerRun run = runOf(recorder.races.get(0), racer);
@@ -224,13 +229,13 @@ class CupSessionRecordingTest {
         untilGameStarts();
         racer.setFlyingWithElytra(true);
         moveTo(racer, FRONT_OF_RING);
-        session.advancePhase();
+        tick();
         moveTo(racer, BEHIND_RING);
-        session.advancePhase();
+        tick();
 
         assertThat(session.requestBoost(racer)).as("a boost after the finish is accepted").isTrue();
         moveTo(racer, BELOW_THE_WORLD);
-        session.advancePhase();
+        tick();
         playUntilCupFinishes();
 
         RacerRun run = runOf(recorder.races.get(0), racer);
@@ -250,18 +255,18 @@ class CupSessionRecordingTest {
         untilGameStarts();
         racer.setFlyingWithElytra(true);
         moveTo(racer, FRONT_OF_RING);
-        session.advancePhase();
+        tick();
         moveTo(racer, FRONT_OF_RING);
         assertThat(session.requestBoost(racer)).as("the boost is accepted").isTrue();
-        session.advancePhase();
+        tick();
         racer.setFlyingWithElytra(false);
         moveTo(racer, BELOW_THE_WORLD);
-        session.advancePhase();
+        tick();
         moveTo(racer, FRONT_OF_RING);
-        session.advancePhase();
+        tick();
         racer.setFlyingWithElytra(true);
         moveTo(racer, BEHIND_RING);
-        session.advancePhase();
+        tick();
         playUntilCupFinishes();
 
         RacerRun run = runOf(recorder.races.get(0), racer);
@@ -285,9 +290,9 @@ class CupSessionRecordingTest {
         untilGameStarts();
         racer.setFlyingWithElytra(true);
         moveTo(racer, FRONT_OF_RING);
-        session.advancePhase();
+        tick();
         moveTo(racer, BEHIND_RING);
-        session.advancePhase();
+        tick();
         playUntilCupFinishes();
 
         RaceCompletion completion = recorder.races.get(0);
@@ -336,7 +341,7 @@ class CupSessionRecordingTest {
 
     /**
      * Writes both worlds, builds the cup with {@code recorder} and connects one racer to the first map's spawn.
-     * The cup is started at once, with no lobby, so the first map's race begins on the first tick.
+     * The cup is started with its lobby, and ticked until every racer has been placed on the first map and has a run.
      */
     private Player startTwoMapCup(Env env, RaceRecorder raceRecorder) throws IOException {
         return startTwoMapCup(env, raceRecorder, 1);
@@ -354,6 +359,7 @@ class CupSessionRecordingTest {
     /** As {@link #startTwoMapCup(Env, RaceRecorder, int)}, with the computer racers {@code competitors} reports. */
     private Player startTwoMapCup(Env env, RaceRecorder raceRecorder, int racerCount, CompetitorField competitors)
             throws IOException {
+        this.env = env;
         writeWorld(env, FIRST_WORLD, FIRST_SPAWN);
         writeWorld(env, SECOND_WORLD, SECOND_SPAWN);
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
@@ -380,14 +386,25 @@ class CupSessionRecordingTest {
             online.add(racer);
             joined.add(racer);
         }
-        session.start(true);
+        session.start(false);
+        // The racers are placed on the first map after GO, which the placement reports by giving them a run. Ticking
+        // until every racer has one keeps each test's first race tick the first tick a racer can be counted on.
+        for (int tick = 0; tick < BUDGET && session.describe().contains("no run"); tick++) {
+            tick();
+        }
         return joined.get(0);
+    }
+
+    /** One server tick: the cup's phase step, then the environment's, so that a placement's futures complete. */
+    private void tick() {
+        session.advancePhase();
+        env.tick();
     }
 
     /** Ticks until the first map's {@code GAME} phase has begun, so the ticks counted after this call are race ticks. */
     private void untilGameStarts() {
         for (int tick = 0; tick < BUDGET; tick++) {
-            session.advancePhase();
+            tick();
             if (session.describe().contains("phase GAME")) {
                 return;
             }
@@ -414,7 +431,7 @@ class CupSessionRecordingTest {
      */
     private void playUntilCupFinishes() {
         for (int tick = 0; tick < BUDGET; tick++) {
-            session.advancePhase();
+            tick();
             session.requestSkip();
             if (session.cupFinished()) {
                 return;

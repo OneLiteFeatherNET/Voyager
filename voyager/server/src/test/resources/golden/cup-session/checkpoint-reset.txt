@@ -13,7 +13,7 @@ describe
   catalogue loaded 1970-01-01T00:00:00Z
   collision world: attached
   cup 'checkpoint_cup' running — map 1/1 'checkpoint-run', phase LOBBY after 0,050 s, race clock 0,000 s (0 tick(s))
-    Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], not simulated
+    Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], not simulated
 messages
   Ada chat {"translate":"voyager.map.banner","with":["1","1","checkpoint-run","2","0:00"]}
   Ada title-times 0 15 5

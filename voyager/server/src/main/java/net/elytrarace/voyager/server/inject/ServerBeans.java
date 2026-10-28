@@ -205,7 +205,7 @@ public final class ServerBeans {
 
     @Bean
     MapTransition mapTransition(MapInstances instances, RaceRuns runs) {
-        return new MapTransition(instances, runs);
+        return new MapTransition(instances, runs, new SettledChunkLoader());
     }
 
     @Bean

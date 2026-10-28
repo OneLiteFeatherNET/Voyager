@@ -88,6 +88,22 @@ Heap size can be adjusted based on player count:
 | 20-50        | 1G               |
 | 50+          | 2G               |
 
+### View distance
+
+The playtest server runs with a larger view distance than Minestom's default. Set these on the launch command:
+
+```
+-Dminestom.chunk-view-distance=16
+-Dminestom.entity-view-distance=10
+```
+
+The code does not read them: Minestom reads them at start, and Voyager's own settings still come from avaje-config.
+They set how far the chunks around a racer's spawn reach. A racer's placement on the next map loads every chunk within
+their view distance of the spawn, which is up to 17 chunks in each direction at view distance 16 (1,225 chunks; 361 at
+view distance 8). The load runs in the background over the wait before the map, so the server tick does not wait for it
+(`race/async-arrival-preload`). Change either value only together with a playtest that records the longest server tick
+during a placement.
+
 ## Guides
 
 - [Local Testing](../guides/local-testing.md) — Build and run the game server locally against a world created by the Setup Server
