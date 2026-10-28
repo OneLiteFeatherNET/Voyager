@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.kyori.adventure.key.Key;
 import net.elytrarace.voyager.race.scoring.MedalOutlook;
 
 import java.time.Duration;
@@ -29,7 +30,7 @@ import java.time.Duration;
  * @param outlook the best medal still reachable and how long is left to keep it
  */
 public record HudState(int gameTick, Duration elapsed, int ringsPassed, int ringCount,
-        int lastRingGameTick, int mapNumber, int mapCount, String mapName, MedalOutlook outlook) {
+        int lastRingGameTick, int mapNumber, int mapCount, Key mapKey, String mapName, MedalOutlook outlook) {
 
     public HudState {
         if (gameTick < 0) {

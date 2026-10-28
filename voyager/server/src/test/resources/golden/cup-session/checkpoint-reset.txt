@@ -15,9 +15,12 @@ describe
   cup 'elytrarace:checkpoint_cup' running — map 1/1 'elytrarace:checkpoint-run', phase LOBBY after 0,050 s, race clock 0,000 s (0 tick(s))
     Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], not simulated
 messages
-  Ada chat {"translate":"voyager.map.banner","with":["1","1","elytrarace:checkpoint-run","2","0:00"]}
+  Ada chat {"translate":"voyager.map.banner","with":["1","1",{"color":"#FFD23F","text":"Checkpoint Run"},"2","0:00"]}
+  Ada title-times 10 60 20
+  Ada subtitle ""
+  Ada title {"color":"#FFD23F","text":"Checkpoint Run"}
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:checkpoint-run","2","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["1"]}
 logs
   INFO Map 1/1 'elytrarace:checkpoint-run' tuning: burn 4, cooldown 9, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5

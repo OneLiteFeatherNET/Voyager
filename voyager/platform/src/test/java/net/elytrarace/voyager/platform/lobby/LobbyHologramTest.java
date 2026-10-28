@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.lobby;
 
+import net.kyori.adventure.text.Component;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
@@ -26,6 +27,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @EnvTest
 class LobbyHologramTest {
+
+    /** A board of plain names with no authors, for the tests that count lines. */
+    private static LobbyBoard boardOf(String cup, List<String> names) {
+        return new LobbyBoard(Component.text(cup),
+                names.stream().map(name -> new LobbyBoard.BoardMap(Component.text(name), "")).toList());
+    }
 
     private static final Pos POSITION = new Pos(0.5, 70.0, 0.5);
 
@@ -75,7 +82,7 @@ class LobbyHologramTest {
     @Test
     void theHologramTextHasNoMoreMapsLineAndNamesOnlyTheFirstTenMaps() {
         List<String> names = java.util.stream.IntStream.rangeClosed(1, 15).mapToObj(index -> "map-" + index).toList();
-        LobbyBoard fifteen = new LobbyBoard("Long Tour", names);
+        LobbyBoard fifteen = boardOf("Long Tour", names);
 
         String text = PlainTextComponentSerializer.plainText().serialize(LobbyHologram.text(fifteen));
 

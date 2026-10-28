@@ -20,7 +20,7 @@ A file the loader refuses stops the server at boot. The refusal names the file, 
 | `schemaVersion` | integer | No | `1` when absent. | Not a whole number of 1 or more, or above `3`. The refusal names the declared version and the highest supported version. |
 | `key` | string | Yes in version 2 | None. | Missing in version 2, not in the `elytrarace` namespace, or a value outside the rule above. The refusal names the field and the file. A version 2 file that also states `name` is refused. |
 | `name` | string | Yes in version 1 | None. | Missing in version 1, a value outside the rule above (for example capitals or spaces), or present in version 2. A version 1 file that states `key` is refused. |
-| `displayName` | string | No | The map's key in full, for example `elytrarace:blue_and_red`. | Longer than 40 characters. The refusal names the field and the file. |
+| `displayName` | string | No | The name a player reads, in MiniMessage with colour, rainbow, decoration and `reset` tags, for example `<gold>Blue</gold> & <red>Red</red>`. | A tag outside that set, or more than 40 visible characters once the tags are removed. The refusal names the field, the file and the tag. |
 | `authors` | array of objects | No | None. | An author without a canonical UUID, a name outside `[A-Za-z0-9_]{1,16}`, more than eight authors, or one UUID stated twice. The refusal names the file and the field. |
 | `world` | string | No | The value of the map's key, exactly as written, including case. | Present and blank. At boot, a world with no region data under the worlds path stops the server and the message names the resolved world. |
 | `spawn` | vector | Yes | None. | Missing, or a component is missing. |
@@ -100,7 +100,7 @@ Two fields may be left out because the loader can compute them. Leaving one out 
 | `world` | Left out, the world is the value of the map's key, byte for byte (`blue_and_red` for `elytrarace:blue_and_red`; the flat `name` in version 1). Declared, it is used as written. | `MapDefinitionAdapterTest.readsAMapWithoutWorldAsItsNameExactlyAsWritten`, `MapDefinitionAdapterTest.aVersionTwoMapWithoutWorldTakesTheValueOfItsKeyAsItsWorld`, `MapDefinitionAdapterTest.keepsAnExplicitWorldUnchangedWhenItDiffersFromTheName`, `MapDefinitionAdapterTest.refusesAPresentButBlankWorldNamingTheField` |
 | `schemaVersion` | Left out, the version is `1`. Declared, it must be a whole number from 1 to the supported maximum, which is `2`. | `MapDefinitionAdapterTest.readsAMapWithoutSchemaVersionAsVersionOne`, `MapDefinitionAdapterTest.refusesSchemaVersionAboveTheSupportedMaximumNamingBothNumbers`, `CatalogValidationTest.reportsASchemaVersionAboveTheSupportedMaximumAsAProblemNamingTheFile` |
 | `key` and `name` | A version 1 file states `name`, which becomes the key `elytrarace:<name>`. A version 2 file states `key`. | `MapDefinitionAdapterTest.aVersionOneFlatNameWithCapitalsIsRefusedNamingTheName`, `MapDefinitionAdapterTest.aVersionTwoMapWithAKeyInAnotherNamespaceIsRefusedNamingTheKey`, `MapDefinitionAdapterTest.aVersionTwoMapThatStatesANameIsRefusedNamingTheName`, `CatalogKeysTest` |
-| `displayName` | Left out, the display name is the key in full, `elytrarace:blue_and_red`. | `MapDefinitionTest.aMapWithoutADisplayNameDisplaysItsId` |
+| `displayName` | Left out, the display name is the key's value in title case, `Blue And Red` for `elytrarace:blue_and_red`. | `MapDefinitionTest.aMapWithoutADisplayNameShowsItsKeyValueInTitleCase` |
 
 The world default is case-sensitive on Linux, so a directory named `ElytraraceBlueAndRed` needs an explicit `"world": "ElytraraceBlueAndRed"` in its map file. The shipped maps do this.
 
@@ -112,7 +112,7 @@ The world default is case-sensitive on Linux, so a directory named `ElytraraceBl
 | `schemaVersion` | integer | No | `1` when absent. | The same rule as for maps. |
 | `key` | string | Yes in version 2 | None. | The same rule as for maps. |
 | `name` | string | Yes in version 1 | None. | The same rule as for maps. |
-| `displayName` | string | No | The cup's key in full. | Longer than 40 characters. The refusal names the field and the file. |
+| `displayName` | string | No | The cup's name a player reads, in the same MiniMessage form as a map's. | A tag outside the set, or more than 40 visible characters. The refusal names the field and the file. |
 | `authors` | array of objects | No | None. | The same rule as for maps. |
 | `mode` | string | Yes | None. | Missing, or not `RACE` or `PRACTICE`. |
 | `mapNames` | array of strings | Yes | None. The order is the rotation. A flat id is read as its key. | Missing, not an array, empty, or an entry that is not a string. |
@@ -128,7 +128,8 @@ The cup named by the `VOYAGER_CUP` setting, and the map named by `/leaderboard`,
 
 `key` is the identifier: the key of the catalogue, the name an operator types and the value in the file. `displayName` is the name a player reads, on the boss bar, the map banner, the lobby sidebar and hologram, and the results.
 
-- A file that leaves `displayName` out, or gives it blank, shows the key in full.
+- A file that leaves `displayName` out, or gives it blank, shows the key's value in title case: `elytrarace:dragon_lobby` reads "Dragon Lobby".
+- A name that sets no colour takes one of six bright hues, chosen by its key, so the same map is the same colour on every server. Any colour is allowed, red included.
 - The text is shown as written and is never translated, so a German and an English player read the same name. MiniMessage tags in it are shown as plain characters.
 - A name longer than 40 characters is refused at boot, rather than cut short.
 - Operator output (command replies, the validation report and log lines) keeps the key, so an operator can find the file.

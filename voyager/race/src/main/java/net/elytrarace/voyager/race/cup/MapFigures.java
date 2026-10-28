@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.race.cup;
 
+import net.kyori.adventure.key.Key;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalBrackets;
 import net.elytrarace.voyager.race.flow.RaceClock;
@@ -28,7 +29,7 @@ import java.util.List;
  * @param outlook the medal the time shown is in, and how long until it is lost
  */
 public record MapFigures(int gameTick, Duration elapsed, int ringsPassed, int ringCount, int lastRingTick,
-        int mapNumber, int mapCount, String mapName, MedalOutlook outlook) {
+        int mapNumber, int mapCount, Key mapKey, String mapName, MedalOutlook outlook) {
 
     /** The figures of a racer in flight, at {@code clock}, on {@code map}, in map {@code mapNumber} of {@code mapCount}. */
     public static MapFigures inFlight(RaceRun run, RaceClock clock, MapDefinition map, int mapNumber, int mapCount) {
@@ -36,12 +37,12 @@ public record MapFigures(int gameTick, Duration elapsed, int ringsPassed, int ri
         List<Integer> ringTicks = run.passedOnGameTick();
         int lastRingTick = ringTicks.isEmpty() ? 0 : ringTicks.getLast();
         return new MapFigures(clock.gameTick(), elapsed, run.progress().passedCount(), map.rings().size(),
-                lastRingTick, mapNumber, mapCount, map.displayName(), outlookAt(elapsed, map));
+                lastRingTick, mapNumber, mapCount, map.key(), map.displayName(), outlookAt(elapsed, map));
     }
 
     /** The figures shown while the start countdown runs: nothing flown yet, and the best medal on offer. */
     public static MapFigures starting(MapDefinition map, int mapNumber, int mapCount) {
-        return new MapFigures(0, Duration.ZERO, 0, map.rings().size(), 0, mapNumber, mapCount, map.displayName(),
+        return new MapFigures(0, Duration.ZERO, 0, map.rings().size(), 0, mapNumber, mapCount, map.key(), map.displayName(),
                 outlookAt(Duration.ZERO, map));
     }
 

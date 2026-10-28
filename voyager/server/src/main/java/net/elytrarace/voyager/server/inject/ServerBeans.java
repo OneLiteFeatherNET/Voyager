@@ -149,10 +149,10 @@ public final class ServerBeans {
         return new LeaveCommand(room);
     }
 
-    /** The lobby tutorial book: five dialog pages, built once and shared by every racer. */
+    /** The lobby tutorial book: five fixed dialog pages, built once, and a sixth for the cup the room waits for. */
     @Bean
-    TutorialBook tutorialBook() {
-        return new TutorialBook();
+    TutorialBook tutorialBook(CatalogHolder catalog) {
+        return new TutorialBook(catalog);
     }
 
     /** {@code /stats}, built with the read queue the tick answers from. Registered by {@code VoyagerServer}, like {@code /race}. */

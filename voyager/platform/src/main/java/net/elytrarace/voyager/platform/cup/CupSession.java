@@ -57,6 +57,8 @@ import net.elytrarace.voyager.platform.flight.Rockets;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Pos;
+import net.elytrarace.voyager.platform.text.Palette;
+import net.kyori.adventure.text.format.TextColor;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.world.DimensionType;
@@ -73,6 +75,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.IntStream;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -207,6 +210,9 @@ public final class CupSession implements RacePhaseListener {
 
     /** The last three seconds of the current lobby. Reset per map; see {@link #lobbyTick}. */
     private final StartCountdown countdown = new StartCountdown();
+
+    /** The firework bursts of the cup's top three, from the tick the cup ended; {@code null} when none is running. */
+    private @Nullable CupFinale finale;
 
     /** The last simulated tick per player, kept only so {@link #describe()} can show the drift. */
     private final Map<UUID, FlightTick> lastSimulated = new HashMap<>();
@@ -571,6 +577,7 @@ public final class CupSession implements RacePhaseListener {
         if (current == null) {
             return;
         }
+        tickFinale();
         glideStep();
         current.onUpdate();
         placementStep();
@@ -578,12 +585,43 @@ public final class CupSession implements RacePhaseListener {
             // mapFinished has already run for the last map by the time cupFinished is set, so every
             // per-map score is in. currentMap is what says this has not been announced yet.
             recordCup();
-            announcer.announceCupResult(cup, round.order(), computerRacers.order());
+            List<MapDefinition> maps = IntStream.range(0, cup.mapNames().size()).mapToObj(this::mapAt).toList();
+            finale = new CupFinale(announcer.announceCupResult(cup, maps, round.order(), computerRacers.order()));
             currentMap = null;
             blocks.follow(null);
             competitors.dismiss();
             clearPlacements();
         }
+    }
+
+    /**
+     * Sets off the bursts due on this tick of the cup's finale, each one where its racer is, and ends the finale when its
+     * schedule is run. A racer who has left by then gets no burst.
+     */
+    private void tickFinale() {
+        CupFinale running = finale;
+        if (running == null) {
+            return;
+        }
+        for (CupFinale.Burst burst : running.tick()) {
+            for (Player racer : players.get()) {
+                if (racer.getUuid().equals(burst.racer())) {
+                    Fireworks.burst(racer.getInstance(), racer.getPosition(), burstColour(burst.place()));
+                }
+            }
+        }
+        if (running.over()) {
+            finale = null;
+        }
+    }
+
+    /** The colour of a place's burst: the medal colour of the place, as the standings show it. */
+    private static TextColor burstColour(int place) {
+        return switch (place) {
+            case 1 -> Palette.GOLD;
+            case 2 -> Palette.SILVER;
+            default -> Palette.BRONZE;
+        };
     }
 
     /**
@@ -668,11 +706,9 @@ public final class CupSession implements RacePhaseListener {
         if (digit == StartCountdown.NONE) {
             return;
         }
-        Component subtitle = Messages.countdownSubtitle(
-                map.displayName(), map.rings().size(), map.referenceTime());
         HudState armed = HudStates.of(MapFigures.starting(map, mapIndex + 1, cup.mapNames().size()));
         for (Player racer : players.get()) {
-            RaceFeedback.countdown(racer, digit, subtitle);
+            RaceFeedback.countdown(racer, digit, Component.empty());
             hud.arm(racer, armed);
         }
     }
@@ -741,8 +777,9 @@ public final class CupSession implements RacePhaseListener {
         LOGGER.info("Map {}/{} '{}' tuning: {}", mapIndex + 1, cup.mapNames().size(), map.key().asString(), tuningOf(map));
         Instance instance = instances.forWorld(map.world());
         blocks.follow(instance);
-        announcer.broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), map.displayName(),
+        announcer.broadcast(Messages.mapBanner(mapIndex + 1, cup.mapNames().size(), CupAnnouncer.nameOf(map),
                 map.rings().size(), map.referenceTime()));
+        announcer.announceMapIntro(map);
         return map;
     }
 

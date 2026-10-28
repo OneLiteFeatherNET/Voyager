@@ -1,14 +1,17 @@
 package net.elytrarace.voyager.platform.text;
 
 import net.elytrarace.voyager.api.race.MedalTier;
-import net.elytrarace.voyager.race.scoring.MedalOutlook;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -50,7 +53,6 @@ public abstract class Messages {
     private static final String TIER_FINISH = "voyager.hud.tier.finish";
     private static final String TIER_DNF = "voyager.hud.tier.dnf";
     private static final String COUNTDOWN_DIGIT = "voyager.countdown.digit";
-    private static final String COUNTDOWN_SUBTITLE = "voyager.countdown.subtitle";
     private static final String COUNTDOWN_GO = "voyager.countdown.go";
     private static final String GO_JUMP = "voyager.race.go.jump";
     private static final String MAP_BANNER = "voyager.map.banner";
@@ -62,7 +64,6 @@ public abstract class Messages {
     private static final String LOBBY_SIDEBAR_RACERS = "voyager.lobby.sidebar.racers";
     private static final String LOBBY_SIDEBAR_WAITING = "voyager.lobby.sidebar.status.waiting";
     private static final String LOBBY_SIDEBAR_STARTS = "voyager.lobby.sidebar.status.countdown";
-    private static final String LOBBY_SIDEBAR_FOOTER = "voyager.lobby.sidebar.footer";
     private static final String LOBBY_LEAVE_REFUSED = "voyager.lobby.leave.refused";
     private static final String LOBBY_ITEM_LEAVE = "voyager.lobby.item.leave";
     private static final String LOBBY_ITEM_LEAVE_LORE = "voyager.lobby.item.leave.lore";
@@ -80,6 +81,9 @@ public abstract class Messages {
     private static final String TUTORIAL_PAGE_3_BODY = "voyager.tutorial.page.3.body";
     private static final String TUTORIAL_PAGE_4_BODY = "voyager.tutorial.page.4.body";
     private static final String TUTORIAL_PAGE_5_BODY = "voyager.tutorial.page.5.body";
+    private static final String TUTORIAL_PAGE_6_TITLE = "voyager.tutorial.page.6.title";
+    private static final String TUTORIAL_PAGE_6_BODY = "voyager.tutorial.page.6.body";
+    private static final String TUTORIAL_PAGE_6_AUTHORS = "voyager.tutorial.page.6.authors";
     private static final String LOBBY_CANCELLED = "voyager.lobby.cancelled";
     private static final String LOBBY_PLAYER_JOIN = "voyager.lobby.player.join";
     private static final String LOBBY_PLAYERS_JOINED = "voyager.lobby.player.joined.many";
@@ -98,8 +102,14 @@ public abstract class Messages {
     private static final String MAP_RESULT_DNF = "voyager.result.map.dnf";
     private static final String MAP_RESULT_SUBTITLE_NEXT = "voyager.result.map.subtitle.next";
     private static final String MAP_RESULT_SUBTITLE_DNF = "voyager.result.map.subtitle.dnf";
-    private static final String CUP_TITLE = "voyager.result.cup.title";
-    private static final String CUP_SUBTITLE = "voyager.result.cup.subtitle";
+    private static final String CUP_PLACE_1 = "voyager.cup.place.1.title";
+    private static final String CUP_PLACE_2 = "voyager.cup.place.2.title";
+    private static final String CUP_PLACE_3 = "voyager.cup.place.3.title";
+    private static final String CUP_PLACE_OTHER = "voyager.cup.place.other.title";
+    private static final String CUP_PLACE_POINTS = "voyager.cup.place.points";
+    private static final String CUP_MAPS = "voyager.result.cup.maps";
+    private static final String MAP_INTRO_AUTHORS = "voyager.map.intro.authors";
+    private static final String LOBBY_BOARD_MAP_AUTHORS = "voyager.lobby.board.map.authors";
     private static final String CUP_HEADING = "voyager.result.cup.heading";
     private static final String CUP_ROW = "voyager.result.cup.row";
     private static final String CUP_DEPARTED = "voyager.result.cup.departed";
@@ -183,20 +193,21 @@ public abstract class Messages {
      * so it gets the name alone rather than a zero.
      */
     @Contract(pure = true)
-    public static Component bossBarTitle(int mapNumber, int mapCount, String mapName, MedalOutlook outlook) {
-        TextColor colour = Palette.of(outlook.tier());
-        Component tier = Component.translatable(tierKey(outlook.tier()));
-        return outlook.untilLost()
+    public static Component bossBarTitle(int mapNumber, int mapCount, Component mapName, MedalTier medal,
+            Optional<Duration> untilLost) {
+        TextColor colour = Palette.of(medal);
+        Component tier = Component.translatable(tierKey(medal));
+        return untilLost
                 .map(left -> Component.translatable(BOSS_BAR,
                         Component.text(mapNumber),
                         Component.text(mapCount),
-                        Component.text(mapName),
+                        mapName,
                         Component.translatable(BOSS_BAR_MEDAL_LEFT, tier,
                                 Component.text(RaceTimeFormat.seconds(left))).color(colour)))
                 .orElseGet(() -> Component.translatable(BOSS_BAR_LAST_BAND,
                         Component.text(mapNumber),
                         Component.text(mapCount),
-                        Component.text(mapName),
+                        mapName,
                         Component.translatable(BOSS_BAR_MEDAL_LAST, tier).color(colour)));
     }
 
@@ -218,15 +229,6 @@ public abstract class Messages {
         return Component.translatable(COUNTDOWN_DIGIT, Component.text(digit));
     }
 
-    /** What the racer is told about the course while the countdown runs. */
-    @Contract(pure = true)
-    public static Component countdownSubtitle(String mapName, int ringCount, Duration referenceTime) {
-        return Component.translatable(COUNTDOWN_SUBTITLE,
-                Component.text(mapName),
-                Component.text(ringCount),
-                Component.text(RaceTimeFormat.whole(referenceTime)));
-    }
-
     /** The word on the screen at the instant of the launch. */
     @Contract(pure = true)
     public static Component go() {
@@ -239,23 +241,33 @@ public abstract class Messages {
         return Component.translatable(GO_JUMP);
     }
 
+    /**
+     * The subtitle of a map's intro title: "by" and the authors, joined with commas, in the racer's language.
+     *
+     * @param authors the authors' names as one line of text
+     */
+    @Contract(pure = true)
+    public static Component mapIntroSubtitle(String authors) {
+        return Component.translatable(MAP_INTRO_AUTHORS, Component.text(authors));
+    }
+
     /** The line that announces a map, broadcast when its countdown begins. */
     @Contract(pure = true)
-    public static Component mapBanner(int mapNumber, int mapCount, String mapName, int ringCount,
+    public static Component mapBanner(int mapNumber, int mapCount, Component mapName, int ringCount,
             Duration referenceTime) {
         return Component.translatable(MAP_BANNER,
                 Component.text(mapNumber),
                 Component.text(mapCount),
-                Component.text(mapName),
+                mapName,
                 Component.text(ringCount),
                 Component.text(RaceTimeFormat.whole(referenceTime)));
     }
 
     /** Sent to the one racer who has just crossed the last ring. */
     @Contract(pure = true)
-    public static Component finished(String mapName, Duration time) {
+    public static Component finished(Component mapName, Duration time) {
         return Component.translatable(RACE_FINISHED,
-                Component.text(mapName),
+                mapName,
                 Component.text(RaceTimeFormat.tenths(time)));
     }
 
@@ -338,11 +350,6 @@ public abstract class Messages {
     }
 
     /** The last line of the lobby sidebar. */
-    @Contract(pure = true)
-    public static Component lobbySidebarFooter() {
-        return Component.translatable(LOBBY_SIDEBAR_FOOTER);
-    }
-
     /** Told to the racers still online when a countdown is cancelled for want of racers. */
     @Contract(pure = true)
     public static Component lobbyCancelled(int online, int needed) {
@@ -352,23 +359,27 @@ public abstract class Messages {
     /**
      * The title of the lobby's cup board: the cup's name. The name is the cup's own, not a sentence the game wrote.
      *
-     * @param cup the cup's name
+     * @param cup the cup's coloured display name
      */
     @Contract(pure = true)
-    public static Component lobbyBoardTitle(String cup) {
-        return Component.text(cup);
+    public static Component lobbyBoardTitle(Component cup) {
+        return cup;
     }
 
     /**
-     * One map line of the lobby's cup board: its place in the cup, then its display name. The name is the map's own, so it
-     * is not translated; the place and the layout are.
+     * One map line of the lobby's cup board: its place in the cup, its coloured display name and, when they fit on the
+     * line, its authors. The name is the map's own, so it is not translated; the place, the layout and "by" are.
      *
      * @param position the map's place in play order, from one
-     * @param map      the map's display name
+     * @param map      the map's coloured display name
+     * @param authors  the authors as one line of text, or {@code null} when the line has none
      */
     @Contract(pure = true)
-    public static Component lobbyBoardMap(int position, String map) {
-        return Component.translatable(LOBBY_BOARD_MAP, Component.text(position), Component.text(map));
+    public static Component lobbyBoardMap(int position, Component map, @Nullable String authors) {
+        if (authors == null) {
+            return Component.translatable(LOBBY_BOARD_MAP, Component.text(position), map);
+        }
+        return Component.translatable(LOBBY_BOARD_MAP_AUTHORS, Component.text(position), map, Component.text(authors));
     }
 
     /**
@@ -388,8 +399,8 @@ public abstract class Messages {
      * @param map the map's display name
      */
     @Contract(pure = true)
-    public static Component lobbyHologramName(String map) {
-        return Component.text(map);
+    public static Component lobbyHologramName(Component map) {
+        return map;
     }
 
     /** The name of the leave item, the dark oak door in the lobby's hotbar. */
@@ -462,6 +473,24 @@ public abstract class Messages {
         return Component.translatable(TUTORIAL_NEXT);
     }
 
+    /** The sixth tutorial page's title: the cup the racer waits for, in its colour. */
+    @Contract(pure = true)
+    public static Component tutorialCupTitle(Component cupName) {
+        return Component.translatable(TUTORIAL_PAGE_6_TITLE, cupName);
+    }
+
+    /** The sixth tutorial page's body: one line per map, in play order, and the cup's authors when it has any. */
+    @Contract(pure = true)
+    public static Component tutorialCupBody(List<Component> lines) {
+        return Component.translatable(TUTORIAL_PAGE_6_BODY, Component.join(JoinConfiguration.newlines(), lines));
+    }
+
+    /** One line of the sixth tutorial page: the cup's authors. */
+    @Contract(pure = true)
+    public static Component tutorialCupAuthors(String authors) {
+        return Component.translatable(TUTORIAL_PAGE_6_AUTHORS, Component.text(authors));
+    }
+
     /** The Close button of the tutorial, on every page. */
     @Contract(pure = true)
     public static Component tutorialClose() {
@@ -485,10 +514,10 @@ public abstract class Messages {
 
     /** A finisher's map result, in one chat line that is still there when the next map starts. */
     @Contract(pure = true)
-    public static Component mapResult(String mapName, int ringPoints, int medalPoints, MedalTier medal,
+    public static Component mapResult(Component mapName, int ringPoints, int medalPoints, MedalTier medal,
             int placementBonus, int total) {
         return Component.translatable(MAP_RESULT_MEDAL,
-                Component.text(mapName),
+                mapName,
                 Component.text(ringPoints),
                 Component.text(medalPoints),
                 medal(medal),
@@ -498,9 +527,9 @@ public abstract class Messages {
 
     /** A racer who did not finish, told what they did reach rather than only that they failed. */
     @Contract(pure = true)
-    public static Component mapResultDnf(String mapName, int ringsPassed, int ringCount, int points) {
+    public static Component mapResultDnf(Component mapName, int ringsPassed, int ringCount, int points) {
         return Component.translatable(MAP_RESULT_DNF,
-                Component.text(mapName),
+                mapName,
                 Component.text(ringsPassed),
                 Component.text(ringCount),
                 Component.text(points));
@@ -559,43 +588,71 @@ public abstract class Messages {
                 Component.text(RaceTimeFormat.tenths(time)));
     }
 
-    /** The title shown to everybody when the cup's last map has been scored. */
+    /**
+     * The title a racer reads for their place when the cup ends: "Victory!" for first, "2nd place" and "3rd place" for the
+     * next two, and "Place n" for every other place.
+     */
     @Contract(pure = true)
-    public static Component cupTitle() {
-        return Component.translatable(CUP_TITLE);
+    public static Component placeTitle(int place) {
+        return Component.translatable(switch (place) {
+            case 1 -> CUP_PLACE_1;
+            case 2 -> CUP_PLACE_2;
+            case 3 -> CUP_PLACE_3;
+            default -> CUP_PLACE_OTHER;
+        }, Component.text(place));
     }
 
-    /** One racer's own line under {@link #cupTitle()}. */
+    /** The subtitle under a placement title: the points the racer finished the cup with. */
     @Contract(pure = true)
-    public static Component cupSubtitle(int place, int points) {
-        return Component.translatable(CUP_SUBTITLE, Component.text(place), Component.text(points));
+    public static Component placePoints(int points) {
+        return Component.translatable(CUP_PLACE_POINTS, Component.text(points));
     }
 
-    /** The heading above the final standings block. */
+    /** The heading above the final standings block, with the cup's coloured display name. */
     @Contract(pure = true)
-    public static Component cupHeading(String cupName) {
-        return Component.translatable(CUP_HEADING, Component.text(cupName));
+    public static Component cupHeading(Component cupName) {
+        return Component.translatable(CUP_HEADING, cupName);
+    }
+
+    /** The line under the standings heading that lists the cup's maps in play order, each in its colour. */
+    @Contract(pure = true)
+    public static Component cupMaps(List<Component> mapNames) {
+        return Component.translatable(CUP_MAPS,
+                Component.join(JoinConfiguration.separator(Component.text(", ")), mapNames));
     }
 
     /**
-     * One row of the final standings.
+     * One row of the final standings: the place, in the medal colour for the first three, the name, the points, the best
+     * time, the maps finished, and the rings passed over the rings of the whole cup.
+     *
+     * <p>The viewer's own row is bold and carries a marker, and no other row changes.
      *
      * @param name the racer's name, or {@link #departed()} for somebody who has disconnected — a raw
      *     UUID is 36 characters of hexadecimal in the middle of a results table and tells a reader
      *     nothing they can use
      * @param bestTime their fastest map of the cup, absent if they finished none
+     * @param viewer   whether this row is the one the reader is shown
      */
     @Contract(pure = true)
-    public static Component cupRow(int place, Component name, int points, int mapsFinished, int mapCount,
-            Optional<Duration> bestTime) {
-        return Component.translatable(CUP_ROW,
-                Component.text(place),
+    public static Component cupRow(int place, Component name, int points, Optional<Duration> bestTime,
+            int mapsFinished, int mapCount, Optional<Integer> ringsPassed, int ringsTotal, boolean viewer) {
+        Component placeText = switch (place) {
+            case 1 -> Component.text(place, Palette.GOLD);
+            case 2 -> Component.text(place, Palette.SILVER);
+            case 3 -> Component.text(place, Palette.BRONZE);
+            default -> Component.text(place);
+        };
+        Component row = Component.translatable(CUP_ROW,
+                viewer ? Component.text("» ").append(placeText) : placeText,
                 name,
                 Component.text(points),
+                bestTime.map(time -> (Component) Component.text(RaceTimeFormat.tenths(time)))
+                        .orElseGet(() -> Component.translatable(CUP_NO_TIME)),
                 Component.text(mapsFinished),
                 Component.text(mapCount),
-                bestTime.map(time -> (Component) Component.text(RaceTimeFormat.tenths(time)))
-                        .orElseGet(() -> Component.translatable(CUP_NO_TIME)));
+                ringsPassed.<Component>map(Component::text).orElseGet(() -> Component.translatable(CUP_NO_TIME)),
+                Component.text(ringsTotal));
+        return viewer ? row.decorate(TextDecoration.BOLD) : row;
     }
 
     /**
@@ -772,8 +829,8 @@ public abstract class Messages {
 
     /** The first line of a leaderboard: the map it is for. */
     @Contract(pure = true)
-    public static Component statsLeaderboardHeader(String mapKey) {
-        return Component.translatable(STATS_LEADERBOARD_HEADER, Component.text(mapKey));
+    public static Component statsLeaderboardHeader(Component mapName) {
+        return Component.translatable(STATS_LEADERBOARD_HEADER, mapName);
     }
 
     /**
@@ -790,8 +847,8 @@ public abstract class Messages {
 
     /** The leaderboard of a map that has no recorded time on its current layout. */
     @Contract(pure = true)
-    public static Component statsLeaderboardEmpty(String mapKey) {
-        return Component.translatable(STATS_LEADERBOARD_EMPTY, Component.text(mapKey));
+    public static Component statsLeaderboardEmpty(Component mapName) {
+        return Component.translatable(STATS_LEADERBOARD_EMPTY, mapName);
     }
 
     /** {@code /leaderboard} named a map the catalogue does not hold. */

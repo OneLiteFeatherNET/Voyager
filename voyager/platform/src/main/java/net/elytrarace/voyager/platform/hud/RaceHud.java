@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.elytrarace.voyager.platform.text.DisplayName;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.text.Palette;
 import net.kyori.adventure.bossbar.BossBar;
@@ -201,7 +202,8 @@ public final class RaceHud {
 
     private void updateBar(Player racer, HudState state) {
         Component title = Messages.bossBarTitle(
-                state.mapNumber(), state.mapCount(), state.mapName(), state.outlook());
+                state.mapNumber(), state.mapCount(), DisplayName.component(state.mapKey(), state.mapName()),
+                state.outlook().tier(), state.outlook().untilLost());
         float progress = fill(state.ringsPassed(), state.ringCount());
         BossBar.Color colour = Palette.BOSS_BAR_COLOUR;
         BossBar bar = bars.get(racer.getUuid());

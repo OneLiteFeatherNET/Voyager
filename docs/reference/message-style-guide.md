@@ -146,3 +146,11 @@ pull request that changes it.
 | No literal player-facing string outside `platform.text` | `ApiPurityTest.onlyTheTextPackageBuildsAUserFacingString` |
 | Failure and refusal colours, one accent per line, no red | `MessageStyleTest` (`voyager-fitness`) |
 | Channel and timing choices | review against this page; the timing values are asserted in `RaceFeedbackTimingTest` |
+
+## Map and cup names, the intro title and the finish
+
+- **Name colour is not an accent.** A map or cup name carries its own colour, or one of the six palette hues when it has none. The one-accent rule does not count that colour, so a finish line may carry the name's colour and one accent tag for the medal word.
+- **The medal word is in sentence case**: "Finish" in English and "Ziel" in German, never in capitals.
+- **Intro title.** When a map's countdown begins, each racer sees the map's coloured name, with "by <authors>" or "von <Autoren>" beneath it. It fades in for 10 ticks, stays 60 and fades out in 20, before the countdown digits.
+- **Placement titles.** When a cup ends, each racer sees a title for their own place: "Victory!" or "Sieg!", "2nd place" or "Platz 2", "3rd place" or "Platz 3", and "Place <n>" or "Platz <n>". The subtitle is the points, and the sound fits the place.
+- **Standings.** The places one to three are gold, silver and bronze. The viewer's own line is bold.

@@ -17,7 +17,10 @@ describe
   
   computer racers
 messages
-  Ada chat {"translate":"voyager.map.banner","with":["1","2","elytrarace:com-ridge","2","0:00"]}
+  Ada chat {"translate":"voyager.map.banner","with":["1","2",{"color":"#B8FF4D","text":"Com Ridge"},"2","0:00"]}
+  Ada title-times 10 60 20
+  Ada subtitle ""
+  Ada title {"color":"#B8FF4D","text":"Com Ridge"}
 logs
   INFO Map 1/2 'elytrarace:com-ridge' tuning: burn 4, cooldown 9, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5
 ## tick 2
@@ -110,7 +113,7 @@ describe
   computer racers
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:com-ridge","2","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["3"]}
 logs
 ## tick 11
@@ -313,7 +316,7 @@ describe
   computer racers
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:com-ridge","2","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["2"]}
 logs
 ## tick 31
@@ -516,7 +519,7 @@ describe
   computer racers
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:com-ridge","2","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["1"]}
 logs
 ## tick 51
@@ -1001,7 +1004,7 @@ describe
     {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
   Ada actionbar ""
-  Ada chat {"translate":"voyager.result.map.dnf","with":["elytrarace:com-ridge","0","2","10"]}
+  Ada chat {"translate":"voyager.result.map.dnf","with":[{"color":"#B8FF4D","text":"Com Ridge"},"0","2","10"]}
   Ada title-times 5 60 10
   Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2"]}
   Ada title {"translate":"voyager.medal.dnf"}
@@ -1062,7 +1065,10 @@ describe
     {"translate":"voyager.com.racer.name","with":["2"]} at 3.25, 73.00, 25.50, not on the course
     {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
-  Ada chat {"translate":"voyager.map.banner","with":["2","2","elytrarace:dune-run","2","0:00"]}
+  Ada chat {"translate":"voyager.map.banner","with":["2","2",{"color":"#2EE6D6","text":"Dune Run"},"2","0:00"]}
+  Ada title-times 10 60 20
+  Ada subtitle ""
+  Ada title {"color":"#2EE6D6","text":"Dune Run"}
 logs
   INFO Map 2/2 'elytrarace:dune-run' tuning: burn 6, cooldown 13, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5
 ## tick 95
@@ -1205,7 +1211,7 @@ describe
     {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:dune-run","2","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["3"]}
 logs
 ## tick 105
@@ -1488,7 +1494,7 @@ describe
     {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:dune-run","2","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["2"]}
 logs
 ## tick 125
@@ -1772,7 +1778,7 @@ describe
     {"translate":"voyager.com.racer.name","with":["3"]} at 4.03, 73.00, 25.50, not on the course
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:dune-run","2","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["1"]}
 logs
 ## tick 145
@@ -2352,7 +2358,7 @@ describe
     {"translate":"voyager.com.racer.name","with":["3"]} at -37.15, 71.00, -68.50, not on the course
 messages
   Ada actionbar ""
-  Ada chat {"translate":"voyager.result.map.dnf","with":["elytrarace:dune-run","0","2","10"]}
+  Ada chat {"translate":"voyager.result.map.dnf","with":[{"color":"#2EE6D6","text":"Dune Run"},"0","2","10"]}
   Ada title-times 5 60 10
   Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2"]}
   Ada title {"translate":"voyager.medal.dnf"}
@@ -2410,14 +2416,15 @@ describe
   
   computer racers
 messages
-  Ada chat {"translate":"voyager.result.cup.heading","with":["elytrarace:com_tour"]}
-  Ada chat {"translate":"voyager.result.cup.row","with":["1","Ada","20","0","2",{"translate":"voyager.result.cup.notime"}]}
+  Ada chat {"translate":"voyager.result.cup.heading","with":[{"color":"#FFD23F","text":"Com Tour"}]}
+  Ada chat {"translate":"voyager.result.cup.maps","with":[{"extra":[{"color":"#B8FF4D","text":"Com Ridge"},", ",{"color":"#2EE6D6","text":"Dune Run"}],"text":""}]}
+  Ada chat {"bold":true,"translate":"voyager.result.cup.row","with":[{"extra":[{"color":"#FFCC33","text":"1"}],"text":"» "},"Ada","20",{"translate":"voyager.result.cup.notime"},"0","2","0","4"]}
+  Ada chat {"translate":"voyager.result.cup.row","with":[{"color":"#CFD6DE","text":"2"},{"translate":"voyager.com.racer.name","with":["1"]},"0","0:00.9","2","2",{"translate":"voyager.result.cup.notime"},"4"]}
+  Ada chat {"translate":"voyager.result.cup.row","with":[{"color":"#C87A3E","text":"3"},{"translate":"voyager.com.racer.name","with":["2"]},"0","0:00.9","2","2",{"translate":"voyager.result.cup.notime"},"4"]}
+  Ada chat {"translate":"voyager.result.cup.row","with":["4",{"translate":"voyager.com.racer.name","with":["3"]},"0","0:00.9","2","2",{"translate":"voyager.result.cup.notime"},"4"]}
   Ada title-times 10 80 20
-  Ada subtitle {"translate":"voyager.result.cup.subtitle","with":["1","20"]}
-  Ada title {"translate":"voyager.result.cup.title"}
-  Ada chat {"translate":"voyager.result.cup.row","with":["2",{"translate":"voyager.com.racer.name","with":["1"]},"0","2","2","0:00.9"]}
-  Ada chat {"translate":"voyager.result.cup.row","with":["3",{"translate":"voyager.com.racer.name","with":["2"]},"0","2","2","0:00.9"]}
-  Ada chat {"translate":"voyager.result.cup.row","with":["4",{"translate":"voyager.com.racer.name","with":["3"]},"0","2","2","0:00.9"]}
+  Ada subtitle {"translate":"voyager.cup.place.points","with":["20"]}
+  Ada title {"translate":"voyager.cup.place.1.title","with":["1"]}
 logs
   INFO Cup 'elytrarace:com_tour' finished with 4 classified racer(s)
   INFO   1. 1a382809-b7c0-3f68-ae12-dd15677c5497 — 20 point(s), 0 map(s) finished, best -

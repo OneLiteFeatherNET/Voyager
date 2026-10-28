@@ -73,10 +73,27 @@ class LobbyBoardTest {
     }
 
     @Test
+    void aMapLineShowsItsFirstAuthorAndTheCountOfTheRest() {
+        LobbyBoard board = new LobbyBoard(Component.text("Cup"),
+                List.of(new LobbyBoard.BoardMap(Component.text("Blue"), "TheMeinerLP +1")));
+
+        assertThat(plain(board.lines())).containsExactly("1. Blue · by TheMeinerLP +1");
+    }
+
+    @Test
+    void aMapLineLongerThanFortyCharactersDropsItsAuthorsAndKeepsTheWholeName() {
+        String name = "A name that is thirty characters";
+        LobbyBoard board = new LobbyBoard(Component.text("Cup"),
+                List.of(new LobbyBoard.BoardMap(Component.text(name), "TheMeinerLP +1")));
+
+        assertThat(plain(board.lines())).containsExactly("1. " + name);
+    }
+
+    @Test
     void theBoardNamesTheCup() {
         LobbyBoard board = LobbyBoard.of(cup("Grand Tour", "alpha"), NO_MAPS);
 
-        assertThat(board.cupName()).isEqualTo("Grand Tour");
+        assertThat(PlainTextComponentSerializer.plainText().serialize(board.cupName())).isEqualTo("Grand Tour");
         assertThat(PlainTextComponentSerializer.plainText().serialize(board.title())).isEqualTo("Grand Tour");
     }
 
@@ -133,6 +150,11 @@ class LobbyBoardTest {
 
     /** A map line reads as its place, a dot, and its name; any other line as its plain text. */
     private static String plain(Component line) {
+        if (line instanceof TranslatableComponent map && map.key().equals("voyager.lobby.board.map.authors")) {
+            return PlainTextComponentSerializer.plainText().serialize(map.arguments().get(0).asComponent())
+                    + ". " + PlainTextComponentSerializer.plainText().serialize(map.arguments().get(1).asComponent())
+                    + " · by " + PlainTextComponentSerializer.plainText().serialize(map.arguments().get(2).asComponent());
+        }
         if (line instanceof TranslatableComponent map && map.key().equals("voyager.lobby.board.map")) {
             return PlainTextComponentSerializer.plainText().serialize(map.arguments().get(0).asComponent())
                     + ". " + PlainTextComponentSerializer.plainText().serialize(map.arguments().get(1).asComponent());

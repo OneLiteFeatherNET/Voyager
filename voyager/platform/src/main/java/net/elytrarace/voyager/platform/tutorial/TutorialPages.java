@@ -20,7 +20,7 @@ import java.util.OptionalInt;
 public final class TutorialPages {
 
     /** How many pages the tutorial has. */
-    public static final int COUNT = 5;
+    public static final int COUNT = 6;
 
     /** The page a tutorial opens on, every time it opens. Nothing records where a racer left it. */
     public static final int FIRST_PAGE = 1;
