@@ -938,11 +938,9 @@ public final class CupSession implements RacePhaseListener {
                     ringsPassedOf(racer.getUuid()));
         }
         racing = false;
+        // The cup stays on this map until the next map's own lobby prepares it, so the end of this map still names this
+        // map. Placements for the next map use its definition directly, so they do not need it prepared yet.
         transition.endMap();
-        int following = followingMapIndex(mapIndex);
-        if (following != NO_MAP) {
-            prepareMap(following);
-        }
     }
 
     /**
@@ -1059,9 +1057,11 @@ public final class CupSession implements RacePhaseListener {
                 glides.remove(id);
                 continue;
             }
+            // Ticks 1 to TICKS each send that tick's damped velocity. The stand-down is on tick TICKS itself, the last tick of
+            // the glide, so the racer glides for exactly TICKS ticks and is no longer gliding on the next one.
             int tick = glide.tick() + 1;
-            if (tick <= GlideOut.TICKS) {
-                VelocityExit.send(racer, glide.glide().velocityAt(tick));
+            VelocityExit.send(racer, glide.glide().velocityAt(tick));
+            if (tick < GlideOut.TICKS) {
                 glides.put(id, new Glide(glide.glide(), tick, glide.map(), glide.mapIndex()));
                 continue;
             }

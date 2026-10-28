@@ -71,6 +71,39 @@ class GlideOutSessionTest {
     }
 
     /**
+     * The glide lasts exactly {@link #GLIDE_TICKS} ticks: after tick {@code GLIDE_TICKS - 1} the racer is still gliding, and
+     * the stand-down falls on tick {@code GLIDE_TICKS}, not one tick later.
+     */
+    @Test
+    void theStandDownFallsOnTheFiftiethGlideTickNotTheFiftyFirst(Env env) throws IOException {
+        try (PlacementFixture cup = PlacementFixture.open(env, tempDir, LONG_RACE, holdingNextMap())) {
+            Player finisher = cup.connectRacer();
+            Player stillRacing = cup.connectRacer();
+            cup.tickUntil(() -> PlacementFixture.atSpawn(finisher, cup.firstWorld, PlacementFixture.FIRST_SPAWN),
+                    40, "the finisher's placement on the first map");
+            cup.untilGameStarts();
+            holdNextMap.set(true);
+            finisher.setFlyingWithElytra(true);
+            moveTo(finisher, PlacementFixture.FRONT_OF_FIRST_RING);
+            cup.tick();
+            moveTo(finisher, PlacementFixture.BEHIND_FIRST_RING);
+            cup.tick();
+            // The glide starts on the finish tick, the second tick above; glide tick 1 is the next one.
+            for (int tick = 1; tick < GLIDE_TICKS; tick++) {
+                cup.tick();
+                assertThat(finisher.isFlyingWithElytra())
+                        .as("still gliding on glide tick %s of %s", tick, GLIDE_TICKS)
+                        .isTrue();
+            }
+            cup.tick();
+            assertThat(finisher.isFlyingWithElytra())
+                    .as("the elytra is off on glide tick %s, the last tick of the glide", GLIDE_TICKS)
+                    .isFalse();
+            assertThat(stillRacing.isFlyingWithElytra()).as("the other racer is untouched").isFalse();
+        }
+    }
+
+    /**
      * A finisher flies on for {@link #GLIDE_TICKS} ticks with a velocity on every one, then has the elytra off and no
      * velocity, and stays at the point where the glide ended.
      */
@@ -89,16 +122,18 @@ class GlideOutSessionTest {
             moveTo(finisher, PlacementFixture.BEHIND_FIRST_RING);
             cup.tick();
 
-            for (int tick = 1; tick <= GLIDE_TICKS; tick++) {
+            for (int tick = 1; tick < GLIDE_TICKS; tick++) {
                 cup.tick();
                 assertThat(finisher.getVelocity())
                         .as("velocity sent on glide tick %s", tick)
                         .isNotEqualTo(Vec.ZERO);
             }
-            // The server's own state is read straight after its phase step, before Minestom's physics runs on the tick.
-            cup.session.advancePhase();
+            // The stand-down is on glide tick GLIDE_TICKS: the racer is no longer gliding, and has no horizontal velocity.
+            // Vertical velocity is gravity's from the physics tick that follows, so only the horizontal part is asserted.
+            cup.tick();
             assertThat(finisher.isFlyingWithElytra()).as("gliding after the glide-out").isFalse();
-            assertThat(finisher.getVelocity()).as("velocity after the glide-out").isEqualTo(Vec.ZERO);
+            assertThat(finisher.getVelocity().x()).as("horizontal velocity after the glide-out").isZero();
+            assertThat(finisher.getVelocity().z()).as("horizontal velocity after the glide-out").isZero();
             Pos heldAt = finisher.getPosition();
 
             for (int tick = 0; tick < 5; tick++) {
