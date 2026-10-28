@@ -18,7 +18,8 @@ the environment names `VOYAGER_CUP_ROTATION` and `VOYAGER_CUP_ROTATION_STATE`, a
 
 #### Scenario: The reference page lists both keys
 - **WHEN** an operator reads `docs/reference/configuration.md`
-- **THEN** each of the two keys lists its system property, its environment name, and its default: no rotation and no state file
+- **THEN** each of the two keys lists its system property, its environment name, and its default: no rotation and no state file. The
+state file's example path is `/home/cloud/cloudnet/local/voyager-state/rotation`
 
 ### Requirement: A state file whose parent directory is missing refuses the configuration check
 **MoSCoW:** Should. IF `VOYAGER_CUP_ROTATION_STATE` names a path whose parent directory does not exist, THEN THE SYSTEM SHALL report it as a

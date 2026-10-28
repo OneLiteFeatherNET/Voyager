@@ -11,7 +11,8 @@ refuses only when no cup of the rotation is playable.
 ### Requirement: The selected cup is validated in full at boot
 **MoSCoW:** Must. When the server boots, the server SHALL resolve every cup named by its selection (the cup of `VOYAGER_CUP`, or
 each cup of `VOYAGER_CUP_ROTATION`) and validate each of them completely: its definition parses and every map it names resolves.
-The check of any cup that the selection does not name SHALL NOT be a precondition for boot.
+The check of any cup that the selection does not name SHALL NOT be a precondition for boot. THE SYSTEM SHALL validate the cups of
+the rotation one cup at a time, and SHALL release one cup's worlds before it checks the next cup's worlds.
 
 #### Scenario: Selected cup is consistent
 - **WHEN** the server boots with a selected cup whose file parses and whose maps all resolve, and another cup file is malformed
@@ -64,3 +65,17 @@ each cup of the rotation and its problem.
 #### Scenario: The worlds of every cup are checked
 - **WHEN** the rotation is "alpha,legacy" and both cups have complete worlds
 - **THEN** the boot check reads the worlds of both cups, one world at a time, before the server listens
+
+### Requirement: Check mode reports a skipped cup as a warning and exits zero
+**MoSCoW:** Must. WHEN the configuration check runs in validate-and-exit mode and a rotation cup is skipped for missing worlds while at
+least one cup of the rotation is playable, THE SYSTEM SHALL report the skipped cup as a WARNING and SHALL exit with status 0. Refusals
+SHALL still exit with status 1.
+
+#### Scenario: Check mode with one playable cup
+- **WHEN** the check runs with the rotation `alpha,legacy`, where the worlds of `legacy` are missing and `alpha` is complete
+- **THEN** the report names `legacy` as a WARNING with its missing worlds, and the exit status is 0
+
+#### Scenario: Check mode with no playable cup
+- **WHEN** the check runs with the rotation `legacy` alone, where its worlds are missing
+- **THEN** the report names the refusal, and the exit status is 1
+
