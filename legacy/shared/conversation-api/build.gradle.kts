@@ -8,7 +8,7 @@ dependencies {
     compileOnly("org.slf4j:slf4j-api:2.0.19")
     compileOnly("org.jetbrains:annotations:26.1.0")
     compileOnly("org.apache.commons:commons-lang3:3.19.0")
-    compileOnly("com.google.guava:guava:33.7.0-jre")
+    compileOnly("com.google.guava:guava:33.7.1-android")
 }
 
 java {
