@@ -59,7 +59,7 @@ map name in it to the coloured display name.
 
 ### Requirement: The lobby sidebar names the cup and each map, with the authors on the map line
 **MoSCoW:** Must. WHILE a racer waits, THE SYSTEM SHALL title the sidebar with the coloured cup display name and write each map line
-with its place, its coloured display name and its first author. The sidebar stays within fifteen lines.
+with its place, its coloured display name and its first author. The sidebar has no footer line and stays within fourteen lines.
 
 #### Scenario: A cup of one map
 - **WHEN** the room waits for `elytrarace:alpha_cup` with the map `elytrarace:blue_and_red`, which has the authors "TheMeinerLP"
@@ -75,7 +75,7 @@ with its place, its coloured display name and its first author. The sidebar stay
 
 #### Scenario: The sidebar line count
 - **WHEN** the cup has twelve maps
-- **THEN** the sidebar shows at most ten map lines and at most fifteen lines in total
+- **THEN** the sidebar shows at most ten map lines and at most fourteen lines in total, ending with the status line
 
 ### Requirement: The lobby hologram names each map in its colour
 **MoSCoW:** Should. THE SYSTEM SHALL show each map name on the lobby hologram in the map's colour, without authors.
