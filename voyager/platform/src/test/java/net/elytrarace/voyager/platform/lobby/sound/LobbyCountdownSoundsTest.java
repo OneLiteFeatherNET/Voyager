@@ -51,6 +51,15 @@ class LobbyCountdownSoundsTest {
     }
 
     @Test
+    void theFullLobbySoundIsTheNoteBlockChime() {
+        Sound sound = LobbyCountdownSounds.fullLobbySound();
+
+        assertThat(sound.name())
+                .as("the owner chose the Cygnus chime for a full lobby, not the xylophone")
+                .isEqualTo(Key.key("block.note_block.chime"));
+    }
+
+    @Test
     void theFullLobbySoundIsPlayedOnceAtVolumeEightTenths() {
         Sound sound = LobbyCountdownSounds.fullLobbySound();
 

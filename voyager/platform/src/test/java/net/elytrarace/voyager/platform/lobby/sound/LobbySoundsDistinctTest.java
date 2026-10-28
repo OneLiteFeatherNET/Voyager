@@ -22,6 +22,23 @@ class LobbySoundsDistinctTest {
                 .doesNotContain(LobbyCountdownSounds.fullLobbySound().name());
     }
 
+    /**
+     * The full-lobby chime is the one lobby sound allowed to share a race sample: it is the reset chime, by the owner's choice
+     * (race/lobby-feedback). Every other lobby sound is checked by {@link #noLobbySoundIsARaceSample()}.
+     */
+    @Test
+    void theFullLobbyChimeIsTheOnlyLobbySoundThatSharesARaceSample() {
+        assertThat(RaceFeedback.sampleKeysLobbyMustNotShare())
+                .as("the full-lobby chime is the reset chime, which is one of the race samples")
+                .contains(LobbyCountdownSounds.fullLobbySound().name());
+        assertThat(LobbyCountdownSounds.pling(new LobbyCountdownSounds.Pling(10, 0.5f, 1.0f)).name())
+                .as("the pling shares no race sample")
+                .isNotIn(RaceFeedback.sampleKeysLobbyMustNotShare());
+        assertThat(LobbyCountdownSounds.joinSound().name())
+                .as("the join sound shares no race sample")
+                .isNotIn(RaceFeedback.sampleKeysLobbyMustNotShare());
+    }
+
     @Test
     void theLobbyPlingIsNotTheRaceCountdownBeat() {
         assertThat(RaceFeedback.sampleKeysLobbyMustNotShare())
