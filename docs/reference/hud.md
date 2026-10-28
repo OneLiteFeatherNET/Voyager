@@ -183,7 +183,7 @@ is a translation key, rendered in the racer's language, except the cup and map n
 | Hologram | `VOYAGER_LOBBY_HOLOGRAM` names a position and a lobby world is set. One text display, spawned at boot, never saved with the lobby. | The cup's name, then the first ten map names. No translated line, because one entity is shared by every racer. |
 
 The lobby has no boss bar. A waiting racer holds a leave door (slot 8, `/leave` and `/hub` do the same) and a tutorial book
-(slot 1). The items are given while the room waits and taken before the racer enters the first map. A right click on the book
+(slot 1). The items are given while the room waits and stay in the racer's hotbar through the committed window; they are taken on the GO tick, the first tick the race runs. A full lobby that shortens the countdown plays the note-block chime once. A right click on the book
 opens the tutorial, five dialog pages with Back, Next and Close (ADR-0039).
 
 The cup shown is the cup the catalogue currently holds. A reload that is pending does not change it until a round starts and
