@@ -1,11 +1,11 @@
 {
   "$schema": "../../../../../platform/src/main/resources/schema/cup.schema.json",
-  "schemaVersion": 1,
-  "name": "alpha_cup",
+  "schemaVersion": 2,
+  "key": "elytrarace:alpha_cup",
   "displayName": "Alpha Cup",
   "mode": "RACE",
   "mapNames": [
-    "elytraraceblueandred"
+    "elytrarace:blue_and_red"
   ],
   "notes": [
     "The first closed alpha's cup (GitHub issue #120). It plays one map. The three maps converted from the tree being replaced (nether_sprint, frozen_cathedral, skyward_drift) are converted-ready and stay out until their worlds and spawns exist. The legacy maps that have worlds ship in legacy_cup.",

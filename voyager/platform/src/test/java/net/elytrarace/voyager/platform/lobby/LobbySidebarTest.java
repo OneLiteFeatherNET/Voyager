@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LobbySidebarTest {
 
     private static final LobbyBoard BOARD = LobbyBoard.of(
-            new CupDefinition("Grand Tour", List.of("alpha", "bravo", "charlie"), GameMode.RACE),
+            new CupDefinition("grand-tour", List.of("alpha", "bravo", "charlie"), GameMode.RACE, "Grand Tour"),
             new CatalogSnapshot(Map.of(), Map.of()));
     private static final LobbyStatus WAITING = new LobbyStatus(3, 16, null);
 

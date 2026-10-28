@@ -42,7 +42,7 @@ class LobbyBoardTest {
     @Test
     void theBoardListsEachMapByItsDisplayNameWhenTheSnapshotHoldsIt() {
         CatalogSnapshot snapshot = new CatalogSnapshot(
-                Map.of("elytraraceblueandred", namedMap("elytraraceblueandred", "Blue & Red")), Map.of());
+                Map.of("elytrarace:elytraraceblueandred", namedMap("elytraraceblueandred", "Blue & Red")), Map.of());
 
         LobbyBoard board = LobbyBoard.of(
                 new CupDefinition("alpha_cup", List.of("elytraraceblueandred"), GameMode.RACE, "Alpha Cup"), snapshot);
@@ -55,7 +55,7 @@ class LobbyBoardTest {
         LobbyBoard board = LobbyBoard.of(
                 new CupDefinition("alpha_cup", List.of("elytraraceblueandred"), GameMode.RACE, "Alpha Cup"), NO_MAPS);
 
-        assertThat(plain(board.lines())).containsExactly("1. elytraraceblueandred");
+        assertThat(plain(board.lines())).containsExactly("1. elytrarace:elytraraceblueandred");
     }
 
     private static MapDefinition namedMap(String id, String displayName) {
@@ -69,7 +69,7 @@ class LobbyBoardTest {
     void theBoardListsTheMapsInPlayOrder() {
         LobbyBoard board = LobbyBoard.of(cup("Grand Tour", "alpha", "bravo", "charlie"), NO_MAPS);
 
-        assertThat(plain(board.lines())).containsExactly("1. alpha", "2. bravo", "3. charlie");
+        assertThat(plain(board.lines())).containsExactly("1. elytrarace:alpha", "2. elytrarace:bravo", "3. elytrarace:charlie");
     }
 
     @Test
@@ -88,7 +88,7 @@ class LobbyBoardTest {
 
         assertThat(lines).hasSize(LobbyBoard.MAX_MAP_LINES)
                 .as("ten map lines in all: nine maps and one line that says six follow");
-        assertThat(plain(lines.subList(0, LobbyBoard.MAX_MAP_LINES - 1)).getLast()).isEqualTo("9. map-9");
+        assertThat(plain(lines.subList(0, LobbyBoard.MAX_MAP_LINES - 1)).getLast()).isEqualTo("9. elytrarace:map-9");
         TranslatableComponent more = (TranslatableComponent) lines.getLast();
         assertThat(more.key()).isEqualTo("voyager.lobby.board.more");
         assertThat(more.arguments()).hasSize(1);
@@ -116,7 +116,7 @@ class LobbyBoardTest {
     }
 
     private static CupDefinition cup(String name, String... maps) {
-        return new CupDefinition(name, List.of(maps), GameMode.RACE);
+        return new CupDefinition(name.toLowerCase().replace(" ", "-"), List.of(maps), GameMode.RACE, name);
     }
 
     private static String[] names(int count) {

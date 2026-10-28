@@ -58,7 +58,7 @@ class CupSessionRoundPinTest {
         holder.offer(second);
 
         assertThat(session.pinned()).isEqualTo(first);
-        assertThat(session.cup().name()).isEqualTo("tour-one");
+        assertThat(session.cup().key().asString()).isEqualTo("elytrarace:tour-one");
     }
 
     @Test
@@ -73,7 +73,7 @@ class CupSessionRoundPinTest {
         session.start(false);
 
         assertThat(session.pinned()).isEqualTo(second);
-        assertThat(session.cup().name()).isEqualTo("tour-two");
+        assertThat(session.cup().key().asString()).isEqualTo("elytrarace:tour-two");
         assertThat(holder.pending()).isEmpty();
     }
 
@@ -83,7 +83,7 @@ class CupSessionRoundPinTest {
         CupSession session = session(env, new CatalogHolder(boot));
 
         assertThat(session.pinned()).isEqualTo(boot);
-        assertThat(session.cup().name()).isEqualTo("tour-one");
+        assertThat(session.cup().key().asString()).isEqualTo("elytrarace:tour-one");
     }
 
     @Test

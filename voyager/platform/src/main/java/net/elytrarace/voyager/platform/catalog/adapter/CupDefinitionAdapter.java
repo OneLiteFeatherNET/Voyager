@@ -9,6 +9,8 @@ import com.google.gson.JsonParseException;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 
+import net.kyori.adventure.key.Key;
+
 import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.reflect.Type;
@@ -28,9 +30,9 @@ public final class CupDefinitionAdapter implements JsonDeserializer<CupDefinitio
     @Override
     public CupDefinition deserialize(JsonElement element, Type type, JsonDeserializationContext context) {
         JsonObject json = JsonFields.object(element, "a cup");
-        String name = JsonFields.string(json, "name", "a cup");
-        String what = "cup '%s'".formatted(name);
-        SchemaVersion.read(json, what);
+        String what = CatalogIdentity.describe(json, "cup");
+        int version = SchemaVersion.read(json, what);
+        Key key = CatalogIdentity.read(json, version, what);
 
         List<String> mapNames = new ArrayList<>();
         for (JsonElement mapName : JsonFields.array(json, "mapNames", what)) {
@@ -41,8 +43,8 @@ public final class CupDefinitionAdapter implements JsonDeserializer<CupDefinitio
         }
 
         String modeName = JsonFields.string(json, "mode", what);
-        return new CupDefinition(name, mapNames, GameMode.byName(modeName).orElseThrow(
+        return new CupDefinition(key, mapNames, GameMode.byName(modeName).orElseThrow(
                 () -> new JsonParseException("%s has the unrecognised mode '%s'".formatted(what, modeName))),
-                JsonFields.displayName(json, what));
+                JsonFields.displayName(json, what), CatalogIdentity.authors(json, what));
     }
 }

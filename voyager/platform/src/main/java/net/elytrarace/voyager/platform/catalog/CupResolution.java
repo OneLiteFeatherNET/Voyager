@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.catalog;
 
+import net.elytrarace.voyager.api.race.CatalogKeys;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.platform.catalog.exception.DuplicateCatalogEntryException;
 import net.elytrarace.voyager.race.cup.exception.UnresolvedCupException;
@@ -65,7 +66,7 @@ public abstract class CupResolution {
     public static CupDefinition resolve(CatalogReading reading, Optional<String> chosen) {
         CatalogSnapshot catalog = reading.snapshot();
         if (chosen.isPresent()) {
-            String name = chosen.get();
+            String name = CatalogKeys.normalise(chosen.get());
             Optional<CupDefinition> parsed = catalog.cupByName(name);
             if (parsed.isPresent()) {
                 for (CatalogProblem problem : reading.cupFileProblems()) {
@@ -77,7 +78,7 @@ public abstract class CupResolution {
                 return parsed.get();
             }
             for (CatalogProblem problem : reading.cupFileProblems()) {
-                if (stemOf(problem.source()).equals(name)) {
+                if (CatalogKeys.normalise(stemOf(problem.source())).equals(name)) {
                     throw problem.cause();
                 }
             }

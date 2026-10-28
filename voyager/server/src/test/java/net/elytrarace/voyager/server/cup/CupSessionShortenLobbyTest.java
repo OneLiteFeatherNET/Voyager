@@ -120,7 +120,7 @@ class CupSessionShortenLobbyTest {
         RaceRuns runs = new RaceRuns();
         CupDefinition cup = new CupDefinition("shorten_cup", List.of("arena-run"), GameMode.RACE);
         CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
-                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN), Map.of(cup.name(), cup)), cup, Instant.EPOCH));
+                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN), Map.of(cup.key().asString(), cup)), cup, Instant.EPOCH));
         RaceTimings timings = new RaceTimings(lobby, Duration.ofSeconds(5), Duration.ofMillis(100),
                 Duration.ofMillis(100));
         CupWiring.Cup wired = CupWiring.assemble(holder, instances, new MapTransition(instances, runs), runs,

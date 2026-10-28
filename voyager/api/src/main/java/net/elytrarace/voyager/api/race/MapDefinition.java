@@ -4,6 +4,8 @@ import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.api.race.exception.InvalidMapException;
 
+import net.kyori.adventure.key.Key;
+
 import java.time.Duration;
 import java.util.List;
 
@@ -37,31 +39,41 @@ import java.util.List;
  * rings. A map that states none has {@link RingEffectTuning#DEFAULT}, the factors every course used
  * before they were per map.
  *
- * <p>{@link #name()} is the map's id, the key of the catalogue. {@link #displayName()} is the name players read; a
- * blank or absent one is the id, so it is never null.
+ * <p>{@link #key()} is the map's identifier, the key of the catalogue and of the statistics (ADR-0040).
+ * {@link #displayName()} is the name players read; a blank or absent one is the key in its full form, so it is never
+ * null. {@link #authors()} are the players who built the map, if any.
  */
-public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
-        BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects, String displayName) {
+public record MapDefinition(Key key, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
+        BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects, String displayName,
+        List<Author> authors) {
 
     /**
-     * The map as it was built before ring effects were per map: the {@link RingEffectTuning#DEFAULT} factors, and
-     * the id as its display name.
+     * The map built from a flat id, which is read as the key {@code elytrarace:<name>}, with the
+     * {@link RingEffectTuning#DEFAULT} factors, no display name and no authors.
      */
     public MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
             BoostConfig boostConfig, GuideLine guideLine) {
-        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, RingEffectTuning.DEFAULT, name);
+        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, RingEffectTuning.DEFAULT, null);
     }
 
-    /** The map as it was built before display names: the id is its display name. */
+    /** The map built from a flat id before ring effects were per map: no display name and no authors. */
     public MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
             BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects) {
-        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, ringEffects, name);
+        this(name, world, spawn, rings, referenceTime, boostConfig, guideLine, ringEffects, null);
+    }
+
+    /** The map built from a flat id, with its display name and no authors. */
+    public MapDefinition(String name, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
+            BoostConfig boostConfig, GuideLine guideLine, RingEffectTuning ringEffects, String displayName) {
+        this(flatKey(name), world, spawn, rings, referenceTime, boostConfig, guideLine, ringEffects, displayName,
+                List.of());
     }
 
     public MapDefinition {
-        if (name == null || name.isBlank()) {
-            throw InvalidMapException.blankName(name);
+        if (key == null) {
+            throw InvalidMapException.blankName(null);
         }
+        CatalogKeys.checked(key);
         if (world == null || world.isBlank()) {
             throw InvalidMapException.blankWorld(world);
         }
@@ -83,6 +95,12 @@ public record MapDefinition(String name, String world, Vec3 spawn, List<Ring> ri
                 throw InvalidMapException.guideOutsideTheCourse(guide.orderIndex(), rings.size());
             }
         }
-        displayName = displayName == null || displayName.isBlank() ? name : displayName;
+        displayName = displayName == null || displayName.isBlank() ? key.asString() : displayName;
+        authors = authors == null ? List.of() : Author.checked(authors);
+    }
+
+    /** The flat id as its key, or {@code null} for a blank id, which the canonical constructor refuses as a blank name. */
+    private static Key flatKey(String name) {
+        return name == null || name.isBlank() ? null : CatalogKeys.of(name);
     }
 }

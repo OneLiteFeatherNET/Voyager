@@ -2,10 +2,12 @@ package net.elytrarace.voyager.api.mapsetup;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.exception.InvalidDraftException;
+import net.elytrarace.voyager.api.race.Author;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -57,6 +59,25 @@ class MapDraftTest {
         rings.add(ring(1));
 
         assertThat(draft.rings()).hasSize(1);
+    }
+
+    @Test
+    void aDraftsKeyIsTheElytraraceKeyOfItsFolderName() {
+        MapDraft draft = draft("sky-drift", "sky-drift", null, List.of(), 60.0);
+
+        assertThat(draft.key().asString()).isEqualTo("elytrarace:sky-drift");
+    }
+
+    @Test
+    void aDraftKeepsItsDisplayNameAndAuthors() {
+        Author author = new Author(java.util.UUID.fromString("05bf52c6-7bb0-4f13-8951-0e1fd803df35"), "TheMeinerLP");
+
+        MapDraft draft = new MapDraft(new MapId("blue-and-red"), "ElytraraceBlueAndRed", null, List.of(), 60.0,
+                new BoostConfig(30, 40), new GuideLine(List.of(), 2, 1.0), RingEffectTuning.DEFAULT, "Blue & Red",
+                List.of(author));
+
+        assertThat(draft.displayName()).isEqualTo("Blue & Red");
+        assertThat(draft.authors()).containsExactly(author);
     }
 
     private static MapDraft draft(String id, String world, Vec3 spawn, List<Ring> rings, double seconds) {

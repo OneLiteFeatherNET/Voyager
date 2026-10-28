@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.mapsetup.exception.DraftAlreadyExistsException
 import net.elytrarace.voyager.api.mapsetup.exception.DraftLocationConflictException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftNotFoundException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
+import net.elytrarace.voyager.api.race.Author;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.platform.catalog.writer.MapDraftJsonWriter;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +50,31 @@ class JsonDraftStoreTest {
 
     private DraftStore store() {
         return new JsonDraftStore(data, worlds);
+    }
+
+    /**
+     * The setup server loads a finished map, changes nothing, and saves it. The display name and the authors the file
+     * states must still be in the file afterwards: a save that dropped them would be the playtest's missing name.
+     */
+    @Test
+    void aSaveWithoutEditsKeepsTheDisplayNameAndBothAuthors() throws IOException {
+        folders();
+        MapDraft named = DraftFixtures.complete(ID);
+        named = new MapDraft(named.id(), named.world(), named.spawn(), named.rings(), named.referenceTimeSeconds(),
+                named.boostConfig(), named.guideLine(), named.ringEffects(), "Sky Fortress",
+                List.of(new Author(UUID.fromString("05bf52c6-7bb0-4f13-8951-0e1fd803df35"), "TheMeinerLP"),
+                        new Author(UUID.fromString("e1dff87a-1059-47f1-bc7d-533f072bf8c7"), "Seelenretterin")));
+        Files.createDirectories(maps());
+        Files.writeString(maps().resolve("skyfortress.json"), MapDraftJsonWriter.toJson(named));
+
+        store().save(store().load(ID));
+
+        String saved = Files.readString(maps().resolve("skyfortress.json"));
+        MapDraft reloaded = store().load(ID);
+        assertThat(saved).contains("\"displayName\": \"Sky Fortress\"");
+        assertThat(reloaded.displayName()).isEqualTo("Sky Fortress");
+        assertThat(reloaded.authors()).extracting(Author::name)
+                .containsExactly("TheMeinerLP", "Seelenretterin");
     }
 
     @Test

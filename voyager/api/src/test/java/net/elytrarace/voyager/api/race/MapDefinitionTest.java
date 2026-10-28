@@ -2,6 +2,7 @@ package net.elytrarace.voyager.api.race;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
+import net.elytrarace.voyager.api.race.exception.InvalidCatalogKeyException;
 import net.elytrarace.voyager.api.race.exception.InvalidMapException;
 
 import org.junit.jupiter.api.Test;
@@ -57,7 +58,7 @@ class MapDefinitionTest {
         MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
                 new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
 
-        assertThat(map.name()).isEqualTo("nether-sprint");
+        assertThat(map.key().asString()).isEqualTo("elytrarace:nether-sprint");
         assertThat(map.world()).isEqualTo("world_nether");
         assertThat(map.spawn()).isEqualTo(new Vec3(0.5, 70.0, -12.25));
         assertThat(map.rings()).containsExactlyElementsOf(RINGS);
@@ -71,7 +72,7 @@ class MapDefinitionTest {
         MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
                 new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
 
-        assertThat(map.displayName()).isEqualTo("nether-sprint");
+        assertThat(map.displayName()).isEqualTo("elytrarace:nether-sprint");
     }
 
     @Test
@@ -80,7 +81,7 @@ class MapDefinitionTest {
                 new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES,
                 RingEffectTuning.DEFAULT, "");
 
-        assertThat(map.displayName()).isEqualTo("nether-sprint");
+        assertThat(map.displayName()).isEqualTo("elytrarace:nether-sprint");
     }
 
     @Test
@@ -90,7 +91,7 @@ class MapDefinitionTest {
                 RingEffectTuning.DEFAULT, "Blue & Red");
 
         assertThat(map.displayName()).isEqualTo("Blue & Red");
-        assertThat(map.name()).isEqualTo("nether-sprint");
+        assertThat(map.key().asString()).isEqualTo("elytrarace:nether-sprint");
     }
 
     @Test
@@ -165,5 +166,44 @@ class MapDefinitionTest {
         mutable.clear();
 
         assertThat(map.rings()).hasSize(2);
+    }
+
+    @Test
+    void aMapBuiltWithAKeyReturnsThatKey() {
+        MapDefinition map = new MapDefinition(CatalogKeys.of("blue_and_red"), "ElytraraceBlueAndRed",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES,
+                RingEffectTuning.DEFAULT, "Blue & Red", List.of());
+
+        assertThat(map.key().asString()).isEqualTo("elytrarace:blue_and_red");
+        assertThat(map.key().namespace()).isEqualTo("elytrarace");
+        assertThat(map.world()).isEqualTo("ElytraraceBlueAndRed");
+    }
+
+    @Test
+    void aMapWithoutAuthorsHasNone() {
+        MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
+
+        assertThat(map.authors()).isEmpty();
+    }
+
+    @Test
+    void aMapKeepsItsAuthors() {
+        Author author = new Author(java.util.UUID.fromString("05bf52c6-7bb0-4f13-8951-0e1fd803df35"), "TheMeinerLP");
+
+        MapDefinition map = new MapDefinition(CatalogKeys.of("blue_and_red"), "ElytraraceBlueAndRed",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES,
+                RingEffectTuning.DEFAULT, null, List.of(author));
+
+        assertThat(map.authors()).containsExactly(author);
+    }
+
+    @Test
+    void aMapKeyInAnotherNamespaceIsRefused() {
+        assertThatThrownBy(() -> new MapDefinition(net.kyori.adventure.key.Key.key("other", "blue_and_red"),
+                "w", new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES,
+                RingEffectTuning.DEFAULT, null, List.of()))
+                .isInstanceOf(InvalidCatalogKeyException.class)
+                .hasMessageContaining("key");
     }
 }

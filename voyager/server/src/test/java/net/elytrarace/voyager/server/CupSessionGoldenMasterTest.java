@@ -615,13 +615,13 @@ class CupSessionGoldenMasterTest {
         }
 
         private static LoadedCatalog comCatalog() {
-            return new LoadedCatalog(new CatalogSnapshot(Map.of(COM_RIDGE_RUN.name(), COM_RIDGE_RUN, DUNE_RUN.name(), DUNE_RUN),
-                    Map.of(COM_CUP.name(), COM_CUP)), COM_CUP, Instant.EPOCH);
+            return new LoadedCatalog(new CatalogSnapshot(Map.of(COM_RIDGE_RUN.key().asString(), COM_RIDGE_RUN, DUNE_RUN.key().asString(), DUNE_RUN),
+                    Map.of(COM_CUP.key().asString(), COM_CUP)), COM_CUP, Instant.EPOCH);
         }
 
         private static LoadedCatalog checkpointCatalog() {
-            return new LoadedCatalog(new CatalogSnapshot(Map.of(CHECKPOINT_RUN.name(), CHECKPOINT_RUN),
-                    Map.of(CHECKPOINT_CUP.name(), CHECKPOINT_CUP)), CHECKPOINT_CUP, Instant.EPOCH);
+            return new LoadedCatalog(new CatalogSnapshot(Map.of(CHECKPOINT_RUN.key().asString(), CHECKPOINT_RUN),
+                    Map.of(CHECKPOINT_CUP.key().asString(), CHECKPOINT_CUP)), CHECKPOINT_CUP, Instant.EPOCH);
         }
 
         private static LoadedCatalog restartedCatalog() {
@@ -629,7 +629,7 @@ class CupSessionGoldenMasterTest {
         }
 
         private static CatalogSnapshot snapshot(CupDefinition cup) {
-            return new CatalogSnapshot(Map.of("ridge-run", RIDGE_RUN, "dune-run", DUNE_RUN), Map.of(cup.name(), cup));
+            return new CatalogSnapshot(Map.of("ridge-run", RIDGE_RUN, "dune-run", DUNE_RUN), Map.of(cup.key().asString(), cup));
         }
     }
 

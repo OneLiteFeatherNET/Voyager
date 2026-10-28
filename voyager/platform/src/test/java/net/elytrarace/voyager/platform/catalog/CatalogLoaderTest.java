@@ -79,9 +79,9 @@ class CatalogLoaderTest {
 
         CatalogSnapshot snapshot = snapshotOf(data);
 
-        assertThat(snapshot.mapNames()).containsExactlyInAnyOrder("blue", "sprint");
-        assertThat(snapshot.mapByName("blue").orElseThrow().world()).isEqualTo("ElytraraceBlueAndRed");
-        assertThat(snapshot.mapByName("sprint").orElseThrow().world()).isEqualTo("NetherSprint");
+        assertThat(snapshot.mapNames()).containsExactlyInAnyOrder("elytrarace:blue", "elytrarace:sprint");
+        assertThat(snapshot.mapByName("elytrarace:blue").orElseThrow().world()).isEqualTo("ElytraraceBlueAndRed");
+        assertThat(snapshot.mapByName("elytrarace:sprint").orElseThrow().world()).isEqualTo("NetherSprint");
     }
 
     @Test
@@ -109,7 +109,7 @@ class CatalogLoaderTest {
 
         CupDefinition cup = snapshotOf(data).cupByName("test_cup").orElseThrow();
 
-        assertThat(cup.mapNames()).containsExactly("sprint", "blue", "cathedral");
+        assertThat(cup.mapNames()).containsExactly("elytrarace:sprint", "elytrarace:blue", "elytrarace:cathedral");
         assertThat(cup.mode()).isEqualTo(GameMode.PRACTICE);
     }
 
@@ -120,9 +120,9 @@ class CatalogLoaderTest {
 
         CatalogSnapshot snapshot = snapshotOf(data);
 
-        assertThat(snapshot.cupNames()).containsExactlyInAnyOrder("ranked", "casual");
-        assertThat(snapshot.cupByName("ranked").orElseThrow().mode()).isEqualTo(GameMode.RACE);
-        assertThat(snapshot.cupByName("casual").orElseThrow().mode()).isEqualTo(GameMode.PRACTICE);
+        assertThat(snapshot.cupNames()).containsExactlyInAnyOrder("elytrarace:ranked", "elytrarace:casual");
+        assertThat(snapshot.cupByName("elytrarace:ranked").orElseThrow().mode()).isEqualTo(GameMode.RACE);
+        assertThat(snapshot.cupByName("elytrarace:casual").orElseThrow().mode()).isEqualTo(GameMode.PRACTICE);
     }
 
     @Test
@@ -140,7 +140,7 @@ class CatalogLoaderTest {
 
         CupDefinition cup = snapshotOf(data).cupByName("test_cup").orElseThrow();
 
-        assertThat(cup.name()).isEqualTo("test_cup");
+        assertThat(cup.key().asString()).isEqualTo("elytrarace:test_cup");
         assertThat(cup.displayName()).isEqualTo("Test Cup");
     }
 
@@ -151,7 +151,7 @@ class CatalogLoaderTest {
 
         MapDefinition map = snapshotOf(data).mapByName("blue").orElseThrow();
 
-        assertThat(map.name()).isEqualTo("blue");
+        assertThat(map.key().asString()).isEqualTo("elytrarace:blue");
         assertThat(map.displayName()).isEqualTo("Blue & Red");
     }
 
@@ -159,7 +159,7 @@ class CatalogLoaderTest {
     void aMapWithoutADisplayNameDisplaysItsId(@TempDir Path data) {
         CatalogFixtures.map(data.resolve("maps"), "blue.json", "blue", "ElytraraceBlueAndRed");
 
-        assertThat(snapshotOf(data).mapByName("blue").orElseThrow().displayName()).isEqualTo("blue");
+        assertThat(snapshotOf(data).mapByName("elytrarace:blue").orElseThrow().displayName()).isEqualTo("elytrarace:blue");
     }
 
     @Test
@@ -168,7 +168,7 @@ class CatalogLoaderTest {
         CatalogFixtures.write(data.resolve("maps"), "blue.json", CatalogFixtures.MAP.formatted("blue", "ElytraraceBlueAndRed")
                 .replaceFirst("\\{", "{\n  \"displayName\": \"%s\",".formatted(fortyCharacters)));
 
-        assertThat(snapshotOf(data).mapByName("blue").orElseThrow().displayName()).isEqualTo(fortyCharacters);
+        assertThat(snapshotOf(data).mapByName("elytrarace:blue").orElseThrow().displayName()).isEqualTo(fortyCharacters);
     }
 
     @Test
@@ -267,7 +267,7 @@ class CatalogLoaderTest {
 
         assertThatThrownBy(() -> CatalogLoader.load(data))
                 .isInstanceOf(DuplicateCatalogEntryException.class)
-                .hasMessageContaining("'blue'")
+                .hasMessageContaining("'elytrarace:blue'")
                 .hasMessageContaining("alpha.json")
                 .hasMessageContaining("zulu.json");
     }
@@ -334,7 +334,7 @@ class CatalogLoaderTest {
         assertThat(reading.problems().getFirst().source()).isEqualTo(data.resolve("cups"));
         assertThat(reading.problems().getFirst().message())
                 .isEqualTo("the cup catalogue directory %s does not exist".formatted(data.resolve("cups")));
-        assertThat(reading.snapshot().mapNames()).containsExactly("blue");
+        assertThat(reading.snapshot().mapNames()).containsExactly("elytrarace:blue");
     }
 
     @Test
@@ -348,7 +348,7 @@ class CatalogLoaderTest {
         assertThat(reading.problems()).hasSize(1);
         assertThat(reading.problems().getFirst().cause()).isInstanceOf(DuplicateCatalogEntryException.class);
         assertThat(reading.problems().getFirst().message())
-                .contains("'blue'", data.resolve("maps/alpha.json").toString(), data.resolve("maps/zulu.json").toString());
+                .contains("'elytrarace:blue'", data.resolve("maps/alpha.json").toString(), data.resolve("maps/zulu.json").toString());
     }
 
     @Test
@@ -429,7 +429,7 @@ class CatalogLoaderTest {
 
         assertThatThrownBy(() -> CatalogLoader.load(data))
                 .isInstanceOf(UnresolvedCupMapException.class)
-                .hasMessage("1 cup entry does name a map no map definition provides: cup 'test_cup' plays 'cathedral'");
+                .hasMessage("1 cup entry does name a map no map definition provides: cup 'elytrarace:test_cup' plays 'elytrarace:cathedral'");
     }
 
     @Test
@@ -454,7 +454,7 @@ class CatalogLoaderTest {
 
         CatalogReading reading = CatalogLoader.read(data);
 
-        assertThat(reading.snapshot().cupNames()).containsExactly("good_cup");
+        assertThat(reading.snapshot().cupNames()).containsExactly("elytrarace:good_cup");
         assertThat(reading.problems()).extracting(CatalogProblem::source)
                 .containsExactly(data.resolve("cups/bad.json"));
     }

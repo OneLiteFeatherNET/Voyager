@@ -98,11 +98,11 @@ public final class CatalogValidation {
         CatalogSnapshot snapshot = reading.snapshot();
         List<ConfigProblem> entries = new ArrayList<>();
         for (CupDefinition cup : snapshot.cups().values()) {
-            Path cupFile = reading.cupFilesByName().get(cup.name());
+            Path cupFile = reading.cupFilesByName().get(cup.key().asString());
             for (String mapName : cup.mapNames()) {
                 if (!snapshot.mapNames().contains(mapName)) {
                     entries.add(error(mapName, cupFile.toAbsolutePath().toString(),
-                            "cup '%s' plays '%s', which no map file provides".formatted(cup.name(), mapName)));
+                            "cup '%s' plays '%s', which no map file provides".formatted(cup.key().asString(), mapName)));
                 }
             }
         }
@@ -131,7 +131,7 @@ public final class CatalogValidation {
         Map<String, Optional<String>> deepFailures = new HashMap<>();
 
         for (MapDefinition map : reading.snapshot().maps().values()) {
-            Path mapFile = reading.mapFilesByName().get(map.name()).toAbsolutePath();
+            Path mapFile = reading.mapFilesByName().get(map.key().asString()).toAbsolutePath();
             String world = map.world();
             switch (WorldFolders.check(worldsRoot, world)) {
                 case MISSING -> problems.add(error("world", mapFile.toString(),

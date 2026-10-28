@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 final class ShippedCatalogue {
 
-    private static final String MAP = "elytraraceblueandred.json";
+    private static final String MAP = "blue_and_red.json";
     private static final String CUP = "alpha_cup.json";
 
     private ShippedCatalogue() {

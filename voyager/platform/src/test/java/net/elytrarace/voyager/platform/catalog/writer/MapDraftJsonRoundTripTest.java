@@ -36,7 +36,7 @@ class MapDraftJsonRoundTripTest {
 
         MapDefinition map = GAME_GSON.fromJson(MapDraftJsonWriter.toJson(draft), MapDefinition.class);
 
-        assertThat(map.name()).isEqualTo("skyfortress");
+        assertThat(map.key().asString()).isEqualTo("elytrarace:skyfortress");
         assertThat(map.world()).isEqualTo("skyfortress");
         assertThat(map.spawn()).isEqualTo(draft.spawn());
         assertThat(map.rings()).isEqualTo(draft.rings());

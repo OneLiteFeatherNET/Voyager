@@ -65,7 +65,7 @@ class BootRefusalTest {
         assertThatThrownBy(() -> VoyagerServer.openGraph(settings(data)))
                 .satisfies(refusal -> assertThat(causeOf(refusal, UnresolvedCupMapException.class))
                         .hasMessage("1 cup entry does name a map no map definition provides: "
-                                + "cup 'test_cup' plays 'no-such-map'"));
+                                + "cup 'elytrarace:test_cup' plays 'elytrarace:no-such-map'"));
     }
 
     @Test
@@ -137,7 +137,7 @@ class BootRefusalTest {
     }
 
     private static final String CUP_NAMING_A_MAP = """
-            {"name": "test_cup", "mode": "RACE", "mapNames": ["elytraraceblueandred"]}
+            {"name": "test_cup", "mode": "RACE", "mapNames": ["blue_and_red"]}
             """;
 
     private static final String CUP_NAMING_A_MISSING_MAP = """

@@ -34,7 +34,7 @@ class LoadedCatalogTest {
         assertThatThrownBy(() -> new LoadedCatalog(
                 new CatalogSnapshot(Map.of("alpha", alpha), Map.of("tour", cup)), cup, Instant.EPOCH))
                 .isInstanceOf(UnresolvedCupMapException.class)
-                .hasMessageContaining("missing");
+                .hasMessageContaining("elytrarace:missing");
     }
 
     @Test

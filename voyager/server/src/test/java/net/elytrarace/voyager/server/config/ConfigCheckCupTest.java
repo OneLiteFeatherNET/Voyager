@@ -32,7 +32,7 @@ class ConfigCheckCupTest {
         assertThat(problems).singleElement().satisfies(problem -> {
             assertThat(problem.key()).isEqualTo(ServerSettings.CUP_PROPERTY);
             assertThat(problem.severity()).isEqualTo(Severity.ERROR);
-            assertThat(problem.message()).contains("'Missing'").contains("real");
+            assertThat(problem.message()).contains("'elytrarace:Missing'").contains("elytrarace:real");
         });
     }
 

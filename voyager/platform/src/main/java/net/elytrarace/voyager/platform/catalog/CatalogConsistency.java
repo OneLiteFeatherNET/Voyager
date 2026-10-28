@@ -53,7 +53,7 @@ public final class CatalogConsistency {
     public static List<String> unresolvedInOtherCups(
             CupDefinition selected, Map<String, MapDefinition> maps, Map<String, CupDefinition> cups) {
         Map<String, CupDefinition> others = new LinkedHashMap<>(cups);
-        others.remove(selected.name());
+        others.remove(selected.key().asString());
         return danglingEntries(maps, others);
     }
 
@@ -62,7 +62,7 @@ public final class CatalogConsistency {
         for (CupDefinition cup : cups.values()) {
             for (String mapName : cup.mapNames()) {
                 if (!maps.containsKey(mapName)) {
-                    problems.add("cup '%s' plays '%s'".formatted(cup.name(), mapName));
+                    problems.add("cup '%s' plays '%s'".formatted(cup.key().asString(), mapName));
                 }
             }
         }

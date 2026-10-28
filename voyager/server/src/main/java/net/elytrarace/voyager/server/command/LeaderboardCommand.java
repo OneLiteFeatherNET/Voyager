@@ -53,7 +53,7 @@ public final class LeaderboardCommand extends Command {
         String layout = LayoutVersion.of(map);
         // Ranked mode only: practice runs are kept, but a leaderboard lists races.
         requests.ask(line -> sender.sendMessage(line),
-                () -> reader.topTimes(map.name(), layout, GameMode.RACE, StatsReplies.LEADERBOARD_LENGTH),
-                entries -> StatsReplies.leaderboard(map.name(), entries));
+                () -> reader.topTimes(map.key().asString(), layout, GameMode.RACE, StatsReplies.LEADERBOARD_LENGTH),
+                entries -> StatsReplies.leaderboard(map.key().asString(), entries));
     }
 }

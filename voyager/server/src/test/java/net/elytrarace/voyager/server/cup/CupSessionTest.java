@@ -167,7 +167,7 @@ class CupSessionTest {
     /** As {@link #holder(MapDefinition)}, playing the cup given rather than the standard one. */
     private static CatalogHolder holder(MapDefinition ridge, CupDefinition cup) {
         return new CatalogHolder(new LoadedCatalog(
-                new CatalogSnapshot(Map.of("ridge-run", ridge, "dune-run", DUNE_RUN), Map.of(cup.name(), cup)),
+                new CatalogSnapshot(Map.of("ridge-run", ridge, "dune-run", DUNE_RUN), Map.of(cup.key().asString(), cup)),
                 cup, Instant.EPOCH));
     }
 
@@ -787,7 +787,7 @@ class CupSessionTest {
 
         fixture.runUntilRacing();
 
-        Component ridgeBanner = Messages.mapBanner(1, 2, RIDGE_RUN.name(), RIDGE_RUN.rings().size(),
+        Component ridgeBanner = Messages.mapBanner(1, 2, RIDGE_RUN.key().asString(), RIDGE_RUN.rings().size(),
                 RIDGE_RUN.referenceTime());
         assertThat(chat.collect().stream().map(SystemChatPacket::message).filter(ridgeBanner::equals))
                 .hasSize(1);
@@ -926,11 +926,11 @@ class CupSessionTest {
         List<Component> lines = chat.collect().stream().map(SystemChatPacket::message).toList();
         assertThat(lines)
                 .describedAs("the map result, with the placement bonus already awarded")
-                .contains(Messages.mapResult(RIDGE_RUN.name(), ridge.ringPoints(), ridge.medalPoints(),
+                .contains(Messages.mapResult(RIDGE_RUN.key().asString(), ridge.ringPoints(), ridge.medalPoints(),
                         ridge.medal(), ridge.placementBonus(), ridge.total()));
         assertThat(lines)
                 .describedAs("and the standings the cup ends on")
-                .contains(Messages.cupHeading(CUP.name()));
+                .contains(Messages.cupHeading(CUP.key().asString()));
     }
 
     /**
@@ -959,7 +959,7 @@ class CupSessionTest {
                 .describedAs("the last digit and then GO")
                 .contains(Messages.countdownDigit(1), Messages.go());
         assertThat(subtitles.collect().stream().map(SetTitleSubTitlePacket::subtitle))
-                .contains(Messages.countdownSubtitle(RIDGE_RUN.name(), RIDGE_RUN.rings().size(),
+                .contains(Messages.countdownSubtitle(RIDGE_RUN.key().asString(), RIDGE_RUN.rings().size(),
                         RIDGE_RUN.referenceTime()));
         assertThat(timings.collect())
                 .describedAs("no fade-in: a digit that fades in is a digit that arrives late")
@@ -1657,7 +1657,7 @@ class CupSessionTest {
 
             assertThat(logs.infos())
                     .anySatisfy(line -> assertThat(line).contains(
-                            "Map 1/2 'ridge-run' tuning: burn 4, cooldown 9, rockets 64, no speed cap, "
+                            "Map 1/2 'elytrarace:ridge-run' tuning: burn 4, cooldown 9, rockets 64, no speed cap, "
                                     + "BOOST 1.5, SLOW 0.5"));
         }
     }

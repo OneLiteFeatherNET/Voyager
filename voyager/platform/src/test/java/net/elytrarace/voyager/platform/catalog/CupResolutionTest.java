@@ -40,7 +40,7 @@ class CupResolutionTest {
                 cup("autumn.json", "winter_series", "map-a"),
                 cup("bravo.json", "alpha_series", "map-b"));
 
-        assertThat(CupResolution.resolve(cups, Optional.of("alpha_series")).name()).isEqualTo("alpha_series");
+        assertThat(CupResolution.resolve(cups, Optional.of("elytrarace:alpha_series")).key().asString()).isEqualTo("elytrarace:alpha_series");
     }
 
     /**
@@ -52,7 +52,7 @@ class CupResolutionTest {
     void resolvesTheOnlyCupWhenNothingChoseOne() {
         CatalogReading cups = catalogOf(cup("zulu.json", "test_cup", "map-a"));
 
-        assertThat(CupResolution.resolve(cups, Optional.empty()).name()).isEqualTo("test_cup");
+        assertThat(CupResolution.resolve(cups, Optional.empty()).key().asString()).isEqualTo("elytrarace:test_cup");
     }
 
     @Test
@@ -63,9 +63,9 @@ class CupResolutionTest {
 
         assertThatThrownBy(() -> CupResolution.resolve(cups, Optional.of("summer_series")))
                 .isInstanceOf(UnresolvedCupException.class)
-                .hasMessageContaining("summer_series")
-                .hasMessageContaining("winter_series")
-                .hasMessageContaining("alpha_series");
+                .hasMessageContaining("elytrarace:summer_series")
+                .hasMessageContaining("elytrarace:winter_series")
+                .hasMessageContaining("elytrarace:alpha_series");
     }
 
     /**
@@ -83,8 +83,8 @@ class CupResolutionTest {
                 .isInstanceOf(UnresolvedCupException.class)
                 .hasMessageContaining("VOYAGER_CUP")
                 .hasMessageContaining("-Pcup=")
-                .hasMessageContaining("winter_series")
-                .hasMessageContaining("alpha_series");
+                .hasMessageContaining("elytrarace:winter_series")
+                .hasMessageContaining("elytrarace:alpha_series");
     }
 
     /**
@@ -138,7 +138,7 @@ class CupResolutionTest {
 
         assertThatThrownBy(() -> CupResolution.resolve(cups, Optional.of("alhpa_series")))
                 .isInstanceOf(UnresolvedCupException.class)
-                .hasMessage("no cup named 'alhpa_series' in the catalogue; it holds [alpha_series]");
+                .hasMessage("no cup named 'elytrarace:alhpa_series' in the catalogue; it holds [elytrarace:alpha_series]");
     }
 
     /**
@@ -167,7 +167,7 @@ class CupResolutionTest {
                 cup("alpha.json", "alpha_series", "map-a"),
                 broken("zulu.json"));
 
-        assertThat(CupResolution.resolve(cups, Optional.of("alpha_series")).name()).isEqualTo("alpha_series");
+        assertThat(CupResolution.resolve(cups, Optional.of("elytrarace:alpha_series")).key().asString()).isEqualTo("elytrarace:alpha_series");
     }
 
     /**
@@ -181,7 +181,7 @@ class CupResolutionTest {
         CatalogReading cups = catalogOf(cup("zulu.json", "grand_tour", "ridge-run", "dune-run", "spire-run"));
 
         assertThat(CupResolution.resolve(cups, Optional.empty()).mapNames())
-                .containsExactly("ridge-run", "dune-run", "spire-run");
+                .containsExactly("elytrarace:ridge-run", "elytrarace:dune-run", "elytrarace:spire-run");
     }
 
     /**
@@ -200,7 +200,7 @@ class CupResolutionTest {
 
         assertThat(skipped).hasSize(2);
         assertThat(skipped.getFirst()).contains("zulu.json");
-        assertThat(skipped).anySatisfy(line -> assertThat(line).isEqualTo("cup 'beta_series' plays 'map-b'"));
+        assertThat(skipped).anySatisfy(line -> assertThat(line).isEqualTo("cup 'elytrarace:beta_series' plays 'elytrarace:map-b'"));
     }
 
     @Test
@@ -242,7 +242,7 @@ class CupResolutionTest {
         CatalogReading cups = catalogOf(cup("autumn.json", "winter_series", "map-a"));
 
         assertThat(CupResolution.refusalOf(cups, Optional.of("summer_series")))
-                .hasValueSatisfying(message -> assertThat(message).contains("no cup named 'summer_series'"));
+                .hasValueSatisfying(message -> assertThat(message).contains("no cup named 'elytrarace:summer_series'"));
     }
 
     @Test
