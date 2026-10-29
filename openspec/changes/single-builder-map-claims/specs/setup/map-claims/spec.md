@@ -56,12 +56,12 @@ IF the world cannot be found, THEN THE SYSTEM SHALL take no claim.
 - **WHEN** builder A runs `/map open skyfortress` and the world of the map cannot be found
 - **THEN** the server refuses with the world's error, and no builder holds `skyfortress`
 
-### Requirement: A claim is released by close, by opening another map, and by disconnect
+### Requirement: A claim is released by close, by opening another map, by disconnect, and by unlock
 **Priority:** MoSCoW Must
 
 WHEN the holder of a claim runs `/map close`, opens another map, or disconnects, THE SYSTEM SHALL release that claim, and SHALL
-release it only for the builder who holds it. THE SYSTEM SHALL take the new claim of another map before it releases the
-previous one.
+release it only for the builder who holds it, except for an unlock by a sender with `voyager.setup.unlock`, which
+`setup/map-commands` states. THE SYSTEM SHALL take the new claim of another map before it releases the previous one.
 
 #### Scenario: Close releases the map
 - **WHEN** builder A holding `skyfortress` runs `/map close`
@@ -78,6 +78,10 @@ previous one.
 #### Scenario: Disconnect releases the map
 - **WHEN** builder A holding `skyfortress` disconnects
 - **THEN** `skyfortress` is free
+
+#### Scenario: Unlock releases another builder's claim
+- **WHEN** a sender with `voyager.setup.unlock` runs `/map unlock skyfortress` while builder A holds it
+- **THEN** `skyfortress` is free and A has no open map
 
 ### Requirement: Claims are held in memory only
 **Priority:** MoSCoW Must

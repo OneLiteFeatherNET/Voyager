@@ -28,7 +28,7 @@ Goals:
 
 Non-goals:
 
-- Claims across processes, persisted claims, and takeover of a claim by an administrator (open questions).
+- Claims across processes and persisted claims. A stuck claim is released by an administrator with `/map unlock` (decision 9).
 - Changing what a builder may do with a map once it holds it.
 
 ## Decisions
@@ -90,6 +90,18 @@ Non-goals:
    in its private `persist` method, which `commit` calls, and the change is the same one line there. The session's draft is
    the one it last saved, so the guard passes for every edit the builder makes, and only an outside change refuses it.
 
+9. **The release paths, and the administrator's unlock.** A claim is released by `/map close`, by opening another map (after
+   the new claim is granted), by the holder's disconnect, and by a failed import. `/map close` is kept: without it, a colleague
+   waits for the holder to open another map or to disconnect. `/map unlock <id>` is the one release by another builder. It is
+   gated by `voyager.setup.unlock` alone, so an administrator who is not a builder can use it. It releases the claim of
+   `map:<id>` whoever holds it, and it ends the holder's session on that map, so the holder cannot keep editing a map it no
+   longer holds. The holder is not messaged, as on a disconnect. The unlock does not open the map for the administrator, who
+   runs `/map open` like any builder. An unlock of a map that nobody holds replies that the map is not held and changes
+   nothing. `EditClaims` has a separate method `unlock(key)` that returns the released holder, so that `BuilderSessions` can end
+   that holder's session; `release(key, builder)` keeps its rule that only the holder releases.
+   Rejected: a takeover that hands the claim to the administrator, which would also need the administrator to hold the map
+   first. Rejected: a restart as the only way out of a stuck claim, because a restart clears every other claim as well.
+
 ## ADR-0044: Single editor per map through in-memory claims and a save guard
 
 Status: **Proposed**. The text moves to `docs/decisions/0044-single-editor-map-claims.md` in the code pull request.
@@ -132,6 +144,7 @@ guard covers.
 - Good: two builders in one server cannot edit one map, and the refusal names the holder.
 - Good: a stale copy from a second setup server or an outside edit is refused at save time, with the file unchanged.
 - Good: no lock file and no reaper.
+- Good: an administrator releases a stuck claim with `/map unlock`, without a restart.
 - Bad: a second setup server pointed at the same data directory is not refused at open; it is refused at save. The
   builder finds out at the first edit, not at the open.
 - Bad: the guard's compare and the write are two steps. An outside writer that acts in the gap between them is not
@@ -145,13 +158,14 @@ which stands for two processes. The `Env` tests in the setup module cover the re
 
 ## Dependency direction
 
-- `api`: the `DraftStore` method `saveIfUnchanged` and the exception `DraftChangedException` in
-  `net.elytrarace.voyager.api.mapsetup.exception`. No new dependency.
+- `api`: the `DraftStore` method `saveIfUnchanged`, the exception `DraftChangedException` in
+  `net.elytrarace.voyager.api.mapsetup.exception`, and the `PermissionNode` value `VOYAGER_SETUP_UNLOCK`
+  (`voyager.setup.unlock`) in `api/permission`. No new dependency.
 - `setup/mapsetup`: `EditClaims` and its nested `Holder` record, in `net.elytrarace.voyager.setup.mapsetup`. It depends on
   `java.util` only. Its fitness rule is `setupDomainOnlyDependsOnApiAndJdk` (`ApiPurityTest`, the rule over
   `net.elytrarace.voyager.setup.mapsetup..`).
-- `setup/adapter`: `BuilderSessions` takes the registry in its constructor; `SetupCommands` adds `close` and the order of
-  the open; `MapSession.commit` calls the guard; `WandListener` catches the new exception. These are Minestom-facing
+- `setup/adapter`: `BuilderSessions` takes the registry in its constructor; `SetupCommands` adds `close`, `unlock` and the
+  order of the open; `MapSession.commit` calls the guard; `WandListener` catches the new exception. These are Minestom-facing
   adapters and depend inward on `setup/mapsetup` and `api`, as they do today.
 - `setup/inject`: `SetupBeans` creates the `EditClaims` bean and hands it to `BuilderSessions`. The DI annotations stay in
   the composition root; `onlyServerAndSetupDependOnDiContainer` (`ApiPurityTest`) keeps that rule.
@@ -167,15 +181,16 @@ No new edge between two slices is added. Every new boundary is covered by an exi
 Every test follows F.I.R.S.T.
 
 - `EditClaimsTest` (plain JUnit, `setup/mapsetup`): a fresh `EditClaims` per test; fixed UUID constants, no random values;
-  no clock is read, because the registry has no time. No shared static state.
+  no clock is read, because the registry has no time. No shared static state. It covers `unlock(key)`, which frees a held key
+  whoever holds it and returns the released holder, and which returns nothing for a free key.
 - `JsonDraftStoreTest` (platform, `@TempDir`): two `JsonDraftStore` instances over one directory play two setup servers.
   The guard refuses the second writer and the file keeps its bytes. A hand-written file with other whitespace and key
   order is accepted when its values are equal.
 - Minestom tests (`@EnvTest`, one `Env` per test, `env.tick()` driven, no sleeps): two `TestConnection` builders, the
   refusal message read through the translation key as `SetupPermissionTest` does, and the disconnect through the
   testing connection.
-- `SetupPermissionTest` gains one test per subcommand (`new`, `open`, `close`, `spawn`, `status`) for a builder without
-  the node: no draft is read, no claim is taken, no session is opened.
+- `SetupPermissionTest` gains one test per subcommand (`new`, `open`, `close`, `unlock`, `spawn`, `status`) for a builder
+  without the node: no draft is read, no claim is taken, no session is opened.
 - Save guard in `MapSession`: a draft changed by a second store makes `commit` throw `DraftChangedException`, and the
   session keeps the draft it had.
 
@@ -183,14 +198,5 @@ No test reads the system time, sleeps, or touches a path outside its `@TempDir`.
 
 ## Open questions
 
-1. **Takeover of a stuck claim by an administrator.** Options: (a) no takeover; a claim ends when its holder closes the
-   map or disconnects, and a restart clears every claim; (b) a new node `voyager.setup.takeover` in
-   `api/permission/PermissionNode`, which changes the API. **Recommendation: (a).** A stuck claim in this process means a
-   builder is still connected, and a restart already clears it. Option (b) can be added later as one node.
-
-2. **Whether `/map close` is wanted.** The brief lists it. Without it, a builder releases a map only by opening another map
-   or by disconnecting, and a colleague who needs the map must wait for one of those. **Recommendation: keep `/map close`.**
-   It costs one command and one message. Owner decision.
-
-3. **Whether the refused builder should be told that the holder can be asked.** **Recommendation: no.** The refusal names
+1. **Whether the refused builder should be told that the holder can be asked.** **Recommendation: no.** The refusal names
    the holder and nothing more. Owner decision.

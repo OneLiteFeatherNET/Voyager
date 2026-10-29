@@ -18,12 +18,15 @@ or an edit made to the file by hand. The undo, ring-editing, naming and cup chan
   they already hold changes nothing.
 - A new `/map close` releases the map the builder holds, removes its previews, and leaves the builder with no open map.
 - A claim is released when the builder closes the map, opens another map (only after the new claim is granted), or
-  disconnects. A failed import releases the claim it took.
+  disconnects, and by `/map unlock` (next bullet). A failed import releases the claim it took.
+- `/map unlock <id>` releases the claim of a map that any builder holds, so a stuck claim does not need a restart. It is
+  gated by the new node `voyager.setup.unlock` and by nothing else. The holder's open session on that map ends. The
+  unlock does not open the map for the administrator. `/cup unlock <id>` in `cup-authoring` uses the same node.
 - A save of a draft is refused when the stored copy no longer equals the draft the session last loaded or saved. The
   refusal says so, and the stored copy is not changed.
-- Permission is unchanged. The node `voyager.setup.use` is still checked per subcommand before any claim is taken, so a
-  builder without it never holds a map. The LuckPerms group `builder` that carries the node is documented as an operator
-  step.
+- Permission: `voyager.setup.use` is still checked per subcommand before any claim is taken, so a builder without it never
+  holds a map. The LuckPerms group `builder` that carries `voyager.setup.use`, and the group that carries
+  `voyager.setup.unlock`, are documented as operator steps.
 
 ## Capabilities
 
@@ -34,13 +37,12 @@ or an edit made to the file by hand. The undo, ring-editing, naming and cup chan
 
 ### Modified Capabilities
 
-- `setup/map-commands`: `/map open` is refused for a map another builder holds, and the new `/map close` is added.
+- `setup/map-commands`: `/map open` is refused for a map another builder holds, and the new `/map close` and
+  `/map unlock` are added.
 - `setup/map-draft-storage`: a save is refused when the stored copy changed since the session last loaded or saved it.
 
 ## Out of scope
 
-- Takeover of a stuck claim by an administrator. It needs a new permission node in `api/permission`, which is an API change
-  and an open question in `design.md`.
 - Lock files in `drafts/`. A lock file outlives a crash, so it needs a reaper; the decision is in `design.md` (ADR-0044).
 - Claims across processes. A second setup server is caught by the save guard, not by a claim.
 - Undo (`undo-draft-edits`), ring editing (`edit-ring-shape-and-type`), names and authors (`map-name-and-authors`), and cup
@@ -51,11 +53,13 @@ or an edit made to the file by hand. The undo, ring-editing, naming and cup chan
 ## Impact
 
 - Vertical slices: `setup` (the registry, the claim lifecycle in `BuilderSessions`, the commands, the messages), `api` (one
-  new method on the `DraftStore` port and one new exception in `api/mapsetup/exception`), and `platform` (the save guard in
-  `JsonDraftStore`). No change to `race`, to the game server, or to the file format.
+  new method on the `DraftStore` port, one new exception in `api/mapsetup/exception`, and one new `PermissionNode` value,
+  `VOYAGER_SETUP_UNLOCK`), and `platform` (the save guard in `JsonDraftStore`). No change to `race`, to the game server,
+  or to the file format.
 - Existing tests change where they construct `BuilderSessions`, because the registry is now a constructor argument.
 - Greenfield design: no decision of `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md` changes. The
   permission decision D13 is kept as it is.
-- Docs: a section on `/map close` and on sharing a map in `docs/guides/how-to-build-a-map-with-setup.md`, the builder group
-  in `docs/guides/how-to-grant-permissions.md`, and ADR-0044 (Proposed) in `docs/decisions/` when the code pull request ships.
+- Docs: a section on `/map close`, `/map unlock` and sharing a map in `docs/guides/how-to-build-a-map-with-setup.md`, the
+  builder group and the unlock node in `docs/guides/how-to-grant-permissions.md`, and ADR-0044 (Proposed) in
+  `docs/decisions/` when the code pull request ships.
 - Size: M.
