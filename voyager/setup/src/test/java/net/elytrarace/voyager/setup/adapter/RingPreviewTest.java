@@ -129,6 +129,12 @@ class RingPreviewTest {
 
     private record Fixture(Env env, Player builder, DraftStore store, BuilderSessions sessions) {
 
+        void run(String command) {
+            env.process().command().execute(builder, command);
+            env.tick();
+            env.tick();
+        }
+
         void enter(String command) {
             env.process().command().execute(builder, command);
             env.tick();

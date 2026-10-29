@@ -183,6 +183,23 @@ class WandListenerTest {
         assertThat(fixture.keys()).contains("voyager.setup.save.failed");
     }
 
+    /** A ring placed over a draft another setup server changed is refused, and the builder is told. */
+    @Test
+    void aRingPlacedOverADraftThatChangedOnDiskIsRefusedAndTheBuilderIsTold(Env env) throws IOException {
+        folders();
+        Fixture fixture = fixture(env, store());
+        fixture.enter("map new skyfortress");
+        DraftStore other = store();
+        other.save(DraftEditor.withSpawn(other.load(ID), new Vec3(7, 64, 7)));
+        byte[] before = Files.readAllBytes(data.resolve("drafts").resolve("skyfortress.json"));
+
+        fixture.rightClick();
+
+        assertThat(Files.readAllBytes(data.resolve("drafts").resolve("skyfortress.json"))).isEqualTo(before);
+        assertThat(fixture.sessions.find(fixture.builder.getUuid()).orElseThrow().draft().rings()).isEmpty();
+        assertThat(fixture.keys()).contains("voyager.setup.save.changed");
+    }
+
     /** A store whose saves fail on demand, for the one test that needs a failed write. */
     private static final class FlakyStore implements DraftStore {
 
@@ -209,6 +226,14 @@ class WandListenerTest {
                 throw DraftWriteFailedException.of(draft.id(), new IOException("the disk is full"));
             }
             delegate.save(draft);
+        }
+
+        @Override
+        public void saveIfUnchanged(MapDraft expected, MapDraft next) {
+            if (failSaves) {
+                throw DraftWriteFailedException.of(next.id(), new IOException("the disk is full"));
+            }
+            delegate.saveIfUnchanged(expected, next);
         }
     }
 

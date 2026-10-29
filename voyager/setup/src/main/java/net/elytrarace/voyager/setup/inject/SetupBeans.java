@@ -24,6 +24,7 @@ import net.elytrarace.voyager.setup.config.ImportSettings;
 import net.elytrarace.voyager.setup.config.SetupSettings;
 import net.elytrarace.voyager.setup.mapsetup.ImportGuard;
 import net.elytrarace.voyager.setup.mapsetup.ImportGuardedDraftStore;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.InstanceManager;
 
@@ -71,9 +72,15 @@ public final class SetupBeans {
         return new MapInstances(instances, settings.worldsPath());
     }
 
+    /** The one registry of edit claims; in memory only, so every start begins with no claim (ADR-0044). */
     @Bean
-    BuilderSessions builderSessions() {
-        return new BuilderSessions();
+    EditClaims editClaims() {
+        return new EditClaims();
+    }
+
+    @Bean
+    BuilderSessions builderSessions(EditClaims claims) {
+        return new BuilderSessions(claims);
     }
 
     @Bean

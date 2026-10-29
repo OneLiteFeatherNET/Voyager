@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftAlreadyExistsException;
+import net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftLocationConflictException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftNotFoundException;
 import net.elytrarace.voyager.api.mapsetup.exception.InvalidDraftException;
@@ -22,6 +23,7 @@ import net.elytrarace.voyager.platform.world.WorldFolders;
 import net.elytrarace.voyager.platform.world.exception.UnknownWorldException;
 import net.elytrarace.voyager.platform.world.exception.WorldAlreadyExistsException;
 import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.elytrarace.voyager.setup.mapsetup.MapStatus;
 import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.Command;
@@ -37,7 +39,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * {@code /map} — the builder's commands: {@code new}, {@code open}, {@code spawn} and {@code status}.
+ * {@code /map} — the builder's commands: {@code new}, {@code open}, {@code close}, {@code spawn} and {@code status}, and
+ * the administrator's {@code unlock}.
  *
  * <p>Each command is a thin Minestom wrapper: the decisions are in {@link DraftEditor}, {@link MapStatus} and the store,
  * and the refusals are reported in {@link SetupMessages}. A command that changes the map saves it before it replies.
@@ -54,10 +57,10 @@ public final class SetupCommands extends Command {
 
     /**
      * @param store     the draft store the commands save through
-     * @param sessions  the open map of each builder
+     * @param sessions  the open map of each builder, and the claims of the maps
      * @param worlds    the directory the world folders sit in
      * @param instances the loader of the map worlds
-     * @param policy    answers whether a sender holds {@code voyager.setup.use}; every subcommand asks it
+     * @param policy    answers whether a sender holds a node; every subcommand asks it for its own node
      */
     public SetupCommands(DraftStore store, BuilderSessions sessions, Path worlds, MapInstances instances,
             PermissionPolicy policy) {
@@ -69,21 +72,28 @@ public final class SetupCommands extends Command {
         this.policy = policy;
 
         ArgumentWord newId = ArgumentType.Word("id");
-        addSyntax((sender, context) -> gated(sender, () -> create(sender, context.get(newId))),
-                ArgumentType.Literal("new"), newId);
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE,
+                () -> create(sender, context.get(newId))), ArgumentType.Literal("new"), newId);
         ArgumentWord openId = ArgumentType.Word("id");
-        addSyntax((sender, context) -> gated(sender, () -> open(sender, context.get(openId))),
-                ArgumentType.Literal("open"), openId);
-        addSyntax((sender, context) -> gated(sender, () -> spawn(sender)), ArgumentType.Literal("spawn"));
-        addSyntax((sender, context) -> gated(sender, () -> status(sender)), ArgumentType.Literal("status"));
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE,
+                () -> open(sender, context.get(openId))), ArgumentType.Literal("open"), openId);
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE, () -> close(sender)),
+                ArgumentType.Literal("close"));
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE, () -> spawn(sender)),
+                ArgumentType.Literal("spawn"));
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE, () -> status(sender)),
+                ArgumentType.Literal("status"));
+        ArgumentWord unlockId = ArgumentType.Word("id");
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_UNLOCK,
+                () -> unlock(sender, context.get(unlockId))), ArgumentType.Literal("unlock"), unlockId);
     }
 
     /**
-     * Runs a subcommand for a sender who holds {@code voyager.setup.use}; tells every other sender so, and changes
-     * nothing. The check is made per subcommand, so a refused builder never reaches a draft or a world.
+     * Runs a subcommand for a sender who holds the node it needs; tells every other sender so, and changes nothing. The
+     * check is made per subcommand, before any draft, world or claim is touched.
      */
-    private void gated(CommandSender sender, Runnable subcommand) {
-        if (policy.allows(PlayerSubjects.subjectOf(sender), PermissionNode.VOYAGER_SETUP_USE)) {
+    private void gated(CommandSender sender, PermissionNode node, Runnable subcommand) {
+        if (policy.allows(PlayerSubjects.subjectOf(sender), node)) {
             subcommand.run();
         } else {
             sender.sendMessage(Messages.commandDenied());
@@ -112,25 +122,77 @@ public final class SetupCommands extends Command {
             return;
         }
         MapDraft draft = store.load(id);
-        enter(builder, draft);
-        builder.sendMessage(SetupMessages.created(id.value()));
+        if (enter(builder, draft)) {
+            builder.sendMessage(SetupMessages.created(id.value()));
+        }
     }
 
+    /**
+     * The order of an open is fixed, and any refusal stops it before the next step: a builder who already holds the map
+     * is told it is open and nothing reloads; otherwise the draft is loaded, the world found, the claim taken, and only
+     * then the session installed.
+     */
     private void open(CommandSender sender, String raw) {
         if (!(sender instanceof Player builder)) {
             sender.sendMessage(SetupMessages.playerOnly());
             return;
         }
-        MapDraft draft;
+        MapId id;
         try {
-            draft = store.load(new MapId(raw));
-        } catch (InvalidMapIdException | DraftNotFoundException | DraftLocationConflictException
-                 | InvalidDraftException exception) {
+            id = new MapId(raw);
+        } catch (InvalidMapIdException exception) {
             builder.sendMessage(SetupMessages.refused(exception.getMessage()));
             return;
         }
-        enter(builder, draft);
-        builder.sendMessage(SetupMessages.opened(draft.id().value(), draft.rings().size()));
+        Optional<MapSession> held = sessions.find(builder.getUuid()).filter(session -> session.id().equals(id));
+        if (held.isPresent()) {
+            builder.sendMessage(SetupMessages.opened(id.value(), held.get().draft().rings().size()));
+            return;
+        }
+        MapDraft draft;
+        try {
+            draft = store.load(id);
+        } catch (DraftNotFoundException | DraftLocationConflictException | InvalidDraftException exception) {
+            builder.sendMessage(SetupMessages.refused(exception.getMessage()));
+            return;
+        }
+        if (enter(builder, draft)) {
+            builder.sendMessage(SetupMessages.opened(draft.id().value(), draft.rings().size()));
+        }
+    }
+
+    /** Gives the builder's map back: its previews are removed, its claim is released, and the builder has no map open. */
+    private void close(CommandSender sender) {
+        if (!(sender instanceof Player builder)) {
+            sender.sendMessage(SetupMessages.playerOnly());
+            return;
+        }
+        Optional<MapSession> session = sessions.find(builder.getUuid());
+        if (session.isEmpty()) {
+            builder.sendMessage(SetupMessages.noMapOpen());
+            return;
+        }
+        MapId id = session.get().id();
+        sessions.forget(builder.getUuid());
+        builder.sendMessage(SetupMessages.mapClosed(id.value()));
+    }
+
+    /**
+     * Releases the claim of a map whoever holds it, ends the holder's session on it, and names the holder. It does not
+     * open the map for the sender.
+     */
+    private void unlock(CommandSender sender, String raw) {
+        MapId id;
+        try {
+            id = new MapId(raw);
+        } catch (InvalidMapIdException exception) {
+            sender.sendMessage(SetupMessages.refused(exception.getMessage()));
+            return;
+        }
+        Optional<EditClaims.Holder> released = sessions.unlock(id);
+        sender.sendMessage(released.isPresent()
+                ? SetupMessages.mapUnlocked(id.value(), released.get().name())
+                : SetupMessages.mapUnheld(id.value()));
     }
 
     private void spawn(CommandSender sender) {
@@ -151,6 +213,8 @@ public final class SetupCommands extends Command {
         try {
             session.get().commit(DraftEditor.withSpawn(session.get().draft(), feet));
             builder.sendMessage(SetupMessages.spawnSaved(feet.x(), feet.y(), feet.z()));
+        } catch (DraftChangedException exception) {
+            builder.sendMessage(SetupMessages.saveChanged(session.get().id().value()));
         } catch (DraftWriteFailedException exception) {
             builder.sendMessage(SetupMessages.saveFailed(session.get().id().value()));
         }
@@ -176,14 +240,23 @@ public final class SetupCommands extends Command {
         }
     }
 
-    /** Opens the draft's world for the builder, moves the builder into it and gives the wand. */
-    private void enter(Player builder, MapDraft draft) {
+    /**
+     * Finds the draft's world, claims the map for the builder, installs the session, moves the builder into the world and
+     * gives the wand. Returns false, after telling the builder why, when the world cannot be found or another builder
+     * holds the map; nothing is claimed or changed then.
+     */
+    private boolean enter(Player builder, MapDraft draft) {
         Instance world;
         try {
             world = instances.forWorld(draft.world());
         } catch (UnknownWorldException exception) {
             builder.sendMessage(SetupMessages.refused(exception.getMessage()));
-            return;
+            return false;
+        }
+        Optional<EditClaims.Holder> holder = sessions.claim(builder.getUuid(), builder.getUsername(), draft.id());
+        if (holder.isPresent()) {
+            builder.sendMessage(SetupMessages.claimHeld(draft.id().value(), holder.get().name()));
+            return false;
         }
         sessions.open(builder.getUuid(), new MapSession(store, draft, world));
         builder.setGameMode(GameMode.CREATIVE);
@@ -194,5 +267,6 @@ public final class SetupCommands extends Command {
                 builder.sendMessage(line);
             }
         }
+        return true;
     }
 }

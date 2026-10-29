@@ -44,13 +44,16 @@ public final class MapSession {
     }
 
     /**
-     * Saves the next draft and keeps it.
+     * Saves the next draft and keeps it. The save is refused when the stored copy is no longer the draft this session
+     * holds, so a change made on disk by anyone else is never replaced.
      *
+     * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException if the stored copy changed since this
+     *     session loaded or saved it; the draft kept by this session is then unchanged
      * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException if the save did not complete; the
      *     draft kept by this session is then the previous one, which is the one on disk
      */
     public void commit(MapDraft next) {
-        store.save(next);
+        store.saveIfUnchanged(draft, next);
         draft = next;
         previews.show(next.rings());
     }

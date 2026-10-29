@@ -10,9 +10,9 @@ import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
 import net.elytrarace.voyager.setup.mapsetup.EditClaims;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.TranslationArgument;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
@@ -315,8 +315,9 @@ class MapClaimsTest {
                     .toList();
         }
 
-        private static String text(Component argument) {
-            return argument instanceof TextComponent text ? text.content() : "";
+        private static String text(TranslationArgument argument) {
+            Object value = argument.value();
+            return value instanceof TextComponent text ? text.content() : String.valueOf(value);
         }
     }
 }
