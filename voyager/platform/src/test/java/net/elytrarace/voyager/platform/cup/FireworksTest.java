@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FireworksTest {
 
     @Test
-    void aRocketCarriesAnExplosionOfTheGivenColour() {
+    void aRocketCarriesAnExplosionOfTheGivenColour(Env env) {
         Entity rocket = Fireworks.rocketFor(Palette.GOLD);
 
         ItemStack info = ((FireworkRocketMeta) rocket.getEntityMeta()).getFireworkInfo();
@@ -45,5 +45,19 @@ class FireworksTest {
         assertThat(lobby.getEntities().stream()
                 .filter(entity -> entity.getEntityType() == EntityType.FIREWORK_ROCKET)
                 .toList()).isEmpty();
+    }
+
+    @Test
+    void aBurstLeavesNoRocketBehindWhenItsChunkLoadsLater(Env env) {
+        Instance lobby = env.createFlatInstance();
+        Pos farAway = new Pos(1_000.5, 42.0, 1_000.5);
+        assertThat(lobby.getChunkAt(farAway)).as("the chunk must not be loaded yet").isNull();
+
+        Fireworks.burst(lobby, farAway, Palette.SILVER).join();
+        env.tick();
+
+        assertThat(lobby.getEntities().stream()
+                .filter(entity -> entity.getEntityType() == EntityType.FIREWORK_ROCKET)
+                .toList()).as("no rocket may stay behind once its chunk has loaded").isEmpty();
     }
 }

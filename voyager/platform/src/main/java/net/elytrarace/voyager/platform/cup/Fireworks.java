@@ -16,6 +16,7 @@ import net.minestom.server.item.component.FireworkList;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A firework burst for the cup's finale: a firework rocket entity that carries its explosion, set off where it is spawned.
@@ -42,11 +43,12 @@ public final class Fireworks {
      * @param position where the burst goes off
      * @param colour   the colour of the burst
      */
-    public static void burst(Instance instance, Pos position, TextColor colour) {
+    public static CompletableFuture<Void> burst(Instance instance, Pos position, TextColor colour) {
         Entity rocket = rocketFor(colour);
-        rocket.setInstance(instance, position);
+        CompletableFuture<Void> spawned = rocket.setInstance(instance, position);
         rocket.triggerStatus(EXPLODE_NOW);
         rocket.remove();
+        return spawned;
     }
 
     /** An unspawned rocket whose explosion is a large ball of {@code colour}. */
