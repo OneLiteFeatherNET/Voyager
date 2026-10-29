@@ -125,15 +125,20 @@ from the legacy `Data.SpawnX`, `Data.SpawnY` and `Data.SpawnZ`.
 - **WHEN** the world's `level.dat` states `Data.spawn` in `minecraft:overworld` at (120, 70, -40)
 - **THEN** the draft's spawn is (120.5, 70, -39.5)
 
-### Requirement: The reply reports the spawn and its source
+### Requirement: The reply shows the spawn and its source, and hints at a default spawn
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL name in the reply the source of the spawn that it set, and SHALL ask the builder to check it with `/map spawn`. WHEN the
-world states no spawn, THE SYSTEM SHALL leave the spawn unset and SHALL say in the reply that no spawn was found.
+THE SYSTEM SHALL show in the reply the block coordinates of the spawn that it set, and the source of that spawn, modern or legacy keys.
+WHEN the block that the world states has `x` and `z` both 0, THE SYSTEM SHALL add to the reply a hint to check the spawn with `/map spawn`.
+WHEN the world states no spawn, THE SYSTEM SHALL leave the spawn unset and SHALL say in the reply that no spawn was found.
 
-#### Scenario: Legacy spawn is reported for a check
-- **WHEN** the spawn of the import comes from the legacy keys
-- **THEN** the reply names the legacy keys and asks the builder to check the spawn with `/map spawn`
+#### Scenario: Modern spawn is shown without a hint
+- **WHEN** the world's `level.dat` states `Data.spawn` in `minecraft:overworld` at (120, 70, -40)
+- **THEN** the reply shows the block (120, 70, -40) and the modern source, and holds no `/map spawn` hint
+
+#### Scenario: Default-looking legacy spawn gets the hint
+- **WHEN** the world's `level.dat` states `SpawnX` 0, `SpawnY` 65 and `SpawnZ` 0 and no `Data.spawn`
+- **THEN** the reply shows the block (0, 65, 0) and the legacy source, and adds the hint to check the spawn with `/map spawn`
 
 #### Scenario: No spawn stated
 - **WHEN** the world's `level.dat` states neither spawn form
@@ -142,14 +147,14 @@ world states no spawn, THE SYSTEM SHALL leave the spawn unset and SHALL say in t
 ### Requirement: The chunk census reports full, partial and unreadable chunks
 **Priority:** MoSCoW Should
 
-THE SYSTEM SHALL count, over the copied region files and one region at a time, the chunks whose top-level status is `full` or
-`minecraft:full`, the chunks with any other status (partial), the chunks with no status, and the chunks that cannot be read. THE SYSTEM
-SHALL show the counts in the reply. WHEN the census finds partial chunks, THE SYSTEM SHALL add a warning to the reply, and SHALL NOT
-refuse the import for them.
+THE SYSTEM SHALL count, over the copied region files and one region at a time, the full chunks (status `full` or `minecraft:full`),
+the partial chunks (any other status), the chunks without status and the unreadable chunks, and SHALL show the counts in the reply.
+WHEN the census finds partial chunks, THE SYSTEM SHALL show their count and percentage, and SHALL add a warning. THE SYSTEM SHALL NOT
+refuse an import for partial chunks.
 
 #### Scenario: Census of mixed chunks
 - **WHEN** the copied region holds a namespaced full chunk, a bare `full` chunk, a chunk with status `features`, a chunk with no status and an unreadable record
-- **THEN** the reply counts 2 full, 1 partial, 1 without status and 1 unreadable, and the reply holds the partial warning
+- **THEN** the reply counts 2 full, 1 partial, 1 without status and 1 unreadable, shows the partial share as 20 percent of the 5 chunk records counted (unreadable records included), holds the partial warning, and the import is not refused
 
 #### Scenario: Census of a complete world
 - **WHEN** every chunk of the copy is full
@@ -194,12 +199,20 @@ SHALL release the id when the import ends, whether it succeeded or failed.
 - **WHEN** an import of `skycube` fails and a builder starts another import of `skycube`
 - **THEN** the second import is not refused for the id
 
-### Requirement: The import is gated like the other map commands
+### Requirement: The import needs its own permission node as well as the setup permission
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL check `voyager.setup.use` before it runs `/map import`, as it does for every `/map` subcommand. A builder who fails the check
-SHALL change nothing.
+THE SYSTEM SHALL require both `voyager.setup.use` and `voyager.setup.import` before it runs `/map import`. The other `/map` subcommands
+SHALL keep requiring `voyager.setup.use` alone. A builder who fails either check SHALL change nothing.
 
 #### Scenario: Builder without the setup permission
 - **WHEN** a builder without `voyager.setup.use` runs `/map import elytrarace-cube skycube`
 - **THEN** the command is refused, and no file or folder changes
+
+#### Scenario: Builder without the import permission
+- **WHEN** a builder who holds `voyager.setup.use` but not `voyager.setup.import` runs `/map import elytrarace-cube skycube`
+- **THEN** the command is refused, no file or folder changes, and a `/map new` by the same builder is still allowed
+
+#### Scenario: Builder with both permissions
+- **WHEN** a builder who holds both `voyager.setup.use` and `voyager.setup.import` runs `/map import elytrarace-cube skycube`
+- **THEN** the import runs as the other requirements of this capability state

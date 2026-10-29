@@ -30,13 +30,15 @@ builder what the copy holds, so that the builder checks it before placing rings.
 - The region data of one import is limited to 256 MiB and 1024 region files by default (`VOYAGER_IMPORT_MAX_BYTES` and
   `VOYAGER_IMPORT_MAX_REGIONS`). Both are checked before any file is copied.
 - The spawn is read from `level.dat`: the overworld `spawn` of a modern world, or the legacy `SpawnX`, `SpawnY` and `SpawnZ`
-  of an older one. It is placed at the centre of the block the world states. The reply reports the value and asks the builder
-  to check it with `/map spawn`.
-- A chunk census reads each chunk's status over the copy and reports full, partial, unstated and unreadable chunks. Partial
-  chunks produce a warning and no refusal. A world whose data version is above the one this server reads is refused.
+  of an older one. It is placed at the centre of the block the world states. The reply shows the spawn and its source. When
+  the block has `x` and `z` both 0, the reply adds a hint to run `/map spawn`.
+- A chunk census reads each chunk's status over the copy and reports full, partial, unstated and unreadable chunks. The reply
+  reports the count and the percentage of partial chunks and adds a warning. The import is never refused for partial chunks.
+  A world whose data version is above the one this server reads is refused.
 - The copy, the census and the draft save run off the server tick. The id is held by an in-memory import guard until the
   import ends. A failure after the copy removes the copied folder.
-- Each subcommand is gated by `voyager.setup.use`, as the other `/map` subcommands are.
+- `/map import` requires both `voyager.setup.use` and the new node `voyager.setup.import` (`PermissionNode.VOYAGER_SETUP_IMPORT`).
+  The other `/map` subcommands keep requiring `voyager.setup.use` alone.
 - Player-facing text is written in English and German.
 
 ## Capabilities
@@ -61,18 +63,20 @@ None. The draft format, the draft store and the world layout are reused unchange
 - Nether and end data, which are ignored, and entities and points of interest, which are not copied.
 - Changing terrain after the import. The setup world cancels block edits as it does for any open map.
 - Publishing the imported map to the game server. That is later work.
-- The partial-chunk threshold that would refuse an import; the owner decides it (design open question 2).
+- Refusing an import for partial chunks. The import reports them and never refuses for them (owner decision O2).
 
 ## Impact
 
 - `voyager/api`: the port `WorldImporter` and its records (`ImportReport`, `Census`, `WorldFolderName`, `WorldLayout`) in
-  `net.elytrarace.voyager.api.mapsetup`, and the import exceptions in `api/mapsetup/exception`.
+  `net.elytrarace.voyager.api.mapsetup`, the import exceptions in `api/mapsetup/exception`, and the value
+  `PermissionNode.VOYAGER_SETUP_IMPORT`.
 - `voyager/platform`: `FolderWorldImporter` in `catalog`, a region reader and a census, and the spawn reader in `world`, and
   the import settings read through `ConfigLoader`.
 - `voyager/setup`: the `import` subcommand in `SetupCommands`, the import guard and the folder-name check in `mapsetup`, and
   the wiring in `SetupBeans`. Messages in both bundles.
 - `docs/guides/how-to-build-a-map-with-setup.md`, the configuration reference in `docs/reference/configuration.md`, and
   ADR-0042.
-- Operators: to use the command, create the import folder, or set `VOYAGER_IMPORT_PATH`. The game server is unchanged.
+- Operators: to use the command, create the import folder, or set `VOYAGER_IMPORT_PATH`, and grant `voyager.setup.import` to
+  each builder who may import. The game server is unchanged.
 - Persistence: none.
 - Greenfield decisions: D16 (configuration through avaje-config, ADR-0036) applies to the three new keys. No decision changes.

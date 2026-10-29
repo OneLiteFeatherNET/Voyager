@@ -3,10 +3,10 @@
 Commit types and scope: `feat(setup)` for every production change in this change, `test` for a test-only commit that changes no
 behaviour, and `docs` for `docs/` pages and the ADR move. Each behaviour gets a failing test (Red) before its production code
 (Green). Every test follows F.I.R.S.T.: synthetic region and `level.dat` files in `@TempDir`, injected size limits, a test executor
-that runs the background task on the calling thread, no wall-clock reads, no network and no shared static state. The
-integration test is tagged `integration` and is not part of CI. The open questions in `design.md` are answered by the owner before
-section 3 starts, and the spike of task 4.1 runs before the pull request is opened. Task checkboxes are ticked in the follow-up
-pull request, never in the code pull request.
+that runs the background task on the calling thread, no wall-clock reads, no network and no shared static state. The integration
+test is tagged `integration` and is not part of CI. The one open question in `design.md` is answered by the spike of task 4.1,
+which runs before the pull request is opened. Task checkboxes are ticked in the follow-up pull request, never in the code pull
+request.
 
 ## 1. Red: the import rules
 
@@ -24,10 +24,13 @@ pull request, never in the code pull request.
 - [ ] 1.12 Red: `FolderWorldImporterTest`: a chunk whose `DataVersion` is 4904 is refused, the copy is removed, and the message names 4904 and 4903; a chunk at 4438 is accepted (`feat(setup)`)
 - [ ] 1.13 Red: `FolderWorldImporterTest` with a test `DraftStore` whose save throws: the renamed world folder is removed afterwards, so neither the folder nor the draft exists (`feat(setup)`)
 - [ ] 1.14 Red: `SetupCommandsTest`: `/map import` with an id that already has a draft, a world or a running import changes nothing and names the id (`feat(setup)`)
-- [ ] 1.15 Red: `SetupPermissionTest`: `/map import` is refused for a builder without `voyager.setup.use`, and the refused builder changes no file (`feat(setup)`)
+- [ ] 1.15 Red: `SetupPermissionTest`: `/map import` is refused for a builder without `voyager.setup.use`, and also for a builder who holds `voyager.setup.use` but not `voyager.setup.import`; the refused builder changes no file (`feat(setup)`)
 - [ ] 1.16 Red: `SetupCommandsTest`: a missing import root is refused with the absolute path it expected, and the server starts with it missing (`feat(setup)`)
 - [ ] 1.17 Red: `MessageBundleParityTest` fails until every `voyager.setup.import.*` key exists in both `voyager_setup_en_US.properties` and `voyager_setup_de_DE.properties` (`test`)
-- [ ] 1.18 Red: confirm 1.1 to 1.16 fail for the stated reason and record the failure messages in the pull request (`test`)
+- [ ] 1.18 Red: `PermissionNodeTest` (api): `VOYAGER_SETUP_IMPORT` has the value `voyager.setup.import`, and `PermissionNode.byValue` finds it (`feat(setup)`)
+- [ ] 1.19 Red: `SetupCommandsTest`: an import whose stated spawn block has `x` and `z` both 0 replies with the hint to run `/map spawn`; a spawn with another `x` or `z` gets no hint (`feat(setup)`)
+- [ ] 1.20 Red: `FolderWorldImporterTest`: a copy with partial chunks is imported, and the reply holds the partial count, its percentage of all chunk records counted and the warning, with no refusal (`feat(setup)`)
+- [ ] 1.21 Red: confirm 1.1 to 1.20 fail for the stated reason and record the failure messages in the pull request (`test`)
 
 ## 2. Green: the port, the rules and the importer
 
@@ -38,22 +41,24 @@ pull request, never in the code pull request.
 - [ ] 2.5 Green: `SpawnReader` in `platform/world`: gzip `level.dat`, `Data.spawn` in the overworld first, then `Data.SpawnX/Y/Z`, at the block centre (`feat(setup)`)
 - [ ] 2.6 Green: `FolderWorldImporter` in `platform/catalog`: the layout rule, the folder and link rules, the size limits checked before copying, the copy into `worlds/.<id>.importing`, the census, the data version refusal, the rename into `worlds/<id>`, and `discard` (`feat(setup)`)
 - [ ] 2.7 Green: the rollback of 1.13: a failed save after the rename removes the renamed world (`feat(setup)`)
+- [ ] 2.8 Green: `PermissionNode.VOYAGER_SETUP_IMPORT` with the value `voyager.setup.import`, as the test of 1.18 requires (`feat(setup)`)
 
 ## 3. Green: the command and the messages
 
-- [ ] 3.1 Green: the `import` subcommand in `SetupCommands`, gated by `voyager.setup.use` like the other subcommands, which takes the guard, runs the import on a background thread, saves the draft through `DraftStore.save` with `DraftEditor.skeleton` and `DraftEditor.withSpawn`, and replies on the main thread (`feat(setup)`)
+- [ ] 3.1 Green: the `import` subcommand in `SetupCommands`, gated by both `voyager.setup.use` and `voyager.setup.import` (decision 14) while the other subcommands keep `voyager.setup.use` alone, which takes the guard, runs the import on a background thread, saves the draft through `DraftStore.save` with `DraftEditor.skeleton` and `DraftEditor.withSpawn`, and replies on the main thread with the spawn hint of 1.19 (`feat(setup)`)
 - [ ] 3.2 Green: the import root is checked when the command runs, not at boot, so a missing root is refused with its absolute path and the server still starts (`feat(setup)`)
-- [ ] 3.3 Green: the messages `voyager.setup.import.started`, `.done`, `.failed`, `.busy`, `.root.missing`, `.layout.unsupported`, `.layout.ambiguous`, `.folder.invalid`, `.folder.missing`, `.too.large`, `.dataversion.newer`, `.spawn.found`, `.spawn.none`, `.census`, `.partial.warning` and `.dimensions.ignored`, in both `voyager_setup_en_US.properties` and `voyager_setup_de_DE.properties`, with `<arg:N>` placeholders and German in informal "du" (`feat(setup)`)
-- [ ] 3.4 Refactor: confirm that no new code reads a system property, that no `Path` or platform type enters `voyager-api`, and that the tests of 1.1 to 1.16 still pass (`test`)
+- [ ] 3.3 Green: the messages `voyager.setup.import.started`, `.done`, `.failed`, `.busy`, `.root.missing`, `.layout.unsupported`, `.layout.ambiguous`, `.folder.invalid`, `.folder.missing`, `.too.large`, `.dataversion.newer`, `.spawn.found`, `.spawn.none`, `.spawn.hint`, `.census`, `.partial.warning` (with the count and the percentage of 1.20) and `.dimensions.ignored`, in both `voyager_setup_en_US.properties` and `voyager_setup_de_DE.properties`, with `<arg:N>` placeholders and German in informal "du" (`feat(setup)`)
+- [ ] 3.4 Refactor: confirm that no new code reads a system property, that no `Path` or platform type enters `voyager-api`, and that the tests of 1.1 to 1.20 still pass (`test`)
 
 ## 4. Spike, integration and documentation
 
-- [ ] 4.1 Spike: run the integration test of 4.2 on the team-build worlds, record the census counts and whether `MapInstances.checkWorld` loads a copy at data version 4438, and record the answer to design open question 3 in the pull request (`test`)
+- [ ] 4.1 Spike: run the integration test of 4.2 on the team-build worlds, record the census counts and whether `MapInstances.checkWorld` loads a copy at data version 4438, and record the answer to design open question 1 in the pull request (`test`)
 - [ ] 4.2 Integration: one test, tagged `integration`, imports a team-build world when it is present, runs `MapInstances.checkWorld` on the copy, and skips with a message when it is absent (`test`)
 - [ ] 4.3 Docs: `docs/guides/how-to-build-a-map-with-setup.md` gains the section "Import a finished world" (`docs`)
 - [ ] 4.4 Docs: `docs/reference/configuration.md` lists `VOYAGER_IMPORT_PATH`, `VOYAGER_IMPORT_MAX_BYTES` and `VOYAGER_IMPORT_MAX_REGIONS` with their defaults (`docs`)
 - [ ] 4.5 Docs: ADR-0042 moves from `design.md` to `docs/decisions/0042-import-finished-world.md` with the status Proposed, in the code pull request (`docs`)
+- [ ] 4.6 Docs: `docs/reference/permission-nodes.md` lists `voyager.setup.import`, and `docs/guides/how-to-grant-permissions.md` states that `/map import` needs both `voyager.setup.use` and `voyager.setup.import` (`docs`)
 
 ## 5. Pull request
 
-- [ ] 5.1 Open the code pull request titled `feat(setup): import a finished world into the setup server`, with the body filled from `.github/pull_request_template.md`; the body records the spike result of 4.1 and states that the import guard is replaced by `single-builder-map-claims`
+- [ ] 5.1 Open the code pull request titled `feat(setup): import a finished world into the setup server`, with the body filled from `.github/pull_request_template.md`; the body records the spike result of 4.1, states that the import guard is replaced by `single-builder-map-claims`, and names the new permission node that operators must grant

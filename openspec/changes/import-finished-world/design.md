@@ -20,7 +20,7 @@ and this change keeps that rule.
 Measurements from the team-build worlds, read-only and external to the repository, are inputs and not settled facts. The
 recorded `level.dat` of two worlds has data version 4438 and a spawn only in the legacy `Data.SpawnX/Y/Z` keys, which read
 0, 65, 0. Every world mixes namespaced and bare chunk statuses, and about a third of the chunks of one world are partial.
-The spike of the testing section verifies these before the threshold questions are decided.
+The spike of task 4.1 verifies these.
 
 ## Goals / Non-Goals
 
@@ -61,19 +61,25 @@ Non-Goals:
    Context). *Rejected:* reading the source instead of the copy, because the census would then describe a folder that the
    copy may not match.
 
-5. **The spawn is taken from the world and reported.** The reader takes the overworld `Data.spawn` of a modern world, then the
-   legacy `Data.SpawnX/Y/Z`. It places the spawn at the block centre, `(x + 0.5, y, z + 0.5)`. A world with no spawn leaves the
-   spawn unset, and the reply says so. *Rejected:* refusing a world with no spawn, because the copy is still useful and the
-   draft stays in `drafts/` until a ring is placed. The legacy keys of the team-build worlds read 0, 65, 0, which the
-   builder checks with `/map spawn`; the reply says so.
+5. **The spawn is taken from the world, shown to the builder, and hinted when it looks default.** The reader takes the
+   overworld `Data.spawn` of a modern world, then the legacy `Data.SpawnX/Y/Z`. It places the spawn at the block centre,
+   `(x + 0.5, y, z + 0.5)`. The reply always shows the block the world states and the source of it, modern or legacy keys.
+   When that block has `x` and `z` both 0, the reply adds a hint to run `/map spawn`, because the legacy keys of the
+   team-build worlds read 0, 65, 0, which may not be the builder's spawn. A world with no spawn leaves the spawn unset, and the
+   reply says so. *Rejected:* refusing a world with no spawn, because the copy is still useful and the draft stays in `drafts/`
+   until a ring is placed. *Rejected:* dropping a default-looking spawn, because the builder sees the value and can correct it
+   with `/map spawn`.
 
 6. **A world newer than the server is refused; an older world is accepted, pending the spike.** The highest data version this
    server reads is 4903, Minestom 26.2's data version (`docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md`,
    Setup section). A `level.dat` or chunk above 4903 is refused, and the copy is removed. An older world (4438 is recorded) is
-   accepted. Whether Falco 3.0.1 loads it is open question 3, answered by the spike.
+   accepted. Whether Falco 3.0.1 loads it is open question 1, which the spike of task 4.1 answers; it is a spike, not an
+   owner question.
 
-7. **The census reports partial chunks and does not refuse for them.** Recommendation (open question 2): report and warn only.
-   The owner sets a threshold later, and until then a builder sees the counts.
+7. **The census reports the partial share and never refuses an import for partial chunks.** This is the owner's decision
+   (O2). The reply reports the count of partial chunks and their percentage, the share of all chunk records counted with
+   unreadable ones included, and adds a warning. The import is not refused for partial chunks, and no threshold exists.
+   *Rejected:* a partial-chunk threshold that refuses an import, because the owner chose to report only.
 
 8. **Off the tick, with replies on the main thread.** The copy, the census and the save run on a thread of the setup slice,
    not on the server tick. The reply is sent on the main thread through the Minestom scheduler. The import waits on no
@@ -86,7 +92,8 @@ Non-Goals:
 
 10. **Configuration through the loader.** `VOYAGER_IMPORT_PATH`, `VOYAGER_IMPORT_MAX_BYTES` and `VOYAGER_IMPORT_MAX_REGIONS`
     are read once, through `ConfigLoader.get` (`platform/config/ConfigLoader.java:77`), into an `ImportSettings` record that
-    the composition root passes to `FolderWorldImporter`. The new code reads no system property. The existing
+    the composition root passes to `FolderWorldImporter`. The defaults are `imports`, 268435456 bytes (256 MiB) and 1024
+    region files, as the owner set them. The new code reads no system property. The existing
     `SetupSettings.fromEnvironment` reads `System::getProperty` (`setup/config/SetupSettings.java:54`), and this change does
     not copy that pattern.
 
@@ -101,9 +108,16 @@ Non-Goals:
 13. **The import does not open the map.** Opening needs the main thread and an instance. The reply names the next command,
     `/map open <id>`.
 
+14. **`/map import` has its own permission node.** It requires both `voyager.setup.use` and `voyager.setup.import`, the
+    value of the new `PermissionNode.VOYAGER_SETUP_IMPORT`. Every other `/map` subcommand requires `voyager.setup.use` alone.
+    A builder who holds `voyager.setup.use` but not the import node can place rings and cannot import. *Rejected:* gating the
+    import by `voyager.setup.use` alone, because an operator could then not withhold the import from a builder who places
+    rings.
+
 ## ADR-0042 (proposed): An imported world is copied into the map's world folder
 
-Status: Proposed, on 2026-10-29, with the change `import-finished-world`. Not accepted until the owner accepts it.
+Status: Proposed, on 2026-10-29, with the change `import-finished-world`. The record moves to Accepted when the owner approves
+it, as ADRs require.
 
 Number: 0042 is the next free number after ADR-0041, and it precedes ADR-0043 of `oval-ring-model`.
 
@@ -120,18 +134,17 @@ the source at the time of play.
 - The game server must not depend on a path outside its worlds folder.
 - A failed import must leave nothing that the game could load.
 
-### Considered options
+### Decision
 
-- **A. Copy the region files into `worlds/<id>`** (recommended, chosen). The map owns its terrain from the moment of the import.
-- **B. Symbolic link from `worlds/<id>` to the source folder.** The game server would follow a link out of its worlds folder, and it
-  would see every later change to the source.
-- **C. Read the import folder when the map is played.** The source would be a runtime dependency of the game, and a change or a
-  removal during a race would reach the race.
+Copy the region files into `worlds/<id>`, so the map's world is a copy of the source from the moment of the import. The
+copy is the map's world, as the void template already is, so the game server reads one kind of world. Its cost is disk
+space: a team-build world is 7 to 32 MB, and the import limits of this change cap one import.
 
-### Decision outcome
+*Rejected:* a symbolic link from `worlds/<id>` to the source folder, because the game server would follow a link out of its
+worlds folder and would see every later change to the source.
 
-Option A. The copy is the map's world, as the void template already is, so the game server reads one kind of world. Its cost is disk
-space: a team-build world is 7 to 32 MB, and the import limits of this change cap it.
+*Rejected:* reading the import folder when the map is played, because the source would then be a runtime dependency of the
+game, and a change or a removal during a race would reach the race.
 
 ### Consequences
 
@@ -171,6 +184,7 @@ implementation. Each boundary is covered by an existing rule:
 - No blocking future waits on the tick: `TickBoundaryTest.noBlockingOnFuturesOnTheTick`.
 - The API carries records, interfaces and exceptions: `DesignRuleTest.apiTypesAreRecordsInterfacesOrEnums`. The new import
   exceptions are in `api/mapsetup/exception` with a `package-info.java`, and `DesignRuleTest` checks the exception rules.
+- The permission node: `PermissionNode` is a pure enum in `voyager-api`, and `PermissionNodeTest` covers the new value (task 1.18).
 - No new fitness rule is needed. The new records and interfaces are covered by these rules as they stand.
 
 ## Testing
@@ -188,22 +202,12 @@ All tests follow F.I.R.S.T. and "Red/Green TDD".
   test executor that runs the task on the calling thread, so the result does not depend on scheduling.
 - One integration test, tagged `integration` as in `voyager/platform/build.gradle.kts:108-118`, imports a real team-build world
   when it is present and skips with a message when it is not. It is not part of CI. It runs `MapInstances.checkWorld` on the
-  copy, which answers open question 3 and the chunk claims of the Context.
+  copy, which answers open question 1 and the chunk claims of the Context.
 - Messages in both bundles are checked by the existing `MessageBundleParityTest`.
 
 ## Open questions
 
-1. **Size limits.** 256 MiB and 1024 region files, both configurable (defaults chosen here). Recommendation: keep them until
-   the owner sees a real import; the team-build worlds are 7 to 32 MB and 16 to 37 files, well inside. The owner confirms.
-2. **Partial chunks.** Recommendation: report and warn only, with no refusal. The owner decides whether a threshold should
-   refuse an import, and at what share.
-3. **Older worlds in Falco 3.0.1.** A world at data version 4438 is accepted by the rule of decision 6. The spike runs
-   `MapInstances.checkWorld` on an imported copy of a team-build world. If Falco cannot load it, the importer must refuse that
-   world with the version named. Recommendation: refuse, if the spike shows the load fails. The spike result is recorded in the
-   pull request.
-4. **Permission node.** Recommendation: keep `voyager.setup.use` for `/map import`, so that no API change is needed. A separate
-   node `voyager.setup.import` would let an operator give builders the setup commands without the import. The owner decides.
-5. **Spawn from legacy keys.** A legacy world reports 0, 65, 0 as its spawn. Recommendation: take the value and report it, as
-   decision 5 states. The owner confirms that a checked `/map spawn` is the right step.
-6. **Shared import guard.** The guard is in memory and is replaced by change 5. No question remains unless change 5 changes
-   its design.
+1. **Older worlds in Falco 3.0.1.** A world at data version 4438 is accepted by the rule of decision 6. This is answered by the
+   spike of task 4.1, not by the owner: the spike runs `MapInstances.checkWorld` on an imported copy of a team-build world. If
+   Falco cannot load it, the importer refuses that world and names its version, as decision 6 describes. The spike result is
+   recorded in the pull request.
