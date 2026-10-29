@@ -36,6 +36,24 @@ public abstract class SetupMessages {
     private static final String RING_POSE_REFUSED = "voyager.setup.ring.pose.refused";
     private static final String RING_REMOVED = "voyager.setup.ring.removed";
     private static final String RING_NONE = "voyager.setup.ring.none";
+    private static final String IMPORT_STARTED = "voyager.setup.import.started";
+    private static final String IMPORT_DONE = "voyager.setup.import.done";
+    private static final String IMPORT_FAILED = "voyager.setup.import.failed";
+    private static final String IMPORT_BUSY = "voyager.setup.import.busy";
+    private static final String IMPORT_ROOT_MISSING = "voyager.setup.import.root.missing";
+    private static final String IMPORT_FOLDER_INVALID = "voyager.setup.import.folder.invalid";
+    private static final String IMPORT_FOLDER_MISSING = "voyager.setup.import.folder.missing";
+    private static final String IMPORT_LAYOUT_UNSUPPORTED = "voyager.setup.import.layout.unsupported";
+    private static final String IMPORT_LAYOUT_AMBIGUOUS = "voyager.setup.import.layout.ambiguous";
+    private static final String IMPORT_LINK_REFUSED = "voyager.setup.import.link.refused";
+    private static final String IMPORT_TOO_LARGE = "voyager.setup.import.too.large";
+    private static final String IMPORT_DATA_VERSION_NEWER = "voyager.setup.import.dataversion.newer";
+    private static final String IMPORT_SPAWN_FOUND = "voyager.setup.import.spawn.found";
+    private static final String IMPORT_SPAWN_NONE = "voyager.setup.import.spawn.none";
+    private static final String IMPORT_SPAWN_HINT = "voyager.setup.import.spawn.hint";
+    private static final String IMPORT_CENSUS = "voyager.setup.import.census";
+    private static final String IMPORT_PARTIAL_WARNING = "voyager.setup.import.partial.warning";
+    private static final String IMPORT_DIMENSIONS_IGNORED = "voyager.setup.import.dimensions.ignored";
 
     private SetupMessages() {
     }
@@ -140,5 +158,99 @@ public abstract class SetupMessages {
     @Contract(pure = true)
     public static Component ringNone() {
         return Component.translatable(RING_NONE);
+    }
+
+    @Contract(pure = true, value = "_, _ -> new")
+    public static Component importStarted(String folder, String id) {
+        return Component.translatable(IMPORT_STARTED, Component.text(folder), Component.text(id));
+    }
+
+    @Contract(pure = true, value = "_, _, _ -> new")
+    public static Component importDone(String id, int regionFiles, long regionBytes) {
+        return Component.translatable(IMPORT_DONE, Component.text(id), Component.text(regionFiles),
+                Component.text(regionBytes));
+    }
+
+    @Contract(pure = true, value = "_, _ -> new")
+    public static Component importFailed(String id, String detail) {
+        return Component.translatable(IMPORT_FAILED, Component.text(id), Component.text(detail));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component importBusy(String id) {
+        return Component.translatable(IMPORT_BUSY, Component.text(id));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component importRootMissing(String absolutePath) {
+        return Component.translatable(IMPORT_ROOT_MISSING, Component.text(absolutePath));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component importFolderInvalid(String folder) {
+        return Component.translatable(IMPORT_FOLDER_INVALID, Component.text(folder));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component importFolderMissing(String absolutePath) {
+        return Component.translatable(IMPORT_FOLDER_MISSING, Component.text(absolutePath));
+    }
+
+    @Contract(pure = true)
+    public static Component importLayoutUnsupported() {
+        return Component.translatable(IMPORT_LAYOUT_UNSUPPORTED);
+    }
+
+    @Contract(pure = true, value = "_, _ -> new")
+    public static Component importLayoutAmbiguous(String rootFolder, String dimensionFolder) {
+        return Component.translatable(IMPORT_LAYOUT_AMBIGUOUS, Component.text(rootFolder), Component.text(dimensionFolder));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component importLinkRefused(String fileName) {
+        return Component.translatable(IMPORT_LINK_REFUSED, Component.text(fileName));
+    }
+
+    @Contract(pure = true, value = "_, _, _ -> new")
+    public static Component importTooLarge(String measured, String limit, String settingName) {
+        return Component.translatable(IMPORT_TOO_LARGE, Component.text(measured), Component.text(limit),
+                Component.text(settingName));
+    }
+
+    @Contract(pure = true, value = "_, _ -> new")
+    public static Component importDataVersionNewer(String found, String supported) {
+        return Component.translatable(IMPORT_DATA_VERSION_NEWER, Component.text(found), Component.text(supported));
+    }
+
+    @Contract(pure = true, value = "_, _, _, _ -> new")
+    public static Component importSpawnFound(int x, int y, int z, String source) {
+        return Component.translatable(IMPORT_SPAWN_FOUND, Component.text(x), Component.text(y), Component.text(z),
+                Component.text(source));
+    }
+
+    @Contract(pure = true)
+    public static Component importSpawnNone() {
+        return Component.translatable(IMPORT_SPAWN_NONE);
+    }
+
+    @Contract(pure = true, value = "_, _, _ -> new")
+    public static Component importSpawnHint(int x, int y, int z) {
+        return Component.translatable(IMPORT_SPAWN_HINT, Component.text(x), Component.text(y), Component.text(z));
+    }
+
+    @Contract(pure = true, value = "_, _, _, _ -> new")
+    public static Component importCensus(int full, int partial, int withoutStatus, int unreadable) {
+        return Component.translatable(IMPORT_CENSUS, Component.text(full), Component.text(partial),
+                Component.text(withoutStatus), Component.text(unreadable));
+    }
+
+    @Contract(pure = true, value = "_, _ -> new")
+    public static Component importPartialWarning(int partial, int percent) {
+        return Component.translatable(IMPORT_PARTIAL_WARNING, Component.text(partial), Component.text(percent));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component importDimensionsIgnored(String names) {
+        return Component.translatable(IMPORT_DIMENSIONS_IGNORED, Component.text(names));
     }
 }

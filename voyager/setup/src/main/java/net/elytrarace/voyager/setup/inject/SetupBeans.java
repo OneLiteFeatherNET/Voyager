@@ -6,22 +6,31 @@ import io.avaje.inject.Factory;
 
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
+import net.elytrarace.voyager.api.mapsetup.WorldImporter;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
+import net.elytrarace.voyager.platform.config.ConfigLoader;
+import net.elytrarace.voyager.platform.mapsetup.FolderWorldImporter;
 import net.elytrarace.voyager.platform.permission.LevelPermissionPolicy;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsPolicy;
 import net.elytrarace.voyager.platform.permission.luckperms.NetLuckPermsGateway;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.adapter.BuilderSessions;
+import net.elytrarace.voyager.setup.adapter.ImportCommand;
 import net.elytrarace.voyager.setup.adapter.SetupCommands;
 import net.elytrarace.voyager.setup.adapter.TerrainGuard;
 import net.elytrarace.voyager.setup.adapter.WandListener;
+import net.elytrarace.voyager.setup.config.ImportSettings;
 import net.elytrarace.voyager.setup.config.SetupSettings;
+import net.elytrarace.voyager.setup.mapsetup.ImportGuard;
+import net.elytrarace.voyager.setup.mapsetup.ImportGuardedDraftStore;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.instance.InstanceManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executor;
 
 /**
  * The beans of the setup server. Constructors are called here, not annotated: no class under {@code setup.adapter} or
@@ -69,8 +78,38 @@ public final class SetupBeans {
 
     @Bean
     SetupCommands setupCommands(DraftStore store, BuilderSessions sessions, MapInstances instances,
-            PermissionPolicy policy, @External SetupSettings settings) {
-        return new SetupCommands(store, sessions, settings.worldsPath(), instances, policy);
+            PermissionPolicy policy, ImportGuard guard, ImportCommand importCommand, @External SetupSettings settings) {
+        SetupCommands commands = new SetupCommands(new ImportGuardedDraftStore(store, guard), sessions,
+                settings.worldsPath(), instances, policy);
+        ImportSyntax.attach(commands, importCommand);
+        return commands;
+    }
+
+    /** The import folder and the limits, read once through the configuration loader. */
+    @Bean
+    ImportSettings importSettings() {
+        ConfigLoader loader = ConfigLoader.fromJvm();
+        return ImportSettings.from(loader::get);
+    }
+
+    /** The claims of the imports that are running; a second import of the same id is refused while one holds it. */
+    @Bean
+    ImportGuard importGuard() {
+        return new ImportGuard();
+    }
+
+    @Bean
+    WorldImporter worldImporter(@External SetupSettings settings, ImportSettings importSettings) {
+        return new FolderWorldImporter(importSettings.root(), settings.worldsPath(), importSettings.maxBytes(),
+                importSettings.maxRegions());
+    }
+
+    /** The copy and the save run on a thread of their own, and the reply returns to the server tick. */
+    @Bean
+    ImportCommand importCommand(DraftStore store, WorldImporter importer, ImportGuard guard, PermissionPolicy policy) {
+        Executor background = task -> Thread.ofPlatform().name("voyager-import").daemon(true).start(task);
+        Executor mainThread = task -> MinecraftServer.getSchedulerManager().scheduleNextTick(task);
+        return new ImportCommand(store, importer, guard, policy, background, mainThread);
     }
 
     @Bean

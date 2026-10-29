@@ -12,6 +12,9 @@ are at the end.
 | `service.bind.port` | `SERVICE_BIND_PORT` | `25565` | A whole number from 1 to 65535. Anything else refuses the start and names the key. The second command-line argument overrides it. |
 | `VOYAGER_DATA_PATH` | `VOYAGER_DATA_PATH` | `catalog` | A directory holding `maps/` and `cups/`. A path that is not a directory refuses the start. |
 | `VOYAGER_WORLDS_PATH` | `VOYAGER_WORLDS_PATH` | `worlds` | A directory holding one Anvil world folder per map world. A path that is not a directory refuses the start. |
+| `VOYAGER_IMPORT_PATH` | `VOYAGER_IMPORT_PATH` | `imports` | The folder that world folders are imported from with `/map import` on the setup server, relative to the working directory unless absolute. The server does not create it; a missing folder refuses the import and names the path. |
+| `VOYAGER_IMPORT_MAX_BYTES` | `VOYAGER_IMPORT_MAX_BYTES` | `268435456` (256 MiB) | The largest total of region-file bytes one import may copy. A value that is not a whole number of at least 1 refuses the start and names the key. |
+| `VOYAGER_IMPORT_MAX_REGIONS` | `VOYAGER_IMPORT_MAX_REGIONS` | `1024` | The largest number of region files one import may copy. A value that is not a whole number of at least 1 refuses the start and names the key. |
 | `VOYAGER_CUP` | `VOYAGER_CUP` | none | The name of the cup to play. Blank means none. A name that matches no cup refuses the start. With more than one cup file and no name, the start is refused as ambiguous. |
 | `voyager.dev` | `VOYAGER_DEV` | `false` | `true` turns on dev mode: a shorter lobby and results screen, and the operator subcommands. |
 | `VOYAGER_MIN_PLAYERS` | `VOYAGER_MIN_PLAYERS` | `2`, or `1` in dev mode | A whole number of at least 1. A value of 0 or text refuses the start. Blank means the default. |
