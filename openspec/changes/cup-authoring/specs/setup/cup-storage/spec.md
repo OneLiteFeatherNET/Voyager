@@ -3,8 +3,8 @@
 ## Purpose
 
 The setup server writes a cup to the same folder and in the same format the game server reads, so that the file a builder saves
-is the file the operator copies to the game server, with no conversion. The save is atomic, a save of an edited cup keeps what the
-setup server does not edit, and the setup server never writes a cup the game would refuse.
+is the file the operator copies to the game server, with no conversion. The save is atomic, a save of an edited cup keeps the
+`notes` the file holds, a cup carries no authors, and the setup server never writes a cup the game would refuse.
 
 ## ADDED Requirements
 
@@ -12,16 +12,37 @@ setup server does not edit, and the setup server never writes a cup the game wou
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL write a cup as a JSON object with `schemaVersion` as `2` first, then `key` as `elytrarace:` followed by the cup's id, then `displayName`
-(only when the cup has one), then `mode`, then `mapNames` in play order, then `authors` (only when the cup has authors). THE SYSTEM SHALL NOT write a
-`notes` key.
+(only when the cup has one), then `mode`, then `mapNames` in play order, and then the `notes` array when the stored file has one (see the notes
+requirement). THE SYSTEM SHALL NOT write an `authors` key.
 
 #### Scenario: A new cup with one map
 - **WHEN** the cup `alpha_run` with mode `RACE` and the map `elytrarace:blue_and_red` is saved
-- **THEN** the file holds `"schemaVersion": 2`, `"key": "elytrarace:alpha_run"`, `"mode": "RACE"` and `"mapNames": ["elytrarace:blue_and_red"]`, and holds no `displayName` and no `authors` key
+- **THEN** the file holds `"schemaVersion": 2`, `"key": "elytrarace:alpha_run"`, `"mode": "RACE"` and `"mapNames": ["elytrarace:blue_and_red"]`, and holds no `displayName`, no `notes` and no `authors` key
 
 #### Scenario: The file is read by the game's cup adapter
 - **WHEN** a cup saved by the setup server is read by the game server's cup adapter
-- **THEN** the read cup has the same key, mode, map list, display name and authors as the saved one
+- **THEN** the read cup has the same key, mode, map list and display name as the saved one
+
+### Requirement: A save keeps the notes array of the cup file
+**Priority:** MoSCoW Must
+
+WHEN a cup is saved and the stored file has a `notes` array, THE SYSTEM SHALL write the same strings, unchanged and in the same order, after `mapNames`. THE SYSTEM SHALL read
+those strings from the stored file at save time, after the check of the stored copy has passed, and SHALL NOT parse them into the cup. A file without a `notes` array
+gets no `notes` key.
+
+#### Scenario: A save keeps the notes array
+- **WHEN** a cup with display name `Alpha Cup`, mode `RACE`, one map and a `notes` array of two strings is loaded, its mode is changed to `PRACTICE`, and it is saved
+- **THEN** the saved file has mode `PRACTICE`, and its `notes` array holds the same two strings in the same order
+
+### Requirement: A cup save is refused for a file that states authors
+**Priority:** MoSCoW Must
+
+IF the stored file of a cup has an `authors` key, whatever its value, THEN THE SYSTEM SHALL refuse the save, SHALL name the file and the key `authors` in the refusal, and SHALL leave the
+file unchanged. A cup carries no authors: the setup server neither adds nor removes them, so no author data is lost by a save.
+
+#### Scenario: A cup file that states authors
+- **WHEN** a builder runs `/cup name alpha_run Alpha` and `alpha_run.json` has an `authors` key
+- **THEN** the save is refused, the file keeps its bytes, and the reply names `alpha_run.json` and the key `authors`
 
 ### Requirement: A cup file lives in the cups folder of the setup data directory
 **Priority:** MoSCoW Must
@@ -44,7 +65,8 @@ THE SYSTEM SHALL accept a cup id only if it matches `[a-z0-9][a-z0-9_-]{0,31}`, 
 ### Requirement: A cup save replaces the file atomically
 **Priority:** MoSCoW Must
 
-WHEN a cup is saved, THE SYSTEM SHALL write the new content to a temporary file in the `cups` folder, force it to disk, and move it over the target as an atomic replace. IF the write or the move fails, THEN THE SYSTEM SHALL keep the previous file unchanged, SHALL delete only its own temporary file, and SHALL report a write failure to the caller.
+WHEN a cup is saved, THE SYSTEM SHALL write the new content to a temporary file in the `cups` folder, force it to disk, and move it over the target as an atomic replace. IF the write or the move
+fails, THEN THE SYSTEM SHALL keep the previous file unchanged, SHALL delete only its own temporary file, and SHALL report a write failure to the caller.
 
 #### Scenario: Move fails
 - **WHEN** the atomic move throws while saving an edited cup
@@ -53,7 +75,8 @@ WHEN a cup is saved, THE SYSTEM SHALL write the new content to a temporary file 
 ### Requirement: The save checks each map against the game's map catalogue
 **Priority:** MoSCoW Must
 
-WHEN a cup is saved, THE SYSTEM SHALL resolve each name in `mapNames` against the maps the game can load from `<dataPath>/maps/`, using the catalogue's cross-check rule, and IF a name does not resolve, THEN THE SYSTEM SHALL refuse the save with an exception that lists every name that does not resolve, and SHALL write nothing.
+WHEN a cup is saved, THE SYSTEM SHALL resolve each name in `mapNames` against the maps the game can load from `<dataPath>/maps/`, using the catalogue's cross-check rule, and IF a name does not
+resolve, THEN THE SYSTEM SHALL refuse the save with an exception that lists every name that does not resolve, and SHALL write nothing.
 
 #### Scenario: Two unresolved names
 - **WHEN** a cup naming `elytrarace:missing_a` and `elytrarace:missing_b` is saved
@@ -62,9 +85,8 @@ WHEN a cup is saved, THE SYSTEM SHALL resolve each name in `mapNames` against th
 ### Requirement: A cup save is refused when the stored copy changed since the command read it
 **Priority:** MoSCoW Must
 
-WHEN a `/cup` command saves a cup, THE SYSTEM SHALL compare the stored file with the cup the same command read, and IF the stored copy
-differs, THEN THE SYSTEM SHALL refuse the save, SHALL leave the stored file unchanged, and SHALL tell the builder that the cup changed
-on disk. The comparison is made on canonical JSON, not on the bytes of the file.
+WHEN a `/cup` command saves a cup, THE SYSTEM SHALL compare the stored file with the cup the same command read, and IF the stored copy differs, THEN THE SYSTEM SHALL refuse the save,
+SHALL leave the stored file unchanged, and SHALL tell the builder that the cup changed on disk. The comparison is made on canonical JSON of the cup's record, not on the bytes of the file.
 
 #### Scenario: An outside edit between read and save
 - **WHEN** a `/cup map add` command has read `alpha_run.json`, another process rewrites that file with a different mode, and the command then saves
@@ -74,14 +96,14 @@ on disk. The comparison is made on canonical JSON, not on the bytes of the file.
 - **WHEN** a builder runs `/cup name alpha_run Alpha` on a file whose values are the same as the writer's but whose keys are in another order
 - **THEN** the save is accepted and the file holds the canonical form with the new name
 
-### Requirement: An edit keeps the display name and the authors the cup already has
+### Requirement: An edit keeps the display name of the cup
 **Priority:** MoSCoW Must
 
-WHEN an existing cup is loaded and saved after an edit of its mode or its maps, THE SYSTEM SHALL keep its display name and its authors, so that a save changes only what the builder edited.
+WHEN an existing cup is loaded and saved after an edit of its mode or its maps, THE SYSTEM SHALL keep its display name, so that a save changes only what the builder edited.
 
-#### Scenario: Mode edit keeps the authors
-- **WHEN** a cup with the display name `Alpha Run` and one author is loaded, its mode is changed to `PRACTICE`, and it is saved
-- **THEN** the saved file has the display name `Alpha Run`, the same author, and the mode `PRACTICE`
+#### Scenario: Mode edit keeps the display name
+- **WHEN** a cup with the display name `Alpha Run` is loaded, its mode is changed to `PRACTICE`, and it is saved
+- **THEN** the saved file has the display name `Alpha Run` and the mode `PRACTICE`
 
 ### Requirement: The setup server does not create the cups folder at boot
 **Priority:** MoSCoW Should

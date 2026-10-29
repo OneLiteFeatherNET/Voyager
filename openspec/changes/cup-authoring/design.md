@@ -22,17 +22,23 @@ Three existing rules shape the design:
 3. **The setup server creates only its data and worlds folders at boot.** `server-bootstrap` requires both to exist and does
    not create a `cups` folder (`openspec/specs/setup/server-bootstrap/spec.md`), so the first cup save creates it.
 
-The shipped `cups/alpha_cup.json` carries a `notes` array, which `cup.schema.json` allows (`notes`, `additionalProperties:
-false`), but which the cup reader does not read. A save by this change therefore drops it (decision 9).
+The shipped `cups/alpha_cup.json` carries a `notes` array of strings. `cup.schema.json` describes it as free text that the
+loader ignores, and the cup reader does not read it. A save by this change keeps it (decision 9).
+
+Claims come from change 5. `EditClaims` (`setup/mapsetup`) holds one holder per string key and reserves `cup:<id>` for cups
+(`single-builder-map-claims`, spec `map-claims`). The permission node `voyager.setup.unlock` (`PermissionNode.VOYAGER_SETUP_UNLOCK`)
+is added by that change too; this change only uses it.
 
 ## Goals / Non-Goals
 
 Goals:
 
-- A builder creates a cup, names it, sets its mode and orders its maps in the setup server.
+- A builder creates a cup, opens it, names it, sets its mode and orders its maps in the setup server.
+- One builder edits a cup at a time: a cup is claimed when it is opened, as a map is.
 - The setup server never writes a cup the game would refuse for an unknown or unloadable map.
 - The file is the one the game reads: version 2, the key `elytrarace:<id>`, the same field names.
 - Every change is saved before the reply, and a failed save keeps the previous file.
+- A save keeps the `notes` the file holds, and refuses a file that states `authors`.
 
 Non-Goals:
 
@@ -53,7 +59,7 @@ Non-Goals:
 3. **The mode is `RACE` or `PRACTICE`, in either letter case.** The builder types lower case as often as not. Stored as the
    `GameMode` constant name. Rejected: free text (a typo would become a boot refusal).
 
-4. **Map positions are counted from 1.** `/cup info` prints the positions from 1, so a builder types the number the list shows.
+4. **Map positions are counted from 1.** `/cup open` prints the positions from 1, so a builder types the number the list shows.
    Rejected: 0-based positions (the first map would be position 0, which no list shows).
 
 5. **A map argument is a flat id or a key.** As in `add-catalogue-keys-and-authors` (decision 5), a flat `blue_and_red` is read
@@ -65,39 +71,72 @@ Non-Goals:
    Rejected: a file-exists check (it would accept a malformed map that fails at boot), and checking `drafts/` (a draft is not
    game-loadable). The cost is one read of `maps/` per cup save; a setup data directory holds tens of maps, so that is acceptable.
 
-7. **A cup writer writes the keys in a fixed order and no `notes`.** `CupDefinitionJsonWriter` in `platform.catalog.writer`
-   writes `schemaVersion` (2), `key`, `displayName` (when set), `mode`, `mapNames`, and `authors` (when set), as a streaming
-   JSON writer, as `MapDraftJsonWriter` does. Rejected: reflective serialisation of the record (it would write fields the
+7. **The cup writer writes a fixed set of keys, and no `authors`.** `CupDefinitionJsonWriter` in `platform.catalog.writer`
+   writes `schemaVersion` (2), `key`, `displayName` (when set), `mode`, `mapNames`, and then the `notes` array when the stored
+   file has one (decision 9). It writes no `$schema` pointer, which is an editor hint, and no `authors` key (decision 8). It is a
+   streaming JSON writer, as `MapDraftJsonWriter` is. Rejected: reflective serialisation of the record (it would write fields the
    format does not name).
 
-8. **The atomic write is one helper, shared by both stores.** The temporary-file, force and replace sequence of
-   `JsonDraftStore.save` moves into a helper `AtomicJsonFile` in `platform.catalog`, which `JsonDraftStore` and `JsonCupStore`
-   both call. The extraction is a refactor with its own commit, and the existing `JsonDraftStoreTest` must pass unchanged.
-   Rejected: copying the sequence into the cup store (two copies of the one rule that makes a crash safe).
+8. **Cups carry no authors.** The setup server neither adds nor removes cup authors (owner decision C6). A save of a cup whose
+   stored file states an `authors` key, whatever its value, is refused with `CupAuthorsRefusedException`, which names the file
+   and the key, so no author data is lost silently. The check runs in the store, before the save. Rejected: dropping the authors
+   on save (a silent loss of data a person wrote); writing them back (a cup author would then be data the setup server carries
+   without any command that sets it).
 
-9. **An edit keeps the display name and the authors, and drops the `notes`.** A save of an existing cup keeps what the record
-   holds, so the authors and the display name survive an edit. The `notes` array is not part of the record, so it is not
-   kept. Open question 2 asks the owner whether the notes of the shipped cups should be carried through the record.
+9. **A save keeps the file's `notes` array, and `CupDefinition` gains no field (owner decision C7).** The mechanism: after the
+   check of decision 12 has confirmed that the stored file still equals `expected`, `JsonCupStore` reads the stored file's
+   `notes` array as raw JSON strings and writes them back verbatim, in the same order, after `mapNames`. The strings never pass
+   through `CupDefinition` or the `CupStore` port, so the API does not change and no command holds notes in memory. A file
+   without `notes` gets no `notes` key. A notes-only edit made by hand is kept as it stands on disk, and it does not make the
+   check of decision 12 refuse, because that check compares the record only. Rejected: a `notes` field on `CupDefinition` (an API
+   change for text the game ignores); dropping the notes on save (it loses text an operator wrote for the person editing the file).
 
-10. **A cup has no open session in this change; the claim is a question for the owner.** Change 5 provides the registry
-    `EditClaims` in `setup/mapsetup`, keyed by string, and it reserves the key `cup:<id>` for this change
-    (`single-builder-map-claims`, spec `map-claims`, scenario on `map:alpha` and `cup:alpha`). The brief places the cup id under
-    that registry while the cup is open, but the command list has no `/cup open`. Without it, no command holds a claim, and the
-    claim requirement in `specs/setup/cup-commands` takes effect only if the owner accepts `/cup open` and `/cup close` (open
-    question 1). Each command reads, changes, saves and replies within one main-thread step, so two builders cannot tear a file,
-    even though they can edit one cup in turn. Decision 12 covers the case that one step does not: a write from outside the
-    process.
+10. **A cup is claimed like a map, under the key `cup:<id>` (owner decisions O4 and C8).** The claim is held in change 5's
+    `EditClaims` registry. The rules:
+    - `/cup new` checks the id, the file and the maps, saves the cup, and only then takes the claim, so a failed save takes none.
+      A new id has no holder; a holder of the key is refused with its name, as for an open.
+    - `/cup open <id>` refuses a missing cup. It refuses, naming the holder, when another builder holds `cup:<id>`. The builder
+      who already holds it changes nothing. Otherwise it takes the claim first and releases the cup the builder held before,
+      the order change 5 uses for maps, so a refused open leaves the builder on the cup they had.
+    - `name`, `mode`, `map add`, `map remove` and `map move` apply only when the builder holds the claim. Without it, the
+      refusal says to open the cup first; with another holder, it names the holder.
+    - `/cup unlock <id>` requires `voyager.setup.unlock` and releases the claim whoever holds it. Its gate is that node alone.
+    - A claim is released when the builder opens another cup, when the builder disconnects, and by unlock. A builder holds at
+      most one cup claim. A cup claim does not touch the builder's map claim, so a builder can hold a map and a cup at once.
+    - There is no `/cup close`. C8 lists none, and the two events that end a session already end a claim.
 
-11. **Save before reply, and no undo in the first version.** Every command saves the cup before it replies, as the `/map`
-    commands do. Undo for cups is open question 3.
+    The open cup of each builder is held by `CupCommandService` (decision 13), not by `BuilderSessions`, because `BuilderSessions`
+    is bound to Minestom. The Minestom wrapper forwards the disconnect to the service. Each command reads, changes, saves and
+    replies within one main-thread step, so two builders in one process cannot tear a file. Decision 12 covers a write from
+    outside the process. Rejected: edits with no claim (two builders would edit one cup in turn without a word); a `/cup close`
+    (not in C8, and redundant with the other release paths).
+
+11. **Save before reply; no undo for cups (owner decision C3).** Every command saves the cup before it replies, as the `/map`
+    commands do. Cups are not covered by undo: `undo-draft-edits` covers map edits only. Rejected: a history for cups (C3 leaves
+    cups out, and a mistyped position is fixed by a second command).
 
 12. **A cup save is guarded like a draft save, with the same mechanism.** ADR-0044 (proposed in `single-builder-map-claims`) asks
-    that the rule cover the cups of this change "without a second mechanism". `CupStore` therefore gains `saveIfUnchanged(CupDefinition expected, CupDefinition
-    next)`, which `JsonCupStore` implements by comparing the stored file with `expected` on the canonical JSON that
-    `CupDefinitionJsonWriter` writes, on both sides. A difference, or a missing file, refuses with `CupChangedException`, and the
-    file keeps its bytes. Each command reads the cup at its start and passes that copy as `expected`, so the guard catches a
-    write from another process between the read and the save. Rejected: a plain `save` (it would replace an outside edit
-    without a word); a second guard type with its own comparison (the second mechanism ADR-0044 rules out).
+    that the rule cover the cups of this change "without a second mechanism". `CupStore` therefore has `load`, `create` and
+    `saveIfUnchanged(CupDefinition expected, CupDefinition next)`, and no plain save. `JsonCupStore` implements the guard by comparing
+    the stored file with `expected` on the canonical JSON that `CupDefinitionJsonWriter` writes, on both sides. A difference, or a
+    missing file, refuses with `CupChangedException`, and the file keeps its bytes. Each command reads the cup at its start and passes
+    that copy as `expected`, so the guard catches a write from another process between the read and the save. Rejected: a plain
+    `save` (it would replace an outside edit without a word); a second guard type with its own comparison (the second mechanism
+    ADR-0044 rules out).
+
+13. **The command logic is pure; the Minestom command is a thin wrapper (owner decision C9).** The port `CupCommandPort` (an
+    interface) and its class `CupCommandService` live in `net.elytrarace.voyager.setup.cupsetup`, with no Minestom or Adventure
+    type. The port takes a `BuilderRef` (the builder's UUID and name) and plain arguments, and returns a `CupReply`, a record of a
+    message key and its arguments. The service asks the `PermissionPolicy` port of `api.permission` for `voyager.setup.use` on each
+    subcommand except `unlock`, and for `voyager.setup.unlock` on `unlock`. `CupCommand` extends Minestom's `Command`. It converts the
+    sender and the arguments into the port's calls and renders each reply with `SetupMessages`.
+
+    **Placement deviates from C9 in one point.** C9 puts the wrapper in the root package `net.elytrarace.voyager.setup`. The rule
+    `SliceBoundaryRulesTest.r6_setupAdapterDoesNotUseMinestom` exempts only `net.elytrarace.voyager.setup.SetupServer` and the
+    `setup.inject..` package, so a Minestom class in the root package would be a new violation, which C9 forbids. The wrapper therefore
+    lives in `net.elytrarace.voyager.setup.inject`. That package is the setup server's composition root, which the rule's own comment
+    names as wiring. A nested class in `SetupServer` would not match the exemption either, because the exemption compares the full
+    name. Rejected: the wrapper in `SetupServer` (the composition root would grow a command body); a freeze-store entry (C9).
 
 **ADR-0045 (proposed): the setup server writes cups into its data directory, and the operator copies them to the game server**
 
@@ -132,7 +171,7 @@ Option 1. It repeats the path the maps already take, so the operator's copy step
 - Good: the same folder layout in the setup data directory for maps and cups.
 - Bad: an operator must copy each cup by hand. A publish command would remove the step, and it is later work.
 - Neutral: a cup copied before its maps are copied fails the game's cross-check at boot. The cup save check cannot see the game
-  server's folder, so the operator copies the maps first; `/cup info` shows which maps the setup server holds as loadable.
+  server's folder, so the operator copies the maps first; `/cup open` shows which maps the setup server holds as loadable.
 
 ### Confirmation
 
@@ -143,16 +182,20 @@ Option 1. It repeats the path the maps already take, so the operator's copy step
 
 | Type | Module | Package | Note |
 |---|---|---|---|
-| `CupStore` (port: `load`, `create`, `save`, `saveIfUnchanged`) | `voyager-api` | `net.elytrarace.voyager.api.cupsetup` | pure port, no I/O in the API |
+| `CupStore` (port: `load`, `create`, `saveIfUnchanged`) | `voyager-api` | `net.elytrarace.voyager.api.cupsetup` | pure port, no I/O in the API, no plain save |
 | `CupId` | `voyager-api` | `net.elytrarace.voyager.api.cupsetup` | value object, the map id's rule |
-| `CupNotFoundException`, `CupAlreadyExistsException`, `CupWriteFailedException`, `CupChangedException`, `CupMapNotLoadableException`, `InvalidCupIdException` | `voyager-api` | `net.elytrarace.voyager.api.cupsetup.exception` | `RuntimeException`, domain-named |
-| `JsonCupStore` (implements `CupStore`) | `voyager-platform` | `net.elytrarace.voyager.platform.catalog` | beside `JsonDraftStore`, same folder layout |
-| `CupDefinitionJsonWriter` | `voyager-platform` | `net.elytrarace.voyager.platform.catalog.writer` | streaming writer, no `notes` |
+| `CupNotFoundException`, `CupAlreadyExistsException`, `CupWriteFailedException`, `CupChangedException`, `CupMapNotLoadableException`, `CupAuthorsRefusedException`, `InvalidCupIdException` | `voyager-api` | `net.elytrarace.voyager.api.cupsetup.exception` | `RuntimeException`, domain-named |
+| `JsonCupStore` (implements `CupStore`) | `voyager-platform` | `net.elytrarace.voyager.platform.catalog` | beside `JsonDraftStore`, same folder layout; reads the stored `notes` at save |
+| `CupDefinitionJsonWriter` | `voyager-platform` | `net.elytrarace.voyager.platform.catalog.writer` | streaming writer, no `authors`, `notes` passed in verbatim |
 | `AtomicJsonFile` | `voyager-platform` | `net.elytrarace.voyager.platform.catalog` | extracted from `JsonDraftStore.save` |
 | `CupEditor` (pure: rename, mode, add, remove, move) | `voyager-setup` | `net.elytrarace.voyager.setup.cupsetup` | `@ApiStatus.Internal`, like `DraftEditor` |
-| `CupCommands` (the `/cup` root) | `voyager-setup` | `net.elytrarace.voyager.setup.adapter` | Minestom, like `SetupCommands` |
+| `CupCommandPort` (interface) and `CupCommandService` (pure class; holds each builder's open cup) | `voyager-setup` | `net.elytrarace.voyager.setup.cupsetup` | no Minestom or Adventure type; asks `PermissionPolicy` |
+| `BuilderRef`, `CupReply` (records) | `voyager-setup` | `net.elytrarace.voyager.setup.cupsetup` | the port's arguments and replies |
+| `CupCommand` (Minestom `Command` wrapper) | `voyager-setup` | `net.elytrarace.voyager.setup.inject` | converts senders and arguments; renders replies; outside r6 by the rule's own exemption |
+| `PermissionPolicy` (port) | `voyager-api` | `net.elytrarace.voyager.api.permission` | existing port; `voyager.setup.use` and `voyager.setup.unlock` |
+| `PermissionNode.VOYAGER_SETUP_UNLOCK` | `voyager-api` | `net.elytrarace.voyager.api.permission` | added by change 5, used here |
 | `MapName` (name parser of change 7) | `voyager-setup` | `net.elytrarace.voyager.setup.mapsetup` | reused by the cup name command |
-| `EditClaims` (change 5's registry, key `cup:<id>`) | `voyager-setup` | `net.elytrarace.voyager.setup.mapsetup` | reused only when open question 1 is answered with option A |
+| `EditClaims` (change 5's registry, key `cup:<id>`) | `voyager-setup` | `net.elytrarace.voyager.setup.mapsetup` | reused; change 5 must be merged first |
 
 Dependency direction: `voyager-setup` depends on `voyager-api` and `voyager-platform`, as now; `voyager-platform` depends on
 `voyager-api`; `voyager-api` depends on nothing here. The cup store reads the maps through the platform's catalog classes, and
@@ -160,53 +203,36 @@ the setup slice sees only the port.
 
 ### Fitness rules
 
-- Covered by existing rules: `ApiPurityTest` (the port, `CupId` and the exceptions have no I/O and no platform type);
-  `NullabilityConventionTest` (the new `api.cupsetup` packages need `package-info.java`); `DesignRuleTest` (exceptions are
-  runtime exceptions with domain names); `PermissionBoundaryTest.commandsAskOnlyThePolicy` (the `/cup` subcommands ask the policy
-  and nothing else).
-- **Frozen debt, stated:** `r6_setupAdapterDoesNotUseMinestom` (`SliceBoundaryRulesTest`) is a frozen rule. `SetupCommands` is
-  already one of its recorded violations. `CupCommands` is a new Minestom `Command` in `setup.adapter`, so it is a new violation,
-  and the freeze store needs an entry for it. The code pull request adds that entry and names it in the pull request, so the
-  owner sees the debt being added. Rejected: putting the `/cup` root in `SetupServer` (the composition root would grow a
-  command body).
+- Covered by existing rules: `ApiPurityTest` (the port, `CupId`, the records and the exceptions have no I/O and no platform type);
+  `NullabilityConventionTest` (the new `api.cupsetup` and `setup.cupsetup` packages need `package-info.java`); `DesignRuleTest`
+  (exceptions are runtime exceptions with domain names); `PermissionBoundaryTest.commandsAskOnlyThePolicy` (the service asks the
+  `PermissionPolicy` port and imports no LuckPerms type).
+- `SliceBoundaryRulesTest.r6_setupAdapterDoesNotUseMinestom` is frozen and stays clean without a change to it. `CupCommandService`
+  and `CupEditor` import no Minestom type; `CupCommand` sits in `setup.inject`, which the rule exempts. No freeze-store entry is added,
+  and the store under `voyager/fitness/src/test/resources/archunit_store` is not changed by this pull request.
 - Not covered: `r5_mapsetupContractsLiveInPlatformMapsetup` names `api.mapsetup..` only. `JsonCupStore` depends on `api.cupsetup`,
-  so the rule does not reach it, and `JsonDraftStore` sits in `platform.catalog` for the same reason. No new rule is proposed; if
-  a freeze store needs an entry, the apply stops and reports, as `add-catalogue-keys-and-authors` requires.
+  so the rule does not reach it, and `JsonDraftStore` sits in `platform.catalog` for the same reason. No new rule is proposed.
 
 ## Testing
 
 Every test follows F.I.R.S.T.:
 
-- **Fast and Repeatable:** the store tests write into `@TempDir` and never read the shipped `cups/` or `maps/`; the maps the
-  tests need are written by the test. The editor tests are plain JUnit with no I/O.
-- **Independent:** each test builds its own `JsonCupStore` and `CupCommands` over a fresh `@TempDir` data directory. No static
-  state, no shared catalogue.
-- **Self-validating:** assertions name the file bytes, the reply, or the exception's keys, never a log line.
+- **Fast and Repeatable:** the store tests write into `@TempDir` and never read the shipped `cups/` or `maps/`; the maps and cups the
+  tests need are written by the test. The editor and service tests are plain JUnit with no I/O beyond a `@TempDir` store.
+- **Independent:** each test builds its own `JsonCupStore`, `EditClaims` and `CupCommandService` over a fresh `@TempDir` data directory.
+  No static state, no shared catalogue.
+- **Self-validating:** assertions name the file bytes, the reply key, or the exception's keys, never a log line.
 - **Timely:** each behaviour starts with a failing test (Red/Green TDD).
-- **Pyramid:** `CupEditorTest` and `CupIdTest` are unit tests; `JsonCupStoreTest` is the adapter test; `CupCommandsTest` drives
-  the commands like `SetupCommandsTest` does; `SetupPermissionTest` covers each `/cup` subcommand.
-- The save guard is tested as change 5 tests its draft guard: two `JsonCupStore` instances over one `@TempDir` play two
-  setup servers, and the second save is refused with the file keeping the first writer's bytes.
-- Tests named in `tasks.md` cover: a round trip through the game's cup adapter; a cup naming a draft map refused; move and
-  remove renumber; the last map not removable; the guard refusal.
+- **Pyramid:** `CupEditorTest` and `CupIdTest` are unit tests; `JsonCupStoreTest` is the adapter test; `CupCommandServiceTest` covers the
+  claims and the replies; `SetupPermissionTest` covers each `/cup` subcommand through the wrapper.
+- The save guard is tested as change 5 tests its draft guard: two `JsonCupStore` instances over one `@TempDir` play two setup servers,
+  and the second save is refused with the file keeping the first writer's bytes.
+- Tests named in `tasks.md` cover: a round trip through the game's cup adapter; a cup naming a draft map refused; move and remove
+  renumber; the last map not removable; the guard refusal; the authors refusal; the notes kept across a save; the claim refused and
+  released by open, by disconnect and by unlock; and the edit refused without a claim.
 
 ## Open questions
 
-Each question is for the owner. The recommendation is the option in the decision text above, or the one stated here.
-
-1. **Claim on a cup (decision 10).** The brief wants a cup id held in the claim registry while it is open. Option A (recommended):
-   add `/cup open <id>` and `/cup close`, with the same claim semantics as `/map open` and `/map close`, so the claim requirement
-   takes effect. Option B: keep per-command edits and drop the claim requirement. Pro of A: the registry is used as the brief
-   intends. Con of A: two more commands to document and gate. Option A also needs `BuilderSessions` (change 5's class, which
-   owns the claim lifecycle) to hold a builder's open cup beside the open map, so that a disconnect releases both; that change
-   to change 5's design is part of the owner's decision.
-2. **Notes of the shipped cups (decision 9).** Option A (recommended): accept the loss of `notes` in a setup save, and keep the
-   notes of shipped cups in version control, editing them by hand. Option B: carry `notes` through `CupDefinition`, an API change
-   that grows this change. Pro of A: no API change. Con of A: an edit made in the setup server drops the notes until the owner
-   restores them.
-3. **Undo for cups.** Option A (recommended): none in the first version; each command saves. Option B: a history as for maps in
-   `undo-draft-edits`. Pro of A: smaller. Con of A: a mistyped position needs a second command to fix.
-4. **Authors on a cup.** Option A (recommended): a later change adds `/cup author`, as `map-name-and-authors` does for maps. Option B:
-   include it now. Pro of A: the cup commands ship first.
-5. **A map twice in one cup.** Option A (recommended): allowed, because `CupDefinition` allows it. Option B: refused. Pro of A: a
-   rotation may play one map twice on purpose. Con of A: the statistics count both plays.
+1. **A map twice in one cup.** Recommendation: allowed, because `CupDefinition` allows it. Option B: refused. Pro of allowing it: a
+   rotation may play one map twice on purpose. Con: the statistics count both plays. The answer changes only the editor's check
+   in `CupEditor`, and no other part of the design.
