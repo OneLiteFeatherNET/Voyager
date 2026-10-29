@@ -15,6 +15,8 @@ import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.CupScore;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.elytrarace.voyager.race.scoring.MedalCountdown;
+import net.elytrarace.voyager.race.standing.MapStanding;
+import net.elytrarace.voyager.race.standing.PersonalBestComparison;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -84,13 +87,20 @@ public final class CupAnnouncer {
     }
 
     /**
-     * A map's result, to one racer: a title they can read now that they have landed, and a chat line
-     * that is still there when the next map starts.
+     * A map's result, to one racer: a title they can read now that they have landed, and two chat lines that are still
+     * there when the next map starts. The first is the points breakdown; the second, for a finisher, is the place line:
+     * the place out of every racer who started, the gap to the racer they are chasing, and the personal best clause when
+     * one is given.
      *
      * <p>The title region is off limits for the whole race — it is exactly where the next ring
      * appears — which is why it is finally worth something here.
+     *
+     * @param standing the map's standing, with every racer who started it
+     * @param names the name a racer is shown under in the place line, by id
+     * @param best the racer's comparison with their stored best, or empty when no clause is shown
      */
-    public void announceMapScore(Player racer, MapDefinition map, @Nullable MapScore score, int ringsPassed) {
+    public void announceMapScore(Player racer, MapDefinition map, @Nullable MapScore score, int ringsPassed,
+            MapStanding standing, Function<UUID, Component> names, Optional<PersonalBestComparison> best) {
         if (score == null) {
             return;
         }
@@ -103,7 +113,62 @@ public final class CupAnnouncer {
         // The breakdown is in chat only (UX-1): the title and the subtitle carry the medal and the next goal.
         racer.sendMessage(Messages.mapResult(nameOf(map), score.ringPoints(), score.medalPoints(),
                 score.medal(), score.placementBonus(), score.total()));
+        Optional<Component> place = placeLine(racer.getUuid(), standing, names, best);
+        if (place.isPresent()) {
+            racer.sendMessage(place.get());
+        }
         RaceFeedback.mapResult(racer, score.medal(), nextGoalSubtitle(map, score));
+    }
+
+    /**
+     * The place line of one finisher: their place out of every racer who started the map, the gap to the racer they are
+     * measured against, and the personal best clause when one is given.
+     *
+     * <p>A computer racer has no line, because it has no client. A racer who did not finish has none either, since the
+     * did-not-finish line is their only line. A racer alone on the map is first of one, and no other racer is named.
+     *
+     * @param racer the racer the line is for
+     * @param standing the map's standing
+     * @param names the name of each racer the line names, by id
+     * @param best the personal best clause, or empty when statistics are off or the cup is not ranked
+     * @return the line, or empty when the racer has no place line
+     */
+    static Optional<Component> placeLine(UUID racer, MapStanding standing, Function<UUID, Component> names,
+            Optional<PersonalBestComparison> best) {
+        boolean computer = standing.entries().stream()
+                .anyMatch(entry -> entry.racer().equals(racer) && entry.computer());
+        if (computer) {
+            return Optional.empty();
+        }
+        Optional<MapStanding.Place> placed = standing.placeOf(racer);
+        if (placed.isEmpty()) {
+            return Optional.empty();
+        }
+        MapStanding.Place place = placed.get();
+        Component line;
+        if (place.rival().isEmpty() || place.gap().isEmpty()) {
+            line = Messages.placeAlone(place.place(), place.of());
+        } else if (place.rivalIsAhead()) {
+            line = Messages.placeBehind(place.place(), place.of(), place.gap().get(),
+                    names.apply(place.rival().get()));
+        } else {
+            line = Messages.placeAhead(place.place(), place.of(), place.gap().get(),
+                    names.apply(place.rival().get()));
+        }
+        if (best.isPresent()) {
+            line = line.append(personalBestClause(best.get()));
+        }
+        return Optional.of(line);
+    }
+
+    /** The clause a place line ends with, for how the finish stands against the stored best. */
+    private static Component personalBestClause(PersonalBestComparison comparison) {
+        return switch (comparison.outcome()) {
+            case NEW_BEST -> Messages.personalBestNew(comparison.delta());
+            case SLOWER -> Messages.personalBestSlower(comparison.delta());
+            case EQUAL -> Messages.personalBestEqual();
+            case FIRST_RUN -> Messages.personalBestFirst();
+        };
     }
 
     /**

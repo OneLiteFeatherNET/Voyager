@@ -159,6 +159,30 @@ public final class RaceHud {
         racer.sendActionBar(Component.empty());
     }
 
+    /**
+     * Shows what a racer waits for between two maps on the boss bar: the count to the next GO, or the racers still on the
+     * previous map. The bar is the same one the race uses, so the race takes it over at GO.
+     *
+     * @param racer the racer who waits
+     * @param wait the title and the progress the wait shows
+     */
+    public void showWait(Player racer, WaitBar wait) {
+        apply(racer, wait.title(), wait.progress());
+    }
+
+    /**
+     * Takes the wait's boss bar down at the next map's GO, without the action bar. The race shows its own bar from its
+     * first refresh, so the racer is never without one for longer than that.
+     *
+     * @param racer the racer whose wait is over
+     */
+    public void endWait(Player racer) {
+        BossBar bar = bars.remove(racer.getUuid());
+        if (bar != null) {
+            racer.hideBossBar(bar);
+        }
+    }
+
     /** Drops what was held for a player who disconnected. */
     public void forget(UUID playerId) {
         bars.remove(playerId);
@@ -204,7 +228,10 @@ public final class RaceHud {
         Component title = Messages.bossBarTitle(
                 state.mapNumber(), state.mapCount(), DisplayName.component(state.mapKey(), state.mapName()),
                 state.outlook().tier(), state.outlook().untilLost());
-        float progress = fill(state.ringsPassed(), state.ringCount());
+        apply(racer, title, fill(state.ringsPassed(), state.ringCount()));
+    }
+
+    private void apply(Player racer, Component title, float progress) {
         BossBar.Color colour = Palette.BOSS_BAR_COLOUR;
         BossBar bar = bars.get(racer.getUuid());
         if (bar == null) {
