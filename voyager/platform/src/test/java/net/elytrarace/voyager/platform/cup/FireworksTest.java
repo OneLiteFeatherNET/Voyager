@@ -41,7 +41,8 @@ class FireworksTest {
     void aBurstLeavesNoRocketBehindOnceItHasDetonated(Env env) {
         Instance lobby = env.createFlatInstance();
 
-        Fireworks.burst(lobby, new Pos(0.5, 42.0, 0.5), Palette.SILVER);
+        Fireworks.burst(lobby, new Pos(0.5, 42.0, 0.5), Palette.SILVER).join();
+        env.tick();
 
         assertThat(lobby.getEntities().stream()
                 .filter(entity -> entity.getEntityType() == EntityType.FIREWORK_ROCKET)
