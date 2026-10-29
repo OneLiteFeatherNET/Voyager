@@ -144,7 +144,7 @@ class CatalogValidationTest {
     @Test
     void reportsASchemaVersionAboveTheSupportedMaximumAsAProblemNamingTheFile() throws IOException {
         String future = CatalogFixtures.MAP.formatted("future", "ElytraraceFuture")
-                .replace("\"name\"", "\"schemaVersion\": 3,\n  \"name\"");
+                .replace("\"name\"", "\"schemaVersion\": 4,\n  \"name\"");
         write(data().resolve("maps"), "future.json", future);
         map(data().resolve("maps"), "ok.json", "ok", "ElytraraceOk");
         cup(data().resolve("cups"), "c.json", "c", "RACE", "ok");
@@ -155,7 +155,7 @@ class CatalogValidationTest {
         assertThat(problems).singleElement().satisfies(problem -> {
             assertThat(problem.source()).isEqualTo(data().resolve("maps/future.json").toAbsolutePath().toString());
             assertThat(problem.severity()).isEqualTo(Severity.ERROR);
-            assertThat(problem.message()).contains("schemaVersion 3").contains("up to schemaVersion 2");
+            assertThat(problem.message()).contains("schemaVersion 4").contains("up to schemaVersion 3");
         });
     }
 

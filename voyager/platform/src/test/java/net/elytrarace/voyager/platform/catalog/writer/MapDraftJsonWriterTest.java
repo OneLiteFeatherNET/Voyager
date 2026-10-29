@@ -6,7 +6,11 @@ import com.google.gson.JsonParser;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.race.Author;
+import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingShape;
+import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.platform.catalog.DraftFixtures;
 import org.junit.jupiter.api.Test;
@@ -102,6 +106,42 @@ class MapDraftJsonWriterTest {
         MapDraft base = DraftFixtures.complete(ID);
         return new MapDraft(base.id(), base.world(), base.spawn(), base.rings(), base.referenceTimeSeconds(),
                 boost, base.guideLine(), effects);
+    }
+
+    @Test
+    void aDraftWithAnOvalIsWrittenInVersionThreeWithTheOvalFieldsAfterTheType() {
+        JsonObject json = parse(MapDraftJsonWriter.toJson(withRings(oval())));
+
+        assertThat(json.get("schemaVersion").getAsInt()).isEqualTo(3);
+        JsonObject ring = json.getAsJsonArray("rings").get(0).getAsJsonObject();
+        assertThat(ring.keySet()).containsExactly(
+                "index", "center", "normal", "radius", "points", "type", "radiusMinor", "majorAxis");
+        assertThat(ring.get("radius").getAsDouble()).isEqualTo(6.0);
+        assertThat(ring.get("radiusMinor").getAsDouble()).isEqualTo(3.0);
+        assertThat(ring.getAsJsonObject("majorAxis").get("x").getAsDouble()).isEqualTo(1.0);
+    }
+
+    @Test
+    void aDraftOfCirclesIsWrittenInVersionTwoWithNoOvalField() {
+        JsonObject json = parse(MapDraftJsonWriter.toJson(DraftFixtures.complete(ID)));
+
+        assertThat(json.get("schemaVersion").getAsInt()).isEqualTo(2);
+        JsonObject ring = json.getAsJsonArray("rings").get(0).getAsJsonObject();
+        assertThat(ring.has("radiusMinor")).isFalse();
+        assertThat(ring.has("majorAxis")).isFalse();
+    }
+
+    private static Ring oval() {
+        Vec3 up = new Vec3(0.0, 1.0, 0.0);
+        return new Ring(0, new Vec3(10.0, 70.0, -20.0), up,
+                RingShape.of(6.0, 3.0, new Vec3(1.0, 0.0, 0.0), up), 10, RingType.STANDARD);
+    }
+
+    /** The complete draft with its rings replaced; everything else is the fixture's. */
+    private static MapDraft withRings(Ring ring) {
+        MapDraft base = DraftFixtures.complete(ID);
+        return new MapDraft(base.id(), base.world(), base.spawn(), List.of(ring), base.referenceTimeSeconds(),
+                base.boostConfig(), base.guideLine(), base.ringEffects());
     }
 
     private static JsonObject parse(String json) {

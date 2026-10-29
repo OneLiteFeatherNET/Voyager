@@ -14,8 +14,8 @@
     "schemaVersion": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 2,
-      "description": "The version of the file format this file is written in. Absent means 1. This schema describes version 2, the version that states a key; version 1 files are described by cup-v1.schema.json."
+      "maximum": 3,
+      "description": "The version of the file format this file is written in. Absent means 1. This schema describes version 3, the version that states an oval ring; versions 1 and 2 are described by cup-v1.schema.json and cup-v2.schema.json."
     },
     "key": {
       "type": "string",

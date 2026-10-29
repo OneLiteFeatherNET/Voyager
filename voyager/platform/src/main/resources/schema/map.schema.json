@@ -14,8 +14,8 @@
     "schemaVersion": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 2,
-      "description": "The version of the file format this file is written in. Absent means 1. This schema describes version 2, the version that states a key; version 1 files are described by map-v1.schema.json."
+      "maximum": 3,
+      "description": "The version of the file format this file is written in. Absent means 1. This schema describes version 3, the version that states an oval ring; versions 1 and 2 are described by map-v1.schema.json and map-v2.schema.json."
     },
     "key": {
       "type": "string",
@@ -103,16 +103,33 @@
         },
         "radius": {
           "type": "number",
-          "exclusiveMinimum": 0
+          "minimum": 0.5,
+          "maximum": 32,
+          "description": "The radius of a circle, in blocks, or the semi-major radius of an oval. From 0.5 to 32."
+        },
+        "radiusMinor": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 32,
+          "description": "Optional. The semi-minor radius of an oval, in blocks, from 0.5 to 32 and not greater than radius. Stated together with majorAxis; equal to radius, the ring is a circle."
+        },
+        "majorAxis": {
+          "$ref": "#/$defs/vec3",
+          "description": "Optional. The unit vector of the oval's major axis, in the ring's plane. Stated together with radiusMinor."
         },
         "points": {
           "type": "integer",
           "minimum": 0,
-          "description": "The score for passing this ring."
+          "maximum": 100,
+          "description": "The score for passing this ring, from 0 to 100."
         },
         "type": {
           "enum": ["STANDARD", "BOOST", "SLOW", "CHECKPOINT"]
         }
+      },
+      "dependentRequired": {
+        "radiusMinor": ["majorAxis"],
+        "majorAxis": ["radiusMinor"]
       }
     },
     "boostConfig": {

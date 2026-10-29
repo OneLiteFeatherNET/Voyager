@@ -65,7 +65,7 @@ public final class MapDefinitionAdapter implements JsonDeserializer<MapDefinitio
         JsonArray ringElements = JsonFields.array(json, "rings", what);
         List<Ring> rings = new ArrayList<>();
         for (int position = 0; position < ringElements.size(); position++) {
-            rings.add(RingAdapter.read(ringElements.get(position), position));
+            rings.add(RingAdapter.read(ringElements.get(position), position, version, what));
         }
 
         double seconds = JsonFields.number(json, "referenceTimeSeconds", what);
