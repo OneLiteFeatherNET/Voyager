@@ -5,7 +5,7 @@ that changes no behaviour. Each behaviour gets a failing test (Red) before its p
 after `undo-draft-edits` (change 4) and `keep-draft-metadata-on-edit` (change 6) are merged, and the oval commands (`oval`, the
 `circle` of an oval, `tilt`, and the oval preview) start after `oval-ring-model` (change 2) is merged. The circle-only commands
 (`type`, `points`, and `radius` on a circle) may land first, as a pull request under the same title, because they need no oval
-model; the brief allows this and the owner decides it (`design.md`, open question 5). Every test follows F.I.R.S.T.: plain JUnit for `RingEdits` and
+model; the brief allows this and the owner decides it (`design.md`, open question 4). Every test follows F.I.R.S.T.: plain JUnit for `RingEdits` and
 `RingOrientation`, a fresh `Env` per Minestom test, `@TempDir` for files, fixed fixtures, no sleeps, no system-time reads, no
 shared static state. The open questions in `design.md` are answered by the owner before section 2 starts. Task checkboxes are
 ticked in the follow-up pull request, never in the code pull request.

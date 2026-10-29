@@ -66,9 +66,9 @@ Non-goals: see `proposal.md`. In short: no move, no normal change, no insert or 
    A value outside the bounds of decision 4 is refused before any ring is built, with `InvalidRingEditException`
    (`api/mapsetup/exception`), whose factories name the field, the value and the bound.
 
-4. **Bounds (owner to confirm).** Radius and both axes lie between 0.5 and 32 blocks inclusive. The upper bound is the reach of
-   the picker, so a ring a builder can make is one the picker can reach from its own position. Points lie between 0 and 100
-   inclusive. These are the values the brief proposes, and the open questions carry them.
+4. **Bounds.** Radius and both oval axes lie between 0.5 and 32 blocks inclusive, for a circle and for an oval. The upper bound is
+   the reach of the picker, so a ring a builder can make is one the picker can reach from its own position. Points are the
+   points of a ring and lie between 0 and 100 inclusive. A value outside these bounds is refused before any ring is built.
 
 5. **The default major axis is fixed by one rule.** `RingEdits.defaultMajorAxis(normal)` projects the world's up axis
    `Y = (0, 1, 0)` into the ring's plane: `Y - (Y · n) n`, normalised. When that projection has length below `1e-9`, which is
@@ -88,7 +88,7 @@ Non-goals: see `proposal.md`. In short: no move, no normal change, no insert or 
    axis lies along the major axis and its Z axis along the normal. Circles keep `fromNormal`, so every circle preview is drawn
    as before. `RingOrientation.discOffset` gains a two-axis overload `discOffset(q, a, b, thickness)`, which the one-radius
    form calls with `a = b = radius`, so a circle's offset is unchanged. `RingPreviews` scales an oval to `2a x 2b x 0.05`.
-   The block is a rectangle, not the ellipse; open question 2 asks whether that is acceptable.
+   The block is a rectangle, not the ellipse; open question 1 asks whether that is acceptable.
 
 8. **Every edit goes through `MapSession.commit`.** A command that changes a ring calls `commit` with the new draft, so the
    save comes first, the previews are shown, and `undo-draft-edits` records the previous draft. A command that changes nothing
@@ -97,10 +97,11 @@ Non-goals: see `proposal.md`. In short: no move, no normal change, no insert or 
 9. **The ring commands and the wand share the gate.** Each `/map ring` subcommand runs through `SetupCommands.gated`, so a builder
    without `voyager.setup.use` changes nothing, as for every other subcommand (`SetupCommands.java:85-91`).
 
-10. **An oval in a draft is game-loadable only when the game server reads version 3.** A draft with an oval is written as
-    version 3 by the writer of `oval-ring-model`. A game server built before that change refuses the file. This change adds no
-    check of its own: the setup server writes what the builder made, and the deployment order is an operator step recorded in
-    `oval-ring-model`.
+10. **The file form of an oval.** An oval is saved with the optional ring fields `radiusMinor` and `majorAxis` of
+    `oval-ring-model`. Only a draft that holds an oval is written as schemaVersion 3; a draft of circles stays at version 2.
+    A server that reads only up to version 2 refuses a version 3 file, and a version 2 file that states an oval field is
+    refused. This change adds no check of its own: the setup server writes what the builder made. The deployment order (game
+    servers first) is an operator step recorded in `oval-ring-model`.
 
 ## Dependency direction
 
@@ -135,24 +136,20 @@ Every test follows F.I.R.S.T.
 
 ## Open questions
 
-1. **Bounds.** Owner to confirm the radius and axis range 0.5 to 32 blocks and the points range 0 to 100. **Recommendation: as
-   written.** The upper radius is the picker's reach, so a builder cannot make a ring that is larger than the reach that would
-   select it.
-
-2. **Preview of an oval.** A block display is a rectangle of `2a x 2b`, which contains the ellipse and also its four corners,
+1. **Preview of an oval.** A block display is a rectangle of `2a x 2b`, which contains the ellipse and also its four corners,
    so a builder sees a larger area than the racer must fly through. Options: (a) the bounding rectangle, as the brief decided;
    (b) an outline of thin block displays along the rim, which shows the true shape at a cost of several entities per oval.
    **Recommendation: (a) for this change.** The corners are outside the collision area, and the rectangle is only a visual aid.
    If builders misjudge the short axis, option (b) is a follow-up. Owner decision.
 
-3. **The name of the turn command.** The brief fixes `/map ring tilt`. Options: (a) keep `tilt`, and say "turn" in the messages;
+2. **The name of the turn command.** The brief fixes `/map ring tilt`. Options: (a) keep `tilt`, and say "turn" in the messages;
    (b) rename it to `turn`. **Recommendation: (a),** because the brief names the command, and the messages remove the
    confusion with a tilted ring. Owner decision.
 
-4. **Remembering the last type and size.** The brief lists it. **Recommendation: no.** A command states its value, so the
+3. **Remembering the last type and size.** The brief lists it. **Recommendation: no.** A command states its value, so the
    builder never edits a ring with a value the builder did not type. Owner decision.
 
-5. **Landing the circle-only commands before change 2.** The brief allows `type`, `points` and `radius` on a circle to land
+4. **Landing the circle-only commands before change 2.** The brief allows `type`, `points` and `radius` on a circle to land
    after `undo-draft-edits`, before `oval-ring-model`, because they need only the circle that exists today. Options: (a) one
    pull request after change 2, as the tasks are written; (b) a first pull request with the circle-only commands, and a second
    with the oval commands, the oval preview and the turn. **Recommendation: (b),** because the builder gets the type command

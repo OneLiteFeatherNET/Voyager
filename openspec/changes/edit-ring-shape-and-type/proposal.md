@@ -33,8 +33,8 @@ This proposal uses two terms that must not be confused:
 - Every command targets the ring the look ray crosses, nearest first, within 32 blocks, as the wand's removal does. No ring in
   reach changes nothing and says so.
 - Every command saves before it replies, and each change is undoable with `/map undo` (`undo-draft-edits`).
-- Bounds (owner to confirm): radius and both axes between 0.5 and 32 blocks, the minor axis not greater than the major axis,
-  points from 0 to 100.
+- Bounds: radius and both oval axes between 0.5 and 32 blocks, the minor axis not greater than the major axis, points from
+  0 to 100.
 - A new oval's major axis is the projection of the world's up axis into the ring's plane, or world X when the ring lies flat (its
   normal is parallel to Y). An existing oval keeps its major axis when it is resized.
 - The ring preview draws an oval as a block of its two axes, turned to its major axis. Circle previews are drawn as before.
@@ -72,8 +72,9 @@ This proposal uses two terms that must not be confused:
   disc (recorded in `docs/decisions/0018-pose-placement-authoring-model-for-setup.md`, and in the Setup section of
   `docs/superpowers/specs/2026-09-09-voyager-greenfield-design.md`) is amended for the shape by ADR-0043, which
   `oval-ring-model` proposes. This change depends on that decision being accepted. No D-number changes.
-- Operators: the game servers must run the build of `oval-ring-model` before a setup server saves an oval (see the design).
+- Operators: the game servers must run the build of `oval-ring-model` before a setup server saves an oval, because only a
+  draft that holds an oval is written as schema version 3 (see the design).
 - Order: the circle-only commands may land before `oval-ring-model`, as a first pull request; the oval commands wait for it
-  (`design.md`, open question 5).
+  (`design.md`, open question 4).
 - Docs: the ring section of `docs/guides/how-to-build-a-map-with-setup.md`.
 - Size: M.
