@@ -14,6 +14,7 @@ import net.elytrarace.voyager.platform.text.SetupMessages;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
 import net.elytrarace.voyager.setup.mapsetup.RingDefaults;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -56,7 +57,7 @@ class WandListenerTest {
     private Fixture fixture(Env env, DraftStore store) throws IOException {
         folders();
         Instance start = env.createFlatInstance();
-        BuilderSessions sessions = new BuilderSessions();
+        BuilderSessions sessions = new BuilderSessions(new EditClaims());
         env.process().command().register(
                 new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
         new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());
@@ -119,6 +120,7 @@ class WandListenerTest {
         Fixture fixture = fixture(env, store());
         fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10, 20);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
 
@@ -135,6 +137,7 @@ class WandListenerTest {
         Fixture fixture = fixture(env, store());
         fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10, 20);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
         fixture.lookDown();
@@ -152,6 +155,7 @@ class WandListenerTest {
         fixture.enter("map new skyfortress");
         fixture.run("map spawn");
         fixture.seedRings(0, 10, 20);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
         byte[] before = Files.readAllBytes(data.resolve("maps").resolve("skyfortress.json"));

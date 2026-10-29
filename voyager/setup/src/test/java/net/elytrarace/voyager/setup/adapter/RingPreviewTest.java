@@ -12,6 +12,7 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
 import net.elytrarace.voyager.setup.mapsetup.RingDefaults;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
@@ -52,6 +53,8 @@ class RingPreviewTest {
         fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10, 20);
 
+        fixture.run("map close");
+
         fixture.enter("map open skyfortress");
 
         fixture.awaitPreviews(3);
@@ -82,6 +85,7 @@ class RingPreviewTest {
         Fixture fixture = fixture(env);
         fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.awaitPreviews(2);
         Instance left = fixture.world();
@@ -96,6 +100,7 @@ class RingPreviewTest {
         Fixture fixture = fixture(env);
         fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.awaitPreviews(2);
         Instance world = fixture.world();
@@ -112,7 +117,7 @@ class RingPreviewTest {
         worlds = Files.createDirectories(root.resolve("worlds"));
         DraftStore store = new JsonDraftStore(data, worlds);
         Instance start = env.createFlatInstance();
-        BuilderSessions sessions = new BuilderSessions();
+        BuilderSessions sessions = new BuilderSessions(new EditClaims());
         env.process().command().register(
                 new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
         new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());

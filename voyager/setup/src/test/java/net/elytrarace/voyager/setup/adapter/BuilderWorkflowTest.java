@@ -4,6 +4,7 @@ import static net.elytrarace.voyager.setup.adapter.AllowEveryone.ALLOW_ALL;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -42,7 +43,7 @@ class BuilderWorkflowTest {
         Path worlds = Files.createDirectories(root.resolve("worlds"));
         JsonDraftStore store = new JsonDraftStore(data, worlds);
         Instance start = env.createFlatInstance();
-        BuilderSessions sessions = new BuilderSessions();
+        BuilderSessions sessions = new BuilderSessions(new EditClaims());
         env.process().command().register(
                 new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
         new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());
