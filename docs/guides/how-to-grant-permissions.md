@@ -30,6 +30,8 @@ access without LuckPerms, by operator level. The node list and the fallback rule
 3. Ask the player to run `/race reload`. The reload runs, and the player gets the report.
 
 Grant only the nodes a player needs. For example, a builder needs `voyager.setup.use` on the setup server, and nothing else.
+A builder who imports a finished world with `/map import` also needs `voyager.setup.import`. That node is separate on purpose:
+a builder with `voyager.setup.use` alone can place rings and cannot import.
 
 ## Grant a node to a group
 

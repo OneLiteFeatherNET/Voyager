@@ -73,6 +73,32 @@ A crash during a save can leave a copy of the draft in both folders. `/map open 
 both files. Keep the copy you want, delete the other file, and run `/map open <id>` again. The server does not choose
 between the two copies, because either choice can lose your last change.
 
+## Import a finished world
+
+When a course is already built in a finished world, you do not have to rebuild it block by block. Put the world folder
+in the import folder, which is `imports` under the setup server's working directory unless `VOYAGER_IMPORT_PATH` names
+another one, and run:
+
+```
+/map import <world-folder> <id>
+```
+
+The import needs `voyager.setup.use` and `voyager.setup.import` (see [how to grant permissions](how-to-grant-permissions.md)).
+The server copies the overworld region files into the map's own world folder, reads the spawn the world states, and checks
+each chunk. The copy is a snapshot: a change to the source folder afterwards does not reach the map.
+
+- **The layout.** The region files must be in `region/` at the world root, or in `dimensions/minecraft/overworld/region/`.
+  A folder with both, or with only `.mcr` files, is refused. The nether and the end are ignored, and the reply says so.
+- **The limits.** One import copies at most 256 MiB and 1024 region files by default. Set `VOYAGER_IMPORT_MAX_BYTES` and
+  `VOYAGER_IMPORT_MAX_REGIONS` to change them.
+- **The spawn.** The reply shows the block the world states and whether it came from the modern or the legacy keys. A spawn at
+  `x 0, z 0` looks like a default, so the reply asks you to check it with `/map spawn`. A world with no spawn gets none.
+- **Partial chunks.** A chunk whose generation did not finish is reported with the count and the percentage of chunks. The
+  import is never refused for them. Look at the holes before you place rings.
+- **A failed import** leaves neither a world folder nor a draft behind.
+
+After the reply, run `/map open <id>` to see the map, then place its rings with the wand.
+
 ## Run the game server with the map
 
 The game server reads its maps from the `maps/` folder of its data directory (`VOYAGER_DATA_PATH`, default `run/data`) and
