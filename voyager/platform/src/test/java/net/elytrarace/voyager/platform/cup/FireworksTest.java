@@ -19,13 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The firework verification of the pinned Minestom. A rocket entity can carry an explosion in its metadata, so the bursts are
- * rockets and not the particle fallback. The rocket is set off and removed in the same tick, so only its metadata is checked.
+ * rockets and not the particle fallback. The rocket is set off and removed on the tick after it spawns, so only its metadata is
+ * checked.
  */
 @EnvTest
 class FireworksTest {
 
     @Test
-    void aRocketCarriesAnExplosionOfTheGivenColour() {
+    void aRocketCarriesAnExplosionOfTheGivenColour(Env env) {
         Entity rocket = Fireworks.rocketFor(Palette.GOLD);
 
         ItemStack info = ((FireworkRocketMeta) rocket.getEntityMeta()).getFireworkInfo();
@@ -40,10 +41,25 @@ class FireworksTest {
     void aBurstLeavesNoRocketBehindOnceItHasDetonated(Env env) {
         Instance lobby = env.createFlatInstance();
 
-        Fireworks.burst(lobby, new Pos(0.5, 42.0, 0.5), Palette.SILVER);
+        Fireworks.burst(lobby, new Pos(0.5, 42.0, 0.5), Palette.SILVER).join();
+        env.tick();
 
         assertThat(lobby.getEntities().stream()
                 .filter(entity -> entity.getEntityType() == EntityType.FIREWORK_ROCKET)
                 .toList()).isEmpty();
+    }
+
+    @Test
+    void aBurstLeavesNoRocketBehindWhenItsChunkLoadsLater(Env env) {
+        Instance lobby = env.createFlatInstance();
+        Pos farAway = new Pos(1_000.5, 42.0, 1_000.5);
+        assertThat(lobby.getChunkAt(farAway)).as("the chunk must not be loaded yet").isNull();
+
+        Fireworks.burst(lobby, farAway, Palette.SILVER).join();
+        env.tick();
+
+        assertThat(lobby.getEntities().stream()
+                .filter(entity -> entity.getEntityType() == EntityType.FIREWORK_ROCKET)
+                .toList()).as("no rocket may stay behind once its chunk has loaded").isEmpty();
     }
 }
