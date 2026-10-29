@@ -3,12 +3,14 @@ package net.elytrarace.voyager.setup.mapsetup;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
+import net.elytrarace.voyager.api.race.Author;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -109,6 +111,55 @@ class DraftEditorTest {
 
         assertThat(draft.rings()).hasSize(2);
         assertThat(draft.spawn()).isNull();
+    }
+
+    @Test
+    void appendingARingKeepsTheDisplayNameAndTheAuthors() {
+        MapDraft named = withNameAndAuthors(withRings(1));
+
+        MapDraft appended = DraftEditor.withRingAppended(named, ring(1, 2));
+
+        assertThat(appended.displayName()).isEqualTo("Blue & Red");
+        assertThat(appended.authors()).isEqualTo(AUTHORS);
+    }
+
+    @Test
+    void removingARingKeepsTheDisplayNameAndTheAuthors() {
+        MapDraft named = withNameAndAuthors(withRings(3));
+
+        MapDraft removed = DraftEditor.withoutRing(named, 1);
+
+        assertThat(removed.displayName()).isEqualTo("Blue & Red");
+        assertThat(removed.authors()).isEqualTo(AUTHORS);
+    }
+
+    @Test
+    void settingTheSpawnKeepsTheDisplayNameAndTheAuthors() {
+        MapDraft named = withNameAndAuthors(withRings(1));
+
+        MapDraft placed = DraftEditor.withSpawn(named, new Vec3(109, -62, 54));
+
+        assertThat(placed.displayName()).isEqualTo("Blue & Red");
+        assertThat(placed.authors()).isEqualTo(AUTHORS);
+    }
+
+    @Test
+    void aDraftWithoutANameOrAuthorsStaysWithoutThemAfterAnAppend() {
+        MapDraft unnamed = withRings(1);
+
+        MapDraft appended = DraftEditor.withRingAppended(unnamed, ring(1, 2));
+
+        assertThat(appended.displayName()).isNull();
+        assertThat(appended.authors()).isEmpty();
+    }
+
+    private static final List<Author> AUTHORS = List.of(
+            new Author(UUID.fromString("05bf52c6-7bb0-4f13-8951-0e1fd803df35"), "TheMeinerLP"),
+            new Author(UUID.fromString("e1dff87a-1059-47f1-bc7d-533f072bf8c7"), "Seelenretterin"));
+
+    private static MapDraft withNameAndAuthors(MapDraft draft) {
+        return new MapDraft(draft.id(), draft.world(), draft.spawn(), draft.rings(), draft.referenceTimeSeconds(),
+                draft.boostConfig(), draft.guideLine(), draft.ringEffects(), "Blue & Red", AUTHORS);
     }
 
     private static MapDraft withRings(int count) {
