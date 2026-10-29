@@ -18,6 +18,7 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.adapter.BuilderSessions;
 import net.elytrarace.voyager.setup.adapter.ImportCommand;
 import net.elytrarace.voyager.setup.adapter.SetupCommands;
+import net.elytrarace.voyager.setup.adapter.SetupLobby;
 import net.elytrarace.voyager.setup.adapter.TerrainGuard;
 import net.elytrarace.voyager.setup.adapter.WandListener;
 import net.elytrarace.voyager.setup.config.ImportSettings;
@@ -72,6 +73,12 @@ public final class SetupBeans {
         return new MapInstances(instances, settings.worldsPath());
     }
 
+    /** The lobby a builder joins and returns to; its world is registered with the instance manager once. */
+    @Bean
+    SetupLobby setupLobby(InstanceManager instances) {
+        return new SetupLobby(instances);
+    }
+
     /** The one registry of edit claims; in memory only, so every start begins with no claim (ADR-0044). */
     @Bean
     EditClaims editClaims() {
@@ -85,9 +92,10 @@ public final class SetupBeans {
 
     @Bean
     SetupCommands setupCommands(DraftStore store, BuilderSessions sessions, MapInstances instances,
-            PermissionPolicy policy, ImportGuard guard, ImportCommand importCommand, @External SetupSettings settings) {
+            PermissionPolicy policy, ImportGuard guard, ImportCommand importCommand, SetupLobby lobby,
+            @External SetupSettings settings) {
         SetupCommands commands = new SetupCommands(new ImportGuardedDraftStore(store, guard), sessions,
-                settings.worldsPath(), instances, policy);
+                settings.worldsPath(), instances, policy, lobby);
         ImportSyntax.attach(commands, importCommand);
         return commands;
     }

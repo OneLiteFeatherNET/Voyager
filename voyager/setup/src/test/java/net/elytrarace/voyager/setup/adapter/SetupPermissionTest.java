@@ -51,7 +51,7 @@ class SetupPermissionTest {
         MapInstances instances = new MapInstances(env.process().instance(), worlds);
         PermissionPolicy refuseEveryone = (subject, node) -> false;
         env.process().command().register(
-                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances, refuseEveryone));
+                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances, refuseEveryone, new SetupLobby(env.process().instance())));
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
@@ -80,7 +80,7 @@ class SetupPermissionTest {
         BuilderSessions sessions = new BuilderSessions(claims);
         PermissionPolicy refuseEveryone = (subject, node) -> false;
         env.process().command().register(
-                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), refuseEveryone));
+                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), refuseEveryone, new SetupLobby(env.process().instance())));
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
 
@@ -140,7 +140,7 @@ class SetupPermissionTest {
         PermissionPolicy useForAlphaUnlockForAll = (subject, node) -> node.equals(unlock)
                 || (node.equals(use) && subject instanceof PermissionSubject.Player player && player.id().equals(alphaId));
         env.process().command().register(new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds,
-                new MapInstances(env.process().instance(), worlds), useForAlphaUnlockForAll));
+                new MapInstances(env.process().instance(), worlds), useForAlphaUnlockForAll, new SetupLobby(env.process().instance())));
         TestConnection alphaConnection = env.createConnection(new GameProfile(alphaId, "Alpha"));
         Player alpha = alphaConnection.connect(start, new Pos(0, 64, 0));
         TestConnection betaConnection =
@@ -179,7 +179,7 @@ class SetupPermissionTest {
         AtomicBoolean allowed = new AtomicBoolean(true);
         PermissionPolicy withdrawable = (subject, node) -> allowed.get();
         env.process().command().register(new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds,
-                new MapInstances(env.process().instance(), worlds), withdrawable));
+                new MapInstances(env.process().instance(), worlds), withdrawable, new SetupLobby(env.process().instance())));
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);

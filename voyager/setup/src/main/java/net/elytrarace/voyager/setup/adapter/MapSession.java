@@ -3,6 +3,7 @@ package net.elytrarace.voyager.setup.adapter;
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
+import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 
 /**
@@ -13,22 +14,29 @@ import net.minestom.server.instance.Instance;
  */
 public final class MapSession {
 
+    private final Player builder;
     private final DraftStore store;
     private final Instance instance;
     private final RingPreviews previews;
     private MapDraft draft;
 
     /**
+     * @param builder  the builder who holds the map; an unlock moves this player out of the world
      * @param store    the store the draft is saved through
      * @param draft    the draft as last saved
      * @param instance the world the builder stands in; the previews of the draft are shown in it at once
      */
-    public MapSession(DraftStore store, MapDraft draft, Instance instance) {
+    public MapSession(Player builder, DraftStore store, MapDraft draft, Instance instance) {
+        this.builder = builder;
         this.store = store;
         this.draft = draft;
         this.instance = instance;
         this.previews = new RingPreviews(instance);
         previews.show(draft.rings());
+    }
+
+    public Player builder() {
+        return builder;
     }
 
     public MapId id() {

@@ -54,7 +54,7 @@ class SetupCommandsTest {
         BuilderSessions sessions = new BuilderSessions(new EditClaims());
         MapInstances instances = new MapInstances(env.process().instance(), worlds);
         env.process().command().register(
-                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances, ALLOW_ALL));
+                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances, ALLOW_ALL, new SetupLobby(env.process().instance())));
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);

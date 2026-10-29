@@ -250,6 +250,48 @@ class MapClaimsTest {
         assertThat(data.resolve("maps")).doesNotExist();
     }
 
+    @Test
+    void closeTakesTheBuilderBackToTheLobby(Env env) throws IOException {
+        Fixture fixture = wire(env, ALLOW_ALL);
+        fixture.enter(fixture.alpha, "map new skyfortress");
+
+        fixture.run(fixture.alpha, "map close");
+
+        assertThat(fixture.alpha.player().getInstance()).isSameAs(fixture.lobby.instance());
+    }
+
+    @Test
+    void closeTakesTheSetupWandAway(Env env) throws IOException {
+        Fixture fixture = wire(env, ALLOW_ALL);
+        fixture.enter(fixture.alpha, "map new skyfortress");
+        assertThat(Wand.isHeldBy(fixture.alpha.player())).isTrue();
+
+        fixture.run(fixture.alpha, "map close");
+
+        assertThat(Wand.isHeldBy(fixture.alpha.player())).isFalse();
+    }
+
+    @Test
+    void unlockTakesTheHolderBackToTheLobby(Env env) throws IOException {
+        Fixture fixture = wire(env, unlockOnlyForBeta());
+        fixture.enter(fixture.alpha, "map new skyfortress");
+
+        fixture.run(fixture.beta, "map unlock skyfortress");
+
+        assertThat(fixture.alpha.player().getInstance()).isSameAs(fixture.lobby.instance());
+    }
+
+    @Test
+    void unlockTakesTheHoldersSetupWandAway(Env env) throws IOException {
+        Fixture fixture = wire(env, unlockOnlyForBeta());
+        fixture.enter(fixture.alpha, "map new skyfortress");
+        assertThat(Wand.isHeldBy(fixture.alpha.player())).isTrue();
+
+        fixture.run(fixture.beta, "map unlock skyfortress");
+
+        assertThat(Wand.isHeldBy(fixture.alpha.player())).isFalse();
+    }
+
     /** Both builders hold {@code voyager.setup.use}; only Beta holds {@code voyager.setup.unlock}. */
     private static PermissionPolicy unlockOnlyForBeta() {
         return (subject, node) -> node.equals(USE)
@@ -270,13 +312,14 @@ class MapClaimsTest {
         Instance start = env.createFlatInstance();
         EditClaims claims = new EditClaims();
         BuilderSessions sessions = new BuilderSessions(claims);
+        SetupLobby lobby = new SetupLobby(env.process().instance());
         env.process().command().register(
-                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), policy));
+                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), policy, lobby));
         new WandListener(sessions, policy).register(env.process().eventHandler());
         sessions.register(env.process().eventHandler());
         Builder alpha = builder(env, start, ALPHA, "Alpha");
         Builder beta = builder(env, start, BETA, "Beta");
-        return new Fixture(env, sessions, claims, alpha, beta);
+        return new Fixture(env, sessions, claims, lobby, alpha, beta);
     }
 
     private static Builder builder(Env env, Instance start, UUID id, String name) {
@@ -292,7 +335,8 @@ class MapClaimsTest {
     private record Builder(Player player, Collector<SystemChatPacket> chat) {
     }
 
-    private record Fixture(Env env, BuilderSessions sessions, EditClaims claims, Builder alpha, Builder beta) {
+    private record Fixture(Env env, BuilderSessions sessions, EditClaims claims, SetupLobby lobby, Builder alpha,
+            Builder beta) {
 
         void run(Builder builder, String command) {
             env.process().command().execute(builder.player(), command);

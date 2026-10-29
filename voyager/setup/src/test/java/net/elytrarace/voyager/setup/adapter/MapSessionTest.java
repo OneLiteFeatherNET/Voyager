@@ -7,6 +7,8 @@ import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.EnvTest;
@@ -38,7 +40,8 @@ class MapSessionTest {
         store.create(DraftEditor.skeleton(ID));
         MapDraft kept = store.load(ID);
         Instance world = env.createFlatInstance();
-        MapSession open = new MapSession(store, kept, world);
+        Player builder = env.createConnection().connect(world, new Pos(0, 64, 0));
+        MapSession open = new MapSession(builder, store, kept, world);
         otherServer.save(DraftEditor.withSpawn(kept, new Vec3(1, 64, 1)));
 
         assertThatThrownBy(() -> open.commit(DraftEditor.withSpawn(kept, new Vec3(2, 64, 2))))

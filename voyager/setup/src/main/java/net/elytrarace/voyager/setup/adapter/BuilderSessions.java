@@ -2,6 +2,7 @@ package net.elytrarace.voyager.setup.adapter;
 
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.setup.mapsetup.EditClaims;
+import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * The open map of each builder, and the claim that goes with it. One builder has one open map; opening another replaces
@@ -96,16 +98,18 @@ public final class BuilderSessions {
      * Releases the claim of a map whoever holds it, and ends the holder's session on that map. Only an unlock by a sender
      * with {@code voyager.setup.unlock} calls this.
      *
-     * @param map the map to unlock
+     * @param map     the map to unlock
+     * @param onEnded called with the holder's player after the holder's session on the map has ended
      * @return the holder that was released, or empty when no builder held the map
      */
-    public Optional<EditClaims.Holder> unlock(MapId map) {
+    public Optional<EditClaims.Holder> unlock(MapId map, Consumer<Player> onEnded) {
         Optional<EditClaims.Holder> released = claims.unlock(key(map));
         released.ifPresent(holder -> {
             MapSession session = sessions.get(holder.builder());
             if (session != null && session.id().equals(map)) {
                 sessions.remove(holder.builder());
                 session.close();
+                onEnded.accept(session.builder());
             }
         });
         return released;

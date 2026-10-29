@@ -54,6 +54,7 @@ public final class SetupCommands extends Command {
     private final Path worlds;
     private final MapInstances instances;
     private final PermissionPolicy policy;
+    private final SetupLobby lobby;
 
     /**
      * @param store     the draft store the commands save through
@@ -61,15 +62,17 @@ public final class SetupCommands extends Command {
      * @param worlds    the directory the world folders sit in
      * @param instances the loader of the map worlds
      * @param policy    answers whether a sender holds a node; every subcommand asks it for its own node
+     * @param lobby     where a builder goes when the builder has no map open any more
      */
     public SetupCommands(DraftStore store, BuilderSessions sessions, Path worlds, MapInstances instances,
-            PermissionPolicy policy) {
+            PermissionPolicy policy, SetupLobby lobby) {
         super("map");
         this.store = store;
         this.sessions = sessions;
         this.worlds = worlds;
         this.instances = instances;
         this.policy = policy;
+        this.lobby = lobby;
 
         ArgumentWord newId = ArgumentType.Word("id");
         addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE,
@@ -174,7 +177,17 @@ public final class SetupCommands extends Command {
         }
         MapId id = session.get().id();
         sessions.forget(builder.getUuid());
+        leave(builder);
         builder.sendMessage(SetupMessages.mapClosed(id.value()));
+    }
+
+    /**
+     * Moves a builder who no longer holds a map into the lobby and takes the setup wand away: the lobby is where a builder
+     * without a map waits, and the wand is useless there.
+     */
+    private void leave(Player builder) {
+        builder.setInstance(lobby.instance(), lobby.spawn());
+        Wand.takeFrom(builder);
     }
 
     /**
@@ -189,7 +202,7 @@ public final class SetupCommands extends Command {
             sender.sendMessage(SetupMessages.refused(exception.getMessage()));
             return;
         }
-        Optional<EditClaims.Holder> released = sessions.unlock(id);
+        Optional<EditClaims.Holder> released = sessions.unlock(id, this::leave);
         sender.sendMessage(released.isPresent()
                 ? SetupMessages.mapUnlocked(id.value(), released.get().name())
                 : SetupMessages.mapUnheld(id.value()));
@@ -258,7 +271,7 @@ public final class SetupCommands extends Command {
             builder.sendMessage(SetupMessages.claimHeld(draft.id().value(), holder.get().name()));
             return false;
         }
-        sessions.open(builder.getUuid(), new MapSession(store, draft, world));
+        sessions.open(builder.getUuid(), new MapSession(builder, store, draft, world));
         builder.setGameMode(GameMode.CREATIVE);
         Pos at = draft.spawn() == null ? START : Vectors.toMinestom(draft.spawn()).asPos();
         builder.setInstance(world, at);

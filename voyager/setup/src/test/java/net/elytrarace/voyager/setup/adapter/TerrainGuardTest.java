@@ -88,7 +88,7 @@ class TerrainGuardTest {
         Instance start = env.createFlatInstance();
         BuilderSessions sessions = new BuilderSessions(new EditClaims());
         env.process().command().register(new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds,
-                new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
+                new MapInstances(env.process().instance(), worlds), ALLOW_ALL, new SetupLobby(env.process().instance())));
         new TerrainGuard(sessions).register(env.process().eventHandler());
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));

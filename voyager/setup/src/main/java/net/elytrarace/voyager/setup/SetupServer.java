@@ -18,6 +18,7 @@ import net.elytrarace.voyager.api.config.ConfigProblem;
 import net.elytrarace.voyager.platform.text.SetupMessages;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.setup.adapter.BuilderSessions;
+import net.elytrarace.voyager.setup.adapter.SetupLobby;
 import net.elytrarace.voyager.setup.adapter.SetupCommands;
 import net.elytrarace.voyager.setup.adapter.TerrainGuard;
 import net.elytrarace.voyager.setup.adapter.WandListener;
@@ -156,6 +157,7 @@ public final class SetupServer {
         graph.get(WandListener.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(TerrainGuard.class).register(MinecraftServer.getGlobalEventHandler());
         graph.get(BuilderSessions.class).register(MinecraftServer.getGlobalEventHandler());
+        graph.get(SetupLobby.class).register(MinecraftServer.getGlobalEventHandler());
         // The one clean shutdown: the stdin line `stop` and /stop both end here, on a platform thread, never the reader's.
         ServiceShutdown shutdown = new ServiceShutdown(() -> {
             MinecraftServer.stopCleanly();

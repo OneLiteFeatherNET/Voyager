@@ -119,7 +119,7 @@ class RingPreviewTest {
         Instance start = env.createFlatInstance();
         BuilderSessions sessions = new BuilderSessions(new EditClaims());
         env.process().command().register(
-                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
+                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL, new SetupLobby(env.process().instance())));
         new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());
         sessions.register(env.process().eventHandler());
         TestConnection connection = env.createConnection();
