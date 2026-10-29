@@ -30,6 +30,14 @@ public final class RegionCensus {
     /** The highest data version this server reads (the greenfield design's setup section). */
     public static final int HIGHEST_DATA_VERSION = 4903;
 
+    /**
+     * The largest decoded chunk the census reads. Adventure's default reader stops well below a real chunk (about
+     * 160 KB in the team-build worlds), so the bound is set here, high enough for any chunk and low enough to stop a
+     * record that inflates without end.
+     */
+    private static final long MAX_CHUNK_BYTES = 16L * 1024 * 1024;
+    private static final BinaryTagIO.Reader CHUNK_READER = BinaryTagIO.reader(MAX_CHUNK_BYTES);
+
     private static final int SLOTS = 1024;
     private static final int SECTOR = 4096;
     private static final int HEADER = SLOTS * 4 * 2;
@@ -136,7 +144,7 @@ public final class RegionCensus {
             if (inflated == null) {
                 return null;
             }
-            return BinaryTagIO.reader().read(inflated, BinaryTagIO.Compression.NONE);
+            return CHUNK_READER.read(inflated, BinaryTagIO.Compression.NONE);
         } catch (IOException | RuntimeException exception) {
             return null;
         }
