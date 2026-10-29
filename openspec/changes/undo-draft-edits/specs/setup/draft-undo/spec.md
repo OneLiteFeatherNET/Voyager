@@ -44,8 +44,9 @@ WHEN a builder makes an edit after an undo, THE SYSTEM SHALL discard the undone 
 ### Requirement: Every edit is recorded, and opening a map is not an edit
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL record each placed ring, removed ring and set spawn as an edit, and each ring or map field edit added by a later
-change as an edit, through the same save path. THE SYSTEM SHALL NOT record the opening of a map or an undo or redo as an edit.
+THE SYSTEM SHALL record as an edit each placed ring, each removed ring, each set spawn, each ring field edit of
+`setup/ring-editing`, and each map field edit (name, authors and reference time) of `map-name-and-authors`, all through the same
+save path. THE SYSTEM SHALL NOT record the opening of a map, or an undo or a redo, as an edit.
 
 #### Scenario: Opening a map is not an edit
 - **WHEN** a builder opens a map and runs `/map undo`
@@ -54,6 +55,15 @@ change as an edit, through the same save path. THE SYSTEM SHALL NOT record the o
 #### Scenario: Undo is not recorded
 - **WHEN** a builder places a ring, runs `/map undo`, and runs `/map redo`
 - **THEN** a second `/map undo` restores the draft from before the placed ring, and not an intermediate state
+
+### Requirement: Cup changes are not undone
+**Priority:** MoSCoW Must
+
+THE SYSTEM SHALL keep cup changes out of the undo history, and SHALL NOT restore a cup on `/map undo` or `/map redo`.
+
+#### Scenario: Cup change is kept
+- **WHEN** a builder changes a cup and then runs `/map undo` in an open map
+- **THEN** the cup keeps its change, and the map's draft is restored to its state before the last map edit
 
 ### Requirement: The history holds at most 100 earlier drafts
 **Priority:** MoSCoW Should

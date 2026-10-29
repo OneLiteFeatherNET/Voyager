@@ -4,8 +4,7 @@ Commit types and scope: every behaviour ships as `feat(setup)`. `docs` for the h
 that changes no behaviour. Each behaviour gets a failing test (Red) before its production code (Green). Every test follows
 F.I.R.S.T.: plain JUnit for `DraftHistory`, a fresh `Env` per Minestom test, `@TempDir` for files, fixed fixtures built by
 `DraftEditor`, no sleeps, no system-time reads, no shared static state. The task of the fix `keep-draft-metadata-on-edit`
-(change 6) must be merged before task 1.8 is written. The open questions in `design.md` are answered by the owner before
-section 2 starts. Task checkboxes are ticked in the follow-up pull request, never in the code pull request.
+(change 6) must be merged before task 1.8 is written. `design.md` has no open question after the revision. Task checkboxes are ticked in the follow-up pull request, never in the code pull request.
 
 ## 1. Red: the history and the commands
 
@@ -33,7 +32,7 @@ section 2 starts. Task checkboxes are ticked in the follow-up pull request, neve
 
 ## 3. Docs
 
-- [ ] 3.1 Add a section "Undo and redo an edit" to `docs/guides/how-to-build-a-map-with-setup.md`, stating the limit of 100, that the history is lost when the builder closes the map or disconnects, and that the file on disk is always the last saved state (`docs`)
+- [ ] 3.1 Add a section "Undo and redo an edit" to `docs/guides/how-to-build-a-map-with-setup.md`, stating the limit of 100, that the history is lost when the builder closes the map, disconnects or the server restarts, that cups are not covered, and that the file on disk is always the last saved state (`docs`)
 
 ## 4. Verify
 

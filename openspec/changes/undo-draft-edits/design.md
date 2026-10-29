@@ -15,6 +15,10 @@ Removal renumbers the rings after the removed one (`DraftEditor.withoutRing`, li
 the inverse of that operation without also knowing the renumbering, so the history stores whole drafts, not inverse
 operations.
 
+Scope of the history: map edits only. Ring placement and removal, the set spawn, and once they land the ring field edits of
+`edit-ring-shape-and-type` and the map field edits of `map-name-and-authors` go through `MapSession.commit`. Cup changes do not,
+and a cup has no undo.
+
 ## Goals / Non-Goals
 
 Goals:
@@ -31,7 +35,8 @@ Non-goals:
 ## Decisions
 
 1. **The history stores whole drafts.** Each edit records the draft it replaces. Rejected: a command pattern with an inverse
-   for each edit. Every inverse would have to restore renumbered indices, the spawn and, after change 3, each ring field.
+   for each edit. Every inverse would have to restore renumbered indices, the spawn and, after `edit-ring-shape-and-type`
+   (change 5), each ring field.
    A snapshot is exact and needs no per-edit code.
 
 2. **`DraftHistory` is an immutable value in `setup/mapsetup`.** It holds the current draft, the earlier drafts (oldest
@@ -48,17 +53,17 @@ Non-goals:
    `DraftStore.save`; once it lands, `persist` calls `saveIfUnchanged(current, candidate.current())`, and no other line changes.
 
 4. **The limit is 100 earlier drafts.** A draft of thirty rings is a few kilobytes in memory, so the limit bounds the memory
-   of an open map to a small constant. When the earlier drafts exceed 100, the oldest is dropped. Owner to confirm (open
-   question 1).
+   of an open map to a small constant. When the earlier drafts exceed 100, the oldest is dropped.
 
 5. **A new edit clears the redo history.** After an undo, the redo history holds the drafts that were undone. A new edit
    starts a new branch, and a redo across it would restore a draft that no longer follows from the current one.
 
-6. **The history belongs to the open map.** It is dropped with the session: when the builder opens a different map
-   (`BuilderSessions.open` replaces the session), closes the map, disconnects (`BuilderSessions.forget`), or the server
-   restarts. Opening the same map again replaces the session and so drops the history, until `single-builder-map-claims`
-   lands; that change keeps the session for the holder (its decision 4). Open question 3 asks whether the history should
-   survive the close.
+6. **The history belongs to the open map and lives in memory only.** It is dropped with the session: when the builder opens a
+   different map (`BuilderSessions.open` replaces the session), closes the map, disconnects (`BuilderSessions.forget`), or the
+   server restarts. A history is not kept for a map after it is closed, and it survives no restart. It is never written to
+   disk, so the file on disk is always the last saved state; a second file format for history is not built. Opening the same
+   map again keeps the session and its history once `single-builder-map-claims` lands (its decision 4). Until then, opening
+   the same map replaces the session and drops the history.
 
 7. **A failed save keeps everything.** `persist` saves before it installs, so a failed save throws `DraftWriteFailedException`
    (or `DraftChangedException` after `single-builder-map-claims`) with the session's draft and history unchanged. The
@@ -99,11 +104,4 @@ Every test follows F.I.R.S.T.
 
 ## Open questions
 
-1. **The limit of 100 snapshots.** Owner to confirm. **Recommendation: 100.** It is a constant, and a smaller number would
-   lose the edits of one careful session.
-
-2. **Whether undo should survive a restart.** **Recommendation: no.** The file on disk is always the last saved state, so a
-   restart loses only the steps the builder could have taken back. Writing history to disk would be a second file format.
-
-3. **Whether the history of a map should survive the builder closing it.** **Recommendation: no.** A session is per open
-   map, as the setup server already treats it. Owner decision.
+None open after the revision.

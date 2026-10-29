@@ -15,9 +15,10 @@ edit. Undo keeps the previous drafts of the open map, so the builder can step ba
 - `/map undo` restores the draft before the last edit, saves it, and then replies.
 - `/map redo` re-applies the edit that the last undo took back.
 - A new edit clears the redo history.
-- An edit is a placed ring, a removed ring, or a set spawn. Once `edit-ring-shape-and-type` and `map-name-and-authors` land,
-  every ring and map field edit is an edit too, because each goes through the same commit.
-- The history holds 100 snapshots of the open map (owner to confirm). The oldest snapshot is dropped first.
+- An edit is a placed ring, a removed ring, or a set spawn. Once `edit-ring-shape-and-type` (change 5) lands, each ring field
+  edit is an edit too. Once `keep-draft-metadata-on-edit` (change 6) and `map-name-and-authors` (change 7) land, each map field
+  edit (name, authors, reference time) is an edit too. Each goes through the same commit. Cup changes are not edits.
+- The history holds 100 snapshots of the open map. The oldest snapshot is dropped first.
 - The history lives in memory. It is dropped when the builder opens another map, closes the map, disconnects, or the setup
   server restarts. Opening a map is not an edit.
 - An undo or redo whose save fails keeps the current draft and its history, and the builder is told that nothing changed.
@@ -36,7 +37,7 @@ None.
 ## Out of scope
 
 - Undo across maps, and undo after a restart. The history is memory only; the file on disk is the last saved state.
-- Undo for cups. The cup commands of `cup-authoring` decide that (open question there).
+- Undo for cups. Cups are not covered by undo; each cup command saves before it replies.
 - Undo of block edits in the setup world. `TerrainGuard` cancels them, so they never reach the draft.
 - A history browser, named checkpoints, or undo of a save that another process made.
 
