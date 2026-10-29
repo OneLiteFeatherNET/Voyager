@@ -26,9 +26,9 @@ class TickBoundaryTest {
 
     /** A call to {@code get} or {@code join} whose target is a {@link Future} or a {@link CompletableFuture}. */
     private static final DescribedPredicate<JavaCall<?>> WAITS_ON_A_FUTURE =
-            JavaCall.Predicates.target(HasName.Predicates.name("get")
-                            .or(HasName.Predicates.name("join"))
-                            .and(HasOwner.Predicates.With.owner(JavaClass.Predicates.assignableTo(Future.class)
+            JavaCall.Predicates.target(HasName.Predicates.name("get").or(HasName.Predicates.name("join")))
+                    .and(JavaCall.Predicates.target(HasOwner.Predicates.With.owner(
+                            JavaClass.Predicates.assignableTo(Future.class)
                                     .or(JavaClass.Predicates.assignableTo(CompletableFuture.class)))))
                     .as("wait on a future with get or join");
 
@@ -40,11 +40,16 @@ class TickBoundaryTest {
      */
     @ArchTest
     static final ArchRule noBlockingOnFuturesOnTheTick =
-            FreezingArchRule.freeze(noClasses().that()
-                            .resideInAnyPackage("net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform..")
-                            .should().callMethodWhere(WAITS_ON_A_FUTURE)
-                            .as("classes in race and platform do not wait on a future")
-                            .because("a blocking wait stalls the tick (design D11)")
-                            .allowEmptyShould(false))
+            FreezingArchRule.freeze(noBlockingWaitOnAFuture("net.elytrarace.voyager.race..", "net.elytrarace.voyager.platform.."))
                     .persistIn(new TextFileBasedViolationStore(SliceBoundaryRulesTest::storeFileName));
+
+    /** The unfrozen rule over {@code packages}, so the seeded test can run it on its own seeded classes. */
+    static ArchRule noBlockingWaitOnAFuture(String... packages) {
+        return noClasses().that()
+                .resideInAnyPackage(packages)
+                .should().callMethodWhere(WAITS_ON_A_FUTURE)
+                .as("classes in race and platform do not wait on a future")
+                .because("a blocking wait stalls the tick (design D11)")
+                .allowEmptyShould(false);
+    }
 }
