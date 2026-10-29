@@ -12,9 +12,8 @@ everything else in the draft as it was.
 **Priority:** MoSCoW Must
 
 WHEN a builder runs `/map name <text>` in an open map and the text parses as MiniMessage, THE SYSTEM SHALL store the text as
-written as the draft's display name, SHALL save the draft, and SHALL reply with the saved name. IF the text does not parse, or
-contains a tag the setup server does not know, THEN THE SYSTEM SHALL leave the draft unchanged and SHALL reply with the
-position of the problem.
+written as the draft's display name, SHALL save the draft, and SHALL reply with the saved name. IF the text does not parse,
+THEN THE SYSTEM SHALL leave the draft unchanged and SHALL reply with the position of the problem.
 
 #### Scenario: A coloured name is saved
 - **WHEN** a builder with `elytrarace:blue_and_red` open runs `/map name <blue>Blue <red>& Red`
@@ -24,20 +23,24 @@ position of the problem.
 - **WHEN** a builder runs `/map name <sparkle>Blue`
 - **THEN** no name is stored, the file is not written, and the reply names the tag `sparkle` and its position
 
-### Requirement: A display name stays within the length the catalogue reads
+#### Scenario: A tag outside the name tag set is refused
+- **WHEN** a builder runs `/map name <click:run_command:/stop>Blue</click>`, a tag MiniMessage parses but the name rule does not allow
+- **THEN** no name is stored, the file is not written, and the reply names the tag `click`
+
+### Requirement: A display name is at most forty visible characters
 **Priority:** MoSCoW Must
 
-IF the text of a display name has more than 32 visible characters, THEN THE SYSTEM SHALL refuse it. IF the stored text, with its
-MiniMessage tags, has more than 40 characters, THEN THE SYSTEM SHALL refuse it, because the catalogue refuses a longer
-display name when it reads the file. Both refusals SHALL leave the draft unchanged and SHALL name the limit.
+THE SYSTEM SHALL measure a display name's length in the characters a player sees: the text after `MiniMessage.stripTags`, counted in code points, with the MiniMessage
+tags not counted. IF the visible text has more than 40 characters, THEN THE SYSTEM SHALL refuse the name, leave the draft unchanged, and name the 40-character limit.
+This is the rule of `catalog/display-names` in `show-colored-map-and-cup-names`, which the catalogue reader applies to the same text.
 
-#### Scenario: Visible text too long
-- **WHEN** a builder runs `/map name` with a text of 33 visible characters and no tags
-- **THEN** the draft is unchanged and the reply names the 32-character limit
+#### Scenario: Tags do not count
+- **WHEN** a builder runs `/map name <gradient:#00c2ff:#5bff8f>Blue and Red Rush</gradient>`
+- **THEN** the visible length is 17, the name is accepted, and the draft's display name is the text as written
 
-#### Scenario: Stored text too long because of tags
-- **WHEN** a builder runs `/map name` with a text of 12 visible characters whose stored form with its tags has 41 characters
-- **THEN** the draft is unchanged and the reply names the 40-character limit of the stored form
+#### Scenario: Forty-one visible characters are refused
+- **WHEN** a builder runs `/map name` with a text that shows 41 characters after its tags are removed
+- **THEN** the draft is unchanged and the reply names the 40-character limit
 
 ### Requirement: A name is removed by clear or by a blank text
 **Priority:** MoSCoW Must

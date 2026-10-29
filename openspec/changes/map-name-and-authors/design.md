@@ -15,11 +15,12 @@ Three facts from the code shape this design:
 1. **`DraftEditor.with` drops the metadata.** It rebuilds the draft through the constructor that resets `displayName` and
    `authors` (`voyager/setup/.../mapsetup/DraftEditor.java:76-79`, `MapDraft.java:43-46`). Change 6 fixes it. This change
    needs the fix: a name set by `/map name` would be gone after the next ring.
-2. **The catalogue refuses a long display name when it reads the file.** `JsonFields.displayName` refuses more than
-   `DISPLAY_NAME_LIMIT` = 40 characters, counting the text as the file holds it, MiniMessage tags included
-   (`voyager/platform/.../catalog/adapter/JsonFields.java:21-25, 104-117`). A name the setup server saved over 40 characters
-   would make the game refuse the map. The 40-character limit is therefore binding; the 32 visible characters of the brief
-   is a stricter rule on top of it.
+2. **The name limit counts visible text.** `show-colored-map-and-cup-names` sets the rule (`catalog/display-names`): a display
+   name is at most 40 code points after `MiniMessage.stripTags`, so tags are not counted. Until that change lands, the catalogue
+   reader still counts the stored text with its tags, through `JsonFields.displayName` and its limit of 40
+   (`voyager/platform/.../catalog/adapter/JsonFields.java:21-25, 104-117`). This change measures the visible text from the start, so
+   the setup server would accept a name the reader refuses until that change lands. The code of this change therefore ships after
+   `show-colored-map-and-cup-names`.
 3. **Authors are data, and a lookup is I/O.** `Author` checks the name shape and the count (`voyager/api/.../api/race/Author.java:21-23,
    40-51`). The catalogue load does no network I/O (`openspec/changes/add-catalogue-keys-and-authors/proposal.md`), so the
    network call belongs to the setup server, behind a port.
@@ -35,7 +36,7 @@ Goals:
 
 Non-Goals:
 
-- Undo, claims, cups, rendering of names in the game, an author cache, and the author list of a cup (see the proposal).
+- Undo, claims, cups, rendering of names in the game, and an author cache. Cups carry no authors (see `cup-authoring`).
 
 ## Decisions
 
@@ -44,12 +45,14 @@ Non-Goals:
    itself is written `<white>clear`. Rejected: `/map name --clear` (a flag nobody else in the setup server uses) and a separate
    `/map name reset` (a second reserved word with the same problem).
 
-2. **The stored name is the source text, parsed strictly.** The file keeps the text as written (`JsonFields.displayName`), so
-   the setup server stores the MiniMessage source it parsed. The parse uses MiniMessage's strict mode, so an unknown tag
-   is a parse error with a position. The first Red task asserts this on the library itself, so a library default that accepts
-   unknown tags fails before any message is written. Two limits apply: the stored source has at most 40 characters (the reader's limit, read
-   from one constant), and the visible text has at most 32 characters (owner to confirm, open question 1). Rejected: storing the
-   rendered plain text, which would lose the colours that `show-colored-map-and-cup-names` is about to show.
+2. **The stored name is the MiniMessage source as written, checked against the display-name rule.** The file keeps the text as
+   written (`JsonFields.displayName`), so the setup server stores the source it parsed. The parse uses MiniMessage's strict mode,
+   so a tag MiniMessage does not know is a parse error with a position. A second check refuses any tag outside the display-name
+   tag set of `catalog/display-names` (colour, rainbow, decoration and `reset`), and names that tag. The visible text, which is
+   `MiniMessage.stripTags` counted in code points, has at most 40 characters. The first Red task asserts the strict parse on the
+   library itself, so a library default that accepts unknown tags fails before any message is written. The game renders the stored
+   source as `show-colored-map-and-cup-names` defines. Rejected: storing the rendered plain text, which would lose the colours that
+   that change is about to show.
 
 3. **A blank or clear name removes the name.** This matches the reader: a blank `displayName` is the same as an absent one
    (`JsonFields.displayName`, the blank branch). Both removal forms write no `displayName` key.
@@ -57,7 +60,7 @@ Non-Goals:
 4. **Online players are resolved from the server; offline players from the profile service.** The order is fixed:
    (a) an online player with that name, read on the tick thread, with the UUID and the current name the server holds;
    (b) otherwise, `GET https://api.mojang.com/users/profiles/minecraft/<name>` through the port `PlayerLookup`, run on a worker
-   thread with a timeout of 5 seconds (owner to confirm, open question 2). The service returns the UUID undashed; the adapter
+   thread with a timeout of 5 seconds (open question 1). The service returns the UUID undashed; the adapter
    dashes it, because `Author` and the catalogue use the dashed form. The name stored is the one the service returns, so its
    letter case matches the account. Rejected: a lookup for online players too (a network round trip for a player the server
    already knows); rejected: blocking the tick for the call (a stall of up to five seconds at 20 TPS).
@@ -73,7 +76,7 @@ Non-Goals:
 
 7. **Reference time is a decimal in seconds, from above zero to 3600.** The draft holds a `double`, so a decimal is accepted,
    and `NaN` and infinities are refused by the same check `MapDraft` makes. The maximum of 3600 seconds keeps a reference lap
-   from being set to an hour by a typo (owner to confirm, open question 3).
+   from being set to an hour by a typo.
 
 8. **All edits are pure functions over the draft, and every edit saves through `MapSession.commit`.** A new `MetadataEditor`
    (an abstract utility class, `@ApiStatus.Internal`, private constructor, `@Contract(pure = true)`, like `DraftEditor`) builds
@@ -93,7 +96,7 @@ is a port with one adapter, and it is recorded in this design rather than in a s
 |---|---|---|---|
 | `PlayerLookup` (interface, `Author resolve(String name)`, blocking) | `voyager-api` | `net.elytrarace.voyager.api.mapsetup` | pure port, no I/O in the API |
 | `PlayerLookupFailedException`, `PlayerLookupTimeoutException`, `PlayerNotFoundException` | `voyager-api` | `net.elytrarace.voyager.api.mapsetup.exception` | `RuntimeException`, domain-named (design rule 9) |
-| `DISPLAY_NAME_LIMIT` | `voyager-api` | `net.elytrarace.voyager.api.race` | moved from `JsonFields`; the reader and the setup server read one constant |
+| `DISPLAY_NAME_VISIBLE_LIMIT` (40 code points) | `voyager-api` | `net.elytrarace.voyager.api.race` | the visible-text limit the setup server reads; reuse the constant that `show-colored-map-and-cup-names` adds if it has landed first |
 | `MojangProfileLookup` (implements `PlayerLookup`, JDK `HttpClient`, 5 s timeout) | `voyager-platform` | `net.elytrarace.voyager.platform.profile` | new package, with `package-info.java` and `@NotNullByDefault` |
 | `MetadataEditor`, `MapName`, `ReferenceTime` (parsers and rules) | `voyager-setup` | `net.elytrarace.voyager.setup.mapsetup` | pure; MiniMessage parse is an Adventure call, which the setup slice already uses |
 | `AuthorLookup` (runs the port off the tick, applies the result on the tick) | `voyager-setup` | `net.elytrarace.voyager.setup.adapter` | uses no Minestom type; the online-player check and the main-thread hand-back are two small interfaces that `SetupServer` implements (see the fitness rules) |
@@ -135,16 +138,9 @@ Every test follows F.I.R.S.T.:
 
 ## Open questions
 
-Each question is for the owner. The recommendation is the option in the decision text above.
-
-1. **Visible name length.** The brief proposes 32 visible characters; the file limit of 40 stored characters is binding in
-   any case. Recommendation: keep 32 visible characters, and the 40-character stored limit on top of it.
-2. **Lookup timeout.** Recommendation: 5 seconds, as decided in the brief. A longer wait holds the builder's command open.
-3. **Reference time maximum.** Recommendation: 3600 seconds. A value above it is refused, and the builder can ask the owner
-   for more.
-4. **Name rendering.** Does `show-colored-map-and-cup-names` render `displayName` as MiniMessage? If it renders plain text, a
-   builder's colours would appear as raw tags. Recommendation: render as MiniMessage, which is what this change stores; the
-   display change must confirm it before this change ships.
-5. **Author cache.** Recommendation: no cache in this change; each offline `add` is one request. Revisit if the profile service
+1. **Lookup timeout.** Recommendation: 5 seconds. A longer wait holds the builder's command open, and a shorter one fails on a
+   slow profile service.
+2. **Author cache.** Recommendation: no cache in this change; each offline `add` is one request. Revisit if the profile service
    rate-limits the setup server.
-6. **`clear` as a reserved word.** Recommendation: keep the rule in decision 1 and document the `<white>clear` form in the guide.
+3. **`clear` as a reserved word.** Recommendation: keep decision 1 (the word `clear` alone removes the name) and document the
+   `<white>clear` form in the guide.
