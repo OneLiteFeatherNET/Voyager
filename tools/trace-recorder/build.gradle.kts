@@ -21,10 +21,10 @@ dependencies {
     // compileOnly, not implementation: Paper 26.2 bundles gson 2.14.0 itself (see
     // paper-spike/libraries/com/google/code/gson), so shading it into the plugin jar unrelocated
     // only inflates the artifact for a class that is already on the runtime classpath.
-    compileOnly("com.google.code.gson:gson:2.14.0")
+    compileOnly("com.google.code.gson:gson:2.15.0")
     // compileOnly is not inherited by the test source set, and TraceFileTest exercises real
     // Gson round-trips (there is no Paper server on the test classpath to provide it instead).
-    testImplementation("com.google.code.gson:gson:2.14.0")
+    testImplementation("com.google.code.gson:gson:2.15.0")
 }
 
 paper {
