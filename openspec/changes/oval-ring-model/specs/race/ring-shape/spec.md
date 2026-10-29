@@ -24,6 +24,29 @@ radii are equal as the circle of that radius.
 - **WHEN** a ring is created with a radius and no oval fields
 - **THEN** the ring is a circle of that radius, and its `radius()` returns that radius
 
+### Requirement: A ring's radii and points are within bounds
+**Priority:** MoSCoW Must
+
+THE SYSTEM SHALL accept a ring only when each of its radii lies in `[0.5, 32]` blocks, both ends inclusive. The radii are the radius of
+a circle, and the semi-major and the semi-minor radius of an oval. THE SYSTEM SHALL accept a ring only when its points lie in `[0, 100]`.
+IF a radius or a point count lies outside these bounds, THEN THE SYSTEM SHALL refuse the ring, and the refusal SHALL name the value and the bounds.
+
+#### Scenario: Circle radius below the bounds
+- **WHEN** a circle is created with radius 0.49
+- **THEN** the ring is refused, and the message names 0.49 and the range 0.5 to 32
+
+#### Scenario: Circle radius at the bounds
+- **WHEN** a circle is created with radius 32
+- **THEN** the ring is accepted
+
+#### Scenario: Oval semi-major radius above the bounds
+- **WHEN** an oval is created with radius 33 and radiusMinor 3
+- **THEN** the oval is refused and the message names 33 and the range 0.5 to 32
+
+#### Scenario: Points above the bounds
+- **WHEN** a ring is created with 101 points
+- **THEN** the ring is refused, and the message names 101 and the range 0 to 100
+
 ### Requirement: A circle contains the points of its disc, rim included
 **Priority:** MoSCoW Must
 
@@ -64,9 +87,9 @@ inside when `(u / radius)` squared plus `(v / radiusMinor)` squared is at most 1
 ### Requirement: An oval must be valid
 **Priority:** MoSCoW Must
 
-IF an oval's semi-minor radius is not greater than zero, IF its semi-minor radius is greater than its semi-major radius, IF its
-`majorAxis` is not of unit length within 1e-9, or IF its `majorAxis` is not perpendicular to the normal within 1e-6, THEN THE
-SYSTEM SHALL refuse the ring, and the refusal SHALL name the value that is wrong.
+IF an oval's semi-minor radius is greater than its semi-major radius, IF its `majorAxis` is not of unit length within 1e-9, or IF
+its `majorAxis` is not perpendicular to the normal within 1e-6, THEN THE SYSTEM SHALL refuse the ring, and the refusal SHALL name the
+value that is wrong. The bounds of the requirement "A ring's radii and points are within bounds" apply to an oval as well.
 
 #### Scenario: Minor radius above the major radius
 - **WHEN** an oval is created with `radius` 6 and `radiusMinor` 7

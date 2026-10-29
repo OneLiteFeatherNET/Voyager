@@ -56,12 +56,12 @@ whose rings are all circles.
 - **WHEN** a map file states `"schemaVersion": 3` and every ring has `radius` and no oval field
 - **THEN** the file loads, and every ring is a circle
 
-### Requirement: An invalid oval in a file names the file, the ring and the field
+### Requirement: An invalid ring in a file names the file, the ring and the field
 **Priority:** MoSCoW Must
 
-IF an oval ring in a file has a `radiusMinor` that is not greater than zero or greater than `radius`, or a `majorAxis` that is not
-of unit length or not perpendicular to `normal`, THEN THE SYSTEM SHALL refuse the file, and the message SHALL name the file,
-the ring's position and the field that is wrong.
+IF a ring in a file has a `radius` or a `radiusMinor` outside `[0.5, 32]`, has `points` outside `[0, 100]`, has a `radiusMinor`
+greater than its `radius`, or has a `majorAxis` that is not of unit length or not perpendicular to `normal`, THEN THE SYSTEM SHALL
+refuse the file, and the message SHALL name the file, the ring's position and the field that is wrong.
 
 #### Scenario: Minor radius above the major radius in a file
 - **WHEN** the second ring of a version 3 map file states `radius` 6 and `radiusMinor` 7
@@ -70,6 +70,10 @@ the ring's position and the field that is wrong.
 #### Scenario: Major axis parallel to the normal in a file
 - **WHEN** the first ring of a version 3 map file states a `majorAxis` equal to its `normal`
 - **THEN** the file is refused, and the message names the file, position 0 and `majorAxis`
+
+#### Scenario: Radius below the bounds in a file
+- **WHEN** the fourth ring of a version 2 map file states `radius` 0.25
+- **THEN** the file is refused, and the message names the file, position 3 and `radius`
 
 ### Requirement: Equal radii in a file make a circle
 **Priority:** MoSCoW Must
