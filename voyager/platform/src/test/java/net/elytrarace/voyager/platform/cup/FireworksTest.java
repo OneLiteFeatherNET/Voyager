@@ -19,7 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The firework verification of the pinned Minestom. A rocket entity can carry an explosion in its metadata, so the bursts are
- * rockets and not the particle fallback. The rocket is set off and removed in the same tick, so only its metadata is checked.
+ * rockets and not the particle fallback. The rocket is set off and removed on the tick after it spawns, so only its metadata is
+ * checked.
  */
 @EnvTest
 class FireworksTest {

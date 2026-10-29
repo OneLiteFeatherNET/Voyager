@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
  * A firework burst for the cup's finale: a firework rocket entity that carries its explosion, set off where it is spawned.
  *
  * <p>The pinned Minestom sets the explosion on the rocket's metadata, and the client draws it when the rocket's explode
- * status arrives, so the burst is the rocket and no particle fallback is needed. The rocket is removed in the same tick.
+ * status arrives, so the burst is the rocket and no particle fallback is needed. The rocket is removed on the tick after it spawns.
  */
 @ApiStatus.Internal
 public final class Fireworks {
@@ -37,18 +37,20 @@ public final class Fireworks {
     }
 
     /**
-     * Sets a firework off at {@code position}, in {@code instance}, in one colour.
+     * Sets a firework off at {@code position}, in {@code instance}, in one colour. The rocket explodes and is removed on the
+     * instance's next tick after it has spawned, so a chunk that is still loading cannot leave it behind.
      *
      * @param instance the instance the racer is in
      * @param position where the burst goes off
      * @param colour   the colour of the burst
+     * @return completes once the rocket has spawned and its removal is scheduled
      */
     public static CompletableFuture<Void> burst(Instance instance, Pos position, TextColor colour) {
         Entity rocket = rocketFor(colour);
-        CompletableFuture<Void> spawned = rocket.setInstance(instance, position);
-        rocket.triggerStatus(EXPLODE_NOW);
-        rocket.remove();
-        return spawned;
+        return rocket.setInstance(instance, position).thenRun(() -> instance.scheduleNextTick(_ -> {
+            rocket.triggerStatus(EXPLODE_NOW);
+            rocket.remove();
+        }));
     }
 
     /** An unspawned rocket whose explosion is a large ball of {@code colour}. */
