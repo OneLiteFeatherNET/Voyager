@@ -365,7 +365,7 @@ class CupPlaythroughTest {
                     .filter(result -> result.racer().equals(racer.name()))
                     .map(Result::score)
                     .toList();
-            byRacer.put(racer.name(), CupScorer.accumulate(perMap));
+            byRacer.put(racer.name(), CupScorer.accumulate(perMap, 0));
         }
         return byRacer;
     }

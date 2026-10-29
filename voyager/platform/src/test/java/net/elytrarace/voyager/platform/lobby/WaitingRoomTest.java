@@ -621,7 +621,7 @@ class WaitingRoomTest {
         fixture.holder.offer(RELOADED);
         fixture.tick();
 
-        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.key().asString());
+        assertThat(cupOnSidebar(fixture, racer)).isEqualTo("Waiting Tour");
     }
 
     /** A countdown keeps the cup it began with, even when a reload is applied while it runs. */
@@ -636,7 +636,7 @@ class WaitingRoomTest {
         fixture.holder.offer(RELOADED);
         fixture.tick();
 
-        assertThat(cupOnSidebar(fixture, racer)).isEqualTo(TOUR.key().asString());
+        assertThat(cupOnSidebar(fixture, racer)).isEqualTo("Waiting Tour");
     }
 
     /** A waiting racer who leaves is handed to the hub, and the room keeps no record that the racer was handed off. */

@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.server.cup;
 
+import net.elytrarace.voyager.platform.text.DisplayName;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.CupDefinition;
@@ -823,7 +824,7 @@ class CupSessionTest {
 
         fixture.runUntilRacing();
 
-        Component ridgeBanner = Messages.mapBanner(1, 2, RIDGE_RUN.key().asString(), RIDGE_RUN.rings().size(),
+        Component ridgeBanner = Messages.mapBanner(1, 2, DisplayName.component(RIDGE_RUN.key(), RIDGE_RUN.displayName()), RIDGE_RUN.rings().size(),
                 RIDGE_RUN.referenceTime());
         assertThat(chat.collect().stream().map(SystemChatPacket::message).filter(ridgeBanner::equals))
                 .hasSize(1);
@@ -845,7 +846,8 @@ class CupSessionTest {
 
         fixture.runUntilRacing();
 
-        Component banner = Messages.mapBanner(1, 2, "Blue & Red", named.rings().size(), named.referenceTime());
+        Component banner = Messages.mapBanner(1, 2, DisplayName.component(named.key(), named.displayName()),
+                named.rings().size(), named.referenceTime());
         assertThat(chat.collect().stream().map(SystemChatPacket::message))
                 .describedAs("the banner names the map by its display name")
                 .contains(banner);
@@ -869,7 +871,7 @@ class CupSessionTest {
 
         assertThat(chat.collect().stream().map(SystemChatPacket::message))
                 .describedAs("the standings heading names the cup by its display name")
-                .contains(Messages.cupHeading("Grand Tour"));
+                .contains(Messages.cupHeading(DisplayName.component(named.key(), named.displayName())));
     }
 
     /**
@@ -962,11 +964,11 @@ class CupSessionTest {
         List<Component> lines = chat.collect().stream().map(SystemChatPacket::message).toList();
         assertThat(lines)
                 .describedAs("the map result, with the placement bonus already awarded")
-                .contains(Messages.mapResult(RIDGE_RUN.key().asString(), ridge.ringPoints(), ridge.medalPoints(),
+                .contains(Messages.mapResult(DisplayName.component(RIDGE_RUN.key(), RIDGE_RUN.displayName()), ridge.ringPoints(), ridge.medalPoints(),
                         ridge.medal(), ridge.placementBonus(), ridge.total()));
         assertThat(lines)
                 .describedAs("and the standings the cup ends on")
-                .contains(Messages.cupHeading(CUP.key().asString()));
+                .contains(Messages.cupHeading(DisplayName.component(CUP.key(), CUP.displayName())));
     }
 
     /**
@@ -995,12 +997,13 @@ class CupSessionTest {
                 .describedAs("the last digit and then GO")
                 .contains(Messages.countdownDigit(1), Messages.go());
         assertThat(subtitles.collect().stream().map(SetTitleSubTitlePacket::subtitle))
-                .contains(Messages.countdownSubtitle(RIDGE_RUN.key().asString(), RIDGE_RUN.rings().size(),
-                        RIDGE_RUN.referenceTime()));
+                .contains(Component.empty());
         assertThat(timings.collect())
-                .describedAs("no fade-in: a digit that fades in is a digit that arrives late")
+                .describedAs("only the map's intro fades in: a digit that fades in is a digit that arrives late")
                 .isNotEmpty()
-                .allMatch(packet -> packet.fadeIn() == 0);
+                .filteredOn(packet -> packet.fadeIn() != 0)
+                .hasSize(1)
+                .allMatch(packet -> packet.fadeIn() == 10);
         assertThat(bars.collect())
                 .describedAs("the target is on screen before the clock starts")
                 .anyMatch(packet -> packet.action() instanceof BossBarPacket.AddAction);

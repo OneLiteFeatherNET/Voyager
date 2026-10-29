@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.kyori.adventure.key.Key;
 import net.elytrarace.voyager.api.race.MedalBrackets;
 import net.elytrarace.voyager.platform.text.Palette;
 import net.elytrarace.voyager.race.scoring.MedalCountdown;
@@ -46,7 +47,7 @@ class RaceHudTest {
         Duration elapsed = Duration.ofMillis(gameTick * 50L);
         MedalOutlook outlook = MedalCountdown.outlook(elapsed, REFERENCE, MedalBrackets.DEFAULT);
         return new HudState(gameTick, elapsed, ringsPassed, RING_COUNT, lastRingTick, 2, 3,
-                "skylift", outlook);
+                Key.key("elytrarace", "skylift"), "skylift", outlook);
     }
 
     // ---------------------------------------------------------------------------------------

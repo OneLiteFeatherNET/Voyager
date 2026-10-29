@@ -48,6 +48,9 @@ public final class CupStandings {
     /** Player -> map index -> that player's score on that map. Insertion order over players. */
     private final Map<UUID, Map<Integer, MapScore>> byPlayer = new LinkedHashMap<>();
 
+    /** The rings each racer passed on each map, kept apart from the scores, which do not carry them. */
+    private final Map<UUID, Map<Integer, Integer>> ringsByPlayer = new LinkedHashMap<>();
+
     /** Records {@code score} as {@code playerId}'s result on map {@code mapIndex}, replacing any earlier one. */
     public void record(UUID playerId, int mapIndex, MapScore score) {
         byPlayer.computeIfAbsent(playerId, ignored -> new TreeMap<>()).put(mapIndex, score);
@@ -112,11 +115,25 @@ public final class CupStandings {
 
     /** {@code playerId}'s cup total across every map they have a result on. */
     public CupScore totalOf(UUID playerId) {
-        return CupScorer.accumulate(of(playerId));
+        return CupScorer.accumulate(of(playerId), ringsOf(playerId));
+    }
+
+    /**
+     * Records the rings {@code playerId} passed on {@code mapIndex}, replacing any earlier count for that map.
+     *
+     * @param ringsPassed the rings passed on the map, counted from the start of the course
+     */
+    public void recordRings(UUID playerId, int mapIndex, int ringsPassed) {
+        ringsByPlayer.computeIfAbsent(playerId, ignored -> new TreeMap<>()).put(mapIndex, ringsPassed);
     }
 
     /** Drops everything — a fresh cup, not a continuation of the last one. */
     public void clear() {
         byPlayer.clear();
+        ringsByPlayer.clear();
+    }
+
+    private int ringsOf(UUID playerId) {
+        return ringsByPlayer.getOrDefault(playerId, Map.of()).values().stream().mapToInt(Integer::intValue).sum();
     }
 }

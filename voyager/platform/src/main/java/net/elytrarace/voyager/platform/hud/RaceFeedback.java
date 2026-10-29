@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.hud;
 
+import org.jetbrains.annotations.Nullable;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.platform.convert.Vectors;
@@ -289,11 +290,41 @@ public abstract class RaceFeedback {
     }
 
     /** The cup's result: the longest title in the game, because it is the biggest moment in a session. */
-    public static void cupResult(Player racer, Component subtitle) {
+    /**
+     * A racer's place when the cup ends: the title for the place and the points under it, with the sound that fits the
+     * place. The title fades in for half a second, stays four seconds and fades out in a third of a second, so it is off
+     * the screen by six seconds.
+     */
+    public static void placement(Player racer, int place, Component title, Component subtitle) {
         racer.showTitle(Title.title(
-                Messages.cupTitle(),
+                title,
                 subtitle,
                 Title.Times.times(TICK.multipliedBy(10), TICK.multipliedBy(80), TICK.multipliedBy(20))));
-        racer.playSound(Sound.sound(CHALLENGE_COMPLETE, SOURCE, 1.0f, 1.0f));
+        racer.playSound(placeSound(place));
+    }
+
+    /**
+     * The sound of a place: a fanfare for first, a shorter one for second and third, and a soft chime for every other place.
+     */
+    @Contract(pure = true)
+    public static Sound placeSound(int place) {
+        return switch (place) {
+            case 1 -> Sound.sound(CHALLENGE_COMPLETE, SOURCE, 1.0f, 1.0f);
+            case 2, 3 -> Sound.sound(LEVEL_UP, SOURCE, 0.9f, 1.1f);
+            default -> Sound.sound(RESET_CHIME, SOURCE, 0.7f, 1.0f);
+        };
+    }
+
+    /**
+     * The intro title of a map: its coloured name, with the authors under it when it has any. It fades in for 10 ticks,
+     * stays for 60 and fades out in 20, so it is 90 ticks long and the countdown digits follow it.
+     *
+     * @param subtitle the authors line, or {@code null} for a map with no authors
+     */
+    public static void mapIntro(Player racer, Component name, @Nullable Component subtitle) {
+        racer.showTitle(Title.title(
+                name,
+                subtitle == null ? Component.empty() : subtitle,
+                Title.Times.times(TICK.multipliedBy(10), TICK.multipliedBy(60), TICK.multipliedBy(20))));
     }
 }

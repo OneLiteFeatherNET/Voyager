@@ -68,20 +68,28 @@ class MapDefinitionTest {
     }
 
     @Test
-    void aMapWithoutADisplayNameDisplaysItsId() {
+    void aMapWithoutADisplayNameShowsItsKeyValueInTitleCase() {
         MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
                 new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
 
-        assertThat(map.displayName()).isEqualTo("elytrarace:nether-sprint");
+        assertThat(map.displayName()).isEqualTo("Nether Sprint");
     }
 
     @Test
-    void aBlankDisplayNameDisplaysTheId() {
+    void aBlankDisplayNameShowsItsKeyValueInTitleCase() {
         MapDefinition map = new MapDefinition("nether-sprint", "world_nether",
                 new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES,
                 RingEffectTuning.DEFAULT, "");
 
-        assertThat(map.displayName()).isEqualTo("elytrarace:nether-sprint");
+        assertThat(map.displayName()).isEqualTo("Nether Sprint");
+    }
+
+    @Test
+    void aMapKeyWithUnderscoresShowsItsValueWithSpacesInTitleCase() {
+        MapDefinition map = new MapDefinition("dragon_lobby", "world_end",
+                new Vec3(0.5, 70.0, -12.25), RINGS, Duration.ofSeconds(45), BOOST, NO_GUIDES);
+
+        assertThat(map.displayName()).isEqualTo("Dragon Lobby");
     }
 
     @Test

@@ -26,17 +26,24 @@ class CupDefinitionTest {
     }
 
     @Test
-    void aCupWithoutADisplayNameDisplaysItsId() {
+    void aCupWithoutADisplayNameShowsItsKeyValueInTitleCase() {
         CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
 
-        assertThat(cup.displayName()).isEqualTo("elytrarace:winter-cup");
+        assertThat(cup.displayName()).isEqualTo("Winter Cup");
     }
 
     @Test
-    void aBlankDisplayNameDisplaysTheId() {
+    void aBlankDisplayNameShowsItsKeyValueInTitleCase() {
         CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE, "   ");
 
-        assertThat(cup.displayName()).isEqualTo("elytrarace:winter-cup");
+        assertThat(cup.displayName()).isEqualTo("Winter Cup");
+    }
+
+    @Test
+    void aCupKeyWithUnderscoresShowsItsValueWithSpacesInTitleCase() {
+        CupDefinition cup = new CupDefinition("dragon_lobby", MAP_NAMES, GameMode.RACE);
+
+        assertThat(cup.displayName()).isEqualTo("Dragon Lobby");
     }
 
     @Test
@@ -54,13 +61,6 @@ class CupDefinitionTest {
 
         assertThat(cup.key().asString()).isEqualTo("elytrarace:alpha_cup");
         assertThat(cup.key().namespace()).isEqualTo("elytrarace");
-    }
-
-    @Test
-    void aCupDisplayingItsIdShowsTheKeyInItsFullForm() {
-        CupDefinition cup = new CupDefinition("winter-cup", MAP_NAMES, GameMode.RACE);
-
-        assertThat(cup.displayName()).isEqualTo("elytrarace:winter-cup");
     }
 
     @Test

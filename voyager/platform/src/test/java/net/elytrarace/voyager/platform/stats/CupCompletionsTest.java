@@ -38,7 +38,7 @@ class CupCompletionsTest {
                 score(MedalTier.BRONZE, 3_000),
                 score(MedalTier.DNF, null));
         CupCompletion completion = completionOf(List.of(new CupStanding(LEADER, new CupScore(200, Optional.of(
-                Duration.ofMillis(1_000)), 4))), scores);
+                Duration.ofMillis(1_000)), 4, 0))), scores);
 
         CupRacerResult result = completion.racers().get(0);
 
@@ -51,7 +51,7 @@ class CupCompletionsTest {
     @Test
     void aCupResultHasNoBestTimeWhenNoMapWasFinished() {
         CupCompletion completion = completionOf(List.of(new CupStanding(TRAILER, new CupScore(10, Optional.empty(),
-                0))), List.of(score(MedalTier.DNF, null)));
+                0, 0))), List.of(score(MedalTier.DNF, null)));
 
         assertThat(completion.racers().get(0).bestTimeMillis()).as("best time without a finish").isNull();
     }
@@ -59,8 +59,8 @@ class CupCompletionsTest {
     @Test
     void aCupResultIsPlacedInTheOrderOfTheStanding() {
         CupCompletion completion = completionOf(List.of(
-                new CupStanding(LEADER, new CupScore(300, Optional.of(Duration.ofMillis(900)), 2)),
-                new CupStanding(TRAILER, new CupScore(120, Optional.empty(), 1))),
+                new CupStanding(LEADER, new CupScore(300, Optional.of(Duration.ofMillis(900)), 2, 0)),
+                new CupStanding(TRAILER, new CupScore(120, Optional.empty(), 1, 0))),
                 List.of(score(MedalTier.SILVER, 900)));
 
         assertThat(completion.racers()).as("racers in standing order").extracting(CupRacerResult::playerId)

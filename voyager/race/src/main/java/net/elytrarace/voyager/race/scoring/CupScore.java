@@ -12,5 +12,5 @@ import java.util.Optional;
  * {@link Optional#empty()} says that directly instead of asking every reader of this field to
  * remember what {@code -1} means.
  */
-public record CupScore(int totalPoints, Optional<Duration> bestTime, int mapsFinished) {
+public record CupScore(int totalPoints, Optional<Duration> bestTime, int mapsFinished, int ringsPassed) {
 }

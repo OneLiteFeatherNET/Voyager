@@ -5,6 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
+import net.elytrarace.voyager.platform.text.DisplayName;
+import net.elytrarace.voyager.platform.text.exception.InvalidDisplayNameException;
+
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -17,12 +20,6 @@ import org.jetbrains.annotations.Nullable;
  * field, which is why the adapters are hand-written rather than bound reflectively.
  */
 final class JsonFields {
-
-    /**
-     * The longest display name a cup or map may have, in characters. It keeps the map banner and the lobby sidebar
-     * readable; a longer name is a file error.
-     */
-    static final int DISPLAY_NAME_LIMIT = 40;
 
     private JsonFields() {
     }
@@ -97,9 +94,9 @@ final class JsonFields {
     /**
      * The optional {@code displayName} of a cup or a map, as written, or {@code null} when the file gives none.
      *
-     * <p>A blank value is the same as an absent one: both mean the id is shown. A value longer than
-     * {@link #DISPLAY_NAME_LIMIT} characters is refused rather than truncated, so no player ever reads a name
-     * that a file did not write. The text is kept as written: MiniMessage tags in it are plain characters.
+     * <p>A blank value is the same as an absent one: both mean the key's value is shown in title case. The name is checked
+     * by {@link DisplayName}, which refuses a tag outside the colour, decoration and reset set and a visible text longer
+     * than forty characters, so no player reads a name that a file did not write. The text is kept as written.
      */
     static @Nullable String displayName(JsonObject json, String what) {
         if (!present(json, "displayName")) {
@@ -109,10 +106,11 @@ final class JsonFields {
         if (displayName.isBlank()) {
             return null;
         }
-        int length = displayName.codePointCount(0, displayName.length());
-        if (length > DISPLAY_NAME_LIMIT) {
-            throw new JsonParseException("%s field 'displayName' is %d characters long, and the limit is %d"
-                    .formatted(what, length, DISPLAY_NAME_LIMIT));
+        try {
+            DisplayName.check(displayName);
+        } catch (InvalidDisplayNameException refused) {
+            throw new JsonParseException("%s field 'displayName' is refused: %s"
+                    .formatted(what, refused.getMessage()));
         }
         return displayName;
     }

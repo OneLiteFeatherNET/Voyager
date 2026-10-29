@@ -53,16 +53,16 @@ public final class StatsReplies {
      * The leaderboard of one map: the entries as the reader gives them, which is fastest first, at most
      * {@link #LEADERBOARD_LENGTH} of them. A map with no entries gets one line saying it has no times yet.
      *
-     * @param mapKey  the map's name in its file
+     * @param mapName the map's coloured display name
      * @param entries the entries, fastest first
      * @return the lines, never empty
      */
-    public static List<Component> leaderboard(String mapKey, List<LeaderboardEntry> entries) {
+    public static List<Component> leaderboard(Component mapName, List<LeaderboardEntry> entries) {
         if (entries.isEmpty()) {
-            return List.of(Messages.statsLeaderboardEmpty(mapKey));
+            return List.of(Messages.statsLeaderboardEmpty(mapName));
         }
         List<Component> lines = new ArrayList<>();
-        lines.add(Messages.statsLeaderboardHeader(mapKey));
+        lines.add(Messages.statsLeaderboardHeader(mapName));
         entries.stream().limit(LEADERBOARD_LENGTH).forEach(entry -> lines.add(
                 Messages.statsLeaderboardEntry(entry.rank(), entry.name(), entry.bestTimeMillis())));
         return List.copyOf(lines);

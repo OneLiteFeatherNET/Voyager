@@ -32,6 +32,7 @@ public final class CupRound {
     public void recordMap(int mapIndex, UUID playerId, RaceRun run, MapDefinition map, Duration raceLength) {
         MapScore score = MapScorer.score(run.progress(), map, run.timeOnCourse(raceLength));
         standings.record(playerId, mapIndex, score);
+        standings.recordRings(playerId, mapIndex, run.progress().passedCount());
     }
 
     /** Awards the placement bonus of the cup's mode across everyone with a score on {@code mapIndex}. */

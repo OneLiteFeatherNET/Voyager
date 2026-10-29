@@ -1,5 +1,9 @@
 package net.elytrarace.voyager.platform.tutorial;
 
+import net.elytrarace.voyager.api.race.Author;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.lobby.LobbyBoard;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -17,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * The tutorial book: five dialog pages a waiting racer opens with a right click on the book, in the racer's own language.
@@ -33,14 +38,39 @@ import java.util.function.Consumer;
 public final class TutorialBook {
 
     private final List<DialogTemplate> pages;
+    private final CatalogHolder catalog;
 
-    /** Builds the five pages. */
-    public TutorialBook() {
-        List<DialogTemplate> built = new ArrayList<>(TutorialPages.COUNT);
-        for (int page = 1; page <= TutorialPages.COUNT; page++) {
+    /**
+     * Builds the five fixed pages.
+     *
+     * @param catalog the catalogue the cup the room waits for is read from; the sixth page is built from it each time it opens
+     */
+    public TutorialBook(CatalogHolder catalog) {
+        this.catalog = catalog;
+        List<DialogTemplate> built = new ArrayList<>(TutorialPages.COUNT - 1);
+        for (int page = 1; page < TutorialPages.COUNT; page++) {
             built.add(build(page));
         }
         this.pages = List.copyOf(built);
+    }
+
+    /**
+     * The sixth page, for the cup the room is waiting for: its name, one line per map with its authors, and the cup's authors.
+     * It is built when it opens, not at boot, because the cup a room waits for can change with a reload.
+     */
+    private DialogTemplate cupPage() {
+        LoadedCatalog current = catalog.current();
+        LobbyBoard board = LobbyBoard.of(current.cup(), current.snapshot());
+        List<Component> lines = new ArrayList<>();
+        for (int index = 0; index < board.maps().size(); index++) {
+            LobbyBoard.BoardMap map = board.maps().get(index);
+            lines.add(Messages.lobbyBoardMap(index + 1, map.name(), map.authors().isEmpty() ? null : map.authors()));
+        }
+        if (!current.cup().authors().isEmpty()) {
+            lines.add(Messages.tutorialCupAuthors(current.cup().authors().stream().map(Author::name)
+                    .collect(Collectors.joining(", "))));
+        }
+        return build(TutorialPages.COUNT, Messages.tutorialCupTitle(board.title()), Messages.tutorialCupBody(lines));
     }
 
     /**
@@ -68,6 +98,10 @@ public final class TutorialBook {
         if (page.isEmpty()) {
             return false;
         }
+        if (page.getAsInt() == TutorialPages.COUNT) {
+            cupPage().open(player);
+            return true;
+        }
         pages.get(page.getAsInt() - 1).open(player);
         return true;
     }
@@ -80,13 +114,17 @@ public final class TutorialBook {
     }
 
     private static DialogTemplate build(int page) {
+        return build(page, Messages.tutorialPageTitle(page), Messages.tutorialPageBody(page));
+    }
+
+    private static DialogTemplate build(int page, Component title, Component body) {
         var dialog = DialogType.multiAction(TutorialPages.keyOf(page))
                 .meta(meta -> meta
-                        .title(Messages.tutorialPageTitle(page))
+                        .title(title)
                         .closeWithEscape(true)
                         .pause(false)
                         .afterAction(DialogAfterAction.NONE)
-                        .messageBody(body -> body.contents(Messages.tutorialPageBody(page))))
+                        .messageBody(messageBody -> messageBody.contents(body)))
                 .columns(2);
         if (TutorialPages.hasBack(page)) {
             dialog.action(button(Messages.tutorialBack(), TutorialPages.keyOf(page - 1)));

@@ -13,7 +13,7 @@ public final class HudStates {
 
     public static HudState of(MapFigures figures) {
         return new HudState(figures.gameTick(), figures.elapsed(), figures.ringsPassed(), figures.ringCount(),
-                figures.lastRingTick(), figures.mapNumber(), figures.mapCount(), figures.mapName(),
+                figures.lastRingTick(), figures.mapNumber(), figures.mapCount(), figures.mapKey(), figures.mapName(),
                 figures.outlook());
     }
 }
