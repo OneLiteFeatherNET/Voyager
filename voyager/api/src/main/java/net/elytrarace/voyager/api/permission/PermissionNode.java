@@ -21,7 +21,9 @@ public enum PermissionNode {
     /** {@code /stop}. The console is always allowed. */
     VOYAGER_COMMAND_STOP("voyager.command.stop"),
     /** Every setup command and the wand. */
-    VOYAGER_SETUP_USE("voyager.setup.use");
+    VOYAGER_SETUP_USE("voyager.setup.use"),
+    /** {@code /map import}, on top of {@link #VOYAGER_SETUP_USE}: an operator can grant building without importing. */
+    VOYAGER_SETUP_IMPORT("voyager.setup.import");
 
     private static final Map<String, PermissionNode> BY_VALUE;
 

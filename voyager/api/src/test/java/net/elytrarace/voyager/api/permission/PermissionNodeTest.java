@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PermissionNodeTest {
 
     @Test
-    void holdsExactlyTheFiveNodesOfTheSpec() {
+    void holdsExactlyTheSixNodesOfTheSpec() {
         Set<String> values = Arrays.stream(PermissionNode.values())
                 .map(PermissionNode::value)
                 .collect(Collectors.toSet());
@@ -23,7 +23,13 @@ class PermissionNodeTest {
                         "voyager.command.race.start",
                         "voyager.command.race.skip",
                         "voyager.command.stop",
-                        "voyager.setup.use");
+                        "voyager.setup.use",
+                        "voyager.setup.import");
+    }
+
+    @Test
+    void theImportNodeIsFoundByItsValue() {
+        assertThat(PermissionNode.byValue("voyager.setup.import")).isEqualTo(PermissionNode.VOYAGER_SETUP_IMPORT);
     }
 
     @Test
