@@ -4,6 +4,7 @@ import static net.elytrarace.voyager.setup.adapter.AllowEveryone.ALLOW_ALL;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -85,9 +86,9 @@ class TerrainGuardTest {
         Path data = Files.createDirectories(root.resolve("data"));
         Path worlds = Files.createDirectories(root.resolve("worlds"));
         Instance start = env.createFlatInstance();
-        BuilderSessions sessions = new BuilderSessions();
+        BuilderSessions sessions = new BuilderSessions(new EditClaims());
         env.process().command().register(new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds,
-                new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
+                new MapInstances(env.process().instance(), worlds), ALLOW_ALL, new SetupLobby(env.process().instance())));
         new TerrainGuard(sessions).register(env.process().eventHandler());
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));

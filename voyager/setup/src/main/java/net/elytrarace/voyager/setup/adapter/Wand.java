@@ -3,6 +3,7 @@ package net.elytrarace.voyager.setup.adapter;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
+import net.minestom.server.inventory.PlayerInventory;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.server.item.component.CustomData;
@@ -38,6 +39,17 @@ public abstract class Wand {
             }
         }
         return false;
+    }
+
+    /** Takes every setup wand out of the player's inventory; a player without one is left as it is. */
+    public static void takeFrom(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        ItemStack[] stacks = inventory.getItemStacks();
+        for (int slot = 0; slot < stacks.length; slot++) {
+            if (is(stacks[slot])) {
+                inventory.setItemStack(slot, ItemStack.AIR);
+            }
+        }
     }
 
     /** Gives the wand unless the player already holds one, and says whether it gave one. */

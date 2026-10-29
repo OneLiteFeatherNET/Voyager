@@ -1,10 +1,13 @@
 package net.elytrarace.voyager.platform.catalog;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftAlreadyExistsException;
+import net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftLocationConflictException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftNotFoundException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
@@ -18,6 +21,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -232,6 +237,61 @@ class JsonDraftStoreTest {
         store().save(DraftFixtures.complete(ID));
 
         assertThat(store().load(ID)).isEqualTo(DraftFixtures.complete(ID));
+    }
+
+    /**
+     * Two stores over one folder stand for two setup servers. The second one saves a changed draft, so the first one's
+     * guarded save of its older copy is refused, and the file keeps the bytes of the second save.
+     */
+    @Test
+    void aGuardedSaveRefusesADraftThatAnotherStoreChangedAndKeepsItsBytes() throws IOException {
+        folders();
+        DraftStore first = store();
+        DraftStore second = store();
+        first.create(DraftFixtures.skeleton(ID));
+        MapDraft seenByFirst = first.load(ID);
+        second.save(DraftFixtures.complete(ID));
+        byte[] afterSecond = Files.readAllBytes(maps().resolve("skyfortress.json"));
+
+        assertThatThrownBy(() -> first.saveIfUnchanged(seenByFirst, DraftFixtures.complete(ID)))
+                .isInstanceOf(DraftChangedException.class);
+
+        assertThat(Files.readAllBytes(maps().resolve("skyfortress.json"))).isEqualTo(afterSecond);
+    }
+
+    /**
+     * A stored copy that has the same values as the expected draft, but other whitespace and key order, is the same
+     * draft: the guard compares canonical JSON, not the bytes of the file.
+     */
+    @Test
+    void aGuardedSaveAcceptsAStoredCopyThatDiffersOnlyInLayoutAndKeyOrder() throws IOException {
+        folders();
+        DraftStore store = store();
+        store.create(DraftFixtures.skeleton(ID));
+        MapDraft expected = store.load(ID);
+        JsonObject canonical = JsonParser.parseString(MapDraftJsonWriter.toJson(expected)).getAsJsonObject();
+        List<String> keys = new ArrayList<>(canonical.keySet());
+        Collections.reverse(keys);
+        JsonObject reordered = new JsonObject();
+        for (String key : keys) {
+            reordered.add(key, canonical.get(key));
+        }
+        Files.writeString(drafts().resolve("skyfortress.json"), reordered.toString());
+
+        store.saveIfUnchanged(expected, DraftFixtures.complete(ID));
+
+        assertThat(MapDraftJsonWriter.toJson(store.load(ID))).isEqualTo(MapDraftJsonWriter.toJson(DraftFixtures.complete(ID)));
+    }
+
+    @Test
+    void aGuardedSaveRefusesWhenTheStoredCopyIsMissingAndCreatesNoFile() throws IOException {
+        folders();
+
+        assertThatThrownBy(() -> store().saveIfUnchanged(DraftFixtures.skeleton(ID), DraftFixtures.complete(ID)))
+                .isInstanceOf(DraftChangedException.class);
+
+        assertThat(maps().resolve("skyfortress.json")).doesNotExist();
+        assertThat(drafts().resolve("skyfortress.json")).doesNotExist();
     }
 
     private static void write(Path file, MapDraft draft) throws IOException {

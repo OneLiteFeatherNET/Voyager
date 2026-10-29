@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PermissionNodeTest {
 
     @Test
-    void holdsExactlyTheSixNodesOfTheSpec() {
+    void holdsExactlyTheSevenNodesOfTheSpec() {
         Set<String> values = Arrays.stream(PermissionNode.values())
                 .map(PermissionNode::value)
                 .collect(Collectors.toSet());
@@ -24,7 +24,8 @@ class PermissionNodeTest {
                         "voyager.command.race.skip",
                         "voyager.command.stop",
                         "voyager.setup.use",
-                        "voyager.setup.import");
+                        "voyager.setup.import",
+                        "voyager.setup.unlock");
     }
 
     @Test

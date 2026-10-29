@@ -6,6 +6,8 @@ import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 
 import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
@@ -49,10 +51,10 @@ class SetupCommandsTest {
 
     private Fixture wire(Env env) {
         Instance start = env.createFlatInstance();
-        BuilderSessions sessions = new BuilderSessions();
+        BuilderSessions sessions = new BuilderSessions(new EditClaims());
         MapInstances instances = new MapInstances(env.process().instance(), worlds);
         env.process().command().register(
-                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances, ALLOW_ALL));
+                new SetupCommands(new JsonDraftStore(data, worlds), sessions, worlds, instances, ALLOW_ALL, new SetupLobby(env.process().instance())));
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
@@ -148,6 +150,21 @@ class SetupCommandsTest {
         fixture.run("map status");
 
         assertThat(fixture.keys()).contains("voyager.setup.map.none");
+    }
+
+    /** A save over a draft another setup server changed is refused, and the builder is told so. */
+    @Test
+    void spawnAfterTheStoredDraftChangedRepliesWithTheSaveChangedMessage(Env env) throws IOException {
+        Fixture fixture = fixture(env);
+        fixture.enter("map new skyfortress");
+        JsonDraftStore other = new JsonDraftStore(data, worlds);
+        other.save(DraftEditor.withSpawn(other.load(new MapId("skyfortress")), new Vec3(3, 64, 3)));
+
+        fixture.run("map spawn");
+
+        assertThat(fixture.keys()).contains("voyager.setup.save.changed");
+        assertThat(new JsonDraftStore(data, worlds).load(new MapId("skyfortress")).spawn())
+                .isEqualTo(new Vec3(3, 64, 3));
     }
 
     private static List<Path> listOf(Path folder) throws IOException {
