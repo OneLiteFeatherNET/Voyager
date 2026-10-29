@@ -2,6 +2,7 @@ package net.elytrarace.voyager.platform.world;
 
 import net.elytrarace.voyager.platform.LogCapture;
 import net.elytrarace.voyager.platform.world.PendingArrival.Outcome;
+import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -50,8 +51,8 @@ class AsyncPreloadTest {
 
     @Test
     void theRacerIsNotPlacedWhileOneChunkIsLoadingAndIsPlacedAfterTheLastOneIsPresent(Env env) {
-        Instance target = env.createFlatInstance();
         Player racer = connect(env);
+        Instance target = flatInstanceLoadedFor(env, racer);
         FakeChunkLoader loader = new FakeChunkLoader();
         PendingArrival arrival = PendingArrival.start(racer, WORLD, target, SPAWN, loader);
         loader.setAllButLast(ChunkState.PRESENT);
@@ -106,9 +107,9 @@ class AsyncPreloadTest {
 
     @Test
     void oneRacersLoadingChunksDoNotDelayAnotherRacersPlacement(Env env) {
-        Instance target = env.createFlatInstance();
         Player waiting = connect(env);
         Player ready = connect(env);
+        Instance target = flatInstanceLoadedFor(env, ready);
         FakeChunkLoader waitingLoader = new FakeChunkLoader();
         FakeChunkLoader readyLoader = new FakeChunkLoader();
         PendingArrival waitingArrival = PendingArrival.start(waiting, WORLD, target, SPAWN, waitingLoader);
@@ -132,9 +133,27 @@ class AsyncPreloadTest {
         return outcome;
     }
 
+    /**
+     * A racer connected to a flat instance of its own. No gravity: the racer stands still while the test ticks, so the
+     * spawn is checked exactly, and a fall through the source instance cannot carry into the placement.
+     */
     private static Player connect(Env env) {
         Instance source = env.createFlatInstance();
-        return env.createConnection().connect(source, new Pos(0.5, 65.0, 0.5));
+        Player racer = env.createConnection().connect(source, new Pos(0.5, 65.0, 0.5));
+        racer.setNoGravity(true);
+        return racer;
+    }
+
+    /**
+     * A flat instance with every chunk the racer's move into it asks for already loaded. Minestom completes a move into
+     * an instance whose chunks are still loading on a later tick, on a thread of its own, so a test that waited for that
+     * move would depend on the machine. With the chunks present the move completes on the tick it starts.
+     */
+    private static Instance flatInstanceLoadedFor(Env env, Player racer) {
+        Instance target = env.createFlatInstance();
+        int viewDistance = Math.min(racer.getSettings().viewDistance(), target.viewDistance()) + 1;
+        ChunkRange.chunksInRange(SPAWN, viewDistance, (chunkX, chunkZ) -> target.loadChunk(chunkX, chunkZ).join());
+        return target;
     }
 
     /**

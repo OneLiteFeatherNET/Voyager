@@ -21,6 +21,7 @@ import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.platform.world.SynchronousChunkLoader;
 import net.elytrarace.voyager.race.flow.RaceClock;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.minestom.server.coordinate.Pos;
@@ -365,7 +366,9 @@ class CupSessionRecordingTest {
         MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
         this.worlds = instances;
         RaceRuns runs = new RaceRuns();
-        MapTransition transition = new MapTransition(instances, runs);
+        // A real chunk load runs on its own thread, so a racer's placement on the second map would finish after a
+        // number of ticks that depends on the machine. The synchronous loader finishes each load when it starts.
+        MapTransition transition = new MapTransition(instances, runs, new SynchronousChunkLoader());
         CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
                 new CatalogSnapshot(Map.of(FIRST_MAP, FIRST_RUN, SECOND_MAP, SECOND_RUN), Map.of(CUP, TOUR)),
                 TOUR, Instant.EPOCH));
