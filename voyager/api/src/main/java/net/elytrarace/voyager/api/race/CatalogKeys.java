@@ -58,4 +58,24 @@ public interface CatalogKeys {
     static String normalise(String text) {
         return text.contains(":") ? text : NAMESPACE + ":" + text;
     }
+
+    /**
+     * The name a key shows when its file gives no display name: its value with each underscore or hyphen replaced by a
+     * space, and each word capitalised. {@code elytrarace:dragon_lobby} reads "Dragon Lobby", never the raw key.
+     *
+     * @return the title-cased value of the key
+     */
+    static String titleCase(Key key) {
+        StringBuilder title = new StringBuilder();
+        for (String word : key.value().split("[_-]")) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            if (!title.isEmpty()) {
+                title.append(' ');
+            }
+            title.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return title.toString();
+    }
 }

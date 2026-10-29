@@ -17,7 +17,7 @@ class TutorialPagesTest {
 
     @Test
     void thereAreFivePagesInTheStatedOrder() {
-        assertThat(TutorialPages.COUNT).isEqualTo(5);
+        assertThat(TutorialPages.COUNT).isEqualTo(6);
         assertThat(titleKeys())
                 .containsExactly("voyager.tutorial.page.1.title", "voyager.tutorial.page.2.title",
                         "voyager.tutorial.page.3.title", "voyager.tutorial.page.4.title",
@@ -51,8 +51,18 @@ class TutorialPagesTest {
         assertThat(TutorialPages.indexOf(TutorialPages.CLOSE_KEY)).isEqualTo(OptionalInt.empty());
     }
 
+    @Test
+    void theSixthPageTitleIsTheCupPageKeyAndNamesTheCup() {
+        TranslatableComponent title = (TranslatableComponent) Messages.tutorialCupTitle(
+                net.kyori.adventure.text.Component.text("Alpha Cup"));
+
+        assertThat(title.key()).isEqualTo("voyager.tutorial.page.6.title");
+        assertThat(title.arguments()).hasSize(1);
+    }
+
+    /** The five fixed pages; the sixth is the cup page, which is built for the cup the room waits for. */
     private static java.util.List<String> titleKeys() {
-        return java.util.stream.IntStream.rangeClosed(1, TutorialPages.COUNT)
+        return java.util.stream.IntStream.rangeClosed(1, TutorialPages.COUNT - 1)
                 .mapToObj(page -> ((TranslatableComponent) Messages.tutorialPageTitle(page)).key())
                 .toList();
     }

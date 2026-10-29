@@ -40,7 +40,7 @@ import java.util.List;
  * before they were per map.
  *
  * <p>{@link #key()} is the map's identifier, the key of the catalogue and of the statistics (ADR-0040).
- * {@link #displayName()} is the name players read; a blank or absent one is the key in its full form, so it is never
+ * {@link #displayName()} is the name players read; a blank or absent one is the key's value in title case, so it is never
  * null. {@link #authors()} are the players who built the map, if any.
  */
 public record MapDefinition(Key key, String world, Vec3 spawn, List<Ring> rings, Duration referenceTime,
@@ -95,7 +95,7 @@ public record MapDefinition(Key key, String world, Vec3 spawn, List<Ring> rings,
                 throw InvalidMapException.guideOutsideTheCourse(guide.orderIndex(), rings.size());
             }
         }
-        displayName = displayName == null || displayName.isBlank() ? key.asString() : displayName;
+        displayName = displayName == null || displayName.isBlank() ? CatalogKeys.titleCase(key) : displayName;
         authors = authors == null ? List.of() : Author.checked(authors);
     }
 

@@ -17,7 +17,7 @@ import java.util.UUID;
 
 /**
  * The sidebar a waiting racer reads: the cup's name as its title, then the racers online out of the maximum, the maps in
- * play order, a status line (waiting, or the seconds to the start) and a footer. No line carries a score number.
+ * play order, and a status line (waiting, or the seconds to the start) as its last line. No line carries a score number.
  *
  * <p>One sidebar per racer, so its text is rendered in that racer's language. It is shown while the room waits in the place
  * racers wait (the lobby instance, or the first map when no lobby is configured). It is taken down when the racer leaves that
@@ -113,8 +113,8 @@ public final class LobbySidebar {
     }
 
     /**
-     * The lines of a sidebar for a board and a status, top to bottom: the racers, a blank, the map lines, a blank, the status
-     * and the footer. At most fifteen, which is the client's limit.
+     * The lines of a sidebar for a board and a status, top to bottom: the racers, a blank, the map lines, a blank and the status
+     * At most fourteen, under the client's limit of fifteen.
      *
      * @param board  the cup's board
      * @param status the racers online and the countdown, if one runs
@@ -130,7 +130,6 @@ public final class LobbySidebar {
         }
         lines.add(new Line("blank-bottom", Component.empty()));
         lines.add(new Line("status", statusLine(status)));
-        lines.add(new Line("footer", Messages.lobbySidebarFooter()));
         return List.copyOf(lines);
     }
 

@@ -100,7 +100,7 @@ class MessageBundleTest {
     void theBossBarNamesTheTierAndTheSecondsLeftInEnglish() {
         MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(57_900)));
 
-        assertThat(render(Messages.bossBarTitle(1, 2, "Blue & Red", diamond)))
+        assertThat(render(Messages.bossBarTitle(1, 2, Component.text("Blue & Red"), diamond.tier(), diamond.untilLost())))
                 .isEqualTo("Map 1/2 · Blue & Red · Diamond · 57.9 s left");
     }
 
@@ -108,7 +108,7 @@ class MessageBundleTest {
     void theBossBarNamesTheTierAndTheSecondsLeftInGerman() {
         MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(57_900)));
 
-        assertThat(renderIn(Messages.bossBarTitle(1, 2, "Blue & Red", diamond), Locale.GERMANY))
+        assertThat(renderIn(Messages.bossBarTitle(1, 2, Component.text("Blue & Red"), diamond.tier(), diamond.untilLost()), Locale.GERMANY))
                 .isEqualTo("Map 1/2 · Blue & Red · Diamant · noch 57.9 s");
     }
 
@@ -122,8 +122,8 @@ class MessageBundleTest {
                 MedalTier.BRONZE, "Bronze");
 
         names.forEach((tier, german) -> assertThat(renderIn(
-                        Messages.bossBarTitle(1, 2, "Blue & Red",
-                                new MedalOutlook(tier, Optional.of(Duration.ofSeconds(30)))),
+                        Messages.bossBarTitle(1, 2, Component.text("Blue & Red"),
+                                tier, Optional.of(Duration.ofSeconds(30))),
                         Locale.GERMANY))
                 .as("the %s band in German", tier)
                 .contains(german + " · noch 30.0 s")
@@ -135,7 +135,7 @@ class MessageBundleTest {
     void theFinishBandNamesItsTierAloneInEnglish() {
         MedalOutlook finish = new MedalOutlook(MedalTier.FINISH, Optional.empty());
 
-        assertThat(render(Messages.bossBarTitle(2, 3, "skylift", finish)))
+        assertThat(render(Messages.bossBarTitle(2, 3, Component.text("skylift"), finish.tier(), finish.untilLost())))
                 .isEqualTo("Map 2/3 · skylift · Finish");
     }
 
@@ -143,7 +143,7 @@ class MessageBundleTest {
     void theFinishBandNamesItsTierAloneInGerman() {
         MedalOutlook finish = new MedalOutlook(MedalTier.FINISH, Optional.empty());
 
-        assertThat(renderIn(Messages.bossBarTitle(2, 3, "skylift", finish), Locale.GERMANY))
+        assertThat(renderIn(Messages.bossBarTitle(2, 3, Component.text("skylift"), finish.tier(), finish.untilLost()), Locale.GERMANY))
                 .isEqualTo("Map 2/3 · skylift · Ziel");
     }
 
@@ -159,11 +159,6 @@ class MessageBundleTest {
         assertThat(render(Messages.go())).isEqualTo("GO");
     }
 
-    @Test
-    void theCountdownSubtitleIsTheWholeBriefingInOneLine() {
-        assertThat(render(Messages.countdownSubtitle("skylift", 35, Duration.ofSeconds(60))))
-                .isEqualTo("skylift · 35 rings · target 1:00");
-    }
 
     @Test
     void theWaitingActionBarNamesTheRacersStillNeeded() {
@@ -191,7 +186,7 @@ class MessageBundleTest {
 
     @Test
     void theMapBannerCarriesTheBroadcastPrefix() {
-        assertThat(render(Messages.mapBanner(1, 3, "skylift", 35, Duration.ofSeconds(60))))
+        assertThat(render(Messages.mapBanner(1, 3, Component.text("skylift"), 35, Duration.ofSeconds(60))))
                 .isEqualTo("» Map 1/3 · skylift — 35 rings · target 1:00");
     }
 
@@ -201,19 +196,19 @@ class MessageBundleTest {
 
     @Test
     void aFinishIsOneSentenceWithTheCourseAndTheTime() {
-        assertThat(render(Messages.finished("skylift", Duration.ofMillis(58_400))))
+        assertThat(render(Messages.finished(Component.text("skylift"), Duration.ofMillis(58_400))))
                 .isEqualTo("Finished skylift in 0:58.4");
     }
 
     @Test
     void aMapResultShowsWhereEveryPointCameFrom() {
-        assertThat(render(Messages.mapResult("skylift", 350, 60, MedalTier.DIAMOND, 10, 420)))
+        assertThat(render(Messages.mapResult(Component.text("skylift"), 350, 60, MedalTier.DIAMOND, 10, 420)))
                 .isEqualTo("skylift — 350 from rings · 60 for DIAMOND · 10 for placement = 420");
     }
 
     @Test
     void aDnfIsToldHowFarItGotRatherThanOnlyThatItFailed() {
-        assertThat(render(Messages.mapResultDnf("skylift", 23, 35, 230)))
+        assertThat(render(Messages.mapResultDnf(Component.text("skylift"), 23, 35, 230)))
                 .isEqualTo("skylift — DNF. 23 of 35 rings, 230 points.");
     }
 
@@ -229,14 +224,20 @@ class MessageBundleTest {
     @Test
     void everyMedalHasAWordOfItsOwn() {
         assertThat(MedalTier.values()).allSatisfy(tier ->
-                assertThat(render(Messages.medal(tier))).isEqualTo(tier.name()));
+                assertThat(render(Messages.medal(tier))).isEqualToIgnoringCase(tier.name()));
+    }
+
+    /** The finish medal word is in sentence case, not capitals, so a line reads as a sentence. */
+    @Test
+    void theFinishMedalWordIsInSentenceCase() {
+        assertThat(render(Messages.medal(MedalTier.FINISH))).isEqualTo("Finish");
     }
 
     @Test
     void theCupEndsWithATitleAndAStandingsBlock() {
-        assertThat(render(Messages.cupTitle())).isEqualTo("CUP COMPLETE");
-        assertThat(render(Messages.cupSubtitle(1, 420))).isEqualTo("place 1  ·  420 points");
-        assertThat(render(Messages.cupHeading("test_cup"))).isEqualTo("» test_cup — final standings");
+        assertThat(render(Messages.placeTitle(1))).isEqualTo("Victory!");
+        assertThat(render(Messages.placePoints(420))).isEqualTo("420 points");
+        assertThat(render(Messages.cupHeading(Component.text("test_cup")))).isEqualTo("» test_cup — final standings");
     }
 
     /**
@@ -245,7 +246,7 @@ class MessageBundleTest {
      */
     @Test
     void aDisplayNameReadsTheSameInGermanAsInEnglish() {
-        Component line = Messages.lobbyBoardMap(1, "Testing Cup");
+        Component line = Messages.lobbyBoardMap(1, Component.text("Testing Cup"), null);
 
         assertThat(renderIn(line, Locale.US)).contains("Testing Cup");
         assertThat(renderIn(line, Locale.GERMANY)).contains("Testing Cup");
@@ -253,10 +254,10 @@ class MessageBundleTest {
 
     @Test
     void aStandingsRowReadsAsATable() {
-        Component row = Messages.cupRow(2, Messages.racerName("Bob"), 380, 3, 3,
-                Optional.of(Duration.ofMillis(56_100)));
+        Component row = Messages.cupRow(2, Messages.racerName("Bob"), 380,
+                Optional.of(Duration.ofMillis(56_100)), 3, 3, Optional.of(58), 70, false);
 
-        assertThat(render(row)).isEqualTo("  2  Bob  ·  380 points  ·  3/3 maps  ·  best 0:56.1");
+        assertThat(render(row)).isEqualTo("  2  Bob  ·  380 points  ·  best 0:56.1  ·  3/3 maps  ·  58/70 rings");
     }
 
     /**
@@ -266,9 +267,9 @@ class MessageBundleTest {
      */
     @Test
     void aDepartedRacerWithNoFinishedMapIsStillAReadableRow() {
-        Component row = Messages.cupRow(3, Messages.departed(), 150, 0, 3, Optional.empty());
+        Component row = Messages.cupRow(3, Messages.departed(), 150, Optional.empty(), 0, 3, Optional.empty(), 70, false);
 
-        assertThat(render(row)).isEqualTo("  3  (left)  ·  150 points  ·  0/3 maps  ·  best —");
+        assertThat(render(row)).isEqualTo("  3  (left)  ·  150 points  ·  best —  ·  0/3 maps  ·  —/70 rings");
     }
 
     // ---------------------------------------------------------------------------------------
@@ -300,24 +301,23 @@ class MessageBundleTest {
         List<Component> everyMessage = List.of(
                 Messages.flightHud(Duration.ZERO, 0, 35, false),
                 Messages.flightHud(Duration.ZERO, 1, 35, true),
-                Messages.bossBarTitle(1, 1, "m", new MedalOutlook(MedalTier.GOLD, Optional.of(Duration.ZERO))),
-                Messages.bossBarTitle(1, 1, "m", new MedalOutlook(MedalTier.FINISH, Optional.empty())),
+                Messages.bossBarTitle(1, 1, Component.text("m"), MedalTier.GOLD, Optional.of(Duration.ZERO)),
+                Messages.bossBarTitle(1, 1, Component.text("m"), MedalTier.FINISH, Optional.empty()),
                 Messages.countdownDigit(3),
-                Messages.countdownSubtitle("m", 1, Duration.ofSeconds(1)),
                 Messages.go(),
-                Messages.mapBanner(1, 1, "m", 1, Duration.ofSeconds(1)),
-                Messages.finished("m", Duration.ZERO),
+                Messages.mapBanner(1, 1, Component.text("m"), 1, Duration.ofSeconds(1)),
+                Messages.finished(Component.text("m"), Duration.ZERO),
                 Messages.joinedMidCup(),
-                Messages.mapResult("m", 1, 2, MedalTier.GOLD, 3, 6),
-                Messages.mapResultDnf("m", 1, 2, 3),
+                Messages.mapResult(Component.text("m"), 1, 2, MedalTier.GOLD, 3, 6),
+                Messages.mapResultDnf(Component.text("m"), 1, 2, 3),
                 Messages.mapResultNextGoal(Duration.ZERO, MedalTier.GOLD),
                 Messages.mapResultSubtitleDnf(1, 2),
                 Messages.ringMissed(1),
                 Messages.playersJoined(2, 3, 4),
-                Messages.cupTitle(),
-                Messages.cupSubtitle(1, 2),
-                Messages.cupHeading("c"),
-                Messages.cupRow(1, Messages.racerName("n"), 1, 1, 1, Optional.empty()),
+                Messages.placeTitle(1),
+                Messages.placePoints(2),
+                Messages.cupHeading(Component.text("c")),
+                Messages.cupRow(1, Messages.racerName("n"), 1, Optional.empty(), 1, 1, Optional.empty(), 1, false),
                 Messages.departed(),
                 Messages.medal(MedalTier.DIAMOND),
                 Messages.medal(MedalTier.DNF),
@@ -332,9 +332,9 @@ class MessageBundleTest {
                 Messages.statsProfileBest("ridge", 61_200L),
                 Messages.statsProfileNone("Alex"),
                 Messages.statsUnknownPlayer("Nobody"),
-                Messages.statsLeaderboardHeader("ridge"),
+                Messages.statsLeaderboardHeader(Component.text("ridge")),
                 Messages.statsLeaderboardEntry(1, "Alex", 61_200L),
-                Messages.statsLeaderboardEmpty("ridge"),
+                Messages.statsLeaderboardEmpty(Component.text("ridge")),
                 Messages.statsUnknownMap("nowhere"),
                 Messages.statsNotRecorded(),
                 Messages.statsUnavailable(),

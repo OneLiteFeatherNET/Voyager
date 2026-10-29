@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.kyori.adventure.key.Key;
 import net.elytrarace.voyager.race.cup.MapFigures;
 import net.elytrarace.voyager.race.scoring.MedalOutlook;
 import net.elytrarace.voyager.api.race.MedalTier;
@@ -17,7 +18,7 @@ class HudStatesTest {
     @Test
     void mapsEveryFigureToTheMatchingFieldOfTheHudState() {
         // The figures of the racing-boost scenario: a racer one ring in, 1.5 seconds into map one of two.
-        MapFigures figures = new MapFigures(30, Duration.ofMillis(1500), 1, 2, 24, 1, 2, "ridge-run",
+        MapFigures figures = new MapFigures(30, Duration.ofMillis(1500), 1, 2, 24, 1, 2, Key.key("elytrarace", "ridge-run"), "ridge-run",
                 new MedalOutlook(MedalTier.GOLD, Optional.of(Duration.ofSeconds(3))));
 
         HudState state = HudStates.of(figures);

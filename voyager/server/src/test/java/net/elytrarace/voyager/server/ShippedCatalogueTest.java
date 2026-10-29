@@ -67,11 +67,15 @@ class ShippedCatalogueTest {
         CatalogSnapshot catalog = CatalogLoader.load(RESOURCES);
 
         assertThat(catalog.cupByName(ALPHA_CUP).orElseThrow().displayName()).isEqualTo("Alpha Cup");
-        assertThat(catalog.cupByName(LEGACY_CUP).orElseThrow().displayName()).isEqualTo("Testing Cup");
-        assertThat(catalog.mapByName(ALPHA_MAP).orElseThrow().displayName()).isEqualTo("Blue & Red");
-        assertThat(catalog.mapByName("palm_beach").orElseThrow().displayName()).isEqualTo("PalmBeach");
-        assertThat(catalog.mapByName("dragon_lobby").orElseThrow().displayName()).isEqualTo("DragonLobby");
-        assertThat(catalog.mapByName("memoria").orElseThrow().displayName()).isEqualTo("Memoria");
+        assertThat(catalog.cupByName(LEGACY_CUP).orElseThrow().displayName())
+                .isEqualTo("<rainbow>Testing Cup</rainbow>");
+        assertThat(catalog.mapByName(ALPHA_MAP).orElseThrow().displayName())
+                .isEqualTo("<blue>Blue</blue> & <red>Red</red>");
+        assertThat(catalog.mapByName("palm_beach").orElseThrow().displayName()).isEqualTo("<rainbow>PalmBeach</rainbow>");
+        assertThat(catalog.mapByName("dragon_lobby").orElseThrow().displayName())
+                .isEqualTo("<gradient:#ff55ff:blue>DragonLobby</gradient>");
+        assertThat(catalog.mapByName("memoria").orElseThrow().displayName())
+                .isEqualTo("<gradient:gold:blue:yellow>Memoria</gradient>");
     }
 
     @Test

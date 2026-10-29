@@ -43,7 +43,7 @@ class MessagesBossBarTest {
     void theTierPhraseNamesTheBandAndTheTimeLeftInTheBandsColour() {
         MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(57_900)));
 
-        TranslatableComponent bar = translatable(Messages.bossBarTitle(1, 2, "Blue & Red", diamond));
+        TranslatableComponent bar = translatable(Messages.bossBarTitle(1, 2, Component.text("Blue & Red"), diamond.tier(), diamond.untilLost()));
 
         assertThat(bar.key()).isEqualTo("voyager.hud.bossbar");
         TranslatableComponent phrase = translatable(argument(bar, 3));
@@ -57,7 +57,7 @@ class MessagesBossBarTest {
         MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(57_900)));
 
         TranslatableComponent phrase = translatable(argument(
-                translatable(Messages.bossBarTitle(1, 2, "Blue & Red", diamond)), 3));
+                translatable(Messages.bossBarTitle(1, 2, Component.text("Blue & Red"), diamond.tier(), diamond.untilLost())), 3));
 
         assertThat(plain(argument(phrase, 1))).isEqualTo("57.9");
     }
@@ -67,7 +67,7 @@ class MessagesBossBarTest {
     void theFinishBandNamesItsTierAloneAndHasNoCountdown() {
         MedalOutlook finish = new MedalOutlook(MedalTier.FINISH, Optional.empty());
 
-        TranslatableComponent bar = translatable(Messages.bossBarTitle(2, 2, "Blue & Red", finish));
+        TranslatableComponent bar = translatable(Messages.bossBarTitle(2, 2, Component.text("Blue & Red"), finish.tier(), finish.untilLost()));
 
         assertThat(bar.key()).isEqualTo("voyager.hud.bossbar.last");
         TranslatableComponent phrase = translatable(argument(bar, 3));
@@ -81,7 +81,7 @@ class MessagesBossBarTest {
     void theMapPositionAndNameArePassedThroughUnchanged() {
         MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofSeconds(30)));
 
-        TranslatableComponent bar = translatable(Messages.bossBarTitle(1, 2, "Blue & Red", diamond));
+        TranslatableComponent bar = translatable(Messages.bossBarTitle(1, 2, Component.text("Blue & Red"), diamond.tier(), diamond.untilLost()));
 
         assertThat(plain(argument(bar, 0))).isEqualTo("1");
         assertThat(plain(argument(bar, 1))).isEqualTo("2");

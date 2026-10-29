@@ -15,7 +15,10 @@ describe
   cup 'elytrarace:grand_tour' running — map 1/2 'elytrarace:ridge-run', phase LOBBY after 0,050 s, race clock 0,000 s (0 tick(s))
     Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], not simulated
 messages
-  Ada chat {"translate":"voyager.map.banner","with":["1","2","elytrarace:ridge-run","1","0:00"]}
+  Ada chat {"translate":"voyager.map.banner","with":["1","2",{"color":"#B47CFF","text":"Ridge Run"},"1","0:00"]}
+  Ada title-times 10 60 20
+  Ada subtitle ""
+  Ada title {"color":"#B47CFF","text":"Ridge Run"}
 logs
   INFO Map 1/2 'elytrarace:ridge-run' tuning: burn 4, cooldown 9, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5
 ## tick 2
@@ -90,7 +93,7 @@ describe
     Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], not simulated
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:ridge-run","1","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["3"]}
 logs
 ## tick 11
@@ -253,7 +256,7 @@ describe
     Ada: no run, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], not simulated
 messages
   Ada title-times 0 15 5
-  Ada subtitle {"translate":"voyager.countdown.subtitle","with":["elytrarace:ridge-run","1","0:00"]}
+  Ada subtitle ""
   Ada title {"translate":"voyager.countdown.digit","with":["2"]}
 logs
 ## offer a reload
@@ -372,7 +375,10 @@ describe
   cup 'elytrarace:grand_tour_two' running — map 1/2 'elytrarace:ridge-run', phase GAME after 0,050 s, race clock 0,050 s (1 tick(s))
     Ada: ring 0, gliding=false, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], not simulated
 messages
-  Ada chat {"translate":"voyager.map.banner","with":["1","2","elytrarace:ridge-run","1","0:00"]}
+  Ada chat {"translate":"voyager.map.banner","with":["1","2",{"color":"#B47CFF","text":"Ridge Run"},"1","0:00"]}
+  Ada title-times 10 60 20
+  Ada subtitle ""
+  Ada title {"color":"#B47CFF","text":"Ridge Run"}
   Ada title-times 0 20 5
   Ada subtitle {"translate":"voyager.race.go.jump"}
   Ada title {"translate":"voyager.countdown.go"}
@@ -541,7 +547,7 @@ describe
     cup: Ada — 10 point(s), 0 map(s) finished, best -
 messages
   Ada actionbar ""
-  Ada chat {"translate":"voyager.result.map.dnf","with":["elytrarace:ridge-run","0","1","10"]}
+  Ada chat {"translate":"voyager.result.map.dnf","with":[{"color":"#B47CFF","text":"Ridge Run"},"0","1","10"]}
   Ada title-times 5 60 10
   Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","1"]}
   Ada title {"translate":"voyager.medal.dnf"}
@@ -582,7 +588,10 @@ describe
     Ada: no run, gliding=true, boost ready, client Pos[x=3.5, y=65.0, z=5.5, yaw=0.0, pitch=-38.65981], simulated Vec3[x=3.5, y=65.0, z=6.089943068518769] v=Vec3[x=0.0, y=0.0, z=0.0407924921556555]
     cup: Ada — 10 point(s), 0 map(s) finished, best -
 messages
-  Ada chat {"translate":"voyager.map.banner","with":["2","2","elytrarace:dune-run","2","0:00"]}
+  Ada chat {"translate":"voyager.map.banner","with":["2","2",{"color":"#2EE6D6","text":"Dune Run"},"2","0:00"]}
+  Ada title-times 10 60 20
+  Ada subtitle ""
+  Ada title {"color":"#2EE6D6","text":"Dune Run"}
 logs
   INFO Map 2/2 'elytrarace:dune-run' tuning: burn 6, cooldown 13, rockets 64, no speed cap, BOOST 1.5, SLOW 0.5
 ## tick 65
@@ -778,7 +787,7 @@ describe
     cup: Ada — 20 point(s), 0 map(s) finished, best -
 messages
   Ada actionbar ""
-  Ada chat {"translate":"voyager.result.map.dnf","with":["elytrarace:dune-run","0","2","10"]}
+  Ada chat {"translate":"voyager.result.map.dnf","with":[{"color":"#2EE6D6","text":"Dune Run"},"0","2","10"]}
   Ada title-times 5 60 10
   Ada subtitle {"translate":"voyager.result.map.subtitle.dnf","with":["0","2"]}
   Ada title {"translate":"voyager.medal.dnf"}
@@ -819,11 +828,12 @@ describe
     Ada: no run, gliding=true, boost ready, client Pos[x=-37.5, y=71.0, z=-88.5, yaw=0.0, pitch=0.0], simulated Vec3[x=3.5, y=62.32066337633677, z=9.62053314700306] v=Vec3[x=0.0, y=-0.14321328939828676, z=0.27624631599696214]
     cup: Ada — 20 point(s), 0 map(s) finished, best -
 messages
-  Ada chat {"translate":"voyager.result.cup.heading","with":["elytrarace:grand_tour_two"]}
-  Ada chat {"translate":"voyager.result.cup.row","with":["1","Ada","20","0","2",{"translate":"voyager.result.cup.notime"}]}
+  Ada chat {"translate":"voyager.result.cup.heading","with":[{"color":"#FFD23F","text":"Grand Tour Two"}]}
+  Ada chat {"translate":"voyager.result.cup.maps","with":[{"extra":[{"color":"#B47CFF","text":"Ridge Run"},", ",{"color":"#2EE6D6","text":"Dune Run"}],"text":""}]}
+  Ada chat {"bold":true,"translate":"voyager.result.cup.row","with":[{"extra":[{"color":"#FFCC33","text":"1"}],"text":"» "},"Ada","20",{"translate":"voyager.result.cup.notime"},"0","2","0","3"]}
   Ada title-times 10 80 20
-  Ada subtitle {"translate":"voyager.result.cup.subtitle","with":["1","20"]}
-  Ada title {"translate":"voyager.result.cup.title"}
+  Ada subtitle {"translate":"voyager.cup.place.points","with":["20"]}
+  Ada title {"translate":"voyager.cup.place.1.title","with":["1"]}
 logs
   INFO Cup 'elytrarace:grand_tour_two' finished with 1 classified racer(s)
   INFO   1. 1a382809-b7c0-3f68-ae12-dd15677c5497 — 20 point(s), 0 map(s) finished, best -

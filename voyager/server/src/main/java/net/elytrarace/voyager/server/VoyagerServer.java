@@ -7,6 +7,7 @@ import net.elytrarace.voyager.api.permission.PermissionNode;
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.UnnamedEntries;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.race.RaceCore;
@@ -267,6 +268,10 @@ public final class VoyagerServer {
             LOGGER.warn(("No lobby world is set (%s and %s): waiting racers stand at the first map's spawn. "
                     + "Set both to give them the lobby world (ADR-0029).")
                     .formatted(ServerSettings.LOBBY_WORLD_PROPERTY, ServerSettings.LOBBY_SPAWN_PROPERTY));
+        }
+        // Once at boot: the played cup and its maps whose files give no display name are shown in title case.
+        for (String warning : UnnamedEntries.warnings(settings.dataPath(), catalog.current().cup())) {
+            LOGGER.warn(warning);
         }
 
         try {

@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.text;
 
+import net.kyori.adventure.text.format.TextDecoration;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.race.scoring.MedalOutlook;
 import net.kyori.adventure.text.Component;
@@ -101,7 +102,7 @@ class MessagesTest {
     void theBossBarCarriesTheBandAndTheTimeLeftInIt() {
         MedalOutlook diamond = new MedalOutlook(MedalTier.DIAMOND, Optional.of(Duration.ofMillis(36_600)));
 
-        Component bar = Messages.bossBarTitle(1, 3, "skylift", diamond);
+        Component bar = Messages.bossBarTitle(1, 3, Component.text("skylift"), diamond.tier(), diamond.untilLost());
 
         assertThat(translatable(bar).key()).isEqualTo("voyager.hud.bossbar");
         assertThat(argumentsOf(bar)).containsExactly("1", "3", "skylift", "@voyager.hud.medal.left");
@@ -115,7 +116,7 @@ class MessagesTest {
     void theLastBandHasNoCountdownAtAll() {
         MedalOutlook finish = new MedalOutlook(MedalTier.FINISH, Optional.empty());
 
-        Component bar = Messages.bossBarTitle(2, 3, "skylift", finish);
+        Component bar = Messages.bossBarTitle(2, 3, Component.text("skylift"), finish.tier(), finish.untilLost());
 
         assertThat(translatable(bar).key()).isEqualTo("voyager.hud.bossbar.last");
         assertThat(argumentsOf(bar)).containsExactly("2", "3", "skylift", "@voyager.hud.medal.last");
@@ -126,16 +127,8 @@ class MessagesTest {
     // ---------------------------------------------------------------------------------------
 
     @Test
-    void theCountdownSubtitleNamesTheCourseAndItsTargetWithoutATenthsDigit() {
-        Component subtitle = Messages.countdownSubtitle("skylift", 35, Duration.ofSeconds(60));
-
-        assertThat(translatable(subtitle).key()).isEqualTo("voyager.countdown.subtitle");
-        assertThat(argumentsOf(subtitle)).containsExactly("skylift", "35", "1:00");
-    }
-
-    @Test
     void theMapBannerCountsMapsAsAPlayerDoes() {
-        Component banner = Messages.mapBanner(1, 3, "skylift", 35, Duration.ofSeconds(60));
+        Component banner = Messages.mapBanner(1, 3, Component.text("skylift"), 35, Duration.ofSeconds(60));
 
         assertThat(argumentsOf(banner)).containsExactly("1", "3", "skylift", "35", "1:00");
     }
@@ -146,21 +139,21 @@ class MessagesTest {
      */
     @Test
     void aMapNameWithAngleBracketsIsPassedAsPlainTextAndNotParsed() {
-        Component banner = Messages.mapBanner(1, 3, "<rainbow>Blue</rainbow>", 35, Duration.ofSeconds(60));
+        Component banner = Messages.mapBanner(1, 3, Component.text("<rainbow>Blue</rainbow>"), 35, Duration.ofSeconds(60));
 
         assertThat(argumentsOf(banner)).contains("<rainbow>Blue</rainbow>");
     }
 
     @Test
     void aFinishCarriesTheCourseAndTheTimeToATenth() {
-        Component finished = Messages.finished("skylift", Duration.ofMillis(58_400));
+        Component finished = Messages.finished(Component.text("skylift"), Duration.ofMillis(58_400));
 
         assertThat(argumentsOf(finished)).containsExactly("skylift", "0:58.4");
     }
 
     @Test
     void aMedalResultBreaksTheScoreIntoWhatEarnedIt() {
-        Component result = Messages.mapResult("skylift", 350, 60, MedalTier.GOLD, 10, 420);
+        Component result = Messages.mapResult(Component.text("skylift"), 350, 60, MedalTier.GOLD, 10, 420);
 
         assertThat(translatable(result).key()).isEqualTo("voyager.result.map.medal");
         assertThat(argumentsOf(result)).containsExactly("skylift", "350", "60", "@voyager.medal.gold", "10", "420");
@@ -172,7 +165,7 @@ class MessagesTest {
      */
     @Test
     void aDnfIsToldHowFarItGot() {
-        Component result = Messages.mapResultDnf("skylift", 23, 35, 230);
+        Component result = Messages.mapResultDnf(Component.text("skylift"), 23, 35, 230);
 
         assertThat(translatable(result).key()).isEqualTo("voyager.result.map.dnf");
         assertThat(argumentsOf(result)).containsExactly("skylift", "23", "35", "230");
@@ -206,11 +199,29 @@ class MessagesTest {
     }
 
     @Test
-    void aStandingsRowCarriesThePlaceTheNameThePointsTheMapsAndTheBest() {
-        Component row = Messages.cupRow(2, Messages.racerName("Bob"), 380, 3, 3,
-                Optional.of(Duration.ofMillis(56_100)));
+    void theWinnerIsTitledVictoryAndAFourthPlaceIsTitledWithItsNumber() {
+        assertThat(translatable(Messages.placeTitle(1)).key()).isEqualTo("voyager.cup.place.1.title");
+        assertThat(translatable(Messages.placeTitle(4)).key()).isEqualTo("voyager.cup.place.other.title");
+        assertThat(argumentsOf(Messages.placeTitle(4))).containsExactly("4");
+    }
 
-        assertThat(argumentsOf(row)).containsExactly("2", "Bob", "380", "3", "3", "0:56.1");
+    @Test
+    void theViewersOwnStandingsRowIsBoldAndOthersAreNot() {
+        Component mine = Messages.cupRow(4, Messages.racerName("Me"), 10, Optional.empty(), 1, 2,
+                Optional.of(3), 5, true);
+        Component theirs = Messages.cupRow(4, Messages.racerName("Me"), 10, Optional.empty(), 1, 2,
+                Optional.of(3), 5, false);
+
+        assertThat(mine.style().decorations().get(TextDecoration.BOLD)).isEqualTo(TextDecoration.State.TRUE);
+        assertThat(theirs.style().decorations().get(TextDecoration.BOLD)).isEqualTo(TextDecoration.State.NOT_SET);
+    }
+
+    @Test
+    void aStandingsRowCarriesThePlaceTheNameThePointsTheMapsAndTheBest() {
+        Component row = Messages.cupRow(2, Messages.racerName("Bob"), 380, Optional.of(Duration.ofMillis(56_100)),
+                3, 3, Optional.of(58), 70, false);
+
+        assertThat(argumentsOf(row)).containsExactly("2", "Bob", "380", "0:56.1", "3", "3", "58", "70");
     }
 
     /**
@@ -219,11 +230,11 @@ class MessagesTest {
      */
     @Test
     void aRacerWithNoFinishedMapGetsAPlaceholderRatherThanAZero() {
-        Component row = Messages.cupRow(3, Messages.departed(), 150, 0, 3, Optional.empty());
+        Component row = Messages.cupRow(3, Messages.departed(), 150, Optional.empty(), 0, 3, Optional.empty(), 70, false);
 
         assertThat(argumentsOf(row))
-                .containsExactly("3", "@voyager.result.cup.departed", "150", "0", "3",
-                        "@voyager.result.cup.notime");
+                .containsExactly("3", "@voyager.result.cup.departed", "150", "@voyager.result.cup.notime", "0", "3",
+                        "@voyager.result.cup.notime", "70");
     }
 
     @Test
@@ -256,24 +267,24 @@ class MessagesTest {
     void noTwoMessagesShareAKey() {
         List<Component> everyMessage = List.of(
                 Messages.flightHud(Duration.ZERO, 0, 35, false),
-                Messages.bossBarTitle(1, 1, "m", new MedalOutlook(MedalTier.GOLD, Optional.of(Duration.ZERO))),
-                Messages.bossBarTitle(1, 1, "m", new MedalOutlook(MedalTier.FINISH, Optional.empty())),
+                Messages.bossBarTitle(1, 1, Component.text("m"), MedalTier.GOLD, Optional.of(Duration.ZERO)),
+                Messages.bossBarTitle(1, 1, Component.text("m"), MedalTier.FINISH, Optional.empty()),
                 Messages.countdownDigit(3),
-                Messages.countdownSubtitle("m", 1, Duration.ofSeconds(1)),
                 Messages.go(),
-                Messages.mapBanner(1, 1, "m", 1, Duration.ofSeconds(1)),
-                Messages.finished("m", Duration.ZERO),
+                Messages.mapBanner(1, 1, Component.text("m"), 1, Duration.ofSeconds(1)),
+                Messages.finished(Component.text("m"), Duration.ZERO),
                 Messages.joinedMidCup(),
-                Messages.mapResult("m", 1, 2, MedalTier.GOLD, 3, 6),
-                Messages.mapResultDnf("m", 1, 2, 3),
+                Messages.mapResult(Component.text("m"), 1, 2, MedalTier.GOLD, 3, 6),
+                Messages.mapResultDnf(Component.text("m"), 1, 2, 3),
                 Messages.mapResultNextGoal(Duration.ZERO, MedalTier.GOLD),
                 Messages.mapResultSubtitleDnf(1, 2),
                 Messages.ringMissed(1),
                 Messages.playersJoined(2, 3, 4),
-                Messages.cupTitle(),
-                Messages.cupSubtitle(1, 2),
-                Messages.cupHeading("c"),
-                Messages.cupRow(1, Messages.racerName("n"), 1, 1, 1, Optional.empty()),
+                Messages.placeTitle(1),
+                Messages.placePoints(2),
+                Messages.cupHeading(Component.text("c")),
+                Messages.cupMaps(List.of(Component.text("m"))),
+                Messages.cupRow(1, Messages.racerName("n"), 1, Optional.empty(), 1, 1, Optional.empty(), 1, false),
                 Messages.departed(),
                 Messages.cupRestarted("c"),
                 Messages.skipTaken(),

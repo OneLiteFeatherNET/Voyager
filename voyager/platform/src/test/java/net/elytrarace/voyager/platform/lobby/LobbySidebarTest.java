@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.lobby;
 
+import net.kyori.adventure.text.Component;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
@@ -76,13 +77,13 @@ class LobbySidebarTest {
         Instance lobby = env.createFlatInstance();
         Player racer = env.createPlayer(lobby, new Pos(0, 60, 0));
         LobbySidebar sidebar = new LobbySidebar();
-        LobbyBoard fifteen = new LobbyBoard("Long Tour", names(15));
+        LobbyBoard fifteen = boardOf("Long Tour", names(15));
 
         sidebar.update(racer, lobby, fifteen, new LobbyStatus(3, 16, Duration.ofSeconds(12)), true);
 
         assertThat(sidebar.sidebarOf(racer.getUuid()).orElseThrow().getLines())
-                .as("the client shows at most fifteen lines, so the sidebar holds exactly fifteen")
-                .hasSize(15);
+                .as("the sidebar has no footer, so fifteen maps make exactly fourteen lines under the client limit of fifteen")
+                .hasSize(14);
     }
 
     @Test
@@ -97,7 +98,7 @@ class LobbySidebarTest {
         List<LobbySidebar.Line> lines = LobbySidebar.lines(BOARD, WAITING);
 
         assertThat(lines.stream().map(LobbySidebar.Line::id).toList())
-                .containsExactly("racers", "blank-top", "map-0", "map-1", "map-2", "blank-bottom", "status", "footer");
+                .containsExactly("racers", "blank-top", "map-0", "map-1", "map-2", "blank-bottom", "status");
     }
 
     @Test
@@ -121,6 +122,12 @@ class LobbySidebarTest {
         LobbySidebar.Line racers = line("racers", LobbySidebar.lines(BOARD, WAITING));
 
         assertThat(racers.content()).isEqualTo(Messages.lobbySidebarRacers(3, 16));
+    }
+
+    /** A board of plain names with no authors, for the tests that count lines. */
+    private static LobbyBoard boardOf(String cup, List<String> names) {
+        return new LobbyBoard(Component.text(cup),
+                names.stream().map(name -> new LobbyBoard.BoardMap(Component.text(name), "")).toList());
     }
 
     private static LobbySidebar.Line line(String id, List<LobbySidebar.Line> lines) {

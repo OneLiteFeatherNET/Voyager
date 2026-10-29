@@ -1,11 +1,13 @@
 package net.elytrarace.voyager.platform.cup;
 
+import net.elytrarace.voyager.api.race.Author;
 import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.MedalBrackets;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.hud.RaceFeedback;
+import net.elytrarace.voyager.platform.text.DisplayName;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.race.cup.CupStanding;
 import net.elytrarace.voyager.race.flow.RaceClock;
@@ -24,10 +26,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * What a running cup tells its racers: the ring and finish feedback of a map, the map's result, and the cup's
@@ -72,7 +77,7 @@ public final class CupAnnouncer {
             RaceFeedback.ringPassed(racer, passed.index(), map.rings().size());
         }
         if (run.finished() && !wasFinished) {
-            racer.sendMessage(Messages.finished(map.displayName(), clock.elapsed()));
+            racer.sendMessage(Messages.finished(nameOf(map), clock.elapsed()));
             LOGGER.info("{} finished '{}' on tick {} ({})",
                     racer.getUsername(), map.key().asString(), clock.gameTick(), seconds(clock.elapsed()));
         }
@@ -91,12 +96,12 @@ public final class CupAnnouncer {
         }
         int ringCount = map.rings().size();
         if (score.medal() == MedalTier.DNF) {
-            racer.sendMessage(Messages.mapResultDnf(map.displayName(), ringsPassed, ringCount, score.total()));
+            racer.sendMessage(Messages.mapResultDnf(nameOf(map), ringsPassed, ringCount, score.total()));
             RaceFeedback.mapResult(racer, MedalTier.DNF, Messages.mapResultSubtitleDnf(ringsPassed, ringCount));
             return;
         }
         // The breakdown is in chat only (UX-1): the title and the subtitle carry the medal and the next goal.
-        racer.sendMessage(Messages.mapResult(map.displayName(), score.ringPoints(), score.medalPoints(),
+        racer.sendMessage(Messages.mapResult(nameOf(map), score.ringPoints(), score.medalPoints(),
                 score.medal(), score.placementBonus(), score.total()));
         RaceFeedback.mapResult(racer, score.medal(), nextGoalSubtitle(map, score));
     }
@@ -132,40 +137,50 @@ public final class CupAnnouncer {
      * @param order the humans' standings, best first, as the cup round reads them
      * @param computerRacers the computer racers that finished a map, in seat order
      */
-    public void announceCupResult(CupDefinition cup, List<CupStanding> order,
+    public Map<UUID, Integer> announceCupResult(CupDefinition cup, List<MapDefinition> maps, List<CupStanding> order,
             List<ComStandings.Standing> computerRacers) {
         List<Entry> entries = new ArrayList<>(order.size() + computerRacers.size());
         for (CupStanding standing : order) {
             CupScore score = standing.score();
             entries.add(new Entry(standing.playerId(), null, score.totalPoints(), score.mapsFinished(),
-                    score.bestTime().orElse(null)));
+                    score.bestTime().orElse(null), Optional.of(score.ringsPassed())));
         }
         for (ComStandings.Standing computer : computerRacers) {
-            entries.add(new Entry(null, computer, 0, computer.mapsFinished(), computer.bestTime()));
+            entries.add(new Entry(null, computer, 0, computer.mapsFinished(), computer.bestTime(), Optional.empty()));
         }
         entries.sort(STANDING_ORDER);
         LOGGER.info("Cup '{}' finished with {} classified racer(s)", cup.key().asString(), entries.size());
-        broadcast(Messages.cupHeading(cup.displayName()));
-        int mapCount = cup.mapNames().size();
+        int ringsTotal = maps.stream().mapToInt(map -> map.rings().size()).sum();
+        Component heading = Messages.cupHeading(nameOf(cup));
+        Component mapLine = Messages.cupMaps(maps.stream().map(CupAnnouncer::nameOf).toList());
+        // Each racer reads the standings with their own line marked, so the block is sent to each one separately.
+        for (Player racer : new ArrayList<>(players.get())) {
+            racer.sendMessage(heading);
+            racer.sendMessage(mapLine);
+            int place = 1;
+            for (Entry entry : entries) {
+                racer.sendMessage(rowFor(entry, place, racer.getUuid(), maps.size(), ringsTotal));
+                place++;
+            }
+        }
+        Map<UUID, Integer> places = new HashMap<>();
         int place = 1;
         for (Entry entry : entries) {
             if (entry.human() != null) {
                 LOGGER.info("  {}. {} — {} point(s), {} map(s) finished, best {}",
                         place, entry.human(), entry.points(), entry.mapsFinished(),
                         Optional.ofNullable(entry.bestTime()).map(CupAnnouncer::seconds).orElse("-"));
-                broadcast(Messages.cupRow(place, displayName(entry.human()), entry.points(), entry.mapsFinished(),
-                        mapCount, Optional.ofNullable(entry.bestTime())));
+                places.put(entry.human(), place);
                 announceCupPlace(entry.human(), place, entry.points());
             } else {
                 ComStandings.Standing computer = entry.computer();
                 LOGGER.info("  {}. COM {} — {} map(s) finished, best {}",
                         place, computer.number(), entry.mapsFinished(),
                         Optional.ofNullable(entry.bestTime()).map(CupAnnouncer::seconds).orElse("-"));
-                broadcast(Messages.cupRow(place, Messages.computerRacerName(computer.number()), 0,
-                        entry.mapsFinished(), mapCount, Optional.ofNullable(entry.bestTime())));
             }
             place++;
         }
+        return Map.copyOf(places);
     }
 
     /**
@@ -175,14 +190,35 @@ public final class CupAnnouncer {
      * @param computer the computer racer's standing, or {@code null} for a human
      */
     private record Entry(@Nullable UUID human, @Nullable ComStandings.Standing computer, int points, int mapsFinished,
-            @Nullable Duration bestTime) {
+            @Nullable Duration bestTime, Optional<Integer> ringsPassed) {
     }
 
-    /** The cup title, to the one racer it names, if they are still online to see it. */
+    /** One line of the standings as {@code viewer} reads it: the viewer's own human line is bold and marked. */
+    private Component rowFor(Entry entry, int place, UUID viewer, int mapCount, int ringsTotal) {
+        Optional<Duration> bestTime = Optional.ofNullable(entry.bestTime());
+        if (entry.human() != null) {
+            return Messages.cupRow(place, displayName(entry.human()), entry.points(), bestTime, entry.mapsFinished(),
+                    mapCount, entry.ringsPassed(), ringsTotal, entry.human().equals(viewer));
+        }
+        return Messages.cupRow(place, Messages.computerRacerName(entry.computer().number()), 0, bestTime,
+                entry.mapsFinished(), mapCount, Optional.empty(), ringsTotal, false);
+    }
+
+    /** The cup's name as the platform colours it, for the places that name it. */
+    static Component nameOf(CupDefinition cup) {
+        return DisplayName.component(cup.key(), cup.displayName());
+    }
+
+    /** The map's name as the platform colours it, for the places that name it. */
+    static Component nameOf(MapDefinition map) {
+        return DisplayName.component(map.key(), map.displayName());
+    }
+
+    /** The placement title and its sound, to the one racer it names, if they are still online to see it. */
     private void announceCupPlace(UUID playerId, int place, int points) {
         for (Player racer : players.get()) {
             if (racer.getUuid().equals(playerId)) {
-                RaceFeedback.cupResult(racer, Messages.cupSubtitle(place, points));
+                RaceFeedback.placement(racer, place, Messages.placeTitle(place), Messages.placePoints(points));
                 return;
             }
         }
@@ -202,6 +238,19 @@ public final class CupAnnouncer {
             }
         }
         return Messages.departed();
+    }
+
+    /**
+     * A map's intro title, to everybody online: its coloured name, and the authors under it when it has any. A map with no
+     * authors shows its name alone.
+     */
+    public void announceMapIntro(MapDefinition map) {
+        Component name = nameOf(map);
+        String authors = map.authors().stream().map(Author::name).collect(Collectors.joining(", "));
+        Component subtitle = authors.isEmpty() ? null : Messages.mapIntroSubtitle(authors);
+        for (Player racer : new ArrayList<>(players.get())) {
+            RaceFeedback.mapIntro(racer, name, subtitle);
+        }
     }
 
     public void broadcast(Component message) {

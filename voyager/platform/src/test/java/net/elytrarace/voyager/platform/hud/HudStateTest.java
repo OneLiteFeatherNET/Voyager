@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.hud;
 
+import net.kyori.adventure.key.Key;
 import net.elytrarace.voyager.api.race.MedalTier;
 import net.elytrarace.voyager.race.scoring.MedalOutlook;
 
@@ -26,7 +27,7 @@ class HudStateTest {
     private static HudState state(int gameTick, int ringsPassed, int ringCount, int lastRingTick,
             int mapNumber, int mapCount) {
         return new HudState(gameTick, Duration.ofMillis(gameTick * 50L), ringsPassed, ringCount,
-                lastRingTick, mapNumber, mapCount, "skylift", DIAMOND);
+                lastRingTick, mapNumber, mapCount, Key.key("elytrarace", "skylift"), "skylift", DIAMOND);
     }
 
     @Test
@@ -84,7 +85,7 @@ class HudStateTest {
 
     @Test
     void refusesANegativeGameTick() {
-        assertThatThrownBy(() -> new HudState(-1, Duration.ZERO, 0, 35, 0, 1, 1, "skylift", DIAMOND))
+        assertThatThrownBy(() -> new HudState(-1, Duration.ZERO, 0, 35, 0, 1, 1, Key.key("elytrarace", "skylift"), "skylift", DIAMOND))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("gameTick");
     }

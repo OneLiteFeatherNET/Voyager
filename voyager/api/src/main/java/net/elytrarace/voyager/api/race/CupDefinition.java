@@ -10,13 +10,13 @@ import java.util.List;
  * A rotation of maps played one after another under a single {@link GameMode}.
  *
  * <p>{@code key} is the cup's identifier: the key of the catalogue, the reference a map is named by and the key the
- * statistics store (ADR-0040). {@link #displayName()} is what players read. A blank or absent display name is the key in
- * its full form, so it is never null. {@link #authors()} are the players who built the rotation's cup, if any.
+ * statistics store (ADR-0040). {@link #displayName()} is what players read. A blank or absent display name is the key's
+ * value in title case, so it is never null. {@link #authors()} are the players who built the rotation's cup, if any.
  *
  * @param key         the cup's identifier, in the {@code elytrarace} namespace
  * @param mapNames    the keys of the maps of the rotation, in play order
  * @param mode        the mode the cup is played under
- * @param displayName the name players read; {@code null} or blank means the key
+ * @param displayName the name players read; {@code null} or blank means the key's value in title case
  * @param authors     the players who built the cup, at most {@link Author#MAXIMUM}, none repeated
  */
 public record CupDefinition(Key key, List<String> mapNames, GameMode mode, String displayName, List<Author> authors) {
@@ -49,7 +49,7 @@ public record CupDefinition(Key key, List<String> mapNames, GameMode mode, Strin
         }
         // A map named by a flat id is named by its key: the rotation holds keys, whichever form the caller wrote.
         mapNames = mapNames.stream().map(CatalogKeys::normalise).toList();
-        displayName = displayName == null || displayName.isBlank() ? key.asString() : displayName;
+        displayName = displayName == null || displayName.isBlank() ? CatalogKeys.titleCase(key) : displayName;
         authors = authors == null ? List.of() : Author.checked(authors);
     }
 

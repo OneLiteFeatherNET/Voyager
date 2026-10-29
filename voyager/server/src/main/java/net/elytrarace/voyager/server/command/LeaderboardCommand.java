@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.server.command;
 
+import net.elytrarace.voyager.platform.text.DisplayName;
 import net.elytrarace.voyager.api.race.GameMode;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.stats.StatsReader;
@@ -54,6 +55,6 @@ public final class LeaderboardCommand extends Command {
         // Ranked mode only: practice runs are kept, but a leaderboard lists races.
         requests.ask(line -> sender.sendMessage(line),
                 () -> reader.topTimes(map.key().asString(), layout, GameMode.RACE, StatsReplies.LEADERBOARD_LENGTH),
-                entries -> StatsReplies.leaderboard(map.key().asString(), entries));
+                entries -> StatsReplies.leaderboard(DisplayName.component(map.key(), map.displayName()), entries));
     }
 }

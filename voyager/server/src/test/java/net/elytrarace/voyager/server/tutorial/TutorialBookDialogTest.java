@@ -1,5 +1,19 @@
 package net.elytrarace.voyager.server.tutorial;
 
+import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.race.BoostConfig;
+import net.elytrarace.voyager.api.race.CupDefinition;
+import net.elytrarace.voyager.api.race.GameMode;
+import net.elytrarace.voyager.api.race.GuideLine;
+import net.elytrarace.voyager.api.race.MapDefinition;
+import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingType;
+import net.elytrarace.voyager.platform.catalog.CatalogHolder;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
+import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 import net.elytrarace.voyager.platform.text.VoyagerTranslator;
 import net.elytrarace.voyager.platform.tutorial.TutorialBook;
 import net.kyori.adventure.text.Component;
@@ -75,7 +89,13 @@ class TutorialBookDialogTest {
         Collector<ShowDialogPacket> dialogs = connection.trackIncoming(ShowDialogPacket.class);
         Player racer = connection.connect(instance, AT);
 
-        new TutorialBook().open(racer);
+        MapDefinition ridge = new MapDefinition("ridge", "ridge-world", new Vec3(0, 64, 0),
+                List.of(new Ring(0, new Vec3(0, 64, 10), new Vec3(0, 0, 1), 3, 10, RingType.STANDARD)),
+                Duration.ofSeconds(60), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
+        CupDefinition cup = new CupDefinition("tour", List.of("ridge"), GameMode.RACE);
+        CatalogHolder catalog = new CatalogHolder(new LoadedCatalog(
+                new CatalogSnapshot(Map.of("ridge", ridge), Map.of("tour", cup)), cup, Instant.EPOCH));
+        new TutorialBook(catalog).open(racer);
 
         List<ShowDialogPacket> shown = dialogs.collect();
         assertThat(shown).as("the book shows exactly one dialog").hasSize(1);

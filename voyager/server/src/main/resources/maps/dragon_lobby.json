@@ -2,7 +2,7 @@
   "$schema": "../../../../../platform/src/main/resources/schema/map.schema.json",
   "schemaVersion": 2,
   "key": "elytrarace:dragon_lobby",
-  "displayName": "DragonLobby",
+  "displayName": "<gradient:#ff55ff:blue>DragonLobby</gradient>",
   "authors": [
     { "uuid": "e1dff87a-1059-47f1-bc7d-533f072bf8c7", "name": "Seelenretterin" }
   ],
@@ -20,6 +20,7 @@
   "guideLine": {
     "lookAheadRings": 2,
     "particleSpacing": 1.0,
+    "particle": "END_ROD",
     "points": []
   },
   "rings": [
