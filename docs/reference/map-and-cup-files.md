@@ -55,6 +55,12 @@ A file that names none of the optional fields loads with the same rings, boost t
 before. Only the drawing changes: the line is drawn as a full line in `END_ROD`, where it was drawn as a window in amber dust.
 The budget is 30,000 packets a second in total and 2,000 for any one racer at sixteen racers, and `particleSpacing` is
 the value that keeps the shipped course inside it: 2.0 for `elytraraceblueandred`.
+
+`elytrarace:palm_beach` names `particle` `DUST` and `dustColor` `#7A1FB8` (deep violet), so its line stays visible against its
+bright sand and sky. Every other shipped map names `END_ROD` in its file. The palm_beach line at `particleSpacing` 1.0 is the one
+accepted exception to the 2,000 per-racer limit: at sixteen racers its worst racer is sent 3,690 packets a second, and the total
+is 29,800. The owner accepted this on 2026-10-29 and kept the spacing. `PalmBeachBudgetExceptionTest` pins the ceilings at 4,000
+per racer and 30,000 in total.
 | `rings` | array | Yes | None. | Missing, or empty. |
 | `notes` | array of strings | No | None. The loader ignores it. | Never. |
 

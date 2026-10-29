@@ -20,6 +20,8 @@
   "guideLine": {
     "lookAheadRings": 2,
     "particleSpacing": 1.0,
+    "particle": "DUST",
+    "dustColor": "#7A1FB8",
     "points": []
   },
   "rings": [
