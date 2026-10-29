@@ -39,3 +39,18 @@
 #### Scenario: A save with DUST
 - **WHEN** a map that names `DUST` and `#7A1FB8` is loaded and saved by the setup server
 - **THEN** the saved file names `DUST` and `#7A1FB8`
+
+### Requirement: palm_beach's DUST line is an accepted exception to the per-racer packet cap
+**MoSCoW:** Must. THE SYSTEM SHALL accept, for `elytrarace:palm_beach` only, a per-racer packet count above the limit of
+`race/racing-line-display`, as the owner decided on 2026-10-29, and SHALL keep the total within its 30,000 limit.
+
+#### Scenario: palm_beach at full race size
+- **WHEN** sixteen racers are spread along palm_beach, each in FULL mode, with the 160-block reach applied
+- **THEN** the total particle packets per second do not exceed 30,000, and no racer is sent more than 4,000 per second.
+  The measured figures on 2026-10-28 were 29,800 in total and 3,690 for the worst racer, pinned by a test so they cannot
+  get worse without a new decision. END_ROD would send the worst racer about 2,460 (from the refresh ratio, not measured),
+  so the excess is not caused by DUST alone.
+
+#### Scenario: The exception does not extend to the shipped course
+- **WHEN** sixteen racers are spread along `elytrarace:blue_and_red`, each in FULL mode
+- **THEN** no racer is sent more than 2,000 packets per second, as `race/racing-line-display` requires
