@@ -63,6 +63,12 @@ class UndoCommandsTest {
         return new Fixture(env, builder, store, sessions, chat);
     }
 
+    /** A fixture over a store in fresh folders, for the tests that need no failing save. */
+    private Fixture plain(Env env) throws IOException {
+        folders();
+        return fixture(env, store());
+    }
+
     private DraftStore store() {
         return new JsonDraftStore(data, worlds);
     }
@@ -73,7 +79,7 @@ class UndoCommandsTest {
 
     @Test
     void undoAfterAPlacedRingSavesTheDraftWithoutIt(Env env) throws IOException {
-        Fixture fixture = fixture(env, store());
+        Fixture fixture = plain(env);
         fixture.enter("map new skyfortress");
         fixture.placeRingAt(0);
         fixture.placeRingAt(4);
@@ -88,7 +94,7 @@ class UndoCommandsTest {
 
     @Test
     void redoAfterAnUndoSavesThePlacedRingAgain(Env env) throws IOException {
-        Fixture fixture = fixture(env, store());
+        Fixture fixture = plain(env);
         fixture.enter("map new skyfortress");
         fixture.placeRingAt(0);
         fixture.placeRingAt(4);
@@ -102,7 +108,7 @@ class UndoCommandsTest {
 
     @Test
     void undoRightAfterOpeningAMapRepliesNoneAndWritesNothing(Env env) throws IOException {
-        Fixture fixture = fixture(env, store());
+        Fixture fixture = plain(env);
         fixture.enter("map new skyfortress");
         byte[] before = Files.readAllBytes(draftFile());
 
@@ -114,7 +120,7 @@ class UndoCommandsTest {
 
     @Test
     void redoWithNothingUndoneRepliesNoneAndWritesNothing(Env env) throws IOException {
-        Fixture fixture = fixture(env, store());
+        Fixture fixture = plain(env);
         fixture.enter("map new skyfortress");
         fixture.placeRingAt(0);
         byte[] before = Files.readAllBytes(draftFile());
@@ -127,7 +133,7 @@ class UndoCommandsTest {
 
     @Test
     void undoAfterASpawnRestoresTheSpawnAndKeepsTheDisplayName(Env env) throws IOException {
-        Fixture fixture = fixture(env, store());
+        Fixture fixture = plain(env);
         fixture.enter("map new skyfortress");
         MapDraft named = new MapDraft(ID, ID.value(), null, List.of(), RingDefaults.REFERENCE_TIME_SECONDS,
                 RingDefaults.BOOST, RingDefaults.GUIDE_LINE, RingEffectTuning.DEFAULT, "Sky Fortress", List.of());
@@ -144,7 +150,7 @@ class UndoCommandsTest {
 
     @Test
     void undoAfterOpeningAnotherMapAndComingBackRepliesNone(Env env) throws IOException {
-        Fixture fixture = fixture(env, store());
+        Fixture fixture = plain(env);
         fixture.enter("map new skyfortress");
         fixture.placeRingAt(0);
         fixture.enter("map new canyon");
