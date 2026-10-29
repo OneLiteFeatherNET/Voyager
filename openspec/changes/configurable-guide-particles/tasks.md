@@ -40,7 +40,10 @@ This change starts after `add-catalogue-keys-and-authors` has landed. Both edit 
 - [ ] 4.1 Run `./gradlew :voyager:platform:test :voyager:server:test :voyager:fitness:test` (`feat(catalog)`)
 - [ ] 4.2 Playtest the four maps: draw palm_beach in violet and the other three in white, from the spawn, at ring 1 and at mid-course,
   and record the owner's verdict for each in `docs/research/` (`feat(catalog)`)
-- [ ] 4.3 Check the racing line's packet budget for the shipped course with DUST, since DUST redraws more often than END_ROD (`feat(catalog)`)
+- [ ] 4.3 Check the racing line's packet budget for the shipped course with DUST, since DUST redraws more often than END_ROD (`feat(catalog)`).
+  Result (2026-10-28): palm_beach's worst racer is sent 3,690 packets/s, over the 2,000 per-racer cap, and the total is 29,800,
+  under 30,000. The owner accepted the overage on 2026-10-29 (option b, particleSpacing unchanged). The exception is the
+  `palm_beach` requirement in the guide-particles spec, pinned in code at 4,000 per racer and 30,000 total. blue_and_red keeps 2,000.
 - [ ] 4.4 Run `./gradlew build` for both trees, and smoke-boot the server shadow JAR with LuckPerms as the apply rules require, quoting the
   start lines in the code pull request (`feat(catalog)`)
 
