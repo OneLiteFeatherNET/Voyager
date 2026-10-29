@@ -52,7 +52,7 @@ change the defaults were `run/data` and `run/worlds`, and a service needed two `
 |---|---|
 | Bind host and port | the system properties `service.bind.host` and `service.bind.port`, which the node sets for each service. The environment variables `SERVICE_BIND_HOST` and `SERVICE_BIND_PORT` also work |
 | Velocity forwarding secret | the environment variable `VOYAGER_VELOCITY_SECRET` in the task's environment, the same secret the Velocity proxy holds. The system property `voyager.velocity.secret` also works. Never write it into a file in the service directory |
-| Racer counts, cup and paths | the system properties `VOYAGER_CUP`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH`, and the lobby pair `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`. Each of them also works as an environment variable of the same name |
+| Racer counts, cup, cup rotation and paths | the system properties `VOYAGER_CUP`, `VOYAGER_CUP_ROTATION`, `VOYAGER_CUP_ROTATION_STATE`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH`, and the lobby pair `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`. Each of them also works as an environment variable of the same name |
 | The `stop` command | the node writes `end` and then `stop` to the service's standard input. `end` is ignored, `stop` shuts the service down cleanly |
 | The statistics switch | the environment variable `VOYAGER_PERSISTENCE`: `on` collects statistics, `off` keeps none. Unset means `off` |
 | The statistics database | the environment variables `VOYAGER_DB_URL`, `VOYAGER_DB_USER` and `VOYAGER_DB_PASSWORD`, or `VOYAGER_DB_PASSWORD_FILE` (see "Player statistics database") |
@@ -157,6 +157,22 @@ fallback configuration, not from Voyager. Voyager names no group and no task.
 - Configure a fallback for the game's proxy group, so that a fallback exists for the racers to go to. Without one, CloudNet has
   no target, and what a racer sees is the proxy's behaviour, not Voyager's. Voyager does not detect it and does not retry.
 - A node without the bridge disconnects the racers with the translated message instead. That is the local-development path.
+
+## Cup rotation and the state file
+
+A server can play several cups in turn. Set `VOYAGER_CUP_ROTATION` to the cups in play order, such as `alpha_cup,legacy_cup`, and
+the server keeps running between cups: when a cup's results have lingered and its racers are with the hub, the next cup of the
+list is armed for the next round, and the first cup follows the last. Do not set `VOYAGER_CUP` with it; the start is refused.
+
+The position lives in the server process, so a restart or a redeploy begins again at the first cup unless a state file keeps it.
+Set `VOYAGER_CUP_ROTATION_STATE` to a file outside the service directory, which CloudNet clears on every stop:
+
+1. Create the directory on the node, owned by the user the service runs as: `/home/cloud/cloudnet/local/voyager-state/`.
+2. Set `VOYAGER_CUP_ROTATION_STATE=/home/cloud/cloudnet/local/voyager-state/rotation` in the task's environment.
+
+A missing directory refuses the start and names the path. A cup whose world folders are not on the node is skipped with one
+warning, so the server plays the cups that are complete. The configuration check (`voyager.config.check=true`) reports a skipped
+cup as a warning and exits with 0 while another cup can be played. Decision record: ADR-0044.
 
 ## Known limits
 

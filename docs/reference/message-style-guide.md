@@ -40,7 +40,7 @@ Each kind of information has one channel. Choose the channel before the wording.
 | Title and subtitle | one moment: GO, the medal, a reset, the cup result | the title's hold time | `GOLD`, `0.8 s faster for Gold` |
 | Boss bar | persistent state of a map: map progress, the medal band and the time left in it; between maps, the count to the next GO | until the state changes | `Map 2/4 · Diamond · 12.4 s left`, `Next map in 28 s` |
 | Action bar (lobby) | the waiting count, or the start countdown, while the room waits; the experience bar counts the start down | until the room starts | `Need 1 more player to start`, `Start in 12 s` |
-| Sidebar (lobby) | the cup, its maps, the racers online, the status and a footer, one per racer | while the room waits | `Racers 3/16`, `starts in 12 s` |
+| Sidebar (lobby) | the cup the next round plays, its maps, the racers online, the status and a footer, one per racer | while the room waits | `Racers 3/16`, `starts in 12 s` |
 | Sidebar (between maps) | the standings of the map just played, one per racer | from the next map's spawn until its GO | `1  Ada  1:02.0  +0.0 s` |
 | Sound | confirmation of an event | not on screen | the ring bell |
 
