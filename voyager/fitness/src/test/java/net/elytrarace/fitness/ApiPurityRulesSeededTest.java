@@ -38,6 +38,11 @@ class ApiPurityRulesSeededTest {
         assertRuleCatches(ApiPurityTest.onlyTheTextPackageSendsAStringToACommandSender);
     }
 
+    @Test
+    void aRingShapeThatIsNotAFinalRecordIsCaught() {
+        assertRuleCatches(DesignRuleTest.ringShapeIsSealedToCircleAndEllipse, SEEDED_API);
+    }
+
     private static void assertRuleCatches(ArchRule rule) {
         assertRuleCatches(rule, SEEDED);
     }

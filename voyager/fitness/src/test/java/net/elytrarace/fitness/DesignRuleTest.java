@@ -102,6 +102,31 @@ class DesignRuleTest {
                             + "1's non-sealed abstract Base* extension point for a sealed domain interface")
                     .allowEmptyShould(false);
 
+    /**
+     * Each ring shape, {@code Circle} and {@code Ellipse}, is a final record. The compiler already limits the
+     * implementors of the sealed {@code RingShape} to these two; this rule keeps both shapes value-like, so that their
+     * equality is the equality of their values. The selector matches by name within the api, which is where the seeded proof places its
+     * violation.
+     */
+    private static final ArchCondition<JavaClass> BE_A_FINAL_RECORD =
+            new ArchCondition<>("be a final record") {
+                @Override
+                public void check(JavaClass item, ConditionEvents events) {
+                    if (!item.isRecord() || !item.getModifiers().contains(JavaModifier.FINAL)) {
+                        events.add(SimpleConditionEvent.violated(item,
+                                "%s is a ring shape but not a final record".formatted(item.getName())));
+                    }
+                }
+            };
+
+    @ArchTest
+    static final ArchRule ringShapeIsSealedToCircleAndEllipse =
+            classes().that().haveSimpleName("Circle").or().haveSimpleName("Ellipse")
+                    .and().resideInAPackage("net.elytrarace.voyager.api..")
+                    .should(BE_A_FINAL_RECORD)
+                    .because("the ring shape is sealed to a circle and an ellipse, both final records")
+                    .allowEmptyShould(false);
+
     @ArchTest
     static final ArchRule race_domain_exceptions_are_runtime_exceptions =
             classes().that().resideInAnyPackage("net.elytrarace.voyager.race..", "net.elytrarace.voyager.api.race..")
