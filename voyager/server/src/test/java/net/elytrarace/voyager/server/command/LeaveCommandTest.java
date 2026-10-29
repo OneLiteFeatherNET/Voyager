@@ -22,6 +22,7 @@ import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
 import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
@@ -147,7 +148,7 @@ class LeaveCommandTest {
                     Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
             // The handoff is installed, so the fallback disconnect and the refusal warning are never reached.
             HubHandoff hub = new HubHandoff(() -> Optional.of(handedToHub::add), (racer, reason) -> { }, warning -> { });
-            WaitingRoom room = new WaitingRoom(session, catalog, () -> online, 2, 16, null, hub, new LobbyHud(),
+            WaitingRoom room = new WaitingRoom(session, CupRotationDriver.single(catalog), () -> online, 2, 16, null, hub, new LobbyHud(),
                     new LobbySidebar(), null, () -> waitingPlace);
             env.process().command().register(new LeaveCommand(room));
         }

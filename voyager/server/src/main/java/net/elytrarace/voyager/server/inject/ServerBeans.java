@@ -23,6 +23,10 @@ import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsBootstrap;
 import net.elytrarace.voyager.platform.permission.luckperms.LuckPermsPolicy;
 import net.elytrarace.voyager.platform.permission.luckperms.NetLuckPermsGateway;
 import net.elytrarace.voyager.platform.catalog.CatalogReloader;
+import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
+import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
+import net.elytrarace.voyager.platform.rotation.RotationPlan;
+import net.elytrarace.voyager.race.rotation.CupRotationStore;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
@@ -101,8 +105,18 @@ public final class ServerBeans {
      * identity.
      */
     @Bean
-    CatalogHolder catalogHolder(CatalogReloader reloader, @External ServerSettings settings) {
-        return new CatalogHolder(reloader.loadInitial(settings.dataPath(), settings.cupName()));
+    CatalogHolder catalogHolder(CatalogReloader reloader, @External ServerSettings settings, @External RotationPlan plan) {
+        return new CatalogHolder(reloader.loadInitial(settings.dataPath(), plan.boot()));
+    }
+
+    /**
+     * The cup rotation: the armed cup, the lobby's upcoming cup and the worlds in heap. Without a rotation it arms nothing and
+     * plays the holder's catalogue, as before.
+     */
+    @Bean
+    CupRotationDriver cupRotationDriver(CatalogHolder holder, MapInstances instances, @External CupRotationStore store,
+            @External RotationPlan plan, Clock clock) {
+        return new CupRotationDriver(holder, instances, store, clock, plan);
     }
 
     /**
@@ -111,8 +125,9 @@ public final class ServerBeans {
      */
     @Bean
     CatalogReloadService catalogReloadService(CatalogReloader reloader, CatalogHolder holder,
-            @External ServerSettings settings) {
-        return new CatalogReloadService(() -> reloader.reload(settings.dataPath(), settings.cupName()), holder,
+            @External ServerSettings settings, CupRotationDriver rotation) {
+        return new CatalogReloadService(
+                () -> reloader.reload(settings.dataPath(), rotation.armedName().or(settings::cupName)), holder,
                 Thread::startVirtualThread);
     }
 
@@ -151,8 +166,8 @@ public final class ServerBeans {
 
     /** The lobby tutorial book: five fixed dialog pages, built once, and a sixth for the cup the room waits for. */
     @Bean
-    TutorialBook tutorialBook(CatalogHolder catalog) {
-        return new TutorialBook(catalog);
+    TutorialBook tutorialBook(CupRotationDriver rotation) {
+        return new TutorialBook(rotation::upcoming);
     }
 
     /** {@code /stats}, built with the read queue the tick answers from. Registered by {@code VoyagerServer}, like {@code /race}. */
@@ -177,7 +192,7 @@ public final class ServerBeans {
      * before a client can connect.
      */
     @Bean
-    WaitingRoom waitingRoom(CupSession session, Supplier<Collection<Player>> players, CatalogHolder catalog,
+    WaitingRoom waitingRoom(CupSession session, Supplier<Collection<Player>> players, CupRotationDriver rotation,
             MapInstances instances, @External ServerSettings settings) {
         LobbyTransition lobby = settings.lobby()
                 .map(definition -> new LobbyTransition(instances, definition))
@@ -185,12 +200,13 @@ public final class ServerBeans {
         HubHandoff hub = HubHandoff.fromSlot((racer, reason) -> racer.kick(reason), LOGGER::warn);
         // The hologram stands in the lobby world, which the lobby transition has just loaded, so it is spawned here, once
         // at boot. It is an entity and not part of the world, so the lobby is never written with it.
+        LoadedCatalog upcoming = rotation.upcoming();
         LobbyHologram hologram = lobby == null ? null : LobbyHologram.spawnAt(
                 settings.lobbyHologram().map(at -> Vectors.toMinestom(at).asPos()), lobby.instance(),
-                LobbyBoard.of(catalog.current().cup(), catalog.current().snapshot())).orElse(null);
-        return new WaitingRoom(session, catalog, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
+                LobbyBoard.of(upcoming.cup(), upcoming.snapshot())).orElse(null);
+        return new WaitingRoom(session, rotation, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
                 hub, new LobbyHud(), new LobbySidebar(), hologram,
-                () -> instances.forWorld(catalog.current().rotation().getFirst().world()));
+                () -> instances.forWorld(rotation.upcoming().rotation().getFirst().world()));
     }
 
     @Bean

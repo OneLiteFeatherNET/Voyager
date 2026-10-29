@@ -1,12 +1,12 @@
 package net.elytrarace.voyager.platform.lobby;
 
-import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
 import net.elytrarace.voyager.platform.lobby.sound.LobbyCountdownSounds;
+import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.kyori.adventure.sound.Sound;
@@ -69,7 +69,7 @@ public final class WaitingRoom {
     private static final long NO_SECOND = -1L;
 
     private final CupSession session;
-    private final CatalogHolder catalog;
+    private final CupRotationDriver rotation;
     private final Supplier<Collection<Player>> players;
     private final int minimum;
     private final int maximum;
@@ -94,7 +94,7 @@ public final class WaitingRoom {
 
     /**
      * @param session the cup the room starts, cancels and aborts
-     * @param catalog the catalogue holder; the lobby names the cup it currently holds (a pending reload shows only once a round
+     * @param rotation the cup rotation; the lobby names the cup the next round plays (the holder's current cup when no rotation is
      *     promotes it, ADR-0033)
      * @param players everyone online, read on every tick
      * @param minimum how many racers a cup needs to start; at least one
@@ -109,7 +109,7 @@ public final class WaitingRoom {
      *     it, so the bar is shown there; it is read only in that case
      * @throws IllegalArgumentException if {@code minimum} or {@code maximum} is below one
      */
-    public WaitingRoom(CupSession session, CatalogHolder catalog, Supplier<Collection<Player>> players, int minimum,
+    public WaitingRoom(CupSession session, CupRotationDriver rotation, Supplier<Collection<Player>> players, int minimum,
             int maximum, @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, LobbySidebar sidebar,
             @Nullable LobbyHologram hologram, Supplier<Instance> firstMapInstance) {
         if (minimum < 1) {
@@ -119,7 +119,7 @@ public final class WaitingRoom {
             throw new IllegalArgumentException("the maximum racer count must be at least 1, was %s".formatted(maximum));
         }
         this.session = session;
-        this.catalog = catalog;
+        this.rotation = rotation;
         this.players = players;
         this.minimum = minimum;
         this.maximum = maximum;
@@ -239,6 +239,7 @@ public final class WaitingRoom {
             advanceLinger();
         }
 
+        rotation.tick();
         Collection<Player> online = racers();
         int count = online.size();
         if (count > 0) {
@@ -289,6 +290,7 @@ public final class WaitingRoom {
         if (lingerTicks == RESULTS_LINGER_TICKS) {
             lingerTicks = NO_RESULT;
             handOff(racers());
+            rotation.armNext();
         }
     }
 
@@ -348,8 +350,8 @@ public final class WaitingRoom {
      */
     private void announce(StartGate.Situation situation, Collection<Player> online, int count) {
         // Every lobby display reads this one board, so the sidebar and the hologram name the same cup.
-        LoadedCatalog current = catalog.current();
-        LobbyBoard board = LobbyBoard.of(current.cup(), current.snapshot());
+        LoadedCatalog upcoming = rotation.upcoming();
+        LobbyBoard board = LobbyBoard.of(upcoming.cup(), upcoming.snapshot());
         Instance waitingPlace = waitingPlace();
         // The countdown is held in whole seconds, so the sidebar's status line changes once a second and not every tick.
         LobbyStatus status = new LobbyStatus(count, maximum,
