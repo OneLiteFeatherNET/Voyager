@@ -2,6 +2,7 @@ package net.elytrarace.voyager.setup.mapsetup;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingShape;
 import net.elytrarace.voyager.api.race.RingType;
 import org.junit.jupiter.api.Test;
 
@@ -73,5 +74,24 @@ class RingPickerTest {
 
     private static Ring ring(int index, Vec3 center, Vec3 normal, double radius) {
         return new Ring(index, center, normal, radius, 10, RingType.STANDARD);
+    }
+
+    @Test
+    void aLookRayThroughTheAreaOfAnOvalPicksTheOval() {
+        Vec3 normal = new Vec3(0, 0, 1);
+        List<Ring> rings = List.of(new Ring(0, new Vec3(0, 0, 5), normal,
+                RingShape.of(6.0, 3.0, new Vec3(1, 0, 0), normal), 10, RingType.STANDARD));
+
+        assertThat(RingPicker.nearestCrossed(rings, new Vec3(4, 0, 0), FORWARD, REACH)).isEqualTo(OptionalInt.of(0));
+    }
+
+    @Test
+    void aLookRayThroughTheCircumscribedCircleOutsideAnOvalPicksNothing() {
+        // Five blocks along the minor axis: inside the circle of the semi-major radius, outside the oval.
+        Vec3 normal = new Vec3(0, 0, 1);
+        List<Ring> rings = List.of(new Ring(0, new Vec3(0, 0, 5), normal,
+                RingShape.of(6.0, 3.0, new Vec3(1, 0, 0), normal), 10, RingType.STANDARD));
+
+        assertThat(RingPicker.nearestCrossed(rings, new Vec3(0, 5, 0), FORWARD, REACH)).isEmpty();
     }
 }

@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.GuidePoint;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingShape;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.Contract;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.util.List;
 
 /**
  * Writes a draft in the key order of the shipped map: {@code schemaVersion} first, then {@code key}, {@code world},
@@ -25,8 +27,11 @@ import java.io.UncheckedIOException;
 @ApiStatus.Internal
 public abstract class MapDraftJsonWriter {
 
-    /** The schema version this writer produces; the adapter of the game server reads version 2 (ADR-0040). */
+    /** The schema version of a draft of circles; the adapter of the game server reads version 2 (ADR-0040). */
     static final int SCHEMA_VERSION = 2;
+
+    /** The schema version of a draft with an oval ring, which states the oval fields (ADR-0043). */
+    static final int OVAL_SCHEMA_VERSION = 3;
 
     private MapDraftJsonWriter() {
     }
@@ -49,8 +54,9 @@ public abstract class MapDraftJsonWriter {
     }
 
     private static void writeDraft(JsonWriter json, MapDraft draft) throws IOException {
+        List<Ring> rings = draft.rings();
         json.beginObject();
-        json.name("schemaVersion").value(SCHEMA_VERSION);
+        json.name("schemaVersion").value(schemaVersion(rings));
         json.name("key").value(draft.key().asString());
         json.name("world").value(draft.world());
         if (draft.displayName() != null && !draft.displayName().isBlank()) {
@@ -75,11 +81,17 @@ public abstract class MapDraftJsonWriter {
         ringEffects(json, draft.ringEffects());
         guideLine(json, draft.guideLine());
         json.name("rings").beginArray();
-        for (Ring ring : draft.rings()) {
+        for (Ring ring : rings) {
             ring(json, ring);
         }
         json.endArray();
         json.endObject();
+    }
+
+    /** A draft that has an oval is written in version 3, and every other draft stays in version 2 for older servers. */
+    private static int schemaVersion(List<Ring> rings) {
+        boolean hasOval = rings.stream().anyMatch(ring -> ring.shape() instanceof RingShape.Ellipse);
+        return hasOval ? OVAL_SCHEMA_VERSION : SCHEMA_VERSION;
     }
 
     /**
@@ -144,6 +156,11 @@ public abstract class MapDraftJsonWriter {
         json.name("radius").value(ring.radius());
         json.name("points").value(ring.points());
         json.name("type").value(ring.type().name());
+        if (ring.shape() instanceof RingShape.Ellipse oval) {
+            json.name("radiusMinor").value(oval.radiusMinor());
+            json.name("majorAxis");
+            vector(json, oval.majorAxis());
+        }
         json.endObject();
     }
 

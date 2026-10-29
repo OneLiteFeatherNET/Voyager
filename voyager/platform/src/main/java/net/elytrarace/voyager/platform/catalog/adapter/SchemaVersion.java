@@ -15,10 +15,10 @@ import com.google.gson.JsonParseException;
 final class SchemaVersion {
 
     /**
-     * The highest schema version this server reads: 2, the version that states a {@code key} (ADR-0040). Raised only
-     * with a migration for the old version.
+     * The highest schema version this server reads: 3, the version that states an oval ring (ADR-0043). Version 2
+     * states a {@code key} (ADR-0040). Raised only with a migration for the old version.
      */
-    static final int CURRENT = 2;
+    static final int CURRENT = 3;
 
     private static final String FIELD = "schemaVersion";
 

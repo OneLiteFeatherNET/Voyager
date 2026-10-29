@@ -16,4 +16,8 @@ final class SeededViolations {
     static Component adventureTextInTheApi() {
         return Component.text("seeded");
     }
+
+    /** A class named as a ring shape that is not a record, for {@code DesignRuleTest}'s ring-shape rule to refuse. */
+    static final class Ellipse {
+    }
 }

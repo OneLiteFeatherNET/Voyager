@@ -34,4 +34,12 @@ class LayoutVersionTest {
 
         assertThat(version).as("layout version").matches("[0-9a-f]{16}");
     }
+
+    @Test
+    void aMapWithAnOvalHasADifferentLayoutVersionFromTheCircleOfTheSameSemiMajorRadius() {
+        String circle = LayoutVersion.of(CanonicalFixtures.course());
+        String oval = LayoutVersion.of(CanonicalFixtures.courseWithAnOvalFirstRing());
+
+        assertThat(oval).as("layout version of the course whose first ring is an oval").isNotEqualTo(circle);
+    }
 }

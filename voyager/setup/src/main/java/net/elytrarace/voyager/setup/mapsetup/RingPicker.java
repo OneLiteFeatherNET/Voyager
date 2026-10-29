@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.OptionalInt;
 
 /**
- * Finds the ring a builder's look ray crosses: the nearest disc the ray hits within reach, rim inclusive.
+ * Finds the ring a builder's look ray crosses: the nearest ring whose shape the ray hits within reach, rim inclusive.
+ * The test is {@link Ring#contains}, the same one the collision uses, so the ring the builder points at is the ring
+ * the racer must fly through.
  */
 @ApiStatus.Internal
 public abstract class RingPicker {
@@ -46,8 +48,7 @@ public abstract class RingPicker {
             if (!(distance > 0.0 && distance <= reach)) {
                 continue;
             }
-            Vec3 hit = origin.plus(direction.scale(distance));
-            if (hit.distanceTo(ring.center()) > ring.radius()) {
+            if (!ring.contains(origin.plus(direction.scale(distance)))) {
                 continue;
             }
             if (distance < nearestDistance) {

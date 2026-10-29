@@ -427,10 +427,10 @@ class MapDefinitionAdapterTest {
 
     @Test
     void refusesSchemaVersionAboveTheSupportedMaximumNamingBothNumbers() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("3"), MapDefinition.class))
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withSchemaVersion("4"), MapDefinition.class))
                 .isInstanceOf(JsonParseException.class)
-                .hasMessageContaining("map 'elytraraceblueandred' declares schemaVersion 3")
-                .hasMessageContaining("up to schemaVersion 2");
+                .hasMessageContaining("map 'elytraraceblueandred' declares schemaVersion 4")
+                .hasMessageContaining("up to schemaVersion 3");
     }
 
     @Test

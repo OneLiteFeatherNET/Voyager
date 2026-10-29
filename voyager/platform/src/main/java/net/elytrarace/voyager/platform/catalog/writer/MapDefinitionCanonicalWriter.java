@@ -3,6 +3,7 @@ package net.elytrarace.voyager.platform.catalog.writer;
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingShape;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -63,6 +64,12 @@ public abstract class MapDefinitionCanonicalWriter {
             key(json, "radius").append(number(ring.radius())).append(',');
             key(json, "points").append(ring.points()).append(',');
             text(json, "type", ring.type().name());
+            if (ring.shape() instanceof RingShape.Ellipse oval) {
+                json.append(',');
+                key(json, "radiusMinor").append(number(oval.radiusMinor())).append(',');
+                key(json, "majorAxis");
+                vector(json, oval.majorAxis());
+            }
             json.append('}');
         }
         json.append(']');

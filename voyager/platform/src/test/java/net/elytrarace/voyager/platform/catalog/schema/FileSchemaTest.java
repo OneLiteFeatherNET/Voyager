@@ -186,11 +186,36 @@ class FileSchemaTest {
     }
 
     @Test
-    void schemaVersionThreeIsOutOfRangeInTheMapSchema() {
-        String version3 = VALID_MAP.replace("\"schemaVersion\": 2", "\"schemaVersion\": 3");
+    void schemaVersionFourIsOutOfRangeInTheMapSchema() {
+        String version4 = VALID_MAP.replace("\"schemaVersion\": 2", "\"schemaVersion\": 4");
 
-        assertThat(errors(mapSchema(), JSON.readTree(version3))).anySatisfy(
+        assertThat(errors(mapSchema(), JSON.readTree(version4))).anySatisfy(
                 error -> assertThat(error.getInstanceLocation().toString()).isEqualTo("/schemaVersion"));
+    }
+
+    @Test
+    void aVersionThreeMapWithAnOvalRingValidatesAgainstTheMapSchema() {
+        String oval = VALID_MAP.replace("\"schemaVersion\": 2", "\"schemaVersion\": 3")
+                .replace("\"radius\": 4.0, \"points\": 10, \"type\": \"STANDARD\"",
+                        "\"radius\": 4.0, \"radiusMinor\": 2.0, \"majorAxis\": { \"x\": 0.0, \"y\": 1.0, \"z\": 0.0 }, "
+                                + "\"points\": 10, \"type\": \"STANDARD\"");
+
+        assertThat(errors(mapSchema(), JSON.readTree(oval))).isEmpty();
+    }
+
+    @Test
+    void aVersionTwoMapOfCirclesValidatesAgainstTheVersionTwoSchema() {
+        assertThat(errors(schema("map-v2.schema.json"), JSON.readTree(VALID_MAP))).isEmpty();
+    }
+
+    @Test
+    void anOvalRingWithoutItsMajorAxisIsRejectedNamingMajorAxis() {
+        String withoutAxis = VALID_MAP.replace("\"schemaVersion\": 2", "\"schemaVersion\": 3")
+                .replace("\"radius\": 4.0, \"points\": 10, \"type\": \"STANDARD\"",
+                        "\"radius\": 4.0, \"radiusMinor\": 2.0, \"points\": 10, \"type\": \"STANDARD\"");
+
+        assertThat(errors(mapSchema(), JSON.readTree(withoutAxis))).anySatisfy(
+                error -> assertThat(error.getMessage()).contains("majorAxis"));
     }
 
     @Test

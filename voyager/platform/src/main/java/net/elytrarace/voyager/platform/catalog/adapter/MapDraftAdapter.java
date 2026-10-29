@@ -52,7 +52,7 @@ public final class MapDraftAdapter {
         JsonArray ringElements = JsonFields.array(json, "rings", what);
         List<Ring> rings = new ArrayList<>(ringElements.size());
         for (int position = 0; position < ringElements.size(); position++) {
-            rings.add(RingAdapter.read(ringElements.get(position), position));
+            rings.add(RingAdapter.read(ringElements.get(position), position, version, what));
         }
 
         return new MapDraft(

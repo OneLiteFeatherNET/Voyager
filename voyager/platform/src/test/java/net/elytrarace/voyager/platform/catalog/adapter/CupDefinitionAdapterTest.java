@@ -69,10 +69,10 @@ class CupDefinitionAdapterTest {
 
     @Test
     void refusesCupSchemaVersionAboveTheSupportedMaximumNamingBothNumbers() {
-        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("3"), CupDefinition.class))
+        assertThatThrownBy(() -> Adapters.GSON.fromJson(withCupSchemaVersion("4"), CupDefinition.class))
                 .isInstanceOf(JsonParseException.class)
-                .hasMessageContaining("cup 'test_cup' declares schemaVersion 3")
-                .hasMessageContaining("up to schemaVersion 2");
+                .hasMessageContaining("cup 'test_cup' declares schemaVersion 4")
+                .hasMessageContaining("up to schemaVersion 3");
     }
 
     private static String withCupSchemaVersion(String value) {

@@ -9,7 +9,7 @@ A map or cup is identified by an Adventure key in the `elytrarace` namespace, wr
 A file the loader refuses stops the server at boot. The refusal names the file, followed by the cause:
 
 ```text
-/data/maps/sky-drift.json is not a valid definition: map 'elytrarace:sky-drift' declares schemaVersion 3, but this server reads up to schemaVersion 2
+/data/maps/sky-drift.json is not a valid definition: map 'elytrarace:sky-drift' declares schemaVersion 4, but this server reads up to schemaVersion 3
 ```
 
 ## Map file
@@ -17,7 +17,7 @@ A file the loader refuses stops the server at boot. The refusal names the file, 
 | Field | Type | Required | Default or derivation | Refused when |
 |---|---|---|---|---|
 | `$schema` | string | No | None. The loader ignores it. | Never. The editor schema checks it as a relative path. |
-| `schemaVersion` | integer | No | `1` when absent. | Not a whole number of 1 or more, or above `2`. The refusal names the declared version and the highest supported version. |
+| `schemaVersion` | integer | No | `1` when absent. | Not a whole number of 1 or more, or above `3`. The refusal names the declared version and the highest supported version. |
 | `key` | string | Yes in version 2 | None. | Missing in version 2, not in the `elytrarace` namespace, or a value outside the rule above. The refusal names the field and the file. A version 2 file that also states `name` is refused. |
 | `name` | string | Yes in version 1 | None. | Missing in version 1, a value outside the rule above (for example capitals or spaces), or present in version 2. A version 1 file that states `key` is refused. |
 | `displayName` | string | No | The map's key in full, for example `elytrarace:blue_and_red`. | Longer than 40 characters. The refusal names the field and the file. |
@@ -78,8 +78,10 @@ Rings are read in array order. The position of a ring in `rings` is its index: t
 | `index` | integer | No | The ring's zero-based position in `rings`. | Present and not equal to the position. The refusal names the position and the declared index. |
 | `center` | vector | Yes | None. | Missing. |
 | `normal` | vector | Yes | None. Stored as written. | Missing, or not of unit length. |
-| `radius` | number | Yes | None. | Missing, or not positive. |
-| `points` | integer | Yes | None. | Missing, not a whole number, or negative. |
+| `radius` | number | Yes | None. The radius of a circle, or the semi-major radius of an oval. | Missing, or outside `[0.5, 32]` blocks. |
+| `radiusMinor` | number | No | None. Stated only for an oval, with `majorAxis`. | Stated without `majorAxis`, outside `[0.5, 32]`, or greater than `radius`. A file below schema version 3 that states it is refused. |
+| `majorAxis` | vector | No | None. Stated only for an oval, with `radiusMinor`. The unit vector of the major axis, in the ring's plane. | Stated without `radiusMinor`, not of unit length, or not perpendicular to `normal`. A file below schema version 3 that states it is refused. |
+| `points` | integer | Yes | None. | Missing, not a whole number, or outside `[0, 100]`. |
 | `type` | string | Yes | None. | Missing, or not one of `STANDARD`, `BOOST`, `SLOW`, `CHECKPOINT`. A misspelt type is refused rather than read as `STANDARD`. |
 
 A ring of type `CHECKPOINT` is the reset target. When a racer is reset, the racer returns to the last `CHECKPOINT` ring they passed, and the rings passed after it are removed from their run (see [course reset](course-reset.md)). A map with no `CHECKPOINT` ring resets every racer to the map's spawn. A `CHECKPOINT` ring applies no velocity effect; only `BOOST` and `SLOW` do.
@@ -145,10 +147,11 @@ The shipped maps credit TheMeinerLP on `blue_and_red` and Seelenretterin on `pal
 
 ## Schema version
 
-`schemaVersion` tells the loader which rules a file was written under. The server reads versions 1 and 2.
+`schemaVersion` tells the loader which rules a file was written under. The server reads versions 1, 2 and 3.
 
 - A file without the field is version 1.
 - Version 2 states `key` (see above). Version 1 states `name`.
+- Version 3 states an oval ring with `radiusMinor` and `majorAxis` (see the ring fields above). A ring with no oval field is a circle, and a version 3 file of circles loads like a version 2 file. An oval in a file of version 2 or lower is refused, and the message names the file, the ring's position and the field, so an older server never plays an oval as a circle. The decision is recorded in [ADR-0043](../decisions/0043-oval-rings.md).
 - A file that declares a version above the highest version the server reads is refused. The message names the file, the declared version and the highest supported version, so an older server reports a newer file plainly rather than misreading it.
 - A version that is not a whole number of 1 or more is refused, whether it is zero, fractional or written as text.
 
@@ -158,7 +161,8 @@ The files the converter in `tools/map-converter` writes still declare `"schemaVe
 
 The JSON Schema documents for both file kinds are in the platform module:
 
-- `voyager/platform/src/main/resources/schema/map.schema.json` and `cup.schema.json`, for version 2;
+- `voyager/platform/src/main/resources/schema/map.schema.json` and `cup.schema.json`, for version 3;
+- `voyager/platform/src/main/resources/schema/map-v2.schema.json` and `cup-v2.schema.json`, for version 2;
 - `voyager/platform/src/main/resources/schema/map-v1.schema.json` and `cup-v1.schema.json`, for version 1.
 
 Both use draft 2020-12. Each file in the committed data declares its schema with a relative `$schema` path, so an editor that supports `$schema` offers completion and reports errors while the file is edited. For a file in the repository the path resolves from the file's own location. A file copied into a data directory outside the repository does not resolve it, so the editor must be given the schema another way.

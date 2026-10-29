@@ -21,4 +21,18 @@ class MapDefinitionCanonicalWriterTest {
 
         assertThat(second).as("canonical form of the second write").isEqualTo(first);
     }
+
+    @Test
+    void aCircleIsWrittenWithoutAnyOvalField() {
+        String canonical = MapDefinitionCanonicalWriter.toCanonicalJson(CanonicalFixtures.course());
+
+        assertThat(canonical).doesNotContain("radiusMinor").doesNotContain("majorAxis");
+    }
+
+    @Test
+    void anOvalIsWrittenWithItsMinorRadiusAndItsMajorAxis() {
+        String canonical = MapDefinitionCanonicalWriter.toCanonicalJson(CanonicalFixtures.courseWithAnOvalFirstRing());
+
+        assertThat(canonical).contains("\"radiusMinor\":3.0,\"majorAxis\":{\"x\":1.0,\"y\":0.0,\"z\":0.0}");
+    }
 }

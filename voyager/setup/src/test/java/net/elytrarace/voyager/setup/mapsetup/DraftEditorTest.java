@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.race.Author;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingShape;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import org.junit.jupiter.api.Test;
@@ -172,5 +173,20 @@ class DraftEditorTest {
 
     private static Ring ring(int index, double x) {
         return new Ring(index, new Vec3(x, 0, 0), new Vec3(0, 0, 1), RingDefaults.RADIUS, 10, RingType.STANDARD);
+    }
+
+    @Test
+    void removingARingKeepsTheShapeOfAnOvalAfterIt() {
+        Vec3 up = new Vec3(0, 0, 1);
+        Ring oval = new Ring(1, new Vec3(2, 0, 0), up, RingShape.of(6.0, 3.0, new Vec3(1, 0, 0), up), 10,
+                RingType.STANDARD);
+        MapDraft draft = DraftEditor.withRingAppended(
+                DraftEditor.withRingAppended(DraftEditor.skeleton(ID), new Ring(0, Vec3.ZERO, up, 2.0, 10,
+                        RingType.STANDARD)), oval);
+
+        Ring kept = DraftEditor.withoutRing(draft, 0).rings().get(0);
+
+        assertThat(kept.index()).isZero();
+        assertThat(kept.shape()).isEqualTo(oval.shape());
     }
 }
