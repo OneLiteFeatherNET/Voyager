@@ -16,14 +16,19 @@ import net.elytrarace.voyager.platform.convert.Vectors;
 import net.elytrarace.voyager.platform.flight.ArrivalFacing;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.hud.HudState;
+import net.elytrarace.voyager.platform.hud.BetweenMapsBoard;
 import net.elytrarace.voyager.platform.hud.HudStates;
 import net.elytrarace.voyager.platform.hud.RaceFeedback;
 import net.elytrarace.voyager.platform.hud.RaceHud;
 import net.elytrarace.voyager.platform.hud.StartCountdown;
+import net.elytrarace.voyager.platform.hud.WaitBar;
 import net.elytrarace.voyager.platform.render.GuideLineRenderer;
 import net.elytrarace.voyager.platform.stats.CupCompletions;
 import net.elytrarace.voyager.platform.stats.RaceCompletions;
 import net.elytrarace.voyager.platform.stats.RaceParticipant;
+import net.elytrarace.voyager.platform.stats.BestAnswer;
+import net.elytrarace.voyager.platform.stats.NoPersonalBests;
+import net.elytrarace.voyager.platform.stats.PersonalBestReader;
 import net.elytrarace.voyager.platform.stats.RacerTally;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tick.FlightTick;
@@ -49,6 +54,8 @@ import net.elytrarace.voyager.race.reset.RunReset;
 import net.elytrarace.voyager.race.run.RaceRun;
 import net.elytrarace.voyager.race.scoring.MapScore;
 import net.elytrarace.voyager.race.scoring.MapScorer;
+import net.elytrarace.voyager.race.standing.MapStanding;
+import net.elytrarace.voyager.race.standing.PersonalBestComparison;
 import net.elytrarace.voyager.api.stats.CupCompletion;
 import net.elytrarace.voyager.api.stats.RaceCompletion;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
@@ -80,6 +87,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -271,6 +279,21 @@ public final class CupSession implements RacePhaseListener {
     private final Map<UUID, Vec3> lastPositions = new HashMap<>();
     private final Map<UUID, Vec3> lastVelocities = new HashMap<>();
 
+    /** The personal best read started at each GO, by racer; empty when statistics are off or the cup is not ranked. */
+    private final Map<UUID, PersonalBestRead> personalBestReads = new HashMap<>();
+
+    /** The standings sidebar a racer reads while they wait between two maps. */
+    private final BetweenMapsBoard standings = new BetweenMapsBoard();
+
+    /** The racers whose boss bar shows a wait, so that it is taken down at the next GO and not before. */
+    private final Set<UUID> waiting = new HashSet<>();
+
+    /** Where each ranked racer's stored best is read from. */
+    private final PersonalBestReader bests;
+
+    /** The standing of the map that last ended, kept for the wait; null before a map has ended. */
+    private @Nullable MapStanding settledStanding;
+
     /**
      * Builds a session from the collaborators the composition root wires. The flight driver samples the players
      * through the boost tracker and reads blocks through the block source, so those three belong together; the
@@ -298,12 +321,14 @@ public final class CupSession implements RacePhaseListener {
      * FireworkBoostTracker, RaceTimings, Duration, Supplier, RaceRecorder, Clock)}, and the competitor port last.
      *
      * @param competitors the computer racers; {@link NoCompetitors} for a cup with none
+     * @param bests where each ranked racer's stored best is read from; {@code NoPersonalBests} when statistics are off
      */
     public CupSession(CatalogHolder catalog, MapInstances instances,
             MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
             FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
-            RaceRecorder recorder, Clock clock, CompetitorField competitors) {
+            RaceRecorder recorder, Clock clock, CompetitorField competitors, PersonalBestReader bests) {
         this.catalog = catalog;
+        this.bests = bests;
         this.competitors = competitors;
         this.cup = catalog.current().cup();
         this.instances = instances;
@@ -322,6 +347,20 @@ public final class CupSession implements RacePhaseListener {
         this.clock = clock;
         this.mapStartedAt = clock.instant();
         this.cupStartedAt = clock.instant();
+    }
+
+    /**
+     * Builds a session that plays the computer racers {@code competitors} reports, with no stored bests: the
+     * same as {@link #CupSession(CatalogHolder, MapInstances, MapTransition, RaceRuns, FlightTickDriver,
+     * CurrentMapBlocks, FireworkBoostTracker, RaceTimings, Duration, Supplier, RaceRecorder, Clock, CompetitorField,
+     * PersonalBestReader)}, with {@link NoPersonalBests}.
+     */
+    public CupSession(CatalogHolder catalog, MapInstances instances,
+            MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
+            FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
+            RaceRecorder recorder, Clock clock, CompetitorField competitors) {
+        this(catalog, instances, transition, runs, flight, blocks, boosts, timings, step, players, recorder, clock,
+                competitors, new NoPersonalBests());
     }
 
     /** The cup being played: the one the current round pinned, or the boot cup before the first round. */
@@ -384,6 +423,7 @@ public final class CupSession implements RacePhaseListener {
         }
         forgetPendingSkip();
         clearPlacements();
+        forgetWaits();
         RaceTimings played = skipLobby
                 ? new RaceTimings(Duration.ZERO, timings.race(), timings.endBetweenMaps(),
                         timings.endAfterLastMap())
@@ -531,6 +571,7 @@ public final class CupSession implements RacePhaseListener {
 
     /** Drops everything a started or armed cup holds for its current lobby, so that {@link #describe()} reads not started. */
     private void forgetLobby() {
+        forgetWaits();
         currentMap = null;
         preparedMapIndex = NO_MAP;
         gameStarted = false;
@@ -580,6 +621,7 @@ public final class CupSession implements RacePhaseListener {
         tickFinale();
         glideStep();
         current.onUpdate();
+        refreshWait();
         placementStep();
         if (current.state().cupFinished() && currentMap != null) {
             // mapFinished has already run for the last map by the time cupFinished is set, so every
@@ -654,6 +696,9 @@ public final class CupSession implements RacePhaseListener {
         runs.forget(playerId);
         boosts.forget(playerId);
         hud.forget(playerId);
+        standings.forget(playerId);
+        waiting.remove(playerId);
+        personalBestReads.remove(playerId);
         lastSimulated.remove(playerId);
         forgetPlacement(playerId);
     }
@@ -709,7 +754,9 @@ public final class CupSession implements RacePhaseListener {
         HudState armed = HudStates.of(MapFigures.starting(map, mapIndex + 1, cup.mapNames().size()));
         for (Player racer : players.get()) {
             RaceFeedback.countdown(racer, digit, Component.empty());
-            hud.arm(racer, armed);
+            if (!gameStarted) {
+                hud.arm(racer, armed);
+            }
         }
     }
 
@@ -719,6 +766,8 @@ public final class CupSession implements RacePhaseListener {
         gameStarted = true;
         mapStartedAt = clock.instant();
         racing = true;
+        endWaits();
+        startPersonalBestReads(map);
 
         // GO releases the racers placed on this map: each one begins its run here, and is no longer held. A racer who is
         // not placed yet is placed now, and begins the run when the placement completes. GO does not move a racer who is
@@ -942,6 +991,9 @@ public final class CupSession implements RacePhaseListener {
         if (map == null) {
             return;
         }
+        // The race is over, so a racer still out on the course did not finish, and the standing is kept for the wait.
+        MapStanding standing = standingOf(false);
+        settledStanding = standing;
         for (Player racer : players.get()) {
             UUID id = racer.getUuid();
             Optional<RaceRun> held = runs.of(id);
@@ -971,8 +1023,12 @@ public final class CupSession implements RacePhaseListener {
         LOGGER.info("Map {}/{} '{}' finished after {} tick(s), {}",
                 mapIndex + 1, cup.mapNames().size(), mapName, clock.gameTick(), CupAnnouncer.seconds(clock.elapsed()));
         for (Player racer : players.get()) {
-            announcer.announceMapScore(racer, map, round.scoreOn(racer.getUuid(), mapIndex),
-                    ringsPassedOf(racer.getUuid()));
+            UUID id = racer.getUuid();
+            Optional<PersonalBestComparison> best = runs.of(id)
+                    .filter(RaceRun::finished)
+                    .flatMap(run -> personalBestOf(id, run.timeOnCourse(timings.race())));
+            announcer.announceMapScore(racer, map, round.scoreOn(id, mapIndex), ringsPassedOf(id),
+                    standing, racerNames(), best);
         }
         racing = false;
         // The cup stays on this map until the next map's own lobby prepares it, so the end of this map still names this
@@ -1038,6 +1094,145 @@ public final class CupSession implements RacePhaseListener {
         } catch (RuntimeException failure) {
             LOGGER.warn("Cup '{}' was not recorded for statistics: {}", cup.key().asString(), failure.getMessage(), failure);
         }
+    }
+
+    /** Takes the wait's boss bar and standings down for every racer, because the next map's GO has come. */
+    private void endWaits() {
+        for (Player racer : players.get()) {
+            standings.hide(racer);
+            if (waiting.contains(racer.getUuid())) {
+                hud.endWait(racer);
+            }
+        }
+        waiting.clear();
+    }
+
+    /** Drops the wait for every racer: the cup is starting over or being abandoned, so nothing of it outlives the cup. */
+    private void forgetWaits() {
+        for (Player racer : players.get()) {
+            standings.hide(racer);
+        }
+        waiting.clear();
+        personalBestReads.clear();
+        settledStanding = null;
+    }
+
+    /**
+     * Starts the read of each ranked human racer's stored best on {@code map}, at its GO. Nothing is read in an unranked
+     * cup or with statistics off, so no best is ever shown there.
+     */
+    private void startPersonalBestReads(MapDefinition map) {
+        personalBestReads.clear();
+        if (!bests.enabled() || !cup.mode().ranked()) {
+            return;
+        }
+        String layout = LayoutVersion.of(map);
+        Instant go = clock.instant();
+        for (Player racer : players.get()) {
+            UUID id = racer.getUuid();
+            BestAnswer answer = bests.bestOn(id, map.key().asString(), layout, cup.mode());
+            personalBestReads.put(id, new PersonalBestRead(answer, go));
+        }
+    }
+
+    /** The comparison of a finish with the best read at the GO, if that read came back in time. */
+    private Optional<PersonalBestComparison> personalBestOf(UUID playerId, Duration finish) {
+        PersonalBestRead read = personalBestReads.get(playerId);
+        return read == null ? Optional.empty() : read.compare(finish);
+    }
+
+    /**
+     * The standing of the map being raced, from its runs: finished, still racing while the race runs, or not finished.
+     *
+     * @param raceOn whether the race is still running, which tells a racer still on the course from one who did not finish
+     */
+    private MapStanding standingOf(boolean raceOn) {
+        List<MapStanding.Entry> entries = new ArrayList<>();
+        for (Player racer : players.get()) {
+            UUID id = racer.getUuid();
+            runs.of(id).ifPresent(run -> entries.add(entryOf(id, false, run, raceOn)));
+        }
+        for (UUID competitor : seatedCompetitors) {
+            runs.of(competitor).ifPresent(run -> entries.add(entryOf(competitor, true, run, raceOn)));
+        }
+        return MapStanding.of(entries);
+    }
+
+    private static MapStanding.Entry entryOf(UUID id, boolean computer, RaceRun run, boolean raceOn) {
+        if (run.finished()) {
+            return new MapStanding.Entry(id, computer, MapStanding.Outcome.FINISHED, run.finishedAt().orElseThrow());
+        }
+        return new MapStanding.Entry(id, computer,
+                raceOn ? MapStanding.Outcome.RACING : MapStanding.Outcome.DID_NOT_FINISH, null);
+    }
+
+    /**
+     * A racer's name in the standings: the racer's name, the computer racer's {@code COM n}, or the departed name for somebody
+     * who has left.
+     */
+    private Function<UUID, Component> racerNames() {
+        return id -> {
+            int seat = seatedCompetitors.indexOf(id);
+            if (seat >= 0) {
+                return Messages.computerRacerName(seat + 1);
+            }
+            for (Player racer : players.get()) {
+                if (racer.getUuid().equals(id)) {
+                    return Messages.racerName(racer.getUsername());
+                }
+            }
+            return Messages.departed();
+        };
+    }
+
+    /**
+     * The wait's boss bar and standings sidebar, for every racer, as the phase stands after this tick.
+     *
+     * <p>Between two maps every human racer sees the count to the next GO. During the game phase a racer who is already
+     * placed on the next map sees how many racers are still on this one, and the standings, which move as racers finish.
+     * Every other racer keeps the race's own boss bar, which this does not touch.
+     */
+    private void refreshWait() {
+        XerusPhaseDriver current = driver;
+        if (current == null) {
+            return;
+        }
+        RaceState state = current.state();
+        Optional<WaitBar> countdown = WaitBar.countingDown(state, timings, gameStarted, followsAnotherMap(state));
+        MapStanding standing = racing ? standingOf(true) : settledStanding;
+        Function<UUID, Component> names = racerNames();
+        for (Player racer : players.get()) {
+            UUID id = racer.getUuid();
+            Optional<WaitBar> bar = countdown;
+            if (bar.isEmpty() && state.phase() == RacePhase.GAME && standing != null
+                    && isPlacedOn(id, followingMapIndex(state.mapIndex()))) {
+                bar = Optional.of(WaitBar.waiting(racersStillRacing(standing)));
+            }
+            if (bar.isEmpty()) {
+                if (waiting.remove(id)) {
+                    hud.endWait(racer);
+                }
+                standings.hide(racer);
+                continue;
+            }
+            hud.showWait(racer, bar.get());
+            waiting.add(id);
+            if (standing != null) {
+                standings.update(racer, BetweenMapsBoard.lines(standing, names));
+            }
+        }
+    }
+
+    /** Whether the cup has a map after the one {@code state} is on; a practice cup always has the same map again. */
+    private boolean followsAnotherMap(RaceState state) {
+        return cup.mode() == GameMode.PRACTICE || state.mapIndex() + 1 < cup.mapNames().size();
+    }
+
+    /** How many racers, computer racers included, are still racing the map. */
+    private static int racersStillRacing(MapStanding standing) {
+        return (int) standing.entries().stream()
+                .filter(entry -> entry.outcome() == MapStanding.Outcome.RACING)
+                .count();
     }
 
     /** A placement under way: the map index it is for, the map, and the placement that is moving the racer. */

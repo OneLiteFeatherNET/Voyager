@@ -102,6 +102,22 @@ public abstract class Messages {
     private static final String MAP_RESULT_DNF = "voyager.result.map.dnf";
     private static final String MAP_RESULT_SUBTITLE_NEXT = "voyager.result.map.subtitle.next";
     private static final String MAP_RESULT_SUBTITLE_DNF = "voyager.result.map.subtitle.dnf";
+    private static final String PLACE_BEHIND = "voyager.result.place.behind";
+    private static final String PLACE_AHEAD = "voyager.result.place.ahead";
+    private static final String PLACE_ALONE = "voyager.result.place.alone";
+    private static final String PB_NEW = "voyager.result.pb.new";
+    private static final String PB_FIRST = "voyager.result.pb.first";
+    private static final String PB_SLOWER = "voyager.result.pb.slower";
+    private static final String PB_EQUAL = "voyager.result.pb.equal";
+    private static final String WAIT_BOSS_BAR_NEXT = "voyager.wait.bossbar.next";
+    private static final String WAIT_BOSS_BAR_WAITING = "voyager.wait.bossbar.waiting.other";
+    private static final String WAIT_BOSS_BAR_WAITING_ONE = "voyager.wait.bossbar.waiting.one";
+    private static final String WAIT_SIDEBAR_TITLE = "voyager.wait.sidebar.title";
+    private static final String WAIT_SIDEBAR_FINISHER = "voyager.wait.sidebar.finisher";
+    private static final String WAIT_SIDEBAR_GAP = "voyager.wait.sidebar.gap";
+    private static final String WAIT_SIDEBAR_RACING = "voyager.wait.sidebar.racing";
+    private static final String WAIT_SIDEBAR_DNF = "voyager.wait.sidebar.dnf";
+    private static final String WAIT_SIDEBAR_MORE = "voyager.wait.sidebar.more";
     private static final String CUP_PLACE_1 = "voyager.cup.place.1.title";
     private static final String CUP_PLACE_2 = "voyager.cup.place.2.title";
     private static final String CUP_PLACE_3 = "voyager.cup.place.3.title";
@@ -554,6 +570,142 @@ public abstract class Messages {
         return Component.translatable(MAP_RESULT_SUBTITLE_DNF,
                 Component.text(ringsPassed),
                 Component.text(ringCount));
+    }
+
+    /**
+     * A finisher's place, behind the racer directly ahead: the place out of every racer who started, and the gap to that
+     * racer.
+     *
+     * @param place the place, counted from one
+     * @param of every racer who started the map
+     * @param gap the time between the racer and the one ahead
+     * @param rival the name of the racer ahead
+     */
+    @Contract(pure = true)
+    public static Component placeBehind(int place, int of, Duration gap, Component rival) {
+        return Component.translatable(PLACE_BEHIND,
+                Component.text(place), Component.text(of), Component.text(RaceTimeFormat.seconds(gap)), rival);
+    }
+
+    /**
+     * A first place, ahead of the racer directly behind: the place out of every racer who started, and the gap to that racer.
+     *
+     * @param place the place, counted from one
+     * @param of every racer who started the map
+     * @param gap the time between the racer and the one behind
+     * @param rival the name of the racer behind
+     */
+    @Contract(pure = true)
+    public static Component placeAhead(int place, int of, Duration gap, Component rival) {
+        return Component.translatable(PLACE_AHEAD,
+                Component.text(place), Component.text(of), Component.text(RaceTimeFormat.seconds(gap)), rival);
+    }
+
+    /**
+     * A place with nobody to measure against: the place out of every racer who started, and no other racer named.
+     *
+     * @param place the place, counted from one
+     * @param of every racer who started the map
+     */
+    @Contract(pure = true)
+    public static Component placeAlone(int place, int of) {
+        return Component.translatable(PLACE_ALONE, Component.text(place), Component.text(of));
+    }
+
+    /**
+     * The personal best clause that ends a place line when the finish beats the stored best.
+     *
+     * @param delta how much faster than the best the finish was
+     */
+    @Contract(pure = true)
+    public static Component personalBestNew(Duration delta) {
+        return Component.translatable(PB_NEW, Component.text(RaceTimeFormat.seconds(delta)));
+    }
+
+    /**
+     * The personal best clause that ends a place line when the finish is slower than the stored best.
+     *
+     * @param delta how much slower than the best the finish was
+     */
+    @Contract(pure = true)
+    public static Component personalBestSlower(Duration delta) {
+        return Component.translatable(PB_SLOWER, Component.text(RaceTimeFormat.seconds(delta)));
+    }
+
+    /** The personal best clause that ends a place line when the finish equals the stored best. */
+    @Contract(pure = true)
+    public static Component personalBestEqual() {
+        return Component.translatable(PB_EQUAL);
+    }
+
+    /** The personal best clause that ends a place line on a map that has no stored best yet. */
+    @Contract(pure = true)
+    public static Component personalBestFirst() {
+        return Component.translatable(PB_FIRST);
+    }
+
+    /**
+     * The boss bar's title while a racer waits for the next map: the whole seconds left until its GO, rounded up.
+     *
+     * @param secondsLeft the seconds left
+     */
+    @Contract(pure = true)
+    public static Component waitBossBarNext(long secondsLeft) {
+        return Component.translatable(WAIT_BOSS_BAR_NEXT, Component.text(secondsLeft));
+    }
+
+    /**
+     * The boss bar's title while a racer already stands in the next map and some racers still race the one before it.
+     *
+     * @param racers how many racers are still on the previous map
+     */
+    @Contract(pure = true)
+    public static Component waitBossBarWaiting(int racers) {
+        return Component.translatable(racers == 1 ? WAIT_BOSS_BAR_WAITING_ONE : WAIT_BOSS_BAR_WAITING,
+                Component.text(racers));
+    }
+
+    /** The title of the standings sidebar that is shown while a racer waits. */
+    @Contract(pure = true)
+    public static Component waitStandingsTitle() {
+        return Component.translatable(WAIT_SIDEBAR_TITLE);
+    }
+
+    /**
+     * A finisher's line on the standings sidebar: the place, the name, the time on the map and the gap to the leader.
+     *
+     * @param place the place, counted from one
+     * @param name the racer's name
+     * @param time the time the racer finished the map in
+     * @param behindLeader the gap to the leader, zero for the leader
+     */
+    @Contract(pure = true)
+    public static Component waitStandingsFinisher(int place, Component name, Duration time, Duration behindLeader) {
+        return Component.translatable(WAIT_SIDEBAR_FINISHER,
+                Component.text(place), name, Component.text(RaceTimeFormat.tenths(time)),
+                Component.translatable(WAIT_SIDEBAR_GAP, Component.text(RaceTimeFormat.seconds(behindLeader))));
+    }
+
+    /** A racer still racing the map, on the standings sidebar. */
+    @Contract(pure = true)
+    public static Component waitStandingsRacing(Component name) {
+        return Component.translatable(WAIT_SIDEBAR_RACING, name);
+    }
+
+    /** A racer who did not finish the map, on the standings sidebar. */
+    @Contract(pure = true)
+    public static Component waitStandingsDnf(Component name) {
+        return Component.translatable(WAIT_SIDEBAR_DNF, name);
+    }
+
+    /**
+     * The last line of a standings sidebar that has more racers than lines.
+     *
+     * @param more how many racers are not listed
+     */
+    @Contract(pure = true)
+    public static Component waitStandingsMore(int more) {
+        return Component.translatable(WAIT_SIDEBAR_MORE, Component.text(more));
     }
 
     /**
