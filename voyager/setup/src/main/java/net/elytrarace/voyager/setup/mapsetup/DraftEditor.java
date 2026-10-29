@@ -63,7 +63,7 @@ public abstract class DraftEditor {
                 continue;
             }
             int position = rings.size();
-            rings.add(new Ring(position, ring.center(), ring.normal(), ring.radius(), ring.points(), ring.type()));
+            rings.add(new Ring(position, ring.center(), ring.normal(), ring.shape(), ring.points(), ring.type()));
         }
         return with(draft, rings, draft.spawn());
     }

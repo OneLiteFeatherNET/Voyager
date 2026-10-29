@@ -5,9 +5,11 @@ import net.elytrarace.voyager.api.race.BoostConfig;
 import net.elytrarace.voyager.api.race.GuideLine;
 import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingShape;
 import net.elytrarace.voyager.api.race.RingType;
 import net.elytrarace.voyager.api.race.com.ComDifficulty;
 import net.elytrarace.voyager.race.line.RacingLine;
+import net.elytrarace.voyager.race.progress.RingProgress;
 
 import org.junit.jupiter.api.Test;
 
@@ -257,5 +259,31 @@ class ComPilotTest {
         assertThat(state.progress().passedCount())
                 .as("every ring of the course is passed")
                 .isEqualTo(3);
+    }
+
+    @Test
+    void aDetourAroundAnOvalClearsItsSemiMajorRadiusPlusTheClearance() {
+        // The middle ring is an oval whose semi-major radius is 6, so the outward leg of the detour must keep
+        // 6 + DETOUR_CLEARANCE from the line, the clearance a circle of radius 6 would get.
+        Vec3 normal = new Vec3(0.0, 0.0, 1.0);
+        List<Ring> rings = List.of(
+                new Ring(0, new Vec3(0.0, 64.0, 20.0), normal, RING_RADIUS, 8, RingType.STANDARD),
+                new Ring(1, new Vec3(0.0, 64.0, 50.0), normal,
+                        RingShape.of(6.0, 3.0, new Vec3(1.0, 0.0, 0.0), normal), 8, RingType.STANDARD),
+                new Ring(2, new Vec3(0.0, 64.0, 80.0), normal, RING_RADIUS, 8, RingType.STANDARD));
+        MapDefinition map = new MapDefinition("fixture", "fixture", new Vec3(0.0, 64.0, 0.0), rings,
+                Duration.ofSeconds(30), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
+        ComPath path = ComPath.fromGrid(map.spawn(), RacingLine.of(map), map.rings());
+        // Three blocks before the ring's centre the outward leg has fully ramped in: DETOUR_RAMP after DETOUR_LEAD.
+        double distance = path.ringDistance(1) - ComPilot.DETOUR_LEAD + ComPilot.DETOUR_RAMP;
+        ComState detouring = new ComState(SEAT, distance, ComTuning.FLOOR_SPEED, RingProgress.atStart(),
+                ComDetour.OUTBOUND, 1, ComState.NO_BOOST, 0, ComStatus.RACING);
+
+        double clearance = ComPilot.positionOf(detouring, ComTuning.of(ComDifficulty.MEDIUM, SEED), path)
+                .distanceTo(path.pointAt(distance));
+
+        assertThat(clearance)
+                .as("clearance of the detour around an oval whose semi-major radius is 6")
+                .isCloseTo(6.0 + ComPilot.DETOUR_CLEARANCE, within(1e-9));
     }
 }

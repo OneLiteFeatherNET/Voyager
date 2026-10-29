@@ -51,6 +51,39 @@ class RingTest {
     }
 
     @Test
+    void aRingWithNoPointsAndOneWithAHundredPointsAreAccepted() {
+        assertThat(new Ring(0, Vec3.ZERO, UP_RIGHT, 4.0, 0, RingType.STANDARD).points()).isZero();
+        assertThat(new Ring(0, Vec3.ZERO, UP_RIGHT, 4.0, 100, RingType.STANDARD).points()).isEqualTo(100);
+    }
+
+    @Test
+    void aRingWith101PointsIsRefusedNamingThePointsAndTheRange() {
+        assertThatThrownBy(() -> new Ring(0, Vec3.ZERO, UP_RIGHT, 4.0, 101, RingType.STANDARD))
+                .isInstanceOf(InvalidRingException.class)
+                .hasMessageContaining("101")
+                .hasMessageContaining("[0, 100]");
+    }
+
+    @Test
+    void aRingWhoseOvalAxisIsParallelToItsNormalIsRefusedNamingMajorAxis() {
+        Vec3 normal = new Vec3(0.0, 1.0, 0.0);
+
+        assertThatThrownBy(() -> new Ring(0, Vec3.ZERO, normal,
+                RingShape.of(6.0, 3.0, normal, normal), 10, RingType.STANDARD))
+                .isInstanceOf(InvalidRingException.class)
+                .hasMessageContaining("majorAxis");
+    }
+
+    @Test
+    void radiusReturnsTheSemiMajorRadiusOfAnOval() {
+        Vec3 normal = new Vec3(0.0, 1.0, 0.0);
+        Ring oval = new Ring(0, Vec3.ZERO, normal,
+                RingShape.of(6.0, 3.0, new Vec3(1.0, 0.0, 0.0), normal), 10, RingType.STANDARD);
+
+        assertThat(oval.radius()).isEqualTo(6.0);
+    }
+
+    @Test
     void looksUpTypesByNameAndReportsUnknownOnes() {
         assertThat(RingType.byName("boost")).contains(RingType.BOOST);
         assertThat(RingType.byName("CHECKPOINT")).contains(RingType.CHECKPOINT);

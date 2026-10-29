@@ -2,6 +2,7 @@ package net.elytrarace.voyager.race.collision;
 
 import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.Ring;
+import net.elytrarace.voyager.api.race.RingShape;
 import net.elytrarace.voyager.api.race.RingType;
 
 import org.junit.jupiter.api.Test;
@@ -137,5 +138,21 @@ class RingPassTest {
         Vec3 to = new Vec3(10.6, 70.8, -13.996);
 
         assertThat(RingPass.crosses(from, to, TILTED)).isFalse();
+    }
+
+    /** An oval facing +z at (0, 64, 100): semi-major radius 6 along x, semi-minor radius 3 along y. */
+    private static final Ring OVAL = new Ring(0, new Vec3(0.0, 64.0, 100.0), new Vec3(0.0, 0.0, 1.0),
+            RingShape.of(6.0, 3.0, new Vec3(1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0)), 5, RingType.STANDARD);
+
+    @Test
+    void countsAPassThroughTheAreaOfAnOval() {
+        // Four blocks along the major axis: inside the ellipse, though it is inside the circle of radius 6 too.
+        assertThat(RingPass.crosses(new Vec3(4.0, 64.0, 99.0), new Vec3(4.0, 64.0, 101.0), OVAL)).isTrue();
+    }
+
+    @Test
+    void doesNotCountAPassThroughTheCircumscribedCircleOutsideTheOval() {
+        // Five blocks along the minor axis: inside the circle of radius 6, but outside the oval of minor radius 3.
+        assertThat(RingPass.crosses(new Vec3(0.0, 69.0, 99.0), new Vec3(0.0, 69.0, 101.0), OVAL)).isFalse();
     }
 }
