@@ -281,6 +281,12 @@ public final class MapInstances implements AutoCloseable, WorldOpener {
     }
 
     @Override
+    public boolean hasPlayers(String world) {
+        LoadedWorld entry = loaded.get(world);
+        return entry != null && !entry.instance().getPlayers().isEmpty();
+    }
+
+    @Override
     public boolean regionDataChanged(String world) {
         LoadedWorld entry = loaded.get(world);
         if (entry == null) {

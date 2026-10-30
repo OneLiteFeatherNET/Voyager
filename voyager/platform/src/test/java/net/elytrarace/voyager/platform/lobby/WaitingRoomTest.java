@@ -19,6 +19,8 @@ import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
+import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
+import net.elytrarace.voyager.platform.rotation.RotationPlan;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.cup.LivePlayerSampler;
@@ -33,6 +35,7 @@ import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.elytrarace.voyager.race.flow.StartGate.Situation;
+import net.elytrarace.voyager.race.rotation.CupRotationStore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -67,6 +70,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
@@ -111,6 +115,12 @@ class WaitingRoomTest {
     private static final LoadedCatalog RELOADED = new LoadedCatalog(new CatalogSnapshot(
             Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(RELOADED_TOUR.key().asString(), RELOADED_TOUR)),
             RELOADED_TOUR, Instant.EPOCH);
+
+    /** The cup a rotation arms after TOUR: it plays the other map alone, so its name is distinct from TOUR's. */
+    private static final CupDefinition OTHER_TOUR = new CupDefinition("waiting_other_tour", List.of("other-run"),
+            GameMode.RACE);
+    private static final String TOUR_KEY = TOUR.key().asString();
+    private static final String OTHER_KEY = OTHER_TOUR.key().asString();
 
     /** Lobby 10 s (200 ticks), race 5 s (100 ticks), results 100 ms. */
     private static final RaceTimings TIMINGS = new RaceTimings(
@@ -390,6 +400,39 @@ class WaitingRoomTest {
 
         assertThat(fixture.handedToHub).containsExactly(first.getUuid(), second.getUuid());
         assertThat(fixture.kicked).isEmpty();
+    }
+
+    /** A finished cup arms the next cup of the rotation once its results have lingered, and not one tick before. */
+    @Test
+    void aFinishedCupArmsTheNextCupOfTheRotationOnlyOnceItsResultsHaveLingered(Env env) throws IOException {
+        Fixture fixture = rotatingFixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS - 1);
+
+        assertThat(fixture.driver.armedName()).contains(TOUR_KEY);
+
+        fixture.tick();
+
+        assertThat(fixture.driver.armedName()).contains(OTHER_KEY);
+    }
+
+    /** A racer who joins after the hand-off sees the armed cup on the sidebar, not the cup that just finished. */
+    @Test
+    void aRacerWhoJoinsAfterTheHandOffSeesTheArmedCupOnTheSidebar(Env env) throws IOException {
+        Fixture fixture = rotatingFixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        Player later = fixture.join();
+        fixture.tick();
+
+        assertThat(cupOnSidebar(fixture, later)).isEqualTo("Waiting Other Tour");
     }
 
     /** A racer who joins while the results are up is online when the linger ends, so the hub gets them too. */
@@ -693,6 +736,16 @@ class WaitingRoomTest {
      * finished racers to a lobby world of its own; without it they go back to the first map's spawn, as before.
      */
     private Fixture fixture(Env env, RaceTimings timings, int maximum, boolean withLobby) throws IOException {
+        return fixture(env, timings, maximum, withLobby, false);
+    }
+
+    /** A room whose cup is the first of a two-cup rotation: TOUR, then OTHER_TOUR. */
+    private Fixture rotatingFixture(Env env) throws IOException {
+        return fixture(env, TIMINGS, MAXIMUM, false, true);
+    }
+
+    private Fixture fixture(Env env, RaceTimings timings, int maximum, boolean withLobby, boolean rotating)
+            throws IOException {
         writeWorld(env, ARENA, ARENA_SPAWN);
         writeWorld(env, OTHER, OTHER_SPAWN);
         writeWorld(env, LOBBY, LOBBY_SPAWN);
@@ -701,7 +754,8 @@ class WaitingRoomTest {
         RaceRuns runs = new RaceRuns();
         MapTransition transition = new MapTransition(instances, runs);
         CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
-                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN), Map.of(TOUR.key().asString(), TOUR)),
+                new CatalogSnapshot(Map.of("arena-run", ARENA_RUN, "other-run", OTHER_RUN),
+                        Map.of(TOUR_KEY, TOUR, OTHER_KEY, OTHER_TOUR)),
                 TOUR, Instant.EPOCH));
 
         CurrentMapBlocks blocks = new CurrentMapBlocks();
@@ -722,9 +776,15 @@ class WaitingRoomTest {
                     throw new AssertionError("no refused handoff was expected, but got: " + message);
                 });
         LobbySidebar sidebar = new LobbySidebar();
-        WaitingRoom room = new WaitingRoom(session, holder, () -> online, MINIMUM, maximum, lobby, hub, hud,
+        CupRotationDriver driver = rotating
+                ? new CupRotationDriver(holder, instances, CupRotationStore.NONE,
+                        Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
+                        new RotationPlan(Optional.of(TOUR_KEY), List.of(TOUR_KEY, OTHER_KEY), Set.of(), List.of()))
+                : CupRotationDriver.single(holder);
+        WaitingRoom room = new WaitingRoom(session, driver, () -> online, MINIMUM, maximum, lobby, hub, hud,
                 sidebar, null, () -> instances.forWorld(ARENA));
-        return new Fixture(session, holder, pipeline, room, hud, sidebar, runs, instances, env, handedToHub, kicked);
+        return new Fixture(session, holder, pipeline, room, hud, sidebar, runs, instances, env, handedToHub, kicked,
+                driver);
     }
 
     /** Writes a world with one floor block under the spawn, through a Falco loader of its own. */
@@ -761,10 +821,13 @@ class WaitingRoomTest {
         private final List<UUID> handedToHub;
         /** The racers the room disconnected because no handoff ran or it refused. */
         private final List<Player> kicked;
+        /** The rotation the room reads its armed cup from. */
+        private final CupRotationDriver driver;
 
         private Fixture(CupSession session, CatalogHolder holder, TickPipeline pipeline, WaitingRoom room, LobbyHud hud,
                 LobbySidebar sidebar, RaceRuns runs,
-                MapInstances instances, Env env, List<UUID> handedToHub, List<Player> kicked) {
+                MapInstances instances, Env env, List<UUID> handedToHub, List<Player> kicked,
+                CupRotationDriver driver) {
             this.session = session;
             this.holder = holder;
             this.pipeline = pipeline;
@@ -776,6 +839,7 @@ class WaitingRoomTest {
             this.env = env;
             this.handedToHub = handedToHub;
             this.kicked = kicked;
+            this.driver = driver;
         }
 
         /** Connects a racer to the first map's spawn, as the join handler does: prepared, then offered to the room. */

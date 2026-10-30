@@ -10,9 +10,12 @@ import net.elytrarace.voyager.platform.config.ConfigLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
 import net.elytrarace.voyager.platform.catalog.CupResolution;
+import net.elytrarace.voyager.platform.rotation.RotationPlan;
+import net.elytrarace.voyager.platform.rotation.RotationValidation;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.world.WorldFolders;
 import net.elytrarace.voyager.platform.world.WorldHealth;
+import net.elytrarace.voyager.race.rotation.CupRotationStore;
 import net.elytrarace.voyager.server.config.exception.InvalidSettingException;
 import net.elytrarace.voyager.server.config.exception.MissingServerDirectoryException;
 
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -108,6 +112,7 @@ public final class ConfigCheck {
         minimumRacersProblem(problems, properties, sources);
         lobbySettingProblems(problems, properties, sources);
         comSettingProblems(problems, properties, sources);
+        problems.addAll(CupRotationSettings.problems(properties, sources));
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
@@ -255,6 +260,58 @@ public final class ConfigCheck {
         return errors.stream()
                 .filter(problem -> !isOtherCupFile(problem.source(), cupsDirectory, playedFile))
                 .toList();
+    }
+
+    /**
+     * The boot decision for a configured rotation: every cup it names is checked, one cup at a time, and the plan a boot
+     * starts from. The plan is empty when boot must be refused: a definition error, a damaged world, or no playable cup.
+     * The state file is read here, once, so the boot cup is the one the rotation resumes at.
+     *
+     * @param settings the settings whose directories exist
+     * @param rotation the rotation settings the loader named
+     * @param store    where the armed cup is kept; {@link CupRotationStore#NONE} when no state file is configured
+     * @param instances the instance manager of the initialised Minestom server
+     * @param sources  the label of the source of a key
+     * @return the plan, when boot may proceed, and every problem found, sorted
+     */
+    public static RotationBoot rotationBoot(ServerSettings settings, CupRotationSettings rotation,
+            CupRotationStore store, InstanceManager instances, Function<String, String> sources) {
+        Objects.requireNonNull(instances, "the instance manager must come from an initialised server");
+        MapInstances worlds = new MapInstances(instances, settings.worldsPath());
+        try {
+            CatalogReading reading = CatalogLoader.read(settings.dataPath());
+            RotationValidation.Result result = RotationValidation.check(reading, rotation.cups(), settings.worldsPath(),
+                    settings.dataPath().resolve("cups").toAbsolutePath(), worlds::checkWorld);
+            List<ConfigProblem> problems = new ArrayList<>(result.problems());
+            problems.addAll(lobbyProblems(settings, worlds, sources));
+            problems.sort(ConfigProblem.ORDER);
+            boolean refused = problems.stream().anyMatch(problem -> problem.severity() == Severity.ERROR)
+                    || result.playable().isEmpty();
+            if (refused) {
+                return new RotationBoot(Optional.empty(), List.copyOf(problems));
+            }
+            RotationPlan plan = RotationPlan.planned(result.cups(), Set.copyOf(result.skipped()), store.read(),
+                    rotation.stateFile().isPresent());
+            return new RotationBoot(Optional.of(plan), List.copyOf(problems));
+        } finally {
+            worlds.close();
+        }
+    }
+
+    /**
+     * The validate-and-exit run for a configured rotation: every problem of the rotation's cups, with a skipped cup as a
+     * warning, printed with the exit code. The exit code is 0 while no error is found, so a skipped cup with another
+     * playable cup still exits 0.
+     *
+     * @param extra the problems printed with the report, such as the database warnings
+     * @return 0 when there is no error, 1 when there is at least one
+     */
+    public static int runRotation(ServerSettings settings, CupRotationSettings rotation, InstanceManager instances,
+            PrintStream out, Function<String, String> sources, List<ConfigProblem> extra) {
+        List<ConfigProblem> all = new ArrayList<>(extra);
+        all.addAll(rotationBoot(settings, rotation, CupRotationStore.NONE, instances, sources).problems());
+        all.sort(ConfigProblem.ORDER);
+        return report(all, out);
     }
 
     private static Optional<CupDefinition> playedCup(ServerSettings settings) {
@@ -488,5 +545,14 @@ public final class ConfigCheck {
 
     private static ConfigProblem error(String key, String source, String message) {
         return new ConfigProblem(key, source, message, Severity.ERROR);
+    }
+
+    /**
+     * What the boot decided about a rotation.
+     *
+     * @param plan     the plan the boot starts from; empty when boot is refused
+     * @param problems every problem found, sorted; warnings are logged, errors refuse
+     */
+    public record RotationBoot(Optional<RotationPlan> plan, List<ConfigProblem> problems) {
     }
 }

@@ -215,7 +215,8 @@ statistics off no line says anything about a best.
 
 ## Lobby displays
 
-The rebuild's lobby shows the cup that waiting racers are about to play. The sidebar and the hologram read one board,
+The rebuild's lobby shows the cup that waiting racers are about to play. With a cup rotation (`VOYAGER_CUP_ROTATION`) that is the
+armed cup, which changes once the previous cup's results have lingered and its racers have been handed to the hub. The sidebar and the hologram read one board,
 `LobbyBoard`, so they always name the same cup and the same maps in play order (`platform/lobby`, ADR-0033). Every lobby line
 is a translation key, rendered in the racer's language, except the cup and map names, which are data.
 
@@ -228,7 +229,7 @@ is a translation key, rendered in the racer's language, except the cup and map n
 
 The lobby has no boss bar. A waiting racer holds a leave door (slot 8, `/leave` and `/hub` do the same) and a tutorial book
 (slot 1). The items are given while the room waits and stay in the racer's hotbar through the committed window; they are taken on the GO tick, the first tick the race runs. A full lobby that shortens the countdown plays the note-block chime once. A right click on the book
-opens the tutorial, five dialog pages with Back, Next and Close (ADR-0039).
+opens the tutorial: five explanatory dialog pages, and a sixth, "Next cup", that names the cup the next round plays and its maps. Each page has Back, Next and Close (ADR-0039).
 
 The cup shown is the cup the catalogue currently holds. A reload that is pending does not change it until a round starts and
 promotes it. A countdown keeps the cup it began with.
