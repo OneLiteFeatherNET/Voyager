@@ -36,6 +36,10 @@ public abstract class SetupMessages {
     private static final String RING_POSE_REFUSED = "voyager.setup.ring.pose.refused";
     private static final String RING_REMOVED = "voyager.setup.ring.removed";
     private static final String RING_NONE = "voyager.setup.ring.none";
+    private static final String UNDO_DONE = "voyager.setup.undo.done";
+    private static final String UNDO_NONE = "voyager.setup.undo.none";
+    private static final String REDO_DONE = "voyager.setup.redo.done";
+    private static final String REDO_NONE = "voyager.setup.redo.none";
     private static final String IMPORT_STARTED = "voyager.setup.import.started";
     private static final String IMPORT_DONE = "voyager.setup.import.done";
     private static final String IMPORT_FAILED = "voyager.setup.import.failed";
@@ -158,6 +162,26 @@ public abstract class SetupMessages {
     @Contract(pure = true)
     public static Component ringNone() {
         return Component.translatable(RING_NONE);
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component undoDone(int ringCount) {
+        return Component.translatable(UNDO_DONE, Component.text(ringCount));
+    }
+
+    @Contract(pure = true)
+    public static Component undoNone() {
+        return Component.translatable(UNDO_NONE);
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component redoDone(int ringCount) {
+        return Component.translatable(REDO_DONE, Component.text(ringCount));
+    }
+
+    @Contract(pure = true)
+    public static Component redoNone() {
+        return Component.translatable(REDO_NONE);
     }
 
     @Contract(pure = true, value = "_, _ -> new")
