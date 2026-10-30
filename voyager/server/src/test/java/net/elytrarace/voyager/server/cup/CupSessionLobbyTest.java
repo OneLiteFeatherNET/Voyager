@@ -156,7 +156,7 @@ class CupSessionLobbyTest {
         fixture.session.start(false);
         fixture.ticks(100);
 
-        fixture.session.disarm();
+        fixture.session.disarm(fixture.instances.forWorld(ARENA), new Pos(SPAWN.x(), SPAWN.y(), SPAWN.z()));
         assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.WAITING);
 
         fixture.session.start(false);
@@ -172,7 +172,8 @@ class CupSessionLobbyTest {
         fixture.session.start(false);
         fixture.ticks(140);
 
-        assertThatThrownBy(fixture.session::disarm).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> fixture.session.disarm(fixture.instances.forWorld(ARENA),
+                new Pos(SPAWN.x(), SPAWN.y(), SPAWN.z()))).isInstanceOf(IllegalStateException.class);
     }
 
     // ------------------------------------------------------------------------------------------
