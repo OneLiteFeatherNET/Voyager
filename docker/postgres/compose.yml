@@ -2,7 +2,7 @@
 # The password comes from the shell: export VOYAGER_LOCAL_DB_PASSWORD first. Nothing is written into this file.
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: 'voyager-postgres'
     ports:
       - "127.0.0.1:55432:5432"
