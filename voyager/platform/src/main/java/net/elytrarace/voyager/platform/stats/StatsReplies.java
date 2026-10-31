@@ -2,6 +2,8 @@ package net.elytrarace.voyager.platform.stats;
 
 import net.elytrarace.voyager.api.stats.LeaderboardEntry;
 import net.elytrarace.voyager.api.stats.PlayerProfile;
+import net.elytrarace.voyager.platform.catalog.CatalogSnapshot;
+import net.elytrarace.voyager.platform.text.DisplayName;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.kyori.adventure.text.Component;
 
@@ -29,9 +31,10 @@ public final class StatsReplies {
      *
      * @param profile the player's profile, as the reader gives it
      * @param name    the name to show in the header
+     * @param catalog the catalogue the map names are read from; a map no longer in it is named by its plain key
      * @return the lines, never empty
      */
-    public static List<Component> profile(PlayerProfile profile, String name) {
+    public static List<Component> profile(PlayerProfile profile, String name, CatalogSnapshot catalog) {
         if (!hasRankedRecord(profile)) {
             return List.of(Messages.statsProfileNone(name));
         }
@@ -45,8 +48,16 @@ public final class StatsReplies {
         for (PlayerProfile.PersonalBest best : profile.personalBests()) {
             fastest.merge(best.mapKey(), best.bestTimeMillis(), Math::min);
         }
-        fastest.forEach((mapKey, millis) -> lines.add(Messages.statsProfileBest(mapKey, millis)));
+        fastest.forEach((mapKey, millis) -> lines.add(Messages.statsProfileBest(mapName(catalog, mapKey), millis)));
         return List.copyOf(lines);
+    }
+
+    /**
+     * The name a best-time line shows for a map: the catalogue's display name, or the plain key when the catalogue
+     * no longer holds the map, which happens when a stored time outlives its map file.
+     */
+    private static Component mapName(CatalogSnapshot catalog, String mapKey) {
+        return DisplayName.orPlainKey(catalog.mapByName(mapKey), mapKey);
     }
 
     /**

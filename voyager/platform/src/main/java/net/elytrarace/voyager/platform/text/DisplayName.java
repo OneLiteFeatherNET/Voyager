@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.text;
 
+import net.elytrarace.voyager.api.race.MapDefinition;
 import net.elytrarace.voyager.platform.text.exception.InvalidDisplayNameException;
 
 import net.kyori.adventure.key.Key;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.Contract;
 
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -97,6 +99,21 @@ public final class DisplayName {
     @Contract(pure = true)
     public static Component component(Key key, String raw) {
         return MINI_MESSAGE.deserialize(raw).colorIfAbsent(NamePalette.hueFor(key));
+    }
+
+    /**
+     * The name of a map that a stored record names by key, where the catalogue may no longer hold the map: the
+     * map's display name when the catalogue has it, otherwise the plain key, which still tells the reader which
+     * map the time was on.
+     *
+     * @param map    the catalogue's definition of the map, empty when the catalogue no longer holds it
+     * @param mapKey the key the stored record names the map by
+     * @return the coloured display name, or the plain key as text
+     */
+    @Contract(pure = true)
+    public static Component orPlainKey(Optional<MapDefinition> map, String mapKey) {
+        return map.<Component>map(found -> component(found.key(), found.displayName()))
+                .orElseGet(() -> Component.text(mapKey));
     }
 
     private static Set<String> allowedNames() {

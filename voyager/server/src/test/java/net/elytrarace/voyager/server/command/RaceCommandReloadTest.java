@@ -33,6 +33,9 @@ import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.command.ConsoleSender;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -160,6 +163,32 @@ class RaceCommandReloadTest {
         env.process().command().execute(connect(env), "race skip");
 
         assertThat(policy.asked).containsExactly("voyager.command.race.skip");
+    }
+
+    @Test
+    void theDevStartRepliesWithTheCupDisplayNameNotItsKey(Env env) {
+        register(env, new AtomicInteger(), true, new RecordingPolicy(true));
+        RecordingSender sender = new RecordingSender();
+
+        env.process().command().execute(sender, "race start");
+
+        assertThat(sender.messages).as("one reply to the restart").hasSize(1);
+        TranslatableComponent reply = (TranslatableComponent) sender.messages.getFirst();
+        assertThat(reply.key()).isEqualTo("voyager.command.restarted");
+        assertThat(PlainTextComponentSerializer.plainText().serialize(reply.arguments().getFirst().asComponent()))
+                .as("the cup is named by its display name")
+                .isEqualTo("Tour");
+    }
+
+    /** A console sender that keeps every line it is sent. */
+    private static final class RecordingSender extends ConsoleSender {
+
+        private final List<Component> messages = new ArrayList<>();
+
+        @Override
+        public void sendMessage(Component message) {
+            messages.add(message);
+        }
     }
 
     @Test
