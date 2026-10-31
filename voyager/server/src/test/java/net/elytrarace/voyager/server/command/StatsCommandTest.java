@@ -80,6 +80,24 @@ class StatsCommandTest {
     }
 
     @Test
+    void theBestTimeLineNamesTheMapByItsCatalogueDisplayName(Env env) throws InterruptedException {
+        FakeReader reader = new FakeReader();
+        reader.players.put("Alex", RACER);
+        Harness harness = new Harness(env, reader);
+        RecordingSender sender = new RecordingSender();
+
+        env.process().command().execute(sender, "stats Alex");
+        harness.readsOnAnotherThread();
+        harness.tick(env);
+
+        List<Component> bests = messagesWithKey(sender.messages, "stats.profile.best");
+        assertThat(bests).as("one best-time line for the one personal best").hasSize(1);
+        assertThat(text(bests.getFirst(), 0))
+                .as("the map is named by its display name, not by its key")
+                .isEqualTo(RIDGE.displayName());
+    }
+
+    @Test
     void anUnknownPlayerIsToldThereIsNoRecord(Env env) throws InterruptedException {
         Harness harness = new Harness(env, new FakeReader());
         RecordingSender sender = new RecordingSender();
@@ -197,7 +215,7 @@ class StatsCommandTest {
             Executor readers = queued::add;
             requests = new StatsRequests(readers, clock);
             CatalogHolder catalog = new CatalogHolder(catalog());
-            env.process().command().register(new StatsCommand(reader, requests));
+            env.process().command().register(new StatsCommand(catalog, reader, requests));
             env.process().command().register(new LeaderboardCommand(catalog, reader, requests));
         }
 

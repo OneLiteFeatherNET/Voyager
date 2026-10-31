@@ -1,8 +1,10 @@
 package net.elytrarace.voyager.server.command;
 
 import net.elytrarace.voyager.api.permission.PermissionNode;
+import net.elytrarace.voyager.api.race.CupDefinition;
 import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.platform.permission.PlayerSubjects;
+import net.elytrarace.voyager.platform.text.DisplayName;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.server.CatalogReloadService;
 import net.elytrarace.voyager.platform.cup.CupSession;
@@ -64,7 +66,8 @@ public final class RaceCommand extends Command {
                 return;
             }
             session.start(true);
-            sender.sendMessage(Messages.cupRestarted(session.cup().key().asString()));
+            CupDefinition cup = session.cup();
+            sender.sendMessage(Messages.cupRestarted(DisplayName.component(cup.key(), cup.displayName())));
         }, ArgumentType.Literal("start"));
         addSyntax((sender, context) -> {
             if (!may(policy, sender, PermissionNode.VOYAGER_COMMAND_RACE_SKIP)) {

@@ -284,7 +284,7 @@ class MessageBundleTest {
 
     @Test
     void theOperatorCommandsAnswerInWords() {
-        assertThat(render(Messages.cupRestarted("test_cup")))
+        assertThat(render(Messages.cupRestarted(Component.text("test_cup"))))
                 .isEqualTo("Cup test_cup restarted, lobby skipped");
         assertThat(render(Messages.skipTaken())).isEqualTo("Ending the current map on the next tick");
         assertThat(render(Messages.skipRefused()))
@@ -321,7 +321,7 @@ class MessageBundleTest {
                 Messages.departed(),
                 Messages.medal(MedalTier.DIAMOND),
                 Messages.medal(MedalTier.DNF),
-                Messages.cupRestarted("c"),
+                Messages.cupRestarted(Component.text("c")),
                 Messages.skipTaken(),
                 Messages.skipRefused(),
                 Messages.statsProfileHeader("Alex"),
@@ -329,7 +329,7 @@ class MessageBundleTest {
                 Messages.statsProfileWins(1),
                 Messages.statsProfileMedals(1, 0, 0, 2),
                 Messages.statsProfileFlight(90_000L),
-                Messages.statsProfileBest("ridge", 61_200L),
+                Messages.statsProfileBest(Component.text("ridge"), 61_200L),
                 Messages.statsProfileNone("Alex"),
                 Messages.statsUnknownPlayer("Nobody"),
                 Messages.statsLeaderboardHeader(Component.text("ridge")),
