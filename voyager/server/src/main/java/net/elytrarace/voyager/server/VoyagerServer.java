@@ -56,7 +56,9 @@ import net.minestom.server.event.player.PlayerCustomClickEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
+import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.item.Material;
@@ -567,6 +569,10 @@ public final class VoyagerServer {
             waitingRoom.left(event.getPlayer().getUuid());
             LOGGER.info("{} left", event.getPlayer().getUsername());
         });
+
+        // A held racer's own move and glide are refused by the cup until GO (CupSession).
+        events.addListener(PlayerMoveEvent.class, session::keepHeldPosition);
+        events.addListener(PlayerStartFlyingWithElytraEvent.class, session::refuseGlide);
 
         if (settings.devMode()) {
             LOGGER.info("Join with a 26.2 client; the cup starts once {} racer(s) are online, and /race shows where it stands",
