@@ -4,7 +4,7 @@
 
 A builder's finished map and cup must reach the game without a manual copy, and only after the game's own checks pass.
 The game must never read a catalogue that is half written, and a running race must never see its terrain change. A
-published revision is numbered, complete and immutable; the game reads the revision the pointer names. Requirements use
+published revision is numbered, complete and immutable; the game reads the revision the pointer names when it starts. Requirements use
 EARS patterns and MoSCoW priorities, as `openspec/config.yaml` requires.
 
 Terms: a **revision** is one numbered, complete set of the game's maps and cups, with the worlds they name. A **candidate**
@@ -95,19 +95,20 @@ its `world` value explicitly.
 - **WHEN** a publish would write a world folder that already exists
 - **THEN** the publish is refused, and the existing folder keeps its bytes
 
-### Requirement: A published change reaches the game at its next reload or start
+### Requirement: A running game takes a published revision at its next start only
 **Priority:** MoSCoW Must
 
-WHEN a revision is published, THE SYSTEM SHALL make it the revision the game reads at its next reload or start, with no copy
-by an operator. THE SYSTEM SHALL NOT change a round that the game is running, and the reply SHALL say when the change plays.
+WHEN a revision is published, THE SYSTEM SHALL make it the revision the game reads when the game next starts, with no copy by
+an operator. THE SYSTEM SHALL NOT make a running game re-read the catalogue or a world for a publish, SHALL NOT reload on a
+publish, and SHALL NOT poll the pointer. The reply SHALL say that the change plays at the game's next start.
 
-#### Scenario: Published ring change during a round
+#### Scenario: Published ring change during a cup
 - **WHEN** a builder publishes a changed ring of a map that is being raced
-- **THEN** the running round keeps its rings, the reply says the change plays from the next round after a reload or a start
+- **THEN** the running cup keeps its rings, and the reply says the change plays at the game's next start
 
-#### Scenario: Published terrain with a restart note
-- **WHEN** a builder publishes a changed terrain of a map that is open in the game
-- **THEN** the reply says that the game opens the new world at its next reload, and that a restart releases the old world
+#### Scenario: Published terrain after the cup
+- **WHEN** a builder publishes a changed terrain of a map that is open in the game, on a live service with `VOYAGER_RESTART_AFTER_CUP` set
+- **THEN** the reply says that the game opens the new world at its next start, which follows the running cup, and the old world is released when that process ends
 
 ### Requirement: A cup is published only when every map it names is published
 **Priority:** MoSCoW Must
@@ -223,6 +224,6 @@ change, and the bridge SHALL NOT change.
 ## Won't (this change)
 
 - A CloudNet template or S3 upload of the revisions (design, decision 2, option B).
-- A game-side poll of the pointer, and any change to the game's code.
+- A live reload on publish, a game-side poll of the pointer, and any change to the game's code (owner decision 2, 2026-11-02).
 - Automatic assignment of a map to a cup.
 - Automatic deletion of revisions or worlds.

@@ -43,13 +43,13 @@ Goals:
 
 - A builder publishes a map that passes the same checks as `/map status` and as the game's catalogue check, and nothing
   else reaches the game.
-- The game picks up a published revision without a manual copy, at its next reload or start.
+- The game takes a published revision without a manual copy, at its next start only (owner decision 2).
 - A half-written publish is never visible to the game, and a failed publish changes nothing the game reads.
 - A running race never sees its terrain change, and a rollback is possible.
 
 Non-goals:
 
-- A CloudNet template or S3 upload (option B), a second node, and the game polling for revisions.
+- A CloudNet template or S3 upload (option B), a second node, a live reload on publish, and the game polling for revisions.
 - Any change to how a cup is played or scored, or to the game's code.
 - Automatic assignment of a map to a cup, retention and pruning.
 
@@ -59,7 +59,7 @@ Quality attributes at stake: correctness of what the game plays (atomicity, no t
 single node; deployability (no manual copy); reversibility; the security of who may write the catalogue (the setup service's
 user, behind `voyager.setup.publish`); and maintainability (no new coupling to CloudNet).
 
-| | A. Node-local revisions (recommended) | B. CloudNet template through a bridge port | C. Export bundle that an operator imports |
+| | A. Node-local revisions (chosen, owner decision 1) | B. CloudNet template through a bridge port | C. Export bundle that an operator imports |
 |---|---|---|---|
 | What it is | The setup server writes numbered, complete revisions under a node path. The game's data path points at the `current` revision. | The setup server builds an archive of the maps, cups and changed worlds, and the bridge uploads it as a version of the `Voyager/maps` template in S3. The game picks it up at its next service start. | The setup server writes a bundle with a manifest and checksums. An operator imports it into the game's template. |
 | Gains | No bridge change, no S3 call, no CloudNet API. A publish is one local move. Rollback is a new revision. The game's code does not change. The layout is the same content as a template layer, so moving to B later is an upload. | Keeps maps in the template the greenfield design names. CloudNet keeps template versions. Works across nodes. | No coupling between the two services. The bundle is the backup and the audit trail. Testable without CloudNet. |
@@ -72,14 +72,14 @@ Rejected: writing straight into the game's live `maps/` and `worlds/` folders wi
 a reload, a changed world would reach a running race, and there would be no rollback. Option A is the brief's "shared
 node-local directory" with revisions added, and without the direct write.
 
-Recommendation: **A**, because it removes the manual copy with no unverified CloudNet call and no bridge amendment. It keeps
-every later move open: its layout is the content of a template layer, so B is an upload when a second node is needed. The
-price is node affinity and a catalogue root that needs a backup. Those costs are visible and can be paid down later. B
-stays the target when the owner needs more than one node, and it waits for the Scout check.
+Owner decision (2026-11-02): **A**. It removes the manual copy with no unverified CloudNet call and no bridge amendment,
+and its layout is the content of a template layer, so B stays an upload away when a second node is needed. The owner accepts
+its price: node affinity and a backup duty for the catalogue root. B and C are rejected for this change; the table keeps
+their reasons. B waits for the Scout check of the CloudNet capability.
 
 ## Decisions
 
-1. **The publish root holds the revisions, the worlds and the pointer (option A).**
+1. **The publish root holds the revisions, the worlds and the pointer (option A, owner decision 1, 2026-11-02).**
 
    ```
    <publish root>                      VOYAGER_PUBLISH_PATH (setup); the game's data and worlds paths point into it
@@ -129,7 +129,7 @@ stays the target when the owner needs more than one node, and it waits for the S
 
    The check is strict for every cup in the publish root, not only for the cup the game plays. Boot warns about a broken cup
    that it does not play (`scope-cup-validation`). Publish is the gate that keeps a broken cup out of the root, so it refuses.
-   The cost is that one broken cup blocks every publish until it is fixed. That is intended, and owner question 4 asks whether
+   The cost is that one broken cup blocks every publish until it is fixed. That is intended, and open question 2 asks whether
    it should be.
 
 6. **Numbers and concurrency.** Two setup servers on one root are the case the save guard already covers for drafts. Each
@@ -154,7 +154,7 @@ stays the target when the owner needs more than one node, and it waits for the S
 
 10. **Permissions.** `voyager.setup.publish` (`PermissionNode.VOYAGER_SETUP_PUBLISH`) gates `/map publish`, `/cup publish` and
     `/catalogue rollback`, and each of them also needs `voyager.setup.use`. `/catalogue history` needs `voyager.setup.use`
-    alone. The node is granted to the release group, not to every builder. Owner question 3 asks whether rollback needs its
+    alone. The node is granted to the release group, not to every builder. Open question 1 asks whether rollback needs its
     own node.
 
 11. **Configuration.** `VOYAGER_PUBLISH_PATH` is read through `ConfigLoader` (ADR-0036). An unset path leaves the server running,
@@ -165,20 +165,25 @@ stays the target when the owner needs more than one node, and it waits for the S
 12. **Messages.** New keys go into `SetupMessages` (`platform/text`) and both bundles. German uses the informal "du", and
     placeholders are `<arg:N>`. `MessageBundleParityTest` checks the keys.
 
+13. **A running game takes a revision at its next start only (owner decision 2, 2026-11-02).** The game reads the revision
+    that `current` names when it starts. A publish does not trigger the game's reload, and the game does not poll the pointer,
+    so no running game re-reads a catalogue or a world for a publish. The live service restarts after every cup
+    (`VOYAGER_RESTART_AFTER_CUP`, ADR-0047), so a publish plays from the cup after the one that runs. The operator sets that key
+    on the live task; without it, the change plays at the next manual start. The reply to a publish says when the change plays.
+
 ## What happens to a map that is being played
 
 - **A round that is running** keeps its pinned catalogue (`hot-reload-catalogs`). A publish never changes it, and its terrain
   cannot change, because its world folder is add-only.
-- **A changed ring or spawn of a played map** is read at the next reload or boot. It plays from the next round. The running
-  round keeps its rings. The reply says so.
-- **A changed terrain** is published under a new world name. The game opens that world at the next reload, after it checks
-  its region data. The old world stays open until the game restarts, which is the known limit of `hot-reload-catalogs`, and
-  the reply says a restart releases it. On a 1024 MB heap, each new terrain revision is one more open world until restart;
-  `restart-service-after-cup` (proposed) would release it at the next cup.
-- **A rollback during a round** behaves the same way: the round keeps its catalogue, and the next round reads the revision
-  rolled back to.
-- **A boot during a publish** reads either the old or the new revision in full, because the pointer moves last.
-- **A map removed from a revision** is gone from the next reload. Its world stays open until restart, as the reload rule says.
+- **A changed ring or spawn of a played map** plays from the game's next start (decision 13). With `VOYAGER_RESTART_AFTER_CUP`
+  set, that is the start after the cup that runs. The running cup keeps its rings. The reply says so.
+- **A changed terrain** is published under a new world name. The game opens that world at its next start, after it checks
+  its region data. The old world stays open until the game process ends. The restart after each cup ends that process, so a
+  replaced world is open for at most the cup that was running. The reply says when the change plays.
+- **A rollback during a cup** behaves the same way: the cup keeps its catalogue, and the next start reads the revision rolled
+  back to.
+- **A start during a publish** reads either the old or the new revision in full, because the pointer moves last.
+- **A map removed from a revision** is gone from the game at its next start.
 
 ## Versioning and rollback
 
@@ -189,7 +194,7 @@ stays the target when the owner needs more than one node, and it waits for the S
   rollback to a revision whose worlds are gone is refused. History is never rewritten and the pointer never moves backwards.
 - `/catalogue history` lists the last ten revisions (number, time, builder, action and items).
 - Voyager deletes nothing in this change. Disk growth is one world copy per terrain publish; the reply shows the size of each
-  copy. Retention is owner question 6.
+  copy. Retention is open question 3.
 
 ## Dependency direction
 
@@ -243,11 +248,11 @@ test reads the shipped `catalog/` or `worlds/`; no test sleeps; the revision tim
 
 ## ADR-0048 (proposed): Publish checked maps and cups as numbered revisions under a node path
 
-Status: **Proposed**. It is accepted only when the owner accepts it. The text moves to
-`docs/decisions/0048-publish-catalogue-revisions.md` in the code pull request, with the status the owner gives it.
+Status: **Proposed**. The owner chose option 1 on 2026-11-02 (see the decision outcome). Acceptance is still pending: the text
+moves to `docs/decisions/0048-publish-catalogue-revisions.md` in the code pull request, with the status the owner gives it.
 
-Number: 0048 is the next number after 0047, which `restart-service-after-cup` reserves, and 0045 is reserved by
-`cup-authoring`. The number is provisional until the proposal's check against `origin/main`.
+Number: 0048 is free on `origin/main` (checked 2026-11-02). 0046 and 0047 are merged; 0045 is reserved by `cup-authoring`,
+which is not merged yet.
 
 ### Context and problem statement
 
@@ -273,9 +278,9 @@ read a set of files that is complete and never half-written, and a running race 
 
 ### Decision outcome
 
-Option 1. It meets the drivers with the components the repository already has (the game's reader, the reload's checks, the
-atomic-write pattern of the draft store, and the node path of ADR-0046). Its costs are node affinity and a catalogue root
-that needs a backup, and both are written down.
+Option 1, chosen by the owner on 2026-11-02. It meets the drivers with the components the repository already has (the game's
+reader, the reload's checks, the atomic-write pattern of the draft store, and the node path of ADR-0046). Its costs are node
+affinity and a catalogue root that needs a backup, and the owner accepts both.
 
 ### Positive consequences
 
@@ -289,6 +294,7 @@ that needs a backup, and both are written down.
   migration.
 - Maps become node state. The catalogue root is the only copy of the published maps, so the operator must back it up.
 - The live task's data and worlds paths change once.
+- A publish plays at the game's next start, which follows the cup that runs (ADR-0047). A change does not reach racers mid-cup.
 - An accepted ADR-0048 supersedes the template cut for maps and cups in the greenfield design, and the copy step of ADR-0045.
 
 ### Confirmation
@@ -303,23 +309,34 @@ pin the commit point and the checks. The live acceptance run, which the owner pe
 | The game reads region files lazily, and a changed file reaches a running race | Terrain changes mid-race | Add-only worlds (decision 3). Spike 0.1 confirms the lazy read; the design does not rely on it |
 | The catalogue root is the only copy of published maps | Loss of the live maps on node failure | Backup of the root; an export bundle (option C) can be added as a second copy |
 | Node affinity: the game task is scheduled on another node | The game cannot read the revisions and refuses to boot | The boot names the path; `validateCatalog` checks it; the operator's task runs on the node that holds the root |
-| A saved world with no terrain (a void world from `/map new`) passes the region check | An empty course is published | Spike 0.3 decides; owner question 8 |
-| Disk growth from one world copy per terrain publish | The node runs out of space | Free-space check before the copy (Should); retention is owner question 6 |
-| A broken cup blocks every publish | Publishing stalls | Intended (decision 5); owner question 4 |
+| A saved world with no terrain (a void world from `/map new`) passes the region check | An empty course is published | Spike 0.3 decides; open question 5 |
+| Disk growth from one world copy per terrain publish | The node runs out of space | Free-space check before the copy (Should); retention is open question 3 |
+| A broken cup blocks every publish | Publishing stalls | Intended (decision 5); open question 2 |
 | The setup task is dynamic with `autoDeleteOnStop` | Drafts in its service directory are lost at stop | Spike 0.4 checks the task; the publish root is outside the service directory in every case |
 
 ## Open questions
 
-These are owner decisions. Each needs an answer before the code pull request, and the spikes answer what they can.
+The owner decided on 2026-11-02 the publish route (decision 1, with the node affinity and the backup duty it accepts) and the
+pickup at the next start (decision 13). The questions below remain open. Each has a recommended default, and implementation
+proceeds on the default until the owner answers. A changed answer is recorded here before the code pull request.
 
-1. **Option A, not B or C?** The recommendation is A. Owner decision. Option B needs the Scout check of the CloudNet API first.
-2. **Accept the node affinity and the backup duty of the catalogue root?** The alternative is option B, with its bridge amendment.
-3. **Does rollback need its own node?** The recommendation is one node, `voyager.setup.publish`, for publish, cup publish and rollback.
-4. **Should one broken cup block every publish?** The recommendation is yes, strict for every cup in the root. The alternative is the boot policy, which warns for a cup the game does not play.
-5. **How does a game pick up a revision?** Today: at the next reload or start. Options: a poll of the pointer (the follow-up of `hot-reload-catalogs`), or `restart-service-after-cup`. The recommendation is to pair A with `restart-service-after-cup`, which the owner must enable on the live task.
-6. **Retention of revisions and worlds.** Voyager deletes nothing in this change. Who prunes, and at what free-space threshold?
-7. **Seeding the live catalogue.** The live maps and worlds of `run/data` and `run/worlds` become revision 1 by a documented one-time copy. Should a command do it, and who runs it?
-8. **Should a publish refuse a world that holds only the void template?** Spike 0.3 decides whether a `/map new` world has region data.
-9. **Does a world's new name change what the statistics count?** Vault confirms that the statistics key maps by map key and layout version (geometry), not by world name, so a terrain revision does not split a leaderboard.
-10. **Is the setup task static?** The brief names the setup service `Voyager-Setup-1`. If it is dynamic with `autoDeleteOnStop`, drafts in its service directory are lost at stop. Hangar confirms the task.
-11. **Whether the greenfield template cut for maps may be amended** (decision 1 and ADR-0048). Owner decision.
+1. **Does rollback need its own node?** Default: no. One node, `voyager.setup.publish`, gates publish, cup publish and rollback
+   (decision 10).
+2. **Should one broken cup block every publish?** Default: yes, strict for every cup in the publish root (decision 5). The
+   alternative is the boot policy of `scope-cup-validation`, which warns only for a cup the game does not play.
+3. **Retention and pruning.** Default: Voyager deletes nothing in v1. The free-space check refuses a publish that does not fit.
+   Pruning is an operator step after a backup, and a prune command is follow-up work.
+4. **Seeding revision 1.** Default: a documented one-time copy, made by the operator with the game service stopped, of the live
+   maps and worlds into `<publish root>/revisions/1` and `<publish root>/worlds`. No command in v1; the guide gives the steps
+   (task 3.5).
+5. **Should a publish refuse a world that holds only the void template?** Default: yes. A world with no region data is refused
+   (decision 5). Spike 0.3 decides whether a `/map new` world holds region data. If it does, the check refuses a world with no
+   terrain instead.
+6. **Is the setup task static or dynamic?** Default: the publish root is a node path outside any service directory, as ADR-0046
+   does for the rotation state, so a stop cannot remove it. If the setup task is dynamic with `autoDeleteOnStop`, its draft
+   folder moves to a node path too, before the publish ships. Spike 0.4 confirms the task.
+7. **Do the statistics split by world name?** Default: no. The statistics key maps by map key and layout version, not by world
+   name (Vault to confirm), so a terrain revision does not split a leaderboard.
+8. **Is the greenfield template cut for maps amended?** Default: yes, when ADR-0048 is accepted. Option A replaces the template cut
+   for maps and cups in the section "CloudNet v4" of the greenfield design. The owner chose A; the amendment takes effect with
+   the acceptance of ADR-0048.

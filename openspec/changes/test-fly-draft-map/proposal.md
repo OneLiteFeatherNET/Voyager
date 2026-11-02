@@ -14,7 +14,7 @@ A builder places rings from a pose and checks them by walking, or by asking anot
 - While a builder flies, the edit commands (ring placement and removal, the spawn, undo and redo) are refused with a message to stop the flight first.
 - A flight records nothing: no file, no claim, no history, no statistics and no leaderboard.
 - The rules of the flight are the race's own pure rules (ring order, the finish, the time, the medal tiers). The flight does not run the cup machinery (ADR-0049, Proposed).
-- Known gap in version 1: firework boost, boost rings and ring effects are not applied, and the reply on start says so.
+- Firework boost, boost rings and ring effects apply as in a race (owner decision 3, 2026-11-02): the flight applies the race's rules and sends the velocity changes a race sends.
 - Both bundles get the new messages.
 
 ## Capabilities
@@ -30,7 +30,6 @@ None. `/map fly` is a new subcommand, specified in the new capability. No requir
 ## Out of scope
 
 - Publishing. A flight reads the saved draft and writes nothing, so it does not depend on `publish-map-to-game`, and that change does not depend on it.
-- Firework boost, boost rings and ring effects in version 1 (owner question 1).
 - The cup's own orchestration: the lobby, the GO hold, the glide-out, the rotation and the hub hand-off.
 - Out-of-bounds reset. A builder who leaves the course starts again with `/map fly`.
 - Leaderboards, statistics and personal bests of test flights. Nothing is kept.
@@ -38,7 +37,7 @@ None. `/map fly` is a new subcommand, specified in the new capability. No requir
 
 ## Impact
 
-- Vertical slices: `setup` (the pure flight state in `setup.testflight`, the Minestom wrappers in `setup.inject`, the messages). `race` is used read-only for its pure rules and is not changed. `platform` is used for the map reader and the presentation that already exist, and is not changed. `api` is not changed.
+- Vertical slices: `setup` (the pure flight state in `setup.testflight`, the Minestom wrappers in `setup.inject`, the messages). `race` is used read-only for its pure rules and is not changed. `platform` is used read-only for the map reader, the presentation, the firework boost tracker (`platform.flight.FireworkBoostTracker`) and the rocket and velocity code of a race (`Racers`, `Rockets`), and is not changed. `api` is not changed.
 - Greenfield design: no decision changes.
 - ADR-0049 (Proposed) records the choice of the race rules over the cup machinery.
 - Size: M.

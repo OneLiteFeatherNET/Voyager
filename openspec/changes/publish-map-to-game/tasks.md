@@ -5,18 +5,19 @@ messages and their tests; `feat(setup)` for the cup publish once `cup-authoring`
 shared helper is extracted, as its own commit with no behaviour change; `docs` for the `docs/` pages and the ADR move; `test`
 only for test-only commits. One type per commit. Each behaviour gets a failing test (Red) before its production code (Green).
 Every test follows F.I.R.S.T.: a `@TempDir` data directory and publish root per test, `Clock.fixed` for the revision time, no
-sleeps, no shared static state, no read of the shipped `catalog/` or `worlds/`. This change starts only after the owner has
-answered the open questions of `design.md` that section 0 names. Task checkboxes are ticked in the follow-up pull request,
+sleeps, no shared static state, no read of the shipped `catalog/` or `worlds/`. The owner decided the publish route and the
+pickup on 2026-11-02 (`design.md`, decisions 1 and 13). Implementation proceeds on the recommended defaults of the open
+questions, and the owner may change a default before the code pull request (task 0.6). Task checkboxes are ticked in the follow-up pull request,
 never in the code pull request.
 
 ## 0. Spikes and owner decisions (no production code)
 
 - [ ] 0.1 Spike: read the game's world loading (`MapInstances`, the Falco loader, `SettledChunkLoader`) and record whether a region file is read when a chunk loads, or once at open. Record the answer in `design.md`. The design does not rely on it (`test`)
 - [ ] 0.2 Spike: confirm that `CatalogLoader.read` on `current/data`, where `current` is a symbolic link moved by `ATOMIC_MOVE`, sees the new revision after the move, on Linux, and that `MapDefinitionAdapter` reads a stated `world` such as `skyfortress.r1` as written (`test`)
-- [ ] 0.3 Spike: check whether a world made by `/map new` (the void template) holds region data. The answer decides owner question 8 (`test`)
+- [ ] 0.3 Spike: check whether a world made by `/map new` (the void template) holds region data. The answer decides open question 5 of `design.md` (`test`)
 - [ ] 0.4 Hangar: confirm whether the setup task is static or dynamic with `autoDeleteOnStop`, and where its drafts live on the node. Record the answer in `design.md` (`test`)
 - [ ] 0.5 Helix: confirm how Minestom `2026.09.12-26.2` attaches the syntax of a second command object to the `map` root (`/map publish`). If it cannot, the syntax is added to `SetupCommands`, which adds no freeze-store entry because the class is already a frozen violation (`test`)
-- [ ] 0.6 Owner: answer design open questions 1 to 6 and 10 and 11, and confirm the option. Record the answers in `design.md`. No section 1 task starts before this (`docs`)
+- [ ] 0.6 Owner: confirm or change the recommended defaults of the eight open questions of `design.md`, and record any change there. Not blocking: section 1 starts on the defaults (`docs`)
 
 ## 1. Red: the candidate, the store, the commands and the layout
 
@@ -27,9 +28,9 @@ never in the code pull request.
 - [ ] 1.5 Red: `RevisionStoreTest` asserts that a publish writes staging, the manifest and the pointer in that order, and that a fake `FileMover` that fails the pointer move leaves `current` on the previous revision with no staging folder (`feat(setup)`)
 - [ ] 1.6 Red: `RevisionStoreTest` asserts that two stores over one `@TempDir` play two setup servers, and that the second publish is refused when the number is taken or the pointer moved, with `current` naming the first publisher's revision (`feat(setup)`)
 - [ ] 1.7 Red: `RevisionStoreTest` asserts that a world folder is never written over an existing one, and that an existing folder keeps its bytes (`feat(setup)`)
-- [ ] 1.8 Red: `LayoutCompatibilityTest` asserts that the game's `CatalogLoader.read` on `current/data` reads a published revision, and that moving the pointer to a newer revision changes what it reads (`feat(setup)`)
+- [ ] 1.8 Red: `LayoutCompatibilityTest` asserts that the game's `CatalogLoader.read` on `current/data` reads a published revision, that moving the pointer to a newer revision changes what a later read sees, and that a read made before the move keeps the earlier revision, since the game reads at its start only (`feat(setup)`)
 - [ ] 1.9 Red: `CataloguePublisherTest` (fake ports, no file) asserts that a map with no ring, a draft changed on disk, and a missing claim are each refused before any port writes (`feat(setup)`)
-- [ ] 1.10 Red: `CataloguePublisherTest` asserts that a successful map publish returns revision `n+1` with the item and the world name, and that the reply says when no published cup names the map (`feat(setup)`)
+- [ ] 1.10 Red: `CataloguePublisherTest` asserts that a successful map publish returns revision `n+1` with the item and the world name, that the reply says when no published cup names the map, and that the reply says the change plays at the game's next start (`feat(setup)`)
 - [ ] 1.11 Red: `CupPublishTest` asserts that `/cup publish` refuses a cup naming a map the previous revision lacks, and copies the cup file byte for byte when the check passes (`feat(setup)`)
 - [ ] 1.12 Red: `RollbackTest` asserts that a rollback writes a new revision with revision `n`'s data, that the pointer never moves backwards, and that a rollback to a revision whose world is missing is refused with the world named (`feat(setup)`)
 - [ ] 1.13 Red: `HistoryTest` asserts the ten newest revisions, newest first, with number, time from the fixed clock, builder and action (`feat(setup)`)
@@ -58,8 +59,8 @@ never in the code pull request.
 - [ ] 3.1 Smoke: boot the setup shadow jar in a scratch directory with `VOYAGER_PUBLISH_PATH` set to a directory in that scratch directory, publish one map as a builder over a test connection, and record the revision line in the pull request. Stop the server with `stop` on standard input and expect a clean exit (`test`)
 - [ ] 3.2 Smoke: boot the game server shadow jar with `VOYAGER_DATA_PATH` set to `<publish root>/current/data` and `VOYAGER_WORLDS_PATH` set to `<publish root>/worlds`, with the published revision in place. Wait for `Successfully enabled`, `Listening on` and `Voyager started`, quote them in the pull request, and stop cleanly (`test`)
 - [ ] 3.3 Refactor: if `RevisionStore` and `JsonDraftStore` share the atomic write, extract it as its own commit with no behaviour change, and keep `JsonDraftStoreTest` unchanged (`refactor(catalog)`)
-- [ ] 3.4 Docs: replace the section "Run the game server with the map" in `docs/guides/how-to-build-a-map-with-setup.md` with the publish, rollback, history and cup publish steps, and the note that a changed terrain needs a restart to release the old world (`docs`)
-- [ ] 3.5 Docs: `docs/guides/how-to-deploy-on-cloudnet.md` gets the publish root, the one-time change of the game task's data and worlds paths, and the seed of revision 1 (owner question 7) (`docs`)
+- [ ] 3.4 Docs: replace the section "Run the game server with the map" in `docs/guides/how-to-build-a-map-with-setup.md` with the publish, rollback, history and cup publish steps, and the note that a publish plays at the game's next start, after the cup that runs (`docs`)
+- [ ] 3.5 Docs: `docs/guides/how-to-deploy-on-cloudnet.md` gets the publish root, the one-time change of the game task's data and worlds paths, the setting `VOYAGER_RESTART_AFTER_CUP` on the live task (ADR-0047), and the seed of revision 1 (open question 4 of `design.md`) (`docs`)
 - [ ] 3.6 Docs: `docs/reference/permission-nodes.md` gets the row for `voyager.setup.publish`, and `docs/guides/how-to-grant-permissions.md` gets the release group (`docs`)
 - [ ] 3.7 Docs: move the text of ADR-0048 from `design.md` to `docs/decisions/0048-publish-catalogue-revisions.md` with the status the owner gives it, Proposed unless accepted. Link `docs/decisions/0045-cup-files-from-the-setup-server.md` from it without editing it (`docs`)
 - [ ] 3.8 Run `./gradlew :voyager:fitness:test` and `./gradlew build` for both trees, through `flock ~/.cache/claude-heavy.lock`, before the pull request is opened (`test`)

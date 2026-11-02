@@ -11,6 +11,8 @@ A builder finishes a map in the setup server, and `/map status` reports it ready
 - `/map publish <id>`: a builder who holds the map's claim publishes it. The setup server runs the blocking checks of `/map status` and the game's catalogue check (the catalogue reader, the cup cross-check and world presence) on a candidate revision. Only a candidate that passes becomes visible to the game.
 - A published revision is a numbered, complete and immutable set of the game's maps and cups, with the worlds they name, kept under the publish root that `VOYAGER_PUBLISH_PATH` names. The game server reads the revision that the pointer `current` names. The change does not touch the game's code.
 - Worlds are add-only. A published world is copied once under a new name (`<id>.r<k>`) and never changed afterwards, so a race that has a world open never sees its terrain change.
+- The game takes a published revision at its next start. The live service restarts after every cup (ADR-0047), so a publish plays from the cup after the one running. No live reload and no polling.
+- Publish route (owner decision 1, 2026-11-02): the node-local revision store, shared by the setup and the game service on the node. Node affinity and a backup duty for the catalogue root are accepted.
 - `/cup publish <id>` publishes a cup. It refuses a cup that names a map no published revision holds.
 - `/catalogue history` lists the revisions. `/catalogue rollback <n>` publishes the content of revision `n` as a new revision, so history is never rewritten.
 - A new permission node, `voyager.setup.publish`, gates publish and rollback, on top of `voyager.setup.use`.
@@ -32,7 +34,7 @@ None. The new `/map publish` subcommand and the new `/catalogue` root are specif
 
 - Publishing through a CloudNet template or S3 (design decision 2, option B). It is recorded as the migration target, not built here.
 - Any change to the game server's code. The game reads its catalogue through its existing data-path and worlds-path settings, which the operator points at the publish root once.
-- Game-side polling for new revisions. The game picks up a revision at its next reload or next start, as today (owner question 5).
+- Live reload and polling for new revisions. The game takes a published revision at its next start only, never mid-cup (owner decision 2, 2026-11-02).
 - Seeding the live catalogue. The one-time move of the live maps and worlds into revision 1 is a documented operator step; a seed command is an open question.
 - Retention and pruning of revisions and worlds. Nothing is deleted by Voyager in this change.
 - Test flights. See `test-fly-draft-map`, which is independent of this change.

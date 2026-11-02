@@ -60,15 +60,20 @@ score the finish with the map's reference time and medal brackets, using the rac
 - **WHEN** the builder passes the last ring
 - **THEN** the reply shows the time, the number of rings passed out of the map's count, and the medal tier of the time
 
-### Requirement: The flight shows the racing line and states what it does not apply
+### Requirement: The flight shows the racing line and applies boosts and ring effects as a race does
 **Priority:** MoSCoW Must
 
-WHEN a flight starts, THE SYSTEM SHALL show the map's guide line to the builder as the racers see it, and SHALL say in the reply
-that firework boost, boost rings and ring effects are not applied in a test flight.
+WHEN a flight starts, THE SYSTEM SHALL show the map's guide line to the builder as the racers see it. WHILE a flight runs,
+THE SYSTEM SHALL apply firework boost, boost rings and ring effects with the race's own rules, and SHALL send the velocity
+changes that a race sends for them (owner decision 3, 2026-11-02).
 
-#### Scenario: Known gap is stated
-- **WHEN** a flight starts on a map with boost rings
-- **THEN** the reply says that boost rings and ring effects are not applied
+#### Scenario: Boost ring in a flight
+- **WHEN** a builder flying a map with a boost ring passes the ring
+- **THEN** the builder's velocity is changed as it is in a race, and the time at the finish includes that effect
+
+#### Scenario: Firework burn in a flight
+- **WHEN** a builder flying a map uses a firework rocket
+- **THEN** the builder receives the same burn velocity as a racer, and the flight's rules count it as the race's rules do
 
 ### Requirement: While flying, edits are refused and change nothing
 **Priority:** MoSCoW Must
@@ -151,7 +156,6 @@ THE SYSTEM SHALL send every flight message from a key present in both `voyager_s
 
 ## Won't (this change)
 
-- Firework boost, boost rings and ring effects in the flight (the stated gap; owner question 1).
 - The cup's orchestration in a flight: the lobby, the GO hold, the glide-out and the rotation.
 - Out-of-bounds reset during a flight.
 - Any record of a flight: no statistic, leaderboard entry, personal best or file.

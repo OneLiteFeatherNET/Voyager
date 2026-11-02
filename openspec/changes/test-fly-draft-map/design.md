@@ -17,6 +17,10 @@ The game's rules for a run are pure and already tested:
 - The racing line is drawn by `GuideLineRenderer` (`platform.render`), and the time is printed by `RaceTimeFormat`
   (`platform.text`). The medal text is `Messages.medal(MedalTier)`.
 
+The boost state is `FireworkBoostTracker` (`platform.flight`, pure, imports `api` only). The velocity that a `BOOST` or `SLOW`
+ring multiplies is held in the race's run state (`RaceRun`), and the platform's flight code sends it to the client (`Racers`,
+`Rockets`). A flight uses the same pieces, so boosts and ring effects behave as they do in a race.
+
 The cup machinery is different. `CupSession` (`platform.cup`) orchestrates a cup: it starts on the first player to spawn
 while idle, holds racers in a waiting room and a lobby, moves them through a rotation, records results through `RaceRecorder`,
 and hands racers to the hub. A test flight has none of that. Using it would move the lobby, the rotation and the statistics
@@ -37,13 +41,14 @@ Constraints:
 
 Goals:
 
-- A builder flies the saved course with the same ring order, finish, time and medal rules as a race.
+- A builder flies the saved course with the same ring order, finish, time, medal, boost and ring effect rules as a race.
 - A flight changes nothing: no draft, no file, no claim, no undo history, no statistics.
 - Leaving a flight returns the builder to editing with the draft and history they had.
 
 Non-goals:
 
-- Boost and ring effects, the cup's orchestration, out-of-bounds reset and multi-builder flights (see the proposal).
+- The cup's orchestration, out-of-bounds reset and multi-builder flights (see the proposal).
+- Boost and ring effects are in version 1, as in a race (owner decision 3, 2026-11-02).
 
 ## Options
 
@@ -55,13 +60,13 @@ the change and the coupling it adds (maintainability, cognitive load); the side 
 |---|---|---|---|
 | What it is | The flight calls `RaceRun.advance` and `MapScorer.score` each tick with the reported position, and presents the result with the platform's guide line and time format. No cup, no lobby, no rotation. | Starts a `CupSession` with a cup of one map for the builder, through the same code the game runs. | Its own ring-crossing and timing code in setup. |
 | Gains | The same rules as the game, shared rather than copied. Small. Plain JUnit tests with a scripted sequence of positions. No persistence, no hub, no lobby. | Exact orchestration parity: the finish, the glide-out and the GO timing are the game's. | No dependency on race. |
-| Costs | The flight does not run the cup's orchestration. Boost rings and ring effects are not applied in version 1. | Pulls the lobby, the phase driver, the rotation, the results and the hub into setup. The cup starts on the first spawn, which a flight must not trigger. Any change to the cup changes the setup server. The setup server would need a recorder that records nothing. | Two copies of the ring rule. The first copy that drifts makes a builder's time wrong, silently. |
+| Costs | The flight does not run the cup's orchestration. Boosts and ring effects need the adapter to send the race's velocity changes (decision 11). | Pulls the lobby, the phase driver, the rotation, the results and the hub into setup. The cup starts on the first spawn, which a flight must not trigger. Any change to the cup changes the setup server. The setup server would need a recorder that records nothing. | Two copies of the ring rule. The first copy that drifts makes a builder's time wrong, silently. |
 | Irreversible parts | None. The flight is an adapter over pure rules. | A cup-session dependency from setup into platform's cup code, which is hard to remove later. | A second rule that must be kept in step with the game. |
 | Reversibility | High. | Low. | Medium. |
 | Cognitive load | Low: one state machine, one adapter. | High: the cup lifecycle is needed to understand a flight. | Medium: two rule sets to explain. |
 
 Recommendation: **A**. It gives the builder the rules the racers face, because the rules are the same code, and it adds no
-game lifecycle to the setup server. Its costs are the boosts and the orchestration, and both are stated to the builder. B is
+game lifecycle to the setup server. Its cost is the orchestration, which stays out of version 1. The boosts are in version 1 by owner decision 3 (2026-11-02). B is
 the choice if the owner wants the cup's orchestration in a flight, and then the cost is the lifecycle in setup. C is rejected
 for drift.
 
@@ -71,7 +76,7 @@ for drift.
    `RaceClock`. Its operations are `start(MapDefinition)`, `tick(Vec3 position, boolean gliding)` and `stop()`. Each `tick`
    calls `RaceRun.advance` and returns the next flight. When the run finishes, `tick` returns the result, which holds the time
    (`RaceClock` by `finishedAt`), the rings passed out of the map's count, and the medal from `MapScorer.score` and
-   `MedalBrackets`. The class imports `api`, `race` and the JDK only.
+   `MedalBrackets`. The class imports `api`, `race` and the JDK only. The boost state, `FireworkBoostTracker`, is passed in by the adapter (decision 11).
 
 2. **The map is read as the game reads it.** The flight reads `maps/<id>.json` through `MapDefinitionAdapter` (platform),
    which is the file publish would publish. The flight therefore flies exactly what the game would load. A draft that is not
@@ -117,8 +122,9 @@ for drift.
 10. **Nothing is recorded.** A flight writes no file, takes no claim, adds no history entry, and calls no `RaceRecorder`. The
     setup server has no statistics dependency, so this holds by the module graph as well as by the code (`PersistenceBoundaryTest`).
 
-11. **The reply names the known gap.** On start, the reply says that firework boost, boost rings and ring effects are not
-    applied in a test flight, so a builder reads the time of a boost course with that in mind.
+11. **Boost and ring effects follow the race (owner decision 3, 2026-11-02).** The flight applies firework boost, boost rings and
+    ring effects with the race's rules, and sends the velocity changes a race sends: the burn and the rings through `RaceRun`, the
+    tracker and the platform's `Racers` and `Rockets` in the adapter. The reply on start names no gap.
 
 12. **Messages.** New keys go into `SetupMessages` (`platform.text`) and both bundles, German in the informal "du". The medal text
     reuses `Messages.medal(MedalTier)`, so a medal reads the same in a race and in a flight.
@@ -156,7 +162,8 @@ Dependency direction: `setup.testflight` depends inward on `race` and `api`. The
 - New rule (test-only, in `voyager-fitness`): classes in `net.elytrarace.voyager.setup.testflight..` may depend on
   `net.elytrarace.voyager.api..`, `net.elytrarace.voyager.race..` and the JDK only. The rule uses `allowEmptyShould(false)`, and
   it matches the flight's classes, so it cannot pass by matching nothing. It guards the rule that the flight stays a rule
-  adapter.
+  adapter. The rule names `net.elytrarace.voyager.platform.flight.FireworkBoostTracker` as its one platform type, because the
+  tracker is pure (it imports `api` only); spike 0.5 confirms it.
 - Covered by existing rules: `PersistenceBoundaryTest` (setup does not reach persistence, so a flight cannot record), the
   Minestom placement rule (the wrappers sit in `setup.inject`, so no freeze entry is added), `PermissionBoundaryTest`
   (`FlightCommand` asks the policy for `voyager.setup.use`), `NullabilityConventionTest` (a `package-info.java` for
@@ -172,12 +179,14 @@ pure tests). No sleeps, no wall-clock reads, no shared static state. Positions a
 - Pure (plain JUnit, `setup.testflight`):
   - `TestFlightTest`: the rings are passed in order, a ring out of order is not counted, the finish gives the time from the
     clock, a restart begins at the spawn with an empty progress, and the rings passed out of the count are reported.
+  - `TestFlightTest` (boosts): a firework burn and a boost ring change the flight's velocity as the race's rules do, and a slow
+    ring applies the race's slow effect, from scripted positions.
   - `FlightResultTest`: the medal tier of a time against the map's brackets, and the time's format.
   - `FlightGuardTest`: a draft with no spawn and a draft with no ring are each refused with their problem, a stored copy that
     differs from the session's copy is refused, and a flight that is already running is restarted rather than refused.
 - Minestom (`@EnvTest`, `env.tick()`):
   - `FlightCommandTest`: a builder without `voyager.setup.use` is refused; a builder with a blocking draft is refused naming the
-    problem; a builder with a valid draft starts a flight with the flight items and the reply that names the known gap.
+    problem; a builder with a valid draft starts a flight with the flight items and the start reply.
   - `FlightEditRefusalTest`: while flying, ring placement, removal, spawn, undo and redo change nothing and reply the stop message.
   - `FlightStopTest`: `/map fly stop` restores creative mode, removes the flight items and gives the wand back, with the
     draft and history unchanged.
@@ -192,8 +201,7 @@ pure tests). No sleeps, no wall-clock reads, no shared static state. Positions a
 Status: **Proposed**. It is accepted only when the owner accepts it. The text moves to
 `docs/decisions/0049-test-flight-on-race-rules.md` in the code pull request, with the status the owner gives it.
 
-Number: 0049 follows the number of this proposal's sibling, `publish-map-to-game` (0048). Both numbers are provisional until the
-proposal's check against `origin/main`.
+Number: 0049 follows the number of this proposal's sibling, `publish-map-to-game` (0048). Both numbers are free on `origin/main` (checked 2026-11-02).
 
 ### Context and problem statement
 
@@ -216,6 +224,7 @@ for one flight, and it cannot be used from the setup server without the setup se
 ### Decision outcome
 
 Option 1. It gives the same rules with one shared implementation, and it keeps the setup server's dependencies as they are.
+Owner decision 3 (2026-11-02) puts boosts and ring effects in version 1; they use the same shared code.
 
 ### Positive consequences
 
@@ -226,7 +235,7 @@ Option 1. It gives the same rules with one shared implementation, and it keeps t
 ### Negative consequences / accepted trade-offs
 
 - The flight does not run the cup's orchestration (GO hold, glide-out, rotation).
-- Boost rings, boost bursts and ring effects are not applied in version 1, and the builder is told so.
+- The boost and ring effects run through the race's code, so a change to a boost or ring rule changes the flight as well (decision 11).
 
 ### Confirmation
 
@@ -237,18 +246,19 @@ Option 1. It gives the same rules with one shared implementation, and it keeps t
 | Risk | Impact | Response |
 |---|---|---|
 | The flight and the race diverge when a race rule changes | A builder's time differs from a racer's | The flight calls the same `RaceRun` and `MapScorer`; a race rule change changes both by construction |
-| A boost course is timed without boosts | A builder reads a slow time | The reply names the gap; owner question 1 decides whether to add it |
+| A boost course is flown with a different velocity than in a race | A builder's time differs from a racer's | Boosts and ring effects use the race's rules and the same velocity sends (decision 11) |
 | The game mode of a flight differs from the racers' | Flight timing differs | Spike 0.1 reads the racers' mode from `Racers` |
 | A disconnect mid-flight leaves flight items in the inventory | A builder keeps an elytra in creative | Decision 7: items are removed at the next entry to the setup server |
 
 ## Open questions
 
-1. **Boost and ring effects in version 1?** The recommendation is no, with the reply that names the gap. Owner decision: it changes
-   the timing of any boost course, and adding it means applying the boost tracker and the effects in the flight.
-2. **Command names.** `/map fly` and `/map fly stop`. The alternatives are `/map test` and `/map test stop`. Owner decision.
-3. **Game mode during a flight.** Spike 0.1 reads it from `Racers`. Owner confirms if the racers' mode should differ.
-4. **Result sharing.** The recommendation is that a flight keeps no best time, even in the session. Pulse and Drift review the
-   feedback of the result (when it shows, what it says, how a builder leaves); this design fixes what the reply carries and does not
-   decide the flow.
-5. **Flights during a publish.** The recommendation is that a flight does not block a publish, because a publish reads the stored
-   file and a flight changes nothing.
+The owner decided on 2026-11-02 that boosts and ring effects are in version 1 (decision 11). The questions below remain open.
+Each has a recommended default, and implementation proceeds on the default until the owner answers.
+
+1. **Command names.** Default: `/map fly` and `/map fly stop`. The alternatives are `/map test` and `/map test stop`.
+2. **Game mode during a flight.** Default: the racers' mode, read from `Racers` (spike 0.1). The owner confirms only if the modes
+   should differ.
+3. **Result sharing.** Default: a flight keeps no best time, even in the session. Pulse and Drift review the feedback of the
+   result (when it shows, what it says, how a builder leaves). This design fixes what the reply carries and does not decide the flow.
+4. **Flights during a publish.** Default: a flight does not block a publish, because a publish reads the stored file and a flight
+   changes nothing.
