@@ -5,6 +5,44 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.18.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.17.1...v1.18.0) (2026-10-31)
+
+
+### Features
+
+* **catalog:** draw palm beach's guide line in deep violet ([#367](https://github.com/OneLiteFeatherNET/Voyager/issues/367)) ([5d13a9f](https://github.com/OneLiteFeatherNET/Voyager/commit/5d13a9f335f44cb2c6536dcf04cdd997e93cfcf1))
+* **catalog:** key maps and cups and record their authors ([#363](https://github.com/OneLiteFeatherNET/Voyager/issues/363)) ([17fa365](https://github.com/OneLiteFeatherNET/Voyager/commit/17fa365bd398cb83a54fe63f0bf8510711c89730))
+* **race:** allow oval rings ([#371](https://github.com/OneLiteFeatherNET/Voyager/issues/371)) ([9ebbf89](https://github.com/OneLiteFeatherNET/Voyager/commit/9ebbf8965608e5b93b9ebd5316bc177e240357ce))
+* **race:** show coloured map and cup names with authors and a placement finale ([#365](https://github.com/OneLiteFeatherNET/Voyager/issues/365)) ([596de0b](https://github.com/OneLiteFeatherNET/Voyager/commit/596de0b769c576c92643899fedbc07dded6ce993))
+* **race:** show each racer's place, gap and best time after a map, and count down to the next one ([#375](https://github.com/OneLiteFeatherNET/Voyager/issues/375)) ([76837a4](https://github.com/OneLiteFeatherNET/Voyager/commit/76837a48196cdc389d6c5793df51e6eac1858700))
+* **setup:** import a finished world into the setup server ([#372](https://github.com/OneLiteFeatherNET/Voyager/issues/372)) ([12bf219](https://github.com/OneLiteFeatherNET/Voyager/commit/12bf219d8699d44fa64e12ec781d47ffdeb0a347))
+
+
+### Bug Fixes
+
+* **race:** glide out after the finish and hold racers at spawn until GO ([#362](https://github.com/OneLiteFeatherNET/Voyager/issues/362)) ([654b90f](https://github.com/OneLiteFeatherNET/Voyager/commit/654b90f4bb5d57895891f5076f34a7ac9d53ed42))
+* **race:** remove a firework rocket only after it has spawned ([#378](https://github.com/OneLiteFeatherNET/Voyager/issues/378)) ([d2a1eed](https://github.com/OneLiteFeatherNET/Voyager/commit/d2a1eed7cb4345bfdf2322988cdeb628bec2f504))
+* **race:** send placed racers back to the lobby on cancel ([#380](https://github.com/OneLiteFeatherNET/Voyager/issues/380)) ([41f6d46](https://github.com/OneLiteFeatherNET/Voyager/commit/41f6d467b71e591ec493fd94a0df7a837390d7af))
+* **race:** show display names instead of keys in stats and restart ([#381](https://github.com/OneLiteFeatherNET/Voyager/issues/381)) ([d4dfad1](https://github.com/OneLiteFeatherNET/Voyager/commit/d4dfad1731cde60220b09fe8d87ce57cc8fe4af5))
+* **race:** show tutorial dialog text instead of translation keys ([#379](https://github.com/OneLiteFeatherNET/Voyager/issues/379)) ([aa8e088](https://github.com/OneLiteFeatherNET/Voyager/commit/aa8e088ae0493d3656ff6efc6fe53b83afeb29a3))
+* **setup:** keep display name and authors on every draft edit ([#370](https://github.com/OneLiteFeatherNET/Voyager/issues/370)) ([9b391e4](https://github.com/OneLiteFeatherNET/Voyager/commit/9b391e4020ad6485c7691d45c34cc6dc1832ffcb))
+
+
+### Tests
+
+* **fitness:** flag only blocking waits on futures on the tick ([#376](https://github.com/OneLiteFeatherNET/Voyager/issues/376)) ([d6cbbd9](https://github.com/OneLiteFeatherNET/Voyager/commit/d6cbbd98678304fd6911a090db1dff25857dab05))
+* **race:** make chunk placement tests independent of load timing ([#369](https://github.com/OneLiteFeatherNET/Voyager/issues/369)) ([3522612](https://github.com/OneLiteFeatherNET/Voyager/commit/3522612cc66cf2156c4fbd7be8122c677dbc0915))
+
+
+### Documentation
+
+* **openspec:** accept palm beach's guide-line packet overage ([#366](https://github.com/OneLiteFeatherNET/Voyager/issues/366)) ([ea82408](https://github.com/OneLiteFeatherNET/Voyager/commit/ea824088fd90e5ce59927a9f33e3567a9575373c))
+* **openspec:** drop the lobby sidebar footer in show-colored-map-and-cup-names ([#364](https://github.com/OneLiteFeatherNET/Voyager/issues/364)) ([251e91d](https://github.com/OneLiteFeatherNET/Voyager/commit/251e91dab4efd89b1d423d64a45af2122fc5cdf0))
+* **openspec:** propose a builder-ready setup server ([#368](https://github.com/OneLiteFeatherNET/Voyager/issues/368)) ([d9720ac](https://github.com/OneLiteFeatherNET/Voyager/commit/d9720ace3dba9608b9f4e8aa83af7ecaed0d9c40))
+* **openspec:** propose catalogue keys, authors and coloured names ([#356](https://github.com/OneLiteFeatherNET/Voyager/issues/356)) ([daadf33](https://github.com/OneLiteFeatherNET/Voyager/commit/daadf33b87fa7637e6f25e0e06031094576f5b67))
+* **openspec:** propose rotate-cups-per-round ([#357](https://github.com/OneLiteFeatherNET/Voyager/issues/357)) ([aad4fee](https://github.com/OneLiteFeatherNET/Voyager/commit/aad4fee7a35005d0d8674c4a471607f6ee821f38))
+* **openspec:** propose smoother map transitions and competitive race feedback ([#360](https://github.com/OneLiteFeatherNET/Voyager/issues/360)) ([f85845d](https://github.com/OneLiteFeatherNET/Voyager/commit/f85845dbd03ef0b2774fd93ee3ac42fe2b445a48))
+
 ## [1.17.1](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.17.0...v1.17.1) (2026-10-28)
 
 
