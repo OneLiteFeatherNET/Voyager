@@ -172,7 +172,7 @@ Set `VOYAGER_CUP_ROTATION_STATE` to a file outside the service directory, which 
 
 A missing directory refuses the start and names the path. A cup whose world folders are not on the node is skipped with one
 warning, so the server plays the cups that are complete. The configuration check (`voyager.config.check=true`) reports a skipped
-cup as a warning and exits with 0 while another cup can be played. Decision record: ADR-0044.
+cup as a warning and exits with 0 while another cup can be played. Decision record: ADR-0046.
 
 ## Known limits
 

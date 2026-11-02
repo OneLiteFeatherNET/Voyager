@@ -1,4 +1,4 @@
-# ADR-0044: The cup rotation runs in the server process, with an optional state file outside the service directory
+# ADR-0046: The cup rotation runs in the server process, with an optional state file outside the service directory
 
 ## Status
 
