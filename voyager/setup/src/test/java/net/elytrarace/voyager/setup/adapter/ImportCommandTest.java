@@ -266,6 +266,11 @@ class ImportCommandTest {
             }
             saved.add(draft);
         }
+
+        @Override
+        public void saveIfUnchanged(MapDraft expected, MapDraft next) {
+            save(next);
+        }
     }
 
     /** An importer that records what it was asked, and returns or throws what the test sets. */

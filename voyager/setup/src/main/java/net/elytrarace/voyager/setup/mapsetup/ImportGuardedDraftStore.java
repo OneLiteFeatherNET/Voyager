@@ -44,4 +44,9 @@ public final class ImportGuardedDraftStore implements DraftStore {
     public void save(MapDraft draft) {
         delegate.save(draft);
     }
+
+    @Override
+    public void saveIfUnchanged(MapDraft expected, MapDraft next) {
+        delegate.saveIfUnchanged(expected, next);
+    }
 }
