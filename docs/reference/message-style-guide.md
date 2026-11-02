@@ -35,12 +35,13 @@ Each kind of information has one channel. Choose the channel before the wording.
 
 | Channel | Carries | Stays on screen | Example |
 |---|---|---|---|
-| Chat | the record: results, errors, joins, the map breakdown | until the next message | the map result breakdown line |
+| Chat | the record: results, errors, joins, the map breakdown and its place line | until the next message | the map result breakdown line, then `Place 2 of 5 · +1.4 s behind Ada` |
 | Action bar | live state under the crosshair: the clock and the ring counter, each labelled, and a missed ring | until replaced | `Time 0:02.1 · Rings 0/35`, `Ring 5 missed` |
 | Title and subtitle | one moment: GO, the medal, a reset, the cup result | the title's hold time | `GOLD`, `0.8 s faster for Gold` |
-| Boss bar | persistent state of a map: map progress, the medal band and the time left in it | until the state changes | `Map 2/4 · Diamond · 12.4 s left` |
+| Boss bar | persistent state of a map: map progress, the medal band and the time left in it; between maps, the count to the next GO | until the state changes | `Map 2/4 · Diamond · 12.4 s left`, `Next map in 28 s` |
 | Action bar (lobby) | the waiting count, or the start countdown, while the room waits; the experience bar counts the start down | until the room starts | `Need 1 more player to start`, `Start in 12 s` |
 | Sidebar (lobby) | the cup, its maps, the racers online, the status and a footer, one per racer | while the room waits | `Racers 3/16`, `starts in 12 s` |
+| Sidebar (between maps) | the standings of the map just played, one per racer | from the next map's spawn until its GO | `1  Ada  1:02.0  +0.0 s` |
 | Sound | confirmation of an event | not on screen | the ring bell |
 
 Rules:
@@ -57,7 +58,7 @@ Rules:
 
 | Surface | Says |
 |---|---|
-| Chat | the breakdown: rings, medal points, placement bonus, total |
+| Chat | the breakdown: rings, medal points, placement bonus, total; then the place line: `Place 2 of 5 · +1.4 s behind Ada`, with the personal best clause after it when statistics are on in a ranked cup |
 | Title | the medal word |
 | Subtitle | the next goal in seconds, for example `0.8 s faster for Gold`; omitted when no better medal is reachable |
 
@@ -83,6 +84,8 @@ Rules (enforced by `MessageStyleTest` in `voyager-fitness`):
 - A line has at most one accent. The dim tag is structure and does not count. A medal word keeps the colour of its
   medal (`<m-gold>`), which is its identity and not a second accent.
 - Red is never used, in any form. The course marks its finish in red.
+- No line about a map says "best" when statistics are off. The place and the gap are still shown; the personal best clause is
+  not, and no session-only best is kept.
 - Every race HUD text colour reads at 4.5 to 1 or more on the dark backdrops `#101010` and `#1E1E1E`. `PaletteContrastTest`
   (`voyager-platform`) checks each colour and names one that fails.
 

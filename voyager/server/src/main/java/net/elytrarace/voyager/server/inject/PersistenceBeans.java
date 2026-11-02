@@ -9,6 +9,8 @@ import net.elytrarace.voyager.api.stats.StatsReader;
 import net.elytrarace.voyager.platform.stats.StatsRequests;
 import net.elytrarace.voyager.server.config.PersistenceSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
+import net.elytrarace.voyager.platform.stats.PersonalBestReader;
+import net.elytrarace.voyager.platform.stats.StatsPersonalBests;
 import net.elytrarace.voyager.server.persistence.StatsBinding;
 
 import java.time.Clock;
@@ -36,6 +38,12 @@ public final class PersistenceBeans {
     @Bean
     StatsReader statsReader(StatsBinding binding) {
         return binding.reader();
+    }
+
+    /** The stored best of a racer, read at each GO for the place line; nothing is read while statistics are off. */
+    @Bean
+    PersonalBestReader personalBestReader(StatsReader reader, Clock clock) {
+        return new StatsPersonalBests(reader, StatsPersonalBests.readerPool(), clock);
     }
 
     /** The read queue behind {@code /stats} and {@code /leaderboard}: reads on the reader pool, replies from the tick. */

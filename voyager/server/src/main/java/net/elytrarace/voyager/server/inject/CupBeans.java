@@ -21,6 +21,7 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
+import net.elytrarace.voyager.platform.stats.PersonalBestReader;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.minestom.server.MinecraftServer;
@@ -109,8 +110,9 @@ public final class CupBeans {
     @Bean
     CupSession cupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition, RaceRuns runs,
             FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts, RaceTimings timings,
-            Supplier<Collection<Player>> players, RaceRecorder recorder, Clock clock, CompetitorField competitors) {
+            Supplier<Collection<Player>> players, RaceRecorder recorder, Clock clock, CompetitorField competitors,
+            PersonalBestReader bests) {
         return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock, competitors);
+                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock, competitors, bests);
     }
 }

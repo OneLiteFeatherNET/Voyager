@@ -190,6 +190,29 @@ This contrasts with `FireworkBoostComponent`, which is written from both the Net
 | `showRingPassed` | `RingCollisionSystem.process` | When a passthrough is detected on a ring |
 | `cleanup` | `GameOrchestrator.restartGame`, `GameOrchestrator.cleanup` | Before removing a player entity, and when the orchestrator tears down |
 
+## Between maps: the count, the standings and the place
+
+From the end of a map until the next map's GO, every human racer sees the boss bar counting down to that GO. It reads
+`Next map in 28 s` (`Nächste Map in 28 s`), where the number is the whole seconds left, rounded up, and the bar fills as the
+wait passes. The bar is the same one the race uses, so the race takes it over at GO. Before the first map and after the last
+there is no countdown; after the last map the cup's end screen takes over.
+
+A racer who is already placed on the next map while others still race the one before it sees `Waiting for <n> racers`
+(`Warte auf <n> Racer`) instead, and the count replaces it when the map ends. The start countdown keeps its digits, title
+and beat in the last three seconds: the boss bar carries the count there and adds no title and no sound.
+
+The standings sidebar shows the racers who played the map, computer racers included: finishers by time with the gap to the
+leader (`+0.0 s` for the leader), then the racers still racing, marked `racing`, then the racers who did not finish, marked
+`DNF`. It holds at most fifteen lines; when there are more racers, its last line reads `+ <n> more`. It is recomputed while
+the wait runs and removed at the next GO. It is not the lobby sidebar, which is shown only while the room waits.
+
+The place line is one chat line after the points breakdown, for each human finisher: `Place <n> of <m> · +<s> s behind <name>`,
+or `<s> s ahead of <name>` for first place. `<m>` counts every racer who started the map, computer racers and racers who did
+not finish included; a racer who did not finish has no place line, only the did-not-finish line. The personal best clause
+follows the place: `New best! −<s> s`, `+<s> s to your best`, `Equal to your best`, or `New best!` on a first run. It is
+shown only in a ranked cup with statistics on, and only when the stored best came back within two seconds of the GO; with
+statistics off no line says anything about a best.
+
 ## Lobby displays
 
 The rebuild's lobby shows the cup that waiting racers are about to play. The sidebar and the hologram read one board,
