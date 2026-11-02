@@ -51,6 +51,17 @@ public final class BuilderSessions {
     }
 
     /**
+     * Whether the builder holds the claim of a map. A session that outlives its claim must not change the map.
+     *
+     * @param builder the builder
+     * @param map     the map
+     * @return whether the builder is the holder of the map's claim
+     */
+    public boolean holds(UUID builder, MapId map) {
+        return claims.holder(key(map)).map(EditClaims.Holder::builder).filter(builder::equals).isPresent();
+    }
+
+    /**
      * Grants the builder the claim of a map, unless another builder holds it. Nothing else changes; the caller opens the
      * session once the claim is granted.
      *
