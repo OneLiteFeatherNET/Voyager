@@ -5,6 +5,7 @@ import net.elytrarace.voyager.api.permission.PermissionPolicy;
 import net.elytrarace.voyager.platform.permission.PlayerSubjects;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.api.math.Vec3;
+import net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
 import net.elytrarace.voyager.api.race.Ring;
 import net.elytrarace.voyager.platform.convert.Vectors;
@@ -105,6 +106,8 @@ public final class WandListener {
         try {
             session.commit(DraftEditor.withRingAppended(session.draft(), ring));
             builder.sendMessage(SetupMessages.ringPlaced(ring.index()));
+        } catch (DraftChangedException exception) {
+            builder.sendMessage(SetupMessages.saveChanged(session.id().value()));
         } catch (DraftWriteFailedException exception) {
             builder.sendMessage(SetupMessages.saveFailed(session.id().value()));
         }
@@ -127,6 +130,8 @@ public final class WandListener {
         try {
             session.commit(DraftEditor.withoutRing(session.draft(), hit.getAsInt()));
             builder.sendMessage(SetupMessages.ringRemoved(hit.getAsInt()));
+        } catch (DraftChangedException exception) {
+            builder.sendMessage(SetupMessages.saveChanged(session.id().value()));
         } catch (DraftWriteFailedException exception) {
             builder.sendMessage(SetupMessages.saveFailed(session.id().value()));
         }

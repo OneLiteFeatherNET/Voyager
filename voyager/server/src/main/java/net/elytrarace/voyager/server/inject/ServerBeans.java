@@ -157,8 +157,8 @@ public final class ServerBeans {
 
     /** {@code /stats}, built with the read queue the tick answers from. Registered by {@code VoyagerServer}, like {@code /race}. */
     @Bean
-    StatsCommand statsCommand(StatsReader reader, StatsRequests requests) {
-        return new StatsCommand(reader, requests);
+    StatsCommand statsCommand(CatalogHolder catalog, StatsReader reader, StatsRequests requests) {
+        return new StatsCommand(catalog, reader, requests);
     }
 
     /** {@code /leaderboard}, built with the catalogue it looks maps up in. Registered by {@code VoyagerServer}. */

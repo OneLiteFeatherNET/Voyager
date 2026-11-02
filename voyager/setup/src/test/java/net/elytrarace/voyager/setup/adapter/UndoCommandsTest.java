@@ -8,6 +8,7 @@ import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
 import net.elytrarace.voyager.api.race.effect.RingEffectTuning;
 import net.elytrarace.voyager.platform.catalog.JsonDraftStore;
 import net.elytrarace.voyager.platform.world.MapInstances;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.elytrarace.voyager.setup.mapsetup.RingDefaults;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
@@ -50,20 +51,22 @@ class UndoCommandsTest {
         worlds = Files.createDirectories(root.resolve("worlds"));
     }
 
-    private Fixture fixture(Env env, DraftStore store) throws IOException {
-        folders();
+    /** A fixture over the given store in the folders made by {@link #folders()}, with claims and the wand wired. */
+    private Fixture fixture(Env env, DraftStore store) {
         Instance start = env.createFlatInstance();
-        BuilderSessions sessions = new BuilderSessions();
-        env.process().command().register(
-                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
+        EditClaims claims = new EditClaims();
+        BuilderSessions sessions = new BuilderSessions(claims);
+        env.process().command().register(new SetupCommands(store, sessions, worlds,
+                new MapInstances(env.process().instance(), worlds), ALLOW_ALL,
+                new SetupLobby(env.process().instance())));
         new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
-        return new Fixture(env, builder, store, sessions, chat);
+        return new Fixture(env, builder, store, sessions, claims, chat);
     }
 
-    /** A fixture over a store in fresh folders, for the tests that need no failing save. */
+    /** A fixture over a plain store in fresh folders. */
     private Fixture plain(Env env) throws IOException {
         folders();
         return fixture(env, store());
@@ -135,6 +138,7 @@ class UndoCommandsTest {
     void undoAfterASpawnRestoresTheSpawnAndKeepsTheDisplayName(Env env) throws IOException {
         Fixture fixture = plain(env);
         fixture.enter("map new skyfortress");
+        fixture.run("map close");
         MapDraft named = new MapDraft(ID, ID.value(), null, List.of(), RingDefaults.REFERENCE_TIME_SECONDS,
                 RingDefaults.BOOST, RingDefaults.GUIDE_LINE, RingEffectTuning.DEFAULT, "Sky Fortress", List.of());
         store().save(named);
@@ -161,6 +165,83 @@ class UndoCommandsTest {
 
         assertThat(Files.readAllBytes(draftFile())).isEqualTo(before);
         assertThat(fixture.keys()).contains("voyager.setup.undo.none");
+    }
+
+    @Test
+    void closingTheMapClearsItsUndoHistory(Env env) throws IOException {
+        Fixture fixture = plain(env);
+        fixture.enter("map new skyfortress");
+        fixture.placeRingAt(0);
+        fixture.run("map close");
+        fixture.enter("map open skyfortress");
+        byte[] before = Files.readAllBytes(draftFile());
+
+        fixture.run("map undo");
+
+        assertThat(Files.readAllBytes(draftFile())).isEqualTo(before);
+        assertThat(fixture.keys()).contains("voyager.setup.undo.none");
+    }
+
+    @Test
+    void anUnlockEndsTheHoldersHistory(Env env) throws IOException {
+        Fixture fixture = plain(env);
+        fixture.enter("map new skyfortress");
+        fixture.placeRingAt(0);
+        fixture.run("map unlock skyfortress");
+        fixture.enter("map open skyfortress");
+        byte[] before = Files.readAllBytes(draftFile());
+
+        fixture.run("map undo");
+
+        assertThat(Files.readAllBytes(draftFile())).isEqualTo(before);
+        assertThat(fixture.keys()).contains("voyager.setup.undo.none");
+    }
+
+    @Test
+    void aSessionWhoseClaimIsGoneCannotUndo(Env env) throws IOException {
+        Fixture fixture = plain(env);
+        fixture.enter("map new skyfortress");
+        fixture.placeRingAt(0);
+        fixture.placeRingAt(4);
+        fixture.claims.unlock("map:skyfortress");
+        byte[] before = Files.readAllBytes(draftFile());
+
+        fixture.run("map undo");
+
+        assertThat(Files.readAllBytes(draftFile())).isEqualTo(before);
+        assertThat(fixture.keys()).contains("voyager.setup.map.none").doesNotContain("voyager.setup.undo.done");
+    }
+
+    @Test
+    void aSessionWhoseClaimIsGoneCannotRedo(Env env) throws IOException {
+        Fixture fixture = plain(env);
+        fixture.enter("map new skyfortress");
+        fixture.placeRingAt(0);
+        fixture.run("map undo");
+        fixture.claims.unlock("map:skyfortress");
+        byte[] before = Files.readAllBytes(draftFile());
+
+        fixture.run("map redo");
+
+        assertThat(Files.readAllBytes(draftFile())).isEqualTo(before);
+        assertThat(fixture.keys()).contains("voyager.setup.map.none").doesNotContain("voyager.setup.redo.done");
+    }
+
+    @Test
+    void anUndoOverADraftThatChangedOnDiskIsRefusedAndTheStoredCopyKeepsItsBytes(Env env) throws IOException {
+        Fixture fixture = plain(env);
+        fixture.enter("map new skyfortress");
+        fixture.placeRingAt(0);
+        fixture.placeRingAt(4);
+        MapDraft changed = new MapDraft(ID, ID.value(), null, List.of(), RingDefaults.REFERENCE_TIME_SECONDS,
+                RingDefaults.BOOST, RingDefaults.GUIDE_LINE, RingEffectTuning.DEFAULT, "Changed elsewhere", List.of());
+        store().save(changed);
+        byte[] before = Files.readAllBytes(draftFile());
+
+        fixture.run("map undo");
+
+        assertThat(Files.readAllBytes(draftFile())).isEqualTo(before);
+        assertThat(fixture.keys()).contains("voyager.setup.save.changed").doesNotContain("voyager.setup.undo.done");
     }
 
     @Test
@@ -225,10 +306,18 @@ class UndoCommandsTest {
             }
             delegate.save(draft);
         }
+
+        @Override
+        public void saveIfUnchanged(MapDraft expected, MapDraft next) {
+            if (failSaves) {
+                throw DraftWriteFailedException.of(next.id(), new IOException("the disk is full"));
+            }
+            delegate.saveIfUnchanged(expected, next);
+        }
     }
 
-    /** The builder, the command and event path, and what the builder was told. */
-    private record Fixture(Env env, Player builder, DraftStore store, BuilderSessions sessions,
+    /** The builder, the command and event path, the claims, and what the builder was told. */
+    private record Fixture(Env env, Player builder, DraftStore store, BuilderSessions sessions, EditClaims claims,
             Collector<SystemChatPacket> chat) {
 
         void run(String command) {

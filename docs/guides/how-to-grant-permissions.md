@@ -43,6 +43,24 @@ lp group staff permission set voyager.command.race.reload true
 lp user <player name> parent add staff
 ```
 
+## Grant the builder and unlock groups
+
+Two groups cover the setup server. A `builder` group holds `voyager.setup.use`, which every `/map` subcommand needs:
+
+```text
+lp creategroup builder
+lp group builder permission set voyager.setup.use true
+```
+
+An administrator who releases a stuck map, with `/map unlock <id>`, needs `voyager.setup.unlock`. That node is the only
+node the unlock asks for, so a group that holds it alone can unlock. Keep it apart from the builder group:
+
+```text
+lp creategroup map-admin
+lp group map-admin permission set voyager.setup.unlock true
+lp user <player name> parent add map-admin
+```
+
 ## Remove a grant
 
 ```text

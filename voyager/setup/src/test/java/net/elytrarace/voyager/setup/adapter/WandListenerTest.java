@@ -14,6 +14,7 @@ import net.elytrarace.voyager.platform.text.SetupMessages;
 import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.setup.mapsetup.DraftEditor;
 import net.elytrarace.voyager.setup.mapsetup.RingDefaults;
+import net.elytrarace.voyager.setup.mapsetup.EditClaims;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -56,9 +57,9 @@ class WandListenerTest {
     private Fixture fixture(Env env, DraftStore store) throws IOException {
         folders();
         Instance start = env.createFlatInstance();
-        BuilderSessions sessions = new BuilderSessions();
+        BuilderSessions sessions = new BuilderSessions(new EditClaims());
         env.process().command().register(
-                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL));
+                new SetupCommands(store, sessions, worlds, new MapInstances(env.process().instance(), worlds), ALLOW_ALL, new SetupLobby(env.process().instance())));
         new WandListener(sessions, ALLOW_ALL).register(env.process().eventHandler());
         TestConnection connection = env.createConnection();
         Player builder = connection.connect(start, new Pos(0, 64, 0));
@@ -119,6 +120,7 @@ class WandListenerTest {
         Fixture fixture = fixture(env, store());
         fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10, 20);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
 
@@ -135,6 +137,7 @@ class WandListenerTest {
         Fixture fixture = fixture(env, store());
         fixture.enter("map new skyfortress");
         fixture.seedRings(0, 10, 20);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
         fixture.lookDown();
@@ -152,6 +155,7 @@ class WandListenerTest {
         fixture.enter("map new skyfortress");
         fixture.run("map spawn");
         fixture.seedRings(0, 10, 20);
+        fixture.run("map close");
         fixture.enter("map open skyfortress");
         fixture.moveTo(new Pos(0, 64, 5));
         byte[] before = Files.readAllBytes(data.resolve("maps").resolve("skyfortress.json"));
@@ -177,6 +181,23 @@ class WandListenerTest {
         assertThat(Files.readAllBytes(data.resolve("drafts").resolve("skyfortress.json"))).isEqualTo(before);
         assertThat(fixture.sessions.find(fixture.builder.getUuid()).orElseThrow().draft().rings()).isEmpty();
         assertThat(fixture.keys()).contains("voyager.setup.save.failed");
+    }
+
+    /** A ring placed over a draft another setup server changed is refused, and the builder is told. */
+    @Test
+    void aRingPlacedOverADraftThatChangedOnDiskIsRefusedAndTheBuilderIsTold(Env env) throws IOException {
+        folders();
+        Fixture fixture = fixture(env, store());
+        fixture.enter("map new skyfortress");
+        DraftStore other = store();
+        other.save(DraftEditor.withSpawn(other.load(ID), new Vec3(7, 64, 7)));
+        byte[] before = Files.readAllBytes(data.resolve("drafts").resolve("skyfortress.json"));
+
+        fixture.rightClick();
+
+        assertThat(Files.readAllBytes(data.resolve("drafts").resolve("skyfortress.json"))).isEqualTo(before);
+        assertThat(fixture.sessions.find(fixture.builder.getUuid()).orElseThrow().draft().rings()).isEmpty();
+        assertThat(fixture.keys()).contains("voyager.setup.save.changed");
     }
 
     /** A store whose saves fail on demand, for the one test that needs a failed write. */
@@ -205,6 +226,14 @@ class WandListenerTest {
                 throw DraftWriteFailedException.of(draft.id(), new IOException("the disk is full"));
             }
             delegate.save(draft);
+        }
+
+        @Override
+        public void saveIfUnchanged(MapDraft expected, MapDraft next) {
+            if (failSaves) {
+                throw DraftWriteFailedException.of(next.id(), new IOException("the disk is full"));
+            }
+            delegate.saveIfUnchanged(expected, next);
         }
     }
 

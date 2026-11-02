@@ -23,7 +23,9 @@ public enum PermissionNode {
     /** Every setup command and the wand. */
     VOYAGER_SETUP_USE("voyager.setup.use"),
     /** {@code /map import}, on top of {@link #VOYAGER_SETUP_USE}: an operator can grant building without importing. */
-    VOYAGER_SETUP_IMPORT("voyager.setup.import");
+    VOYAGER_SETUP_IMPORT("voyager.setup.import"),
+    /** {@code /map unlock}, the one command that releases a claim another builder holds. Gated by this node alone. */
+    VOYAGER_SETUP_UNLOCK("voyager.setup.unlock");
 
     private static final Map<String, PermissionNode> BY_VALUE;
 

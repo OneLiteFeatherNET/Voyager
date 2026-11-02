@@ -35,4 +35,17 @@ public interface DraftStore {
      *     the previously stored copy is then unchanged
      */
     void save(MapDraft draft);
+
+    /**
+     * Saves a draft only when its stored copy is still the copy the change was made on. The stored copy and
+     * {@code expected} are compared by their canonical JSON, so the layout of the stored file does not matter. A stored
+     * copy that cannot be read counts as changed.
+     *
+     * @param expected the draft as the caller last loaded or saved it
+     * @param next     the draft to store in its place
+     * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException if the stored copy differs from
+     *     {@code expected} or is missing; the stored copy is then unchanged
+     * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException if the write did not complete
+     */
+    void saveIfUnchanged(MapDraft expected, MapDraft next);
 }

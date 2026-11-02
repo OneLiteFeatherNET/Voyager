@@ -3,6 +3,7 @@ package net.elytrarace.voyager.platform.lobby;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.flight.ArrivalFacing;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
@@ -11,6 +12,7 @@ import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.race.flow.StartGate;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 
@@ -213,6 +215,14 @@ public final class WaitingRoom {
     }
 
     /**
+     * Where racers wait in {@link #waitingPlace()}: the lobby spawn when one is configured, otherwise the first
+     * map's spawn.
+     */
+    private Pos waitingSpot() {
+        return lobby != null ? lobby.spawn() : ArrivalFacing.at(catalog.current().rotation().getFirst());
+    }
+
+    /**
      * A racer has left: their lobby bar is dropped with them.
      *
      * @param playerId the racer who disconnected
@@ -260,7 +270,7 @@ public final class WaitingRoom {
                 racersSinceStart = count > 0;
             }
             case CANCEL_COUNTDOWN -> {
-                session.disarm();
+                session.disarm(waitingPlace(), waitingSpot());
                 online.forEach(racer -> racer.sendMessage(Messages.lobbyCancelled(count, minimum)));
             }
             case ABORT_CUP -> {
