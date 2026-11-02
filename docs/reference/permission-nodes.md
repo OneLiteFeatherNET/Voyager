@@ -15,6 +15,7 @@ and the rule that applies when LuckPerms is absent. The how-to guide
 | `voyager.command.stop` | `/stop`, which shuts the game server down cleanly | Always |
 | `voyager.setup.use` | Every `/map` subcommand on the setup server, and the wand | Always, on the setup server |
 | `voyager.setup.import` | `/map import`, which copies a finished world into a new map; it needs `voyager.setup.use` as well | Never granted by default; grant it to each builder who may import |
+| `voyager.setup.unlock` | `/map unlock <id>`, which releases a map another builder holds and ends that builder's session on it; this node alone is checked | Never granted by default; grant it to administrators only |
 
 `/race` with no subcommand shows the cup's status. It asks for no node and stays open to every sender, because it reads
 state and changes nothing.

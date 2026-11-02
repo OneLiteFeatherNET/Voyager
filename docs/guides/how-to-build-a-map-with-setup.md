@@ -73,6 +73,23 @@ A crash during a save can leave a copy of the draft in both folders. `/map open 
 both files. Keep the copy you want, delete the other file, and run `/map open <id>` again. The server does not choose
 between the two copies, because either choice can lose your last change.
 
+## Share a map with another builder
+
+A map has one editor at a time. When you run `/map open <id>` for a map another builder holds, the server refuses and
+names the builder who holds it. Your own map is unchanged.
+
+To give a map back, run `/map close`. Its previews are removed, another builder can open it, and you move to the setup
+lobby with the setup wand taken away. Opening another map gives the first one back in the same way, and so does
+disconnecting.
+
+A map can also stay held after its builder has left. An administrator with the node `voyager.setup.unlock` runs
+`/map unlock <id>`. The holder's open session on that map ends, and the holder moves to the setup lobby with the wand
+taken away. The unlock does not open the map for the administrator: run `/map open <id>` for that. Every change is saved
+when it is made, so an unlock loses nothing.
+
+A save is refused when the stored draft changed after you opened it, for example because a second setup server wrote the
+same folder. The server keeps the stored copy. Run `/map close`, then `/map open <id>`, to load it again.
+
 ## Import a finished world
 
 When a course is already built in a finished world, you do not have to rebuild it block by block. Put the world folder
