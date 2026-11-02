@@ -55,10 +55,20 @@ public final class XerusPhaseDriver extends TickedPhase {
     private RaceTimings timings;
     private final Duration step;
     private final BooleanSupplier everyPlayerFinished;
+    private final BooleanSupplier racersLoading;
     private final RacePhaseListener listener;
 
     private RaceState state = RaceState.initial();
     private RaceClock clock;
+
+    /** How much GO has been held in the current lobby, for {@link RaceTimings#GO_HOLD_LIMIT}. Zero outside a hold. */
+    private Duration goHeld = Duration.ZERO;
+
+    /** Whether the tick just played held GO. */
+    private boolean holdingGo;
+
+    /** Whether the GO that began the current {@code GAME} phase was held for racers still loading. */
+    private boolean startedAfterHold;
 
     /**
      * @param step the wall-clock duration one {@link #onUpdate()} stands for. It has to match the
@@ -69,11 +79,21 @@ public final class XerusPhaseDriver extends TickedPhase {
      */
     public XerusPhaseDriver(CupDefinition cup, RaceTimings timings, Duration step,
             BooleanSupplier everyPlayerFinished, RacePhaseListener listener) {
+        this(cup, timings, step, everyPlayerFinished, listener, () -> false);
+    }
+
+    /**
+     * @param racersLoading read on each tick on which a lobby would end. {@code true} holds {@code GO} there, for at
+     *     most {@link RaceTimings#GO_HOLD_LIMIT}, so the racers who are still loading are not left behind
+     */
+    public XerusPhaseDriver(CupDefinition cup, RaceTimings timings, Duration step,
+            BooleanSupplier everyPlayerFinished, RacePhaseListener listener, BooleanSupplier racersLoading) {
         super("race-%s".formatted(cup.key().asString()));
         this.cup = cup;
         this.timings = timings;
         this.step = step;
         this.everyPlayerFinished = everyPlayerFinished;
+        this.racersLoading = racersLoading;
         this.listener = listener;
         this.clock = RaceClock.startingAt(step);
     }
@@ -96,6 +116,16 @@ public final class XerusPhaseDriver extends TickedPhase {
         RaceState previous = state;
         RaceState next = RaceStateMachine.advance(
                 previous, cup, timings, step, everyPlayerFinished.getAsBoolean());
+        holdingGo = false;
+        if (previous.phase() == RacePhase.LOBBY && next.phase() == RacePhase.GAME) {
+            if (holdGo()) {
+                // The lobby stands on the tick it would have ended on, so GAME begins with the tick GO is released on.
+                next = new RaceState(RacePhase.LOBBY, previous.mapIndex(), previous.inPhase(), false);
+            } else {
+                startedAfterHold = goHeld.isPositive();
+                goHeld = Duration.ZERO;
+            }
+        }
         // Published before the listeners run, so a listener asking for state() during a movement
         // tick sees the state that tick is being played against and not the one it came from.
         state = next;
@@ -132,6 +162,39 @@ public final class XerusPhaseDriver extends TickedPhase {
     /** The race clock of the current {@code GAME} phase; see {@link RaceClock}. */
     public RaceClock clock() {
         return clock;
+    }
+
+    /** Whether the tick just played held {@code GO} for racers still loading. */
+    public boolean goHeld() {
+        return holdingGo;
+    }
+
+    /**
+     * Whether the {@code GO} that began the current {@code GAME} phase was held for racers still loading. Read on the tick
+     * GO fires, and it stays true for that map's {@code GAME} phase.
+     */
+    public boolean goStartedAfterHold() {
+        return startedAfterHold;
+    }
+
+    /**
+     * Whether the tick on which a lobby would end holds {@code GO} instead, and if so, counts the hold.
+     *
+     * <p>A hold lasts while a racer is still loading and {@link RaceTimings#GO_HOLD_LIMIT} has not been used up. The
+     * limit is counted in steps on this driver's own clock, so it is the same length at every step, and the racers are
+     * read only on a tick that would start the {@code GAME} phase, never during the lobby.
+     *
+     * <p>A lobby of zero length is never held. It has no countdown, so its {@code GO} is the operator's skip, which fires
+     * on the next tick as it always has.
+     */
+    private boolean holdGo() {
+        if (timings.lobby().isZero() || goHeld.compareTo(RaceTimings.GO_HOLD_LIMIT) >= 0
+                || !racersLoading.getAsBoolean()) {
+            return false;
+        }
+        goHeld = goHeld.plus(step);
+        holdingGo = true;
+        return true;
     }
 
     /**

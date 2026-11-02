@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -380,11 +381,174 @@ class XerusPhaseDriverTest {
     }
 
     // ------------------------------------------------------------------------------------------
+    // GO held for racers still loading
+    // ------------------------------------------------------------------------------------------
+
+    /** Movement ticks GO may be held for: the hold limit, counted in steps. */
+    private static final int HOLD_TICKS = (int) (RaceTimings.GO_HOLD_LIMIT.toMillis() / STEP.toMillis());
+
+    /**
+     * On the tick a lobby would end, a racer still loading holds GO there: the lobby stands at its last tick and the
+     * {@code GAME} phase does not begin.
+     */
+    @Test
+    void goIsHeldOnTheTickALobbyWouldEndWhileARacerIsStillLoading() {
+        RecordingListener listener = new RecordingListener();
+        AtomicBoolean loading = new AtomicBoolean(true);
+        XerusPhaseDriver driver = driver(listener, () -> false, loading::get);
+        driver.start();
+
+        tick(driver, LOBBY_TICKS);
+
+        assertThat(driver.state().phase()).as("the phase while GO is held").isEqualTo(RacePhase.LOBBY);
+        assertThat(driver.state().inPhase()).as("the lobby stands at its last tick")
+                .isEqualTo(TIMINGS.lobby().minus(STEP));
+        assertThat(driver.goHeld()).isTrue();
+        assertThat(listener.events()).doesNotContain("mapStarted 0 elytrarace:ember-ascent");
+    }
+
+    /** GO fires on the first tick after the last racer is placed, and the map's own clock starts from there. */
+    @Test
+    void goFiresOnTheTickAfterTheLastRacerIsPlaced() {
+        RecordingListener listener = new RecordingListener();
+        AtomicBoolean loading = new AtomicBoolean(true);
+        XerusPhaseDriver driver = driver(listener, () -> false, loading::get);
+        driver.start();
+        tick(driver, LOBBY_TICKS + 5);
+
+        loading.set(false);
+        driver.onUpdate();
+
+        assertThat(driver.state().phase()).isEqualTo(RacePhase.GAME);
+        assertThat(driver.state().inPhase()).as("the GAME phase starts at its own zero").isEqualTo(Duration.ZERO);
+        assertThat(driver.goHeld()).isFalse();
+        assertThat(listener.events()).contains("mapStarted 0 elytrarace:ember-ascent");
+    }
+
+    /**
+     * A racer who never loads does not hold the room past the limit: GO fires on the tick after
+     * {@link RaceTimings#GO_HOLD_LIMIT} has been held, which is {@code HOLD_TICKS} held ticks after the lobby would have
+     * ended.
+     */
+    @Test
+    void goFiresAfterTheMaximumHoldEvenIfARacerIsStillLoading() {
+        RecordingListener listener = new RecordingListener();
+        XerusPhaseDriver driver = driver(listener, () -> false, () -> true);
+        driver.start();
+
+        tick(driver, LOBBY_TICKS + HOLD_TICKS - 1);
+        assertThat(driver.state().phase()).as("the last held tick").isEqualTo(RacePhase.LOBBY);
+        assertThat(listener.events()).doesNotContain("mapStarted 0 elytrarace:ember-ascent");
+
+        driver.onUpdate();
+
+        assertThat(driver.state().phase()).as("the tick after the limit").isEqualTo(RacePhase.GAME);
+        assertThat(listener.events()).contains("mapStarted 0 elytrarace:ember-ascent");
+        assertThat(HOLD_TICKS).as("the hold is 100 ticks at 50 ms").isEqualTo(100);
+    }
+
+    /** With nobody loading, GO fires on the tick it always did: the hold changes nothing when everybody is placed. */
+    @Test
+    void goIsNotHeldWhenNoRacerIsLoading() {
+        RecordingListener listener = new RecordingListener();
+        XerusPhaseDriver driver = driver(listener, () -> false, () -> false);
+        driver.start();
+
+        tick(driver, LOBBY_TICKS - 1);
+        assertThat(driver.state().phase()).isEqualTo(RacePhase.LOBBY);
+        driver.onUpdate();
+
+        assertThat(driver.state().phase()).isEqualTo(RacePhase.GAME);
+        assertThat(driver.goHeld()).isFalse();
+    }
+
+    /** The racers are read only on the tick a lobby would end, so an ordinary lobby asks nobody anything. */
+    @Test
+    void racersAreReadOnlyOnTheTickAGoWouldFire() {
+        RecordingListener listener = new RecordingListener();
+        AtomicInteger reads = new AtomicInteger();
+        XerusPhaseDriver driver = driver(listener, () -> false, () -> {
+            reads.incrementAndGet();
+            return false;
+        });
+        driver.start();
+
+        tick(driver, LOBBY_TICKS - 1);
+        assertThat(reads).as("reads during the lobby").hasValue(0);
+        driver.onUpdate();
+        assertThat(reads).as("reads on the tick GO would fire").hasValue(1);
+    }
+
+    /**
+     * A lobby of no length has no countdown, so its GO is an operator's skip and is never held, even with a racer loading.
+     */
+    @Test
+    void aLobbyOfNoLengthIsNeverHeld() {
+        RecordingListener listener = new RecordingListener();
+        RaceTimings skipped = new RaceTimings(
+                Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500), Duration.ofMillis(500));
+        XerusPhaseDriver driver = new XerusPhaseDriver(CUP, skipped, STEP, () -> false, listener, () -> true);
+        driver.start();
+
+        driver.onUpdate();
+
+        assertThat(driver.state().phase()).isEqualTo(RacePhase.GAME);
+        assertThat(driver.goHeld()).isFalse();
+        assertThat(driver.goStartedAfterHold()).isFalse();
+    }
+
+    /** The GO that starts a map reports whether it was held: a held GO does, and one that was never held does not. */
+    @Test
+    void theGoThatStartsAMapReportsWhetherItWasHeld() {
+        RecordingListener listener = new RecordingListener();
+        AtomicBoolean loading = new AtomicBoolean(true);
+        XerusPhaseDriver driver = driver(listener, () -> false, loading::get);
+        driver.start();
+        tick(driver, LOBBY_TICKS + 3);
+        loading.set(false);
+
+        driver.onUpdate();
+
+        assertThat(driver.goStartedAfterHold()).as("GO held, then released once everyone was placed").isTrue();
+
+        XerusPhaseDriver unheld = driver(new RecordingListener(), () -> false, () -> false);
+        unheld.start();
+        tick(unheld, LOBBY_TICKS);
+        assertThat(unheld.goStartedAfterHold()).as("GO that was never held").isFalse();
+    }
+
+    /**
+     * The hold applies to the second map's lobby as it applies to the first: a whole two-map cup with a racer who never
+     * loads takes {@code HOLD_TICKS} longer on each map.
+     */
+    @Test
+    void theSecondMapsGoIsHeldTheSameWayAsTheFirst() {
+        RecordingListener listener = new RecordingListener();
+        XerusPhaseDriver driver = driver(listener, () -> false, () -> true);
+
+        int ticks = run(driver);
+
+        assertThat(ticks).as("both maps held for the full limit").isEqualTo(2 * (TICKS_PER_MAP + HOLD_TICKS));
+        assertThat(listener.events()).contains("mapStarted 1 elytrarace:glacier-chicane");
+    }
+
+    // ------------------------------------------------------------------------------------------
     // Fixture
     // ------------------------------------------------------------------------------------------
 
     private static XerusPhaseDriver driver(RacePhaseListener listener, BooleanSupplier finished) {
         return new XerusPhaseDriver(CUP, TIMINGS, STEP, finished, listener);
+    }
+
+    private static XerusPhaseDriver driver(RacePhaseListener listener, BooleanSupplier finished,
+            BooleanSupplier racersLoading) {
+        return new XerusPhaseDriver(CUP, TIMINGS, STEP, finished, listener, racersLoading);
+    }
+
+    private static void tick(XerusPhaseDriver driver, int ticks) {
+        for (int tick = 0; tick < ticks; tick++) {
+            driver.onUpdate();
+        }
     }
 
     private static int run(XerusPhaseDriver driver) {

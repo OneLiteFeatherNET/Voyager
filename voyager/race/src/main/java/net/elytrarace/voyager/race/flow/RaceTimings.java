@@ -53,6 +53,21 @@ public record RaceTimings(Duration lobby, Duration race, Duration endBetweenMaps
     public static final RaceTimings DEFAULT = new RaceTimings(
             Duration.ofSeconds(20), Duration.ofSeconds(300), Duration.ofSeconds(8), Duration.ofSeconds(20));
 
+    /**
+     * The longest GO waits for racers who are still loading their map: five seconds, which is 100 ticks at 20 TPS.
+     *
+     * <p>When a lobby ends while at least one racer of the cup is still loading the map, GO is held and the lobby
+     * stands at its last tick, so every racer starts together. The hold ends as soon as no racer online is loading
+     * any more, or once this much time has been held, whichever comes first. A racer still loading then is placed when
+     * their chunks arrive and starts their own run from that tick, so a slow connection delays only that racer. A
+     * lobby of no length has no countdown and is never held.
+     *
+     * <p>Five seconds is long enough to absorb an ordinary chunk load and short enough that a stalled one is not
+     * felt by the racers who were ready. It is a constant and not a setting: a longer hold lets one slow racer hold
+     * the whole room, and a setting would make that trade-off the operator's to re-make per server.
+     */
+    public static final Duration GO_HOLD_LIMIT = Duration.ofSeconds(5);
+
     public RaceTimings {
         if (lobby.isNegative() || race.isNegative() || endBetweenMaps.isNegative()
                 || endAfterLastMap.isNegative()) {

@@ -29,6 +29,7 @@ import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.world.DimensionType;
 import net.minestom.testing.Env;
+import net.minestom.testing.TestConnection;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -89,6 +91,12 @@ final class PlacementFixture implements AutoCloseable {
     final Instance secondWorld;
     final MapInstances instances;
     final CupSession session;
+    final RaceRuns runs;
+
+    /** Each connected racer's connection, so a test can read the packets the server sent that racer. */
+    private final Map<Player, TestConnection> connections = new HashMap<>();
+
+    private int ticksPlayed;
 
     private final Path root;
 
@@ -100,6 +108,7 @@ final class PlacementFixture implements AutoCloseable {
         writeWorld(env, SECOND_WORLD, SECOND_SPAWN);
         this.instances = new MapInstances(env.process().instance(), root.resolve("worlds"));
         RaceRuns runs = new RaceRuns();
+        this.runs = runs;
         MapTransition transition = new MapTransition(instances, runs, loader);
         CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
                 new CatalogSnapshot(Map.of(FIRST_MAP, FIRST_RUN, SECOND_MAP, SECOND_RUN), Map.of(CUP, CUP_DEFINITION)),
@@ -134,15 +143,42 @@ final class PlacementFixture implements AutoCloseable {
 
     /** Connects a racer into the lobby instance, away from both spawns, and returns them. */
     Player connectRacer() {
-        Player racer = env.createConnection().connect(lobby, new Pos(LOBBY_SPOT.x(), LOBBY_SPOT.y(), LOBBY_SPOT.z()));
+        TestConnection connection = env.createConnection();
+        Player racer = connection.connect(lobby, new Pos(LOBBY_SPOT.x(), LOBBY_SPOT.y(), LOBBY_SPOT.z()));
         online.add(racer);
+        connections.put(racer, connection);
         return racer;
+    }
+
+    /** The connection {@code racer} was connected through, for reading the packets the server sends them. */
+    TestConnection connectionOf(Player racer) {
+        return connections.get(racer);
+    }
+
+    /** Disconnects {@code racer} the way the server does: the cup forgets them and they leave the room. */
+    void disconnect(Player racer) {
+        online.remove(racer);
+        session.forget(racer.getUuid());
+        racer.remove(true);
     }
 
     /** Advances the cup by one tick, then the environment by one tick, so the placements' futures can complete. */
     void tick() {
         session.advancePhase();
         env.tick();
+        ticksPlayed++;
+    }
+
+    /** How many ticks the cup has been advanced since it was opened, so a test can count a phase from its start. */
+    int ticksPlayed() {
+        return ticksPlayed;
+    }
+
+    /** Advances the cup by {@code ticks} ticks. */
+    void tick(int ticks) {
+        for (int tick = 0; tick < ticks; tick++) {
+            tick();
+        }
     }
 
     /** Ticks until {@code done} holds, and fails with {@code what} if it does not within {@code budget} ticks. */
