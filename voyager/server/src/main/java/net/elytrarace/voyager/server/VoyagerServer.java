@@ -26,10 +26,12 @@ import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.command.StatsCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.PersistenceSettings;
+import net.elytrarace.voyager.server.config.RestartSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.elytrarace.voyager.server.persistence.StatsBinding;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.handoff.CupRestart;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
 import net.elytrarace.voyager.platform.rotation.FileCupRotationStore;
@@ -174,8 +176,17 @@ public final class VoyagerServer {
         CupRotationSettings rotation = CupRotationSettings.from(properties);
         CupRotationStore store = rotation.stateFile().<CupRotationStore>map(FileCupRotationStore::new)
                 .orElse(CupRotationStore.NONE);
+        // The restart after each finished cup (ADR-0047). Off unless VOYAGER_RESTART_AFTER_CUP is true.
+        RestartSettings restartSettings = RestartSettings.from(properties);
+        CupRestart restart = restartSettings.afterCup()
+                ? CupRestart.after(store, rotation.stateFile().map(Object::toString).orElse("(no state file)"))
+                : CupRestart.disabled();
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
         ConfigCheck.comBootLine(settings).ifPresent(LOGGER::info);
+        if (restartSettings.afterCup()) {
+            LOGGER.info("Restart after each cup is on ({}): the service stops cleanly once a finished cup's racers "
+                    + "are with the hub", RestartSettings.PROPERTY);
+        }
         // The database settings are read once, here, and never refuse the start: each problem is one warning, and the server
         // runs with statistics off (owner decision Q1). Unset or off is one warning that no statistics are kept.
         PersistenceSettings persistence = PersistenceSettings.from(config);
@@ -283,7 +294,7 @@ public final class VoyagerServer {
             // Every singleton is built now, so a malformed map file, a duplicate definition or a cup
             // naming a map nothing provides is a refusal here rather than an exception on whichever
             // tick first asked for it.
-            graph = openGraph(settings, persistence, plan, store);
+            graph = openGraph(settings, persistence, plan, store, restart);
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start while building the object graph", exception);
             System.exit(1);
@@ -328,18 +339,18 @@ public final class VoyagerServer {
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
-        scheduleTick(pipeline, waitingRoom, session, graph.get(StatsRequests.class));
+        // The one clean shutdown: the stdin line `stop`, /stop and the restart after a cup all end here. The stop runs
+        // on a platform thread, because the reader's own thread is the one the stop closes.
+        ServiceShutdown shutdown = new ServiceShutdown(() -> {
+            MinecraftServer.stopCleanly();
+            System.exit(0);
+        }, runnable -> Thread.ofPlatform().name("voyager-shutdown").start(runnable));
+        scheduleTick(pipeline, waitingRoom, session, graph.get(StatsRequests.class), restart, shutdown);
         // The statistics threads start before the port binds, so a race that finishes on the first tick is written. A
         // database that was down at boot logs its one warning here, and is retried in the background from now on.
         StatsBinding statistics = graph.get(StatsBinding.class);
         statistics.bootWarning().ifPresent(warning -> LOGGER.warn(warning));
         statistics.start();
-        // The one clean shutdown: the stdin line `stop` and /stop both end here. The stop runs on a platform thread,
-        // because the reader's own thread is the one the stop closes.
-        ServiceShutdown shutdown = new ServiceShutdown(() -> {
-            MinecraftServer.stopCleanly();
-            System.exit(0);
-        }, runnable -> Thread.ofPlatform().name("voyager-shutdown").start(runnable));
         MinecraftServer.getCommandManager().register(new StopCommand(graph.get(PermissionPolicy.class), shutdown));
         // Built now so the shutdown task can stop it; started only once the server listens, because a command
         // typed before then would reach a server that is not yet able to take one.
@@ -445,12 +456,22 @@ public final class VoyagerServer {
      */
     static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence, RotationPlan plan,
             CupRotationStore store) {
+        return openGraph(settings, persistence, plan, store, CupRestart.disabled());
+    }
+
+    /**
+     * {@link #openGraph(ServerSettings, PersistenceSettings, RotationPlan, CupRotationStore)} with the restart after each
+     * finished cup the room asks for. A server without the setting passes {@link CupRestart#disabled()}.
+     */
+    static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence, RotationPlan plan,
+            CupRotationStore store, CupRestart restart) {
         try {
             return BeanScope.builder()
                     .bean(ServerSettings.class, settings)
                     .bean(PersistenceSettings.class, persistence)
                     .bean(RotationPlan.class, plan)
                     .bean(CupRotationStore.class, store)
+                    .bean(CupRestart.class, restart)
                     .shutdownHook(false)
                     .build();
         } catch (RuntimeException exception) {
@@ -553,7 +574,7 @@ public final class VoyagerServer {
      * {@code /race} afterwards can still be asked about left standing.
      */
     private static void scheduleTick(TickPipeline pipeline, WaitingRoom waitingRoom, CupSession session,
-            StatsRequests statistics) {
+            StatsRequests statistics, CupRestart restart, ServiceShutdown shutdown) {
         AtomicBoolean broken = new AtomicBoolean();
         MinecraftServer.getSchedulerManager().scheduleTask(() -> {
             if (broken.get()) {
@@ -563,6 +584,10 @@ public final class VoyagerServer {
                 pipeline.run();
                 // After the cup's own tick, inside the same guard: the room reads the cup as this tick left it.
                 waitingRoom.tick();
+                // The restart after a finished cup (ADR-0047): it drains the handed-off racers, then asks for the stop.
+                if (restart.tick(MinecraftServer.getConnectionManager().getOnlinePlayers().size())) {
+                    shutdown.request();
+                }
                 // Last: the statistics replies a read finished since the last tick. They never touch the cup.
                 statistics.tick();
             } catch (RuntimeException exception) {

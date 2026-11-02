@@ -9,6 +9,7 @@ import net.elytrarace.voyager.api.stats.StatsReader;
 import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.stats.StatsRequests;
 import net.elytrarace.voyager.platform.convert.Vectors;
+import net.elytrarace.voyager.platform.handoff.CupRestart;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.LobbyBoard;
 import net.elytrarace.voyager.platform.lobby.LobbyHologram;
@@ -193,7 +194,7 @@ public final class ServerBeans {
      */
     @Bean
     WaitingRoom waitingRoom(CupSession session, Supplier<Collection<Player>> players, CupRotationDriver rotation,
-            MapInstances instances, @External ServerSettings settings) {
+            MapInstances instances, @External ServerSettings settings, @External CupRestart restart) {
         LobbyTransition lobby = settings.lobby()
                 .map(definition -> new LobbyTransition(instances, definition))
                 .orElse(null);
@@ -206,7 +207,7 @@ public final class ServerBeans {
                 LobbyBoard.of(upcoming.cup(), upcoming.snapshot())).orElse(null);
         return new WaitingRoom(session, rotation, players, settings.minimumRacers(), settings.maximumRacers(), lobby,
                 hub, new LobbyHud(), new LobbySidebar(), hologram,
-                () -> instances.forWorld(rotation.upcoming().rotation().getFirst().world()));
+                () -> instances.forWorld(rotation.upcoming().rotation().getFirst().world()), restart);
     }
 
     @Bean
