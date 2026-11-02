@@ -343,5 +343,10 @@ class CatalogReloaderTest {
         public boolean regionDataChanged(String world) {
             return open.contains(world) && changed.contains(world);
         }
+
+        @Override
+        public boolean hasPlayers(String world) {
+            return false;
+        }
     }
 }

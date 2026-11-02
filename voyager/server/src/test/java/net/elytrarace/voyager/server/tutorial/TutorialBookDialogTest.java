@@ -153,9 +153,38 @@ class TutorialBookDialogTest {
         bookWithOneCup().click(racer, TutorialPages.keyOf(TutorialPages.COUNT));
 
         Shown cupPage = shownBy(dialogs.collect().getFirst());
-        assertThat(plainText(cupPage.title())).as("the cup page's title for a German racer").isEqualTo("Dein Cup: Tour");
+        assertThat(plainText(cupPage.title())).as("the cup page's title for a German racer").isEqualTo("Nächster Cup: Tour");
         assertThat(plainText(cupPage.body().getFirst())).as("the cup page's body lists its map in order").contains("1. Ridge");
         assertThat(cupPage.translationKeysLeft()).as("translation keys left on the cup page").isEmpty();
+    }
+
+    /**
+     * The sixth page names the cup the next round plays, which is the upcoming one. While a round runs it is not the cup the
+     * holder pins, so the page reads the upcoming cup and not the held one.
+     */
+    @Test
+    void theSixthPageNamesTheCupTheNextRoundPlays(Env env) {
+        CupDefinition held = new CupDefinition("tour", List.of("ridge"), GameMode.RACE);
+        CupDefinition next = new CupDefinition("second", List.of("ridge"), GameMode.RACE);
+        MapDefinition ridge = new MapDefinition("ridge", "ridge-world", new Vec3(0, 64, 0),
+                List.of(new Ring(0, new Vec3(0, 64, 10), new Vec3(0, 0, 1), 3, 10, RingType.STANDARD)),
+                Duration.ofSeconds(60), new BoostConfig(12, 25), new GuideLine(List.of(), 2, 1.0));
+        CatalogSnapshot snapshot = new CatalogSnapshot(Map.of("ridge", ridge), Map.of("tour", held, "second", next));
+        LoadedCatalog upcoming = new LoadedCatalog(snapshot, next, Instant.EPOCH);
+        TutorialBook book = new TutorialBook(() -> upcoming);
+        Instance instance = env.createFlatInstance();
+        TestConnection connection = env.createConnection();
+        Collector<ShowDialogPacket> dialogs = connection.trackIncoming(ShowDialogPacket.class);
+        Player racer = connection.connect(instance, AT);
+        racer.setLocale(Locale.US);
+
+        book.click(racer, TutorialPages.keyOf(TutorialPages.COUNT));
+
+        List<ShowDialogPacket> shown = dialogs.collect();
+        assertThat(shown).as("the sixth page is one dialog").hasSize(1);
+        assertThat(plainText(shownBy(shown.getFirst()).title()))
+                .as("the sixth page's title for an English racer")
+                .isEqualTo("Next cup: Second");
     }
 
     /** Connects one racer on a new instance, opens the book for them, and returns the one dialog they were sent. */
@@ -184,7 +213,7 @@ class TutorialBookDialogTest {
         CupDefinition cup = new CupDefinition("tour", List.of("ridge"), GameMode.RACE);
         CatalogHolder catalog = new CatalogHolder(new LoadedCatalog(
                 new CatalogSnapshot(Map.of("ridge", ridge), Map.of("tour", cup)), cup, Instant.EPOCH));
-        return new TutorialBook(catalog);
+        return new TutorialBook(catalog::current);
     }
 
     private static Shown shownBy(ShowDialogPacket packet) {

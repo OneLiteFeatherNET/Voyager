@@ -122,7 +122,8 @@ public record ServerSettings(String host, int port, Path dataPath, Path worldsPa
      */
     public static final List<String> KEYS = List.of(DATA_PATH_PROPERTY, WORLDS_PATH_PROPERTY, CUP_PROPERTY,
             DEV_MODE_PROPERTY, MIN_RACERS_PROPERTY, LOBBY_WORLD_PROPERTY, LOBBY_SPAWN_PROPERTY, MAX_PLAYERS_PROPERTY,
-            LOBBY_HOLOGRAM_PROPERTY, BIND_HOST_PROPERTY, BIND_PORT_PROPERTY, COM_COUNT_PROPERTY, COM_DIFFICULTY_PROPERTY);
+            LOBBY_HOLOGRAM_PROPERTY, BIND_HOST_PROPERTY, BIND_PORT_PROPERTY, COM_COUNT_PROPERTY, COM_DIFFICULTY_PROPERTY,
+            CupRotationSettings.ROTATION_PROPERTY, CupRotationSettings.STATE_PROPERTY);
 
     /** The minimum racer count when {@link #MIN_RACERS_PROPERTY} is not set and dev mode is off. */
     public static final int PRODUCTION_MINIMUM_RACERS = 2;

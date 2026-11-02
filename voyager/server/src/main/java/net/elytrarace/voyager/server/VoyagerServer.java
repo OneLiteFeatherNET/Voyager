@@ -31,6 +31,11 @@ import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.elytrarace.voyager.server.persistence.StatsBinding;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
+import net.elytrarace.voyager.platform.rotation.FileCupRotationStore;
+import net.elytrarace.voyager.platform.rotation.RotationPlan;
+import net.elytrarace.voyager.race.rotation.CupRotationStore;
+import net.elytrarace.voyager.server.config.CupRotationSettings;
 import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
 import net.elytrarace.voyager.platform.text.Messages;
 import net.elytrarace.voyager.platform.tutorial.TutorialBook;
@@ -166,6 +171,9 @@ public final class VoyagerServer {
             return;
         }
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
+        CupRotationSettings rotation = CupRotationSettings.from(properties);
+        CupRotationStore store = rotation.stateFile().<CupRotationStore>map(FileCupRotationStore::new)
+                .orElse(CupRotationStore.NONE);
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
         ConfigCheck.comBootLine(settings).ifPresent(LOGGER::info);
         // The database settings are read once, here, and never refuse the start: each problem is one warning, and the server
@@ -240,11 +248,34 @@ public final class VoyagerServer {
         // Every problem that concerns the played cup, the maps or the worlds, at once, before the graph is
         // built: boot refuses with the whole report rather than the first problem the graph trips over. A
         // broken cup that is not played is not in it; the cup bean logs that one as a warning.
-        List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings, MinecraftServer.getInstanceManager(),
-                ConfigCheck.sourcesOf(config));
-        if (!refusals.isEmpty()) {
-            refuse(refusals);
-            return;
+        // With a rotation, every cup it names is checked here, one cup at a time, and the boot cup is chosen (the state
+        // file's cup when it is playable). A skipped cup is a warning; a refusal names every problem.
+        RotationPlan plan;
+        if (rotation.configured()) {
+            ConfigCheck.RotationBoot boot = ConfigCheck.rotationBoot(settings, rotation, store,
+                    MinecraftServer.getInstanceManager(), ConfigCheck.sourcesOf(config));
+            boot.problems().stream()
+                    .filter(problem -> problem.severity() == ConfigProblem.Severity.WARNING)
+                    .forEach(problem -> LOGGER.warn(problem.format()));
+            if (boot.plan().isEmpty()) {
+                refuse(boot.problems().stream()
+                        .filter(problem -> problem.severity() == ConfigProblem.Severity.ERROR)
+                        .toList());
+                return;
+            }
+            plan = boot.plan().get();
+            LOGGER.info("Cup rotation: %s; the first round plays %s".formatted(rotation.cups(), plan.boot().orElse("?")));
+        } else {
+            List<ConfigProblem> refusals = ConfigCheck.bootRefusals(settings, MinecraftServer.getInstanceManager(),
+                    ConfigCheck.sourcesOf(config));
+            if (!refusals.isEmpty()) {
+                refuse(refusals);
+                return;
+            }
+            plan = RotationPlan.single(settings.cupName());
+        }
+        for (String warning : plan.warnings()) {
+            LOGGER.warn(warning);
         }
 
         BeanScope graph;
@@ -252,7 +283,7 @@ public final class VoyagerServer {
             // Every singleton is built now, so a malformed map file, a duplicate definition or a cup
             // naming a map nothing provides is a refusal here rather than an exception on whichever
             // tick first asked for it.
-            graph = openGraph(settings, persistence);
+            graph = openGraph(settings, persistence, plan, store);
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start while building the object graph", exception);
             System.exit(1);
@@ -286,7 +317,8 @@ public final class VoyagerServer {
         // Every player is created with the permission pointer, through the one policy bean (ADR-0026, the CloudNet bridge
         // reads it). Installed before the port binds, so no connection can arrive as a plain Minestom player.
         MinecraftServer.getConnectionManager().setPlayerProvider(new VoyagerPlayerProvider(graph.get(PermissionPolicy.class)));
-        registerEvents(session, waitingRoom, settings, catalog, instances, graph.get(TutorialBook.class));
+        registerEvents(session, waitingRoom, settings, graph.get(CupRotationDriver.class), instances,
+                graph.get(TutorialBook.class));
         MinecraftServer.getCommandManager().register(graph.get(LeaveCommand.class));
         MinecraftServer.getCommandManager().register(graph.get(RaceCommand.class));
         // Open to every sender: a player looks up their own record or another player's, and the leaderboard is public.
@@ -359,7 +391,12 @@ public final class VoyagerServer {
             all.sort(ConfigProblem.ORDER);
             return ConfigCheck.report(all, out);
         }
-        return ConfigCheck.run(ConfigCheck.settingsOf(args, properties), instances.get(), out, sources, persistence);
+        ServerSettings settings = ConfigCheck.settingsOf(args, properties);
+        CupRotationSettings rotation = CupRotationSettings.from(properties);
+        if (rotation.configured()) {
+            return ConfigCheck.runRotation(settings, rotation, instances.get(), out, sources, persistence);
+        }
+        return ConfigCheck.run(settings, instances.get(), out, sources, persistence);
     }
 
     /** Initialises Minestom's registries, which the world loader needs, and returns the instance manager. */
@@ -399,10 +436,21 @@ public final class VoyagerServer {
      * building the graph, so a database that is down at boot is the binding's business and never a failure here.
      */
     static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence) {
+        return openGraph(settings, persistence, RotationPlan.single(settings.cupName()), CupRotationStore.NONE);
+    }
+
+    /**
+     * {@link #openGraph(ServerSettings, PersistenceSettings)} with the boot plan of the cup rotation and the store that keeps
+     * the armed cup. The plan is {@link RotationPlan#single} without a rotation.
+     */
+    static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence, RotationPlan plan,
+            CupRotationStore store) {
         try {
             return BeanScope.builder()
                     .bean(ServerSettings.class, settings)
                     .bean(PersistenceSettings.class, persistence)
+                    .bean(RotationPlan.class, plan)
+                    .bean(CupRotationStore.class, store)
                     .shutdownHook(false)
                     .build();
         } catch (RuntimeException exception) {
@@ -432,14 +480,13 @@ public final class VoyagerServer {
     }
 
     private static void registerEvents(CupSession session, WaitingRoom waitingRoom, ServerSettings settings,
-            CatalogHolder catalog, MapInstances instances, TutorialBook tutorial) {
+            CupRotationDriver rotation, MapInstances instances, TutorialBook tutorial) {
         GlobalEventHandler events = MinecraftServer.getGlobalEventHandler();
 
         events.addListener(AsyncPlayerConfigurationEvent.class, event -> {
-            // A joining racer spawns in the lobby world when one is configured, and in the first map's world of the
-            // current catalogue when not. The current catalogue, not the boot one, so a reload that was promoted at a
-            // round start is the one a new joiner sees.
-            JoinArrival.Arrival arrival = JoinArrival.of(waitingRoom.lobby(), catalog.current().rotation().getFirst(),
+            // A joining racer spawns in the lobby world when one is configured, and in the first map's world of the cup the
+            // next round plays when not: the armed cup, so a racer never stands in a world the rotation has released.
+            JoinArrival.Arrival arrival = JoinArrival.of(waitingRoom.lobby(), rotation.upcoming().rotation().getFirst(),
                     instances);
             event.setSpawningInstance(arrival.instance());
             event.getPlayer().setRespawnPoint(arrival.position());

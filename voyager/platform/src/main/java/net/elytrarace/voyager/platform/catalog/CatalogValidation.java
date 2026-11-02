@@ -165,7 +165,7 @@ public final class CatalogValidation {
      * One catalogue problem as the line the configuration check and a reload both print. Package-private: the
      * reloader reports the same problems in the same form.
      */
-    static ConfigProblem problemOf(CatalogProblem problem) {
+    public static ConfigProblem problemOf(CatalogProblem problem) {
         return error(keyOf(problem), problem.source().toAbsolutePath().toString(), problem.message());
     }
 
