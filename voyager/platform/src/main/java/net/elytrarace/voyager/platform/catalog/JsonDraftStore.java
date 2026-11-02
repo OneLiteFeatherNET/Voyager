@@ -6,6 +6,7 @@ import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftAlreadyExistsException;
+import net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftLocationConflictException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftNotFoundException;
 import net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException;
@@ -148,6 +149,25 @@ public final class JsonDraftStore implements DraftStore {
         } catch (IOException exception) {
             throw DraftWriteFailedException.of(id, exception);
         }
+    }
+
+    /**
+     * Compares the stored copy with {@code expected} by canonical JSON, and saves {@code next} only when they agree. A
+     * stored copy that is missing, in both folders, or unreadable counts as changed: nothing is written then.
+     */
+    @Override
+    public void saveIfUnchanged(MapDraft expected, MapDraft next) {
+        MapId id = expected.id();
+        MapDraft stored;
+        try {
+            stored = load(id);
+        } catch (DraftNotFoundException | DraftLocationConflictException | InvalidDraftException exception) {
+            throw DraftChangedException.of(id);
+        }
+        if (!MapDraftJsonWriter.toJson(stored).equals(MapDraftJsonWriter.toJson(expected))) {
+            throw DraftChangedException.of(id);
+        }
+        save(next);
     }
 
     private void replace(Path temporary, Path target) throws IOException {

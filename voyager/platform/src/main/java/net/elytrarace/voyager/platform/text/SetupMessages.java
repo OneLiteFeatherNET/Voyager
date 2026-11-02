@@ -54,6 +54,11 @@ public abstract class SetupMessages {
     private static final String IMPORT_CENSUS = "voyager.setup.import.census";
     private static final String IMPORT_PARTIAL_WARNING = "voyager.setup.import.partial.warning";
     private static final String IMPORT_DIMENSIONS_IGNORED = "voyager.setup.import.dimensions.ignored";
+    private static final String CLAIM_HELD = "voyager.setup.claim.held";
+    private static final String MAP_CLOSED = "voyager.setup.map.closed";
+    private static final String MAP_UNLOCKED = "voyager.setup.map.unlocked";
+    private static final String MAP_UNHELD = "voyager.setup.map.unheld";
+    private static final String SAVE_CHANGED = "voyager.setup.save.changed";
 
     private SetupMessages() {
     }
@@ -252,5 +257,31 @@ public abstract class SetupMessages {
     @Contract(pure = true, value = "_ -> new")
     public static Component importDimensionsIgnored(String names) {
         return Component.translatable(IMPORT_DIMENSIONS_IGNORED, Component.text(names));
+    }
+
+    /** A refusal of {@code /map open}: another builder holds the map, named as the holder recorded it. */
+    @Contract(pure = true, value = "_, _ -> new")
+    public static Component claimHeld(String id, String holder) {
+        return Component.translatable(CLAIM_HELD, Component.text(id), Component.text(holder));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component mapClosed(String id) {
+        return Component.translatable(MAP_CLOSED, Component.text(id));
+    }
+
+    @Contract(pure = true, value = "_, _ -> new")
+    public static Component mapUnlocked(String id, String holder) {
+        return Component.translatable(MAP_UNLOCKED, Component.text(id), Component.text(holder));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component mapUnheld(String id) {
+        return Component.translatable(MAP_UNHELD, Component.text(id));
+    }
+
+    @Contract(pure = true, value = "_ -> new")
+    public static Component saveChanged(String id) {
+        return Component.translatable(SAVE_CHANGED, Component.text(id));
     }
 }

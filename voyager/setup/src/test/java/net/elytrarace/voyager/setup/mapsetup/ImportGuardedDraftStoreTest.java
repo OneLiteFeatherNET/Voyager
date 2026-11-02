@@ -56,5 +56,10 @@ class ImportGuardedDraftStoreTest {
         public void save(MapDraft draft) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void saveIfUnchanged(MapDraft expected, MapDraft next) {
+            throw new UnsupportedOperationException();
+        }
     }
 }
