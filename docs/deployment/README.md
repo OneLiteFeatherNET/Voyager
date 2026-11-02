@@ -53,7 +53,8 @@ The game server accepts the following environment variables:
    ```
    tasks create task ElytraRace
    ```
-3. Adjust the task configuration under `local/tasks/ElytraRace.json` accordingly.
+3. Adjust the task configuration under `local/tasks/ElytraRace.json` accordingly. To end the service after each finished cup,
+   set `VOYAGER_RESTART_AFTER_CUP=true`; the CloudNet guide's section "Restart after each cup" describes the requirements.
 4. Copy the server JAR (shadow JAR from `:legacy:server:shadowJar`) into the template `ElytraRace/default`.
 
 ### Template Structure

@@ -4,6 +4,7 @@ import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.cup.CupSession;
 import net.elytrarace.voyager.platform.flight.ArrivalFacing;
 import net.elytrarace.voyager.platform.flight.Racers;
+import net.elytrarace.voyager.platform.handoff.CupRestart;
 import net.elytrarace.voyager.platform.handoff.HubHandoff;
 import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
 import net.elytrarace.voyager.platform.lobby.sound.LobbyCountdownSounds;
@@ -81,6 +82,8 @@ public final class WaitingRoom {
     private final LobbySidebar sidebar;
     private final @Nullable LobbyHologram hologram;
     private final Supplier<Instance> firstMapInstance;
+    /** The restart asked for once a finished cup has handed its racers away. Disabled unless the setting is on. */
+    private final CupRestart restart;
     /** The racers the room has handed to the hub. They stay connected until the move, so the room does not count them. */
     private final Set<UUID> handedOff = new HashSet<>();
     /** Joins that arrive close together, told as one line; the window is counted in {@link #gameTicks}. */
@@ -114,6 +117,20 @@ public final class WaitingRoom {
     public WaitingRoom(CupSession session, CupRotationDriver rotation, Supplier<Collection<Player>> players, int minimum,
             int maximum, @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, LobbySidebar sidebar,
             @Nullable LobbyHologram hologram, Supplier<Instance> firstMapInstance) {
+        this(session, rotation, players, minimum, maximum, lobby, hub, hud, sidebar, hologram, firstMapInstance,
+                CupRestart.disabled());
+    }
+
+    /**
+     * The room with the restart after a finished cup ({@code VOYAGER_RESTART_AFTER_CUP}, {@link CupRestart}).
+     *
+     * @param restart the restart asked for once a finished cup has handed its racers away and armed the next cup;
+     *     {@link CupRestart#disabled()} when the setting is off
+     * @throws IllegalArgumentException if {@code minimum} or {@code maximum} is below one
+     */
+    public WaitingRoom(CupSession session, CupRotationDriver rotation, Supplier<Collection<Player>> players,
+            int minimum, int maximum, @Nullable LobbyTransition lobby, HubHandoff hub, LobbyHud hud, LobbySidebar sidebar,
+            @Nullable LobbyHologram hologram, Supplier<Instance> firstMapInstance, CupRestart restart) {
         if (minimum < 1) {
             throw new IllegalArgumentException("the minimum racer count must be at least 1, was %s".formatted(minimum));
         }
@@ -131,6 +148,7 @@ public final class WaitingRoom {
         this.sidebar = sidebar;
         this.hologram = hologram;
         this.firstMapInstance = firstMapInstance;
+        this.restart = restart;
     }
 
     /** How many racers a cup needs to start. */
@@ -168,6 +186,12 @@ public final class WaitingRoom {
      * @param racer the racer who joined
      */
     public void joined(Player racer) {
+        if (restart.requested()) {
+            // The service is about to end: the joiner goes to the hub at once, so they are not counted and no cup
+            // starts.
+            handOff(List.of(racer));
+            return;
+        }
         Collection<Player> online = racers();
         JoinBurst.Outcome outcome = joins.join(gameTicks, racer.getUsername());
         announceBurst(outcome.flushed(), online);
@@ -299,8 +323,11 @@ public final class WaitingRoom {
         lingerTicks++;
         if (lingerTicks == RESULTS_LINGER_TICKS) {
             lingerTicks = NO_RESULT;
+            String finished = session.cup().key().asString();
             handOff(racers());
             rotation.armNext();
+            // After the hand-off and the arming, so the stop never runs ahead of the next cup being written (ADR-0047).
+            restart.request(finished, rotation.upcoming().cup().key().asString(), rotation.rotates());
         }
     }
 

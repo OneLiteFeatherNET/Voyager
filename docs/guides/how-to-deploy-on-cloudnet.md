@@ -52,7 +52,7 @@ change the defaults were `run/data` and `run/worlds`, and a service needed two `
 |---|---|
 | Bind host and port | the system properties `service.bind.host` and `service.bind.port`, which the node sets for each service. The environment variables `SERVICE_BIND_HOST` and `SERVICE_BIND_PORT` also work |
 | Velocity forwarding secret | the environment variable `VOYAGER_VELOCITY_SECRET` in the task's environment, the same secret the Velocity proxy holds. The system property `voyager.velocity.secret` also works. Never write it into a file in the service directory |
-| Racer counts, cup, cup rotation and paths | the system properties `VOYAGER_CUP`, `VOYAGER_CUP_ROTATION`, `VOYAGER_CUP_ROTATION_STATE`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH`, and the lobby pair `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`. Each of them also works as an environment variable of the same name |
+| Racer counts, cup, cup rotation, restart and paths | the system properties `VOYAGER_CUP`, `VOYAGER_CUP_ROTATION`, `VOYAGER_CUP_ROTATION_STATE`, `VOYAGER_RESTART_AFTER_CUP`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH`, and the lobby pair `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`. Each of them also works as an environment variable of the same name |
 | The `stop` command | the node writes `end` and then `stop` to the service's standard input. `end` is ignored, `stop` shuts the service down cleanly |
 | The statistics switch | the environment variable `VOYAGER_PERSISTENCE`: `on` collects statistics, `off` keeps none. Unset means `off` |
 | The statistics database | the environment variables `VOYAGER_DB_URL`, `VOYAGER_DB_USER` and `VOYAGER_DB_PASSWORD`, or `VOYAGER_DB_PASSWORD_FILE` (see "Player statistics database") |
@@ -161,7 +161,7 @@ fallback configuration, not from Voyager. Voyager names no group and no task.
 ## Cup rotation and the state file
 
 A server can play several cups in turn. Set `VOYAGER_CUP_ROTATION` to the cups in play order, such as `alpha_cup,legacy_cup`, and
-the server keeps running between cups: when a cup's results have lingered and its racers are with the hub, the next cup of the
+the server keeps running between cups unless `VOYAGER_RESTART_AFTER_CUP` is set (see "Restart after each cup"): when a cup's results have lingered and its racers are with the hub, the next cup of the
 list is armed for the next round, and the first cup follows the last. Do not set `VOYAGER_CUP` with it; the start is refused.
 
 The position lives in the server process, so a restart or a redeploy begins again at the first cup unless a state file keeps it.
@@ -173,6 +173,40 @@ Set `VOYAGER_CUP_ROTATION_STATE` to a file outside the service directory, which 
 A missing directory refuses the start and names the path. A cup whose world folders are not on the node is skipped with one
 warning, so the server plays the cups that are complete. The configuration check (`voyager.config.check=true`) reports a skipped
 cup as a warning and exits with 0 while another cup can be played. Decision record: ADR-0046.
+
+## Restart after each cup
+
+By default the server keeps running after a cup, with everything it has built up. To begin every cup in a fresh service instead, set
+`VOYAGER_RESTART_AFTER_CUP=true` in the task, as a system property or an environment variable. When a cup has finished and its results
+have lingered, the server:
+
+1. hands every racer online to the network hub, as it does without the setting;
+2. arms the next cup of the rotation and writes it to the state file;
+3. waits, for at most 5 seconds, until no player is connected;
+4. stops cleanly with exit status 0.
+
+The node then starts a new service from the template, and that service plays the next cup. The task keeps its `autoDeleteOnStop` and
+`minServiceCount: 1` settings, so the stopped service is removed and replaced.
+
+- With more than one cup in `VOYAGER_CUP_ROTATION`, `VOYAGER_CUP_ROTATION_STATE` must be set. Without it the start is refused, because
+  every restart would begin again at the first cup. A single cup needs no state file.
+- Any value other than `true` or `false` refuses the start, and the configuration check names the key.
+- If the state file cannot be written, or does not read back the next cup, the server does not stop. It logs one ERROR and keeps running
+  with the armed cup in memory, as it does without the setting.
+- A player who joins while the restart is pending is sent to the hub at once and does not start a cup.
+- A cup that is aborted, for example because the last racer leaves a running cup, does not restart the service.
+- The log has one INFO line at boot that says the restart is on, and one INFO line at the restart that names the finished cup and the next
+  cup.
+
+To turn it on for the live task, an operator does this on the node, after the restart is in a release:
+
+1. If the task plays more than one cup, create the state directory and set `VOYAGER_CUP_ROTATION_STATE`, as in the section above.
+2. Add `VOYAGER_RESTART_AFTER_CUP=true` to the task, next to `VOYAGER_CUP_ROTATION_STATE`.
+3. Run the configuration check with the task's settings (`voyager.config.check=true`). It must exit with 0.
+4. Restart the task's service once, so that it reads the setting. The boot log then shows the line that says the restart is on.
+5. After the next finished cup, the log shows the restart line, and the node starts a new service.
+
+Decision record: ADR-0047 (Proposed).
 
 ## Known limits
 

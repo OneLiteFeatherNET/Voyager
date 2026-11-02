@@ -59,6 +59,11 @@ public final class LogCapture implements AutoCloseable {
         return messagesAt(Level.ERROR);
     }
 
+    /** The formatted message of every INFO event captured so far, in the order logged. */
+    public List<String> infos() {
+        return messagesAt(Level.INFO);
+    }
+
     private List<String> messagesAt(Level level) {
         return events.stream()
                 .filter(event -> event.getLevel() == level)

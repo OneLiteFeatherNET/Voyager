@@ -113,6 +113,7 @@ public final class ConfigCheck {
         lobbySettingProblems(problems, properties, sources);
         comSettingProblems(problems, properties, sources);
         problems.addAll(CupRotationSettings.problems(properties, sources));
+        problems.addAll(RestartSettings.problems(properties, sources));
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
