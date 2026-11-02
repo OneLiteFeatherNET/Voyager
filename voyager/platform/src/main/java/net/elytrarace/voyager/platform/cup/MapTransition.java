@@ -90,6 +90,18 @@ public final class MapTransition {
     }
 
     /**
+     * Starts the loads of the chunks around {@code map}'s spawn that {@code racer}'s placement onto it will wait for, without
+     * moving the racer. Called on the first tick of the first map's lobby, for the racers who wait in the lobby world, so
+     * that the move onto the map finds its chunks there.
+     *
+     * @param racer the racer who will be placed; not moved
+     * @param map the course the racer will be placed on
+     */
+    public void preload(Player racer, MapDefinition map) {
+        PendingArrival.preload(racer, instances.forWorld(map.world()), ArrivalFacing.at(map), chunks);
+    }
+
+    /**
      * Drops every run, because the map they were over is no longer being played.
      *
      * <p>Called once, when the map's game phase ends, after every racer has been scored. It is not called per racer:
