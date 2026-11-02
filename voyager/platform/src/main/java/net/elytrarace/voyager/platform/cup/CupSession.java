@@ -68,6 +68,8 @@ import net.elytrarace.voyager.platform.text.Palette;
 import net.kyori.adventure.text.format.TextColor;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.RelativeFlags;
+import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.world.DimensionType;
 
@@ -148,8 +150,10 @@ import java.util.function.Supplier;
  * <p>A racer is placed on the next map as soon as their own wait has started: when they finished the
  * previous map and their glide-out has ended ({@code finish-glide-out}), or when the previous map's
  * {@code GAME} phase ends. A racer placed on a map is held at its spawn, facing the first ring, until
- * GO; a racer who has glided out is held where the glide ended until placed. The chunks around a spawn
- * load in the background, so no tick waits for them ({@link PendingArrival}).
+ * GO; a racer who has glided out is held where the glide ended until placed. A held racer hovers in
+ * place with no flying speed, so their own client cannot move them or start a glide, and their flight
+ * is put back at GO ({@link Racers#freeze}). The chunks around a spawn load in the background, so no
+ * tick waits for them ({@link PendingArrival}).
  *
  * <p>GO waits for a racer who is still loading. When a lobby would end while a racer online is not yet placed on its map,
  * GO is held there: the placed racers stay on their spawns, the boss bar says how many racers the room waits for, and GO
@@ -270,8 +274,17 @@ public final class CupSession implements RacePhaseListener {
     /** Placements under way, by racer: the map each one is for, and the placement itself. */
     private final Map<UUID, Arrival> arrivals = new HashMap<>();
 
-    /** Where each racer is held in place: from the end of a glide-out until placed, and from placement until GO. */
+    /**
+     * Where each racer is held in place: from the end of a glide-out until placed, and from placement until GO. Written
+     * only through {@link #hold} and {@link #release}, so that {@link #frozen} is in step with it.
+     */
     private final Map<UUID, Pos> holds = new HashMap<>();
+
+    /**
+     * The flight each held racer had before the hold took it, so that {@link #release} can put it back. A racer is in this
+     * map exactly when they are in {@link #holds}: the two are taken and given back together.
+     */
+    private final Map<UUID, Racers.Freeze> frozen = new HashMap<>();
 
     /**
      * The racers still unplaced when a GO that was held for them fired. Each is timed from their own placement, so a racer
@@ -835,7 +848,7 @@ public final class CupSession implements RacePhaseListener {
         for (Player racer : racers) {
             UUID id = racer.getUuid();
             if (isPlacedOn(id, mapIndex)) {
-                holds.remove(id);
+                release(id);
                 runs.startFresh(id);
                 continue;
             }
@@ -1322,6 +1335,38 @@ public final class CupSession implements RacePhaseListener {
     }
 
     /**
+     * Refuses the move a held racer's client sends, so the racer stays at the point they are held at. The head turn that
+     * comes in the same packet is kept, so a held racer can still look at the first ring.
+     *
+     * <p>A placement's own move is not refused: it is the server's move, and while it is under way the client's packets
+     * are not read at all ({@code PlayerPositionListener} discards them until the client confirms the teleport). The
+     * composition root registers this on the global event handler.
+     */
+    public void keepHeldPosition(PlayerMoveEvent event) {
+        UUID id = event.getPlayer().getUuid();
+        Pos at = holds.get(id);
+        if (at == null || isMovingNow(id)) {
+            return;
+        }
+        Pos asked = event.getNewPosition();
+        if (!asked.samePoint(at)) {
+            event.setNewPosition(at.withView(asked));
+        }
+    }
+
+    /**
+     * Refuses the glide a held racer's client asks for, on the tick the request is read. Minestom sets the elytra on for
+     * the request before this event and does not check it, so it is put off here, and no tick after the request sees it
+     * on. A racer who is not held is not affected. The composition root registers this on the global event handler.
+     */
+    public void refuseGlide(PlayerStartFlyingWithElytraEvent event) {
+        Player racer = event.getPlayer();
+        if (holds.containsKey(racer.getUuid())) {
+            Racers.keepFrozen(racer);
+        }
+    }
+
+    /**
      * The placement step of a tick, run after the phase step: completes the placements under way, starts the ones the wait
      * calls for, and holds each held racer where they are held. It runs in every phase, so placements carry on through the
      * end of a map and into the wait that follows.
@@ -1332,7 +1377,14 @@ public final class CupSession implements RacePhaseListener {
         beginWaitingPlacements(online);
         for (Map.Entry<UUID, Pos> hold : holds.entrySet()) {
             Player racer = online.get(hold.getKey());
-            if (racer != null && !isMovingNow(hold.getKey())) {
+            if (racer == null) {
+                continue;
+            }
+            if (isMovingNow(hold.getKey())) {
+                // The move to the spawn is the server's own, so the position is left to it.
+                // The glide and the hover are not.
+                Racers.keepFrozen(racer);
+            } else {
                 Racers.pin(racer, hold.getValue());
             }
         }
@@ -1371,7 +1423,7 @@ public final class CupSession implements RacePhaseListener {
             Racers.standDown(racer);
             LOGGER.debug("Racer {} glided out after the map '{}'", racer.getUsername(), glide.map().key().asString());
             if (followingMapIndex(glide.mapIndex()) != NO_MAP) {
-                holds.put(id, racer.getPosition());
+                hold(racer, racer.getPosition());
                 glidedOut.add(id);
             }
         }
@@ -1416,15 +1468,15 @@ public final class CupSession implements RacePhaseListener {
         placedOn.put(id, arrival.mapIndex());
         Racers.faceCourse(racer, arrival.map());
         if (racing && arrival.mapIndex() == preparedMapIndex) {
-            // Placed after GO, on the map being raced: no freeze, and the run starts now. A racer who was still loading when a
-            // held GO fired is timed from this tick, not from GO.
-            holds.remove(id);
+            // Placed after GO, on the map being raced: no hold, and the run starts now. A racer who was still loading
+            // when a held GO fired is timed from this tick, not from GO.
+            release(id);
             runs.startFresh(id);
             if (loadingAtGo.contains(id)) {
                 placedAfterGo.put(id, driver.clock().gameTick());
             }
         } else {
-            holds.put(id, ArrivalFacing.at(arrival.map()));
+            hold(racer, ArrivalFacing.at(arrival.map()));
         }
     }
 
@@ -1462,8 +1514,33 @@ public final class CupSession implements RacePhaseListener {
         UUID id = racer.getUuid();
         MapDefinition map = mapAt(mapIndex);
         arrivals.put(id, new Arrival(mapIndex, map, transition.place(racer, map)));
-        holds.put(id, racer.getPosition());
+        hold(racer, racer.getPosition());
         glidedOut.remove(id);
+    }
+
+    /**
+     * Holds {@code racer} at {@code at}: their own flight is taken from them, and their position is kept, until
+     * {@link #release}. The flight is taken once; a racer held again keeps the flight they had before the first hold.
+     */
+    private void hold(Player racer, Pos at) {
+        frozen.computeIfAbsent(racer.getUuid(), id -> Racers.freeze(racer));
+        holds.put(racer.getUuid(), at);
+    }
+
+    /** Releases a held racer: their position is no longer kept, and the flight they had before the hold is put back. */
+    private void release(UUID id) {
+        holds.remove(id);
+        Racers.Freeze before = frozen.remove(id);
+        if (before != null) {
+            before.thaw();
+        }
+    }
+
+    /** Releases every held racer, with their flights, when the cup holds nobody any more. */
+    private void releaseEveryone() {
+        holds.clear();
+        frozen.values().forEach(Racers.Freeze::thaw);
+        frozen.clear();
     }
 
     private void startGlide(UUID id, MapDefinition map, int mapIndex) {
@@ -1547,7 +1624,7 @@ public final class CupSession implements RacePhaseListener {
         placedAfterGo.clear();
         loadingAtGo.clear();
         arrivals.clear();
-        holds.clear();
+        releaseEveryone();
         glides.clear();
         glidedOut.clear();
         failedPlacement.clear();
@@ -1561,7 +1638,7 @@ public final class CupSession implements RacePhaseListener {
         placedAfterGo.remove(playerId);
         loadingAtGo.remove(playerId);
         arrivals.remove(playerId);
-        holds.remove(playerId);
+        release(playerId);
         glides.remove(playerId);
         glidedOut.remove(playerId);
         failedPlacement.remove(playerId);
