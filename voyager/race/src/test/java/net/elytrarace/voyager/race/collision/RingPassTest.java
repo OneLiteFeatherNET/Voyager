@@ -155,4 +155,23 @@ class RingPassTest {
         // Five blocks along the minor axis: inside the circle of radius 6, but outside the oval of minor radius 3.
         assertThat(RingPass.crosses(new Vec3(0.0, 69.0, 99.0), new Vec3(0.0, 69.0, 101.0), OVAL)).isFalse();
     }
+
+    @Test
+    void theVerdictOfAPassIsTheSameWhicheverWayTheOvalsMajorAxisPoints() {
+        // The same oval stated with its axis reversed. Each segment is a pass through the oval or past it.
+        Ring reversed = new Ring(0, new Vec3(0.0, 64.0, 100.0), new Vec3(0.0, 0.0, 1.0),
+                RingShape.of(6.0, 3.0, new Vec3(-1.0, 0.0, 0.0), new Vec3(0.0, 0.0, 1.0)), 5, RingType.STANDARD);
+        Vec3[][] segments = {
+            {new Vec3(4.0, 64.0, 99.0), new Vec3(4.0, 64.0, 101.0)},
+            {new Vec3(0.0, 69.0, 99.0), new Vec3(0.0, 69.0, 101.0)},
+            {new Vec3(-5.5, 65.0, 99.0), new Vec3(-5.5, 65.0, 101.0)},
+            {new Vec3(0.0, 64.0, 90.0), new Vec3(0.0, 64.0, 95.0)},
+        };
+
+        for (Vec3[] segment : segments) {
+            assertThat(RingPass.crosses(segment[0], segment[1], reversed))
+                    .as("verdict for the segment from %s to %s".formatted(segment[0], segment[1]))
+                    .isEqualTo(RingPass.crosses(segment[0], segment[1], OVAL));
+        }
+    }
 }

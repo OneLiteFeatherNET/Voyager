@@ -1,5 +1,7 @@
 package net.elytrarace.voyager.platform.catalog.writer;
 
+import net.elytrarace.voyager.api.math.Vec3;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +35,16 @@ class LayoutVersionTest {
         String version = LayoutVersion.of(CanonicalFixtures.course());
 
         assertThat(version).as("layout version").matches("[0-9a-f]{16}");
+    }
+
+    @Test
+    void reversingTheMajorAxisOfAnOvalDoesNotChangeTheLayoutVersion() {
+        String before = LayoutVersion.of(CanonicalFixtures.courseWithAnOvalFirstRing());
+        String after = LayoutVersion.of(CanonicalFixtures.courseWithAnOvalFirstRing(new Vec3(-1.0, 0.0, 0.0)));
+
+        assertThat(after)
+                .as("layout version after the major axis of the oval was stated the other way")
+                .isEqualTo(before);
     }
 
     @Test

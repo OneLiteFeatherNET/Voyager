@@ -61,14 +61,25 @@ public sealed interface RingShape permits RingShape.Circle, RingShape.Ellipse {
      * <p>Create an oval through {@link RingShape#of}, which returns a {@link Circle} for equal radii. An {@code Ellipse}
      * built directly with equal radii describes the same area as that circle.
      *
+     * <p>An axis and its negation are the same oval, so the stored {@code majorAxis} has one orientation: the sign is
+     * flipped, when needed, so that the first component whose magnitude exceeds 1e-9 is positive. A component of at
+     * most 1e-9 is numerical noise and does not decide. Every spelling of one oval is therefore equal and writes the
+     * same bytes.
+     *
      * @param radius      the semi-major radius, in blocks; the outer bound of the oval
      * @param radiusMinor the semi-minor radius, in blocks, not greater than {@code radius}
-     * @param majorAxis   the unit vector of the major axis, lying in the ring's plane
+     * @param majorAxis   the unit vector of the major axis, lying in the ring's plane; its sign is not significant
      */
     record Ellipse(double radius, double radiusMinor, Vec3 majorAxis) implements RingShape {
 
         private static final double UNIT_LENGTH_TOLERANCE = 1e-9;
         private static final double PERPENDICULAR_TOLERANCE = 1e-6;
+
+        /**
+         * A component of at most this magnitude does not decide the orientation of the axis. Such a component is
+         * numerical noise in a unit vector, so its sign is noise too. It is still flipped together with the axis.
+         */
+        private static final double ORIENTATION_TOLERANCE = 1e-9;
 
         public Ellipse {
             requireRadius("radius", radius);
@@ -79,6 +90,32 @@ public sealed interface RingShape permits RingShape.Circle, RingShape.Ellipse {
             if (Math.abs(majorAxis.length() - 1.0) > UNIT_LENGTH_TOLERANCE) {
                 throw InvalidRingException.majorAxisNotUnitLength(majorAxis);
             }
+            majorAxis = canonicalOrientation(majorAxis);
+        }
+
+        /**
+         * Flips an axis whose first significant component is negative. Negation is exact in binary floating point, so
+         * an axis and its negation flip to the same bits. Adding {@code 0.0} then turns a negative zero into a positive
+         * one, because {@link Vec3} compares its components bit for bit. A unit axis has a component of at least
+         * {@code 1/sqrt(3)}, so a significant component always exists.
+         */
+        private static Vec3 canonicalOrientation(Vec3 axis) {
+            double sign = firstSignificantSign(axis);
+            return new Vec3(sign * axis.x() + 0.0, sign * axis.y() + 0.0, sign * axis.z() + 0.0);
+        }
+
+        /** The sign of the first component whose magnitude exceeds the tolerance, or 1 if none does. */
+        private static double firstSignificantSign(Vec3 axis) {
+            if (Math.abs(axis.x()) > ORIENTATION_TOLERANCE) {
+                return Math.signum(axis.x());
+            }
+            if (Math.abs(axis.y()) > ORIENTATION_TOLERANCE) {
+                return Math.signum(axis.y());
+            }
+            if (Math.abs(axis.z()) > ORIENTATION_TOLERANCE) {
+                return Math.signum(axis.z());
+            }
+            return 1.0;
         }
 
         /**

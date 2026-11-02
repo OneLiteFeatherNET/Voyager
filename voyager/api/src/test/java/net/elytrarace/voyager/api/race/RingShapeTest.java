@@ -151,6 +151,56 @@ class RingShapeTest {
         assertThat(RingShape.of(6.0, 3.0, ALONG_X, UP)).isEqualTo(new RingShape.Ellipse(6.0, 3.0, ALONG_X));
     }
 
+    @Test
+    void anOvalWhoseAxisPointsTheOtherWayIsTheSameOval() {
+        assertThat(RingShape.of(6.0, 3.0, ALONG_X.scale(-1.0), UP)).isEqualTo(RingShape.of(6.0, 3.0, ALONG_X, UP));
+    }
+
+    @Test
+    void anOvalWhoseAxisPointsTheOtherWayHasTheSameHashCode() {
+        assertThat(RingShape.of(6.0, 3.0, ALONG_X.scale(-1.0), UP).hashCode())
+                .isEqualTo(RingShape.of(6.0, 3.0, ALONG_X, UP).hashCode());
+    }
+
+    @Test
+    void theAxisIsStoredWithItsFirstSignificantComponentPositive() {
+        Vec3 tilted = new Vec3(-HALF_SQRT2, 0.0, -HALF_SQRT2);
+
+        assertThat(new RingShape.Ellipse(6.0, 3.0, tilted).majorAxis())
+                .isEqualTo(new Vec3(HALF_SQRT2, 0.0, HALF_SQRT2));
+    }
+
+    @Test
+    void aNearZeroComponentDoesNotDecideTheOrientationOfTheAxis() {
+        Vec3 axis = new Vec3(-1e-12, 0.0, -1.0);
+
+        assertThat(new RingShape.Ellipse(6.0, 3.0, axis).majorAxis()).isEqualTo(new Vec3(1e-12, 0.0, 1.0));
+    }
+
+    @Test
+    void aFlippedAxisHasNoNegativeZeroComponent() {
+        // Vec3 compares its components bit for bit, so -0.0 and 0.0 would make two spellings of one oval unequal.
+        assertThat(new RingShape.Ellipse(6.0, 3.0, new Vec3(-1.0, 0.0, 0.0)).majorAxis())
+                .isEqualTo(new Vec3(1.0, 0.0, 0.0));
+    }
+
+    @Test
+    void anOvalContainsTheSamePointsWhicheverWayItsAxisPoints() {
+        Vec3 tilted = new Vec3(HALF_SQRT2, 0.0, HALF_SQRT2);
+        Ring along = new Ring(0, CENTRE, UP, RingShape.of(6.0, 3.0, tilted, UP), 10, RingType.STANDARD);
+        Ring reversed = new Ring(0, CENTRE, UP, RingShape.of(6.0, 3.0, tilted.scale(-1.0), UP), 10,
+                RingType.STANDARD);
+
+        for (int x = -14; x <= 14; x++) {
+            for (int z = -14; z <= 14; z++) {
+                Vec3 point = CENTRE.plus(new Vec3(x * 0.5, 0.0, z * 0.5));
+                assertThat(reversed.contains(point))
+                        .as("containment of the point offset (%s, 0, %s)".formatted(x * 0.5, z * 0.5))
+                        .isEqualTo(along.contains(point));
+            }
+        }
+    }
+
     private static Ring ovalAlongX(double radius, double radiusMinor) {
         return new Ring(0, CENTRE, UP, RingShape.of(radius, radiusMinor, ALONG_X, UP), 10, RingType.STANDARD);
     }

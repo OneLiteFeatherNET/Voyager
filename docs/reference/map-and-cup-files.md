@@ -86,7 +86,7 @@ Rings are read in array order. The position of a ring in `rings` is its index: t
 | `normal` | vector | Yes | None. Stored as written. | Missing, or not of unit length. |
 | `radius` | number | Yes | None. The radius of a circle, or the semi-major radius of an oval. | Missing, or outside `[0.5, 32]` blocks. |
 | `radiusMinor` | number | No | None. Stated only for an oval, with `majorAxis`. | Stated without `majorAxis`, outside `[0.5, 32]`, or greater than `radius`. A file below schema version 3 that states it is refused. |
-| `majorAxis` | vector | No | None. Stated only for an oval, with `radiusMinor`. The unit vector of the major axis, in the ring's plane. | Stated without `radiusMinor`, not of unit length, or not perpendicular to `normal`. A file below schema version 3 that states it is refused. |
+| `majorAxis` | vector | No | None. Stated only for an oval, with `radiusMinor`. The unit vector of the major axis, in the ring's plane. Its sign is not significant: the server stores the axis with its first component above `1e-9` in magnitude positive, so a reversed axis loads as the same oval and writes the same layout version. | Stated without `radiusMinor`, not of unit length, or not perpendicular to `normal`. A file below schema version 3 that states it is refused. |
 | `points` | integer | Yes | None. | Missing, not a whole number, or outside `[0, 100]`. |
 | `type` | string | Yes | None. | Missing, or not one of `STANDARD`, `BOOST`, `SLOW`, `CHECKPOINT`. A misspelt type is refused rather than read as `STANDARD`. |
 
