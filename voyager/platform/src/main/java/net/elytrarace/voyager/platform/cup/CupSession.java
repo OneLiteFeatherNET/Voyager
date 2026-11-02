@@ -67,6 +67,7 @@ import net.minestom.server.coordinate.Pos;
 import net.elytrarace.voyager.platform.text.Palette;
 import net.kyori.adventure.text.format.TextColor;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.RelativeFlags;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.world.DimensionType;
 
@@ -237,9 +238,9 @@ public final class CupSession implements RacePhaseListener {
     /**
      * Which map of the rotation has already been moved to, or {@link #NO_MAP} for none.
      *
-     * <p>A map is entered by the start countdown three seconds before its {@code GAME} phase begins,
-     * and by {@link #mapStarted} if no countdown ran — a lobby of zero length has no ticks to count
-     * in. This is what stops the second of those from happening twice.
+     * <p>A map is entered on the first tick of its lobby, so the first map is entered when the start countdown
+     * begins, not three seconds before its {@code GAME} phase. {@link #mapStarted} enters it too if no lobby ran — a
+     * lobby of zero length has no ticks to count in. This is what stops the second of those from happening twice.
      */
     private int preparedMapIndex = NO_MAP;
 
@@ -513,24 +514,59 @@ public final class CupSession implements RacePhaseListener {
     }
 
     /**
-     * Cancels a countdown that has not yet entered a map: the cup is not started, and the room returns to waiting.
+     * Cancels a countdown that has not yet begun its last three seconds: the cup is not started, and the room
+     * returns to waiting.
      *
-     * <p>Refused in any other situation. Once the last three seconds have begun the first map is already
-     * prepared, and a cancel would leave racers standing in a world with no cup behind it.
+     * <p>Every racer online is stood down and handed back their waiting loadout, as {@link #abort()} does. A racer
+     * who has been placed on the first map, or whose move there has begun, is sent back to {@code lobbySpot} in
+     * {@code lobby}. The placements are dropped, so a move still loading its chunks does not land its racer on the
+     * map afterwards.
      *
+     * <p>Refused in any other situation. Once the last three seconds have begun the start is committed, and the cup
+     * cannot be unwound.
+     *
+     * @param lobby the instance a cancelled racer waits in
+     * @param lobbySpot where a cancelled racer waits in {@code lobby}
      * @throws IllegalStateException if the cup is not in {@link StartGate.Situation#COUNTDOWN}
      */
-    public void disarm() {
+    public void disarm(Instance lobby, Pos lobbySpot) {
         StartGate.Situation now = situation(StartGate.COMMIT_WINDOW);
         if (now != StartGate.Situation.COUNTDOWN) {
             throw new IllegalStateException(
                     "only a countdown that has not entered a map can be disarmed, the cup is %s".formatted(now));
         }
+        Set<UUID> towardsTheMap = racersTowardsTheMap();
         driver.finish();
         driver = null;
         forgetLobby();
         for (Player racer : players.get()) {
+            UUID id = racer.getUuid();
             hud.standDown(racer);
+            Racers.standDown(racer);
+            Racers.hold(racer);
+            if (towardsTheMap.contains(id)) {
+                returnToLobby(racer, lobby, lobbySpot);
+            }
+        }
+    }
+
+    /** The racers who are placed on a map, or whose move to one has begun. */
+    private Set<UUID> racersTowardsTheMap() {
+        Set<UUID> ids = new HashSet<>(placedOn.keySet());
+        arrivals.forEach((id, arrival) -> {
+            if (arrival.pending().isMoving()) {
+                ids.add(id);
+            }
+        });
+        return ids;
+    }
+
+    /** Moves a racer to {@code spot} in {@code lobby}, without waiting for the move to finish, as a placement does. */
+    private static void returnToLobby(Player racer, Instance lobby, Pos spot) {
+        if (racer.getInstance() == lobby) {
+            racer.teleport(spot, null, RelativeFlags.NONE, true);
+        } else {
+            racer.setInstance(lobby, spot);
         }
     }
 

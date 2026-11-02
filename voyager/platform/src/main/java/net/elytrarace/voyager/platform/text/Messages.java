@@ -838,10 +838,10 @@ public abstract class Messages {
         });
     }
 
-    /** {@code /race start}'s answer. */
+    /** {@code /race start}'s answer, with the cup's coloured display name. */
     @Contract(pure = true)
-    public static Component cupRestarted(String cupName) {
-        return Component.translatable(COMMAND_RESTARTED, Component.text(cupName));
+    public static Component cupRestarted(Component cupName) {
+        return Component.translatable(COMMAND_RESTARTED, cupName);
     }
 
     /** {@code /race skip}'s answer when a map was actually racing. */
@@ -960,11 +960,11 @@ public abstract class Messages {
                 Component.text(flightMillis / MILLIS_PER_SECOND % 60));
     }
 
-    /** One personal best of the profile: the map and the fastest time on it. */
+    /** One personal best of the profile: the map's coloured display name and the fastest time on it. */
     @Contract(pure = true)
-    public static Component statsProfileBest(String mapKey, long bestTimeMillis) {
+    public static Component statsProfileBest(Component mapName, long bestTimeMillis) {
         return Component.translatable(STATS_PROFILE_BEST,
-                Component.text(mapKey), Component.text(RaceTimeFormat.millis(bestTimeMillis)));
+                mapName, Component.text(RaceTimeFormat.millis(bestTimeMillis)));
     }
 
     /** The profile of a player with no ranked run: there is nothing to show yet. */

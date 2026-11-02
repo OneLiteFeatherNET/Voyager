@@ -286,7 +286,7 @@ class MessagesTest {
                 Messages.cupMaps(List.of(Component.text("m"))),
                 Messages.cupRow(1, Messages.racerName("n"), 1, Optional.empty(), 1, 1, Optional.empty(), 1, false),
                 Messages.departed(),
-                Messages.cupRestarted("c"),
+                Messages.cupRestarted(Component.text("c")),
                 Messages.skipTaken(),
                 Messages.skipRefused());
 
