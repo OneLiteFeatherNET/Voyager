@@ -1,5 +1,6 @@
 package net.elytrarace.voyager.platform.catalog.writer;
 
+import net.elytrarace.voyager.api.math.Vec3;
 import net.elytrarace.voyager.api.race.MapDefinition;
 
 import org.junit.jupiter.api.Test;
@@ -34,5 +35,14 @@ class MapDefinitionCanonicalWriterTest {
         String canonical = MapDefinitionCanonicalWriter.toCanonicalJson(CanonicalFixtures.courseWithAnOvalFirstRing());
 
         assertThat(canonical).contains("\"radiusMinor\":3.0,\"majorAxis\":{\"x\":1.0,\"y\":0.0,\"z\":0.0}");
+    }
+
+    @Test
+    void anOvalWhoseAxisPointsTheOtherWayHasTheSameCanonicalForm() {
+        String reversed = MapDefinitionCanonicalWriter.toCanonicalJson(
+                CanonicalFixtures.courseWithAnOvalFirstRing(new Vec3(-1.0, 0.0, 0.0)));
+
+        assertThat(reversed).isEqualTo(MapDefinitionCanonicalWriter.toCanonicalJson(
+                CanonicalFixtures.courseWithAnOvalFirstRing()));
     }
 }

@@ -18,6 +18,7 @@ import net.elytrarace.voyager.platform.cup.TickStep;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
 import net.elytrarace.voyager.platform.flight.Racers;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
+import net.elytrarace.voyager.platform.handoff.CupRestart;
 import net.elytrarace.voyager.platform.lobby.items.LobbyItems;
 import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
 import net.elytrarace.voyager.platform.rotation.RotationPlan;
@@ -97,6 +98,7 @@ class WaitingRoomTest {
     private static final int MAXIMUM = 16;
     private static final String LOBBY = "waiting_lobby";
     private static final Vec3 LOBBY_SPAWN = new Vec3(20.5, 65.0, -12.5);
+    private static final String STATE = "/var/voyager/rotation";
 
     private static final MapDefinition ARENA_RUN = new MapDefinition("arena-run", ARENA, ARENA_SPAWN,
             List.of(new Ring(0, ARENA_SPAWN.plus(new Vec3(0, 8, 10)), new Vec3(0, 0, 1), 6.0, 7, RingType.STANDARD)),
@@ -739,13 +741,112 @@ class WaitingRoomTest {
         return fixture(env, timings, maximum, withLobby, false);
     }
 
+    // ------------------------------------------------------------------------------------------
+    // The restart after a finished cup (VOYAGER_RESTART_AFTER_CUP)
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * The racers are asked for the hub move, then the next cup is written to the state, and only then is the restart asked
+     * for, which reads the state back. The order is what keeps a stop from ever running ahead of the state.
+     */
+    @Test
+    void aFinishedCupHandsEveryRacerOffBeforeItArmsTheNextCupAndRequestsTheRestart(Env env) throws IOException {
+        Fixture fixture = restartingFixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        assertThat(fixture.events).containsExactly("hub", "hub", "write:" + OTHER_KEY, "read");
+        assertThat(fixture.restart.requested()).isTrue();
+    }
+
+    /** A cup that ends with nobody online still restarts the service: the drain has nobody to wait for. */
+    @Test
+    void aFinishedCupWithNobodyOnlineStillRequestsTheRestart(Env env) throws IOException {
+        Fixture fixture = restartingFixture(env);
+        fixture.session.start(true);
+        fixture.playUntilCupFinishes();
+
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        assertThat(fixture.handedToHub).isEmpty();
+        assertThat(fixture.restart.requested()).isTrue();
+    }
+
+    /** An aborted cup is not a finished one: the linger never starts, so nothing is handed away or restarted. */
+    @Test
+    void anAbortedCupRequestsNoRestart(Env env) throws IOException {
+        Fixture fixture = restartingFixture(env);
+        Player first = fixture.join();
+        Player second = fixture.join();
+        fixture.tick();
+        fixture.ticks(200);
+
+        fixture.leave(first);
+        fixture.leave(second);
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS + 1);
+
+        assertThat(fixture.session.running()).isFalse();
+        assertThat(fixture.restart.requested()).isFalse();
+        assertThat(fixture.events).doesNotContain("read");
+    }
+
+    /**
+     * A player who joins while the restart is pending is sent to the hub at once. The room does not count them, so no cup
+     * starts and nothing is shown to the rest of the room.
+     */
+    @Test
+    void aJoinerWhileTheRestartIsPendingIsHandedOffAndStartsNoCup(Env env) throws IOException {
+        Fixture fixture = restartingFixture(env);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        Player late = fixture.join();
+        fixture.ticks(10);
+
+        assertThat(fixture.handedToHub).last().isEqualTo(late.getUuid());
+        assertThat(fixture.kicked).isEmpty();
+        assertThat(fixture.session.running()).isFalse();
+        assertThat(fixture.session.situation(Duration.ofSeconds(3))).isEqualTo(Situation.WAITING);
+    }
+
+    /** With the restart off, a finished cup reads no state and asks for no restart, as it did before. */
+    @Test
+    void withTheRestartOffAFinishedCupRequestsNothing(Env env) throws IOException {
+        Fixture fixture = fixture(env, TIMINGS, MAXIMUM, false, true, false);
+        fixture.join();
+        fixture.join();
+        fixture.tick();
+        fixture.playUntilCupFinishes();
+        fixture.ticks(WaitingRoom.RESULTS_LINGER_TICKS);
+
+        assertThat(fixture.restart.requested()).isFalse();
+        assertThat(fixture.events).doesNotContain("read");
+        assertThat(fixture.handedToHub).hasSize(2);
+    }
+
     /** A room whose cup is the first of a two-cup rotation: TOUR, then OTHER_TOUR. */
     private Fixture rotatingFixture(Env env) throws IOException {
         return fixture(env, TIMINGS, MAXIMUM, false, true);
     }
 
+    /** A rotating room with the restart on: a finished cup asks for the stop once its state reads back. */
+    private Fixture restartingFixture(Env env) throws IOException {
+        return fixture(env, TIMINGS, MAXIMUM, false, true, true);
+    }
+
     private Fixture fixture(Env env, RaceTimings timings, int maximum, boolean withLobby, boolean rotating)
             throws IOException {
+        return fixture(env, timings, maximum, withLobby, rotating, false);
+    }
+
+    private Fixture fixture(Env env, RaceTimings timings, int maximum, boolean withLobby, boolean rotating,
+            boolean restarting) throws IOException {
         writeWorld(env, ARENA, ARENA_SPAWN);
         writeWorld(env, OTHER, OTHER_SPAWN);
         writeWorld(env, LOBBY, LOBBY_SPAWN);
@@ -769,22 +870,51 @@ class WaitingRoomTest {
         LobbyHud hud = new LobbyHud();
         List<UUID> handedToHub = new ArrayList<>();
         List<Player> kicked = new ArrayList<>();
+        List<String> events = new ArrayList<>();
+        RecordingStore store = new RecordingStore(events);
         // The hub is installed: every racer the room sends is recorded as handed off. A warning is not expected here.
-        HubHandoff hub = new HubHandoff(() -> Optional.of(handedToHub::add),
+        HubHandoff hub = new HubHandoff(() -> Optional.of(racer -> {
+                    handedToHub.add(racer);
+                    events.add("hub");
+                }),
                 (racer, reason) -> kicked.add(racer),
                 message -> {
                     throw new AssertionError("no refused handoff was expected, but got: " + message);
                 });
         LobbySidebar sidebar = new LobbySidebar();
         CupRotationDriver driver = rotating
-                ? new CupRotationDriver(holder, instances, CupRotationStore.NONE,
+                ? new CupRotationDriver(holder, instances, store,
                         Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
                         new RotationPlan(Optional.of(TOUR_KEY), List.of(TOUR_KEY, OTHER_KEY), Set.of(), List.of()))
                 : CupRotationDriver.single(holder);
+        CupRestart restart = restarting ? CupRestart.after(store, STATE) : CupRestart.disabled();
         WaitingRoom room = new WaitingRoom(session, driver, () -> online, MINIMUM, maximum, lobby, hub, hud,
-                sidebar, null, () -> instances.forWorld(ARENA));
+                sidebar, null, () -> instances.forWorld(ARENA), restart);
         return new Fixture(session, holder, pipeline, room, hud, sidebar, runs, instances, env, handedToHub, kicked,
-                driver);
+                driver, restart, events);
+    }
+
+    /** The state a restart reads back, kept in memory, logging each write and read in order with the hub's moves. */
+    private static final class RecordingStore implements CupRotationStore {
+
+        private final List<String> events;
+        private Optional<String> held = Optional.empty();
+
+        RecordingStore(List<String> events) {
+            this.events = events;
+        }
+
+        @Override
+        public Optional<String> read() {
+            events.add("read");
+            return held;
+        }
+
+        @Override
+        public void write(String cup) {
+            events.add("write:" + cup);
+            held = Optional.of(cup);
+        }
     }
 
     /** Writes a world with one floor block under the spawn, through a Falco loader of its own. */
@@ -823,11 +953,15 @@ class WaitingRoomTest {
         private final List<Player> kicked;
         /** The rotation the room reads its armed cup from. */
         private final CupRotationDriver driver;
+        /** The restart the room asks after a finished cup: disabled unless the fixture was made restarting. */
+        private final CupRestart restart;
+        /** Hub moves, state writes and state reads, in the order they happened. */
+        private final List<String> events;
 
         private Fixture(CupSession session, CatalogHolder holder, TickPipeline pipeline, WaitingRoom room, LobbyHud hud,
                 LobbySidebar sidebar, RaceRuns runs,
                 MapInstances instances, Env env, List<UUID> handedToHub, List<Player> kicked,
-                CupRotationDriver driver) {
+                CupRotationDriver driver, CupRestart restart, List<String> events) {
             this.session = session;
             this.holder = holder;
             this.pipeline = pipeline;
@@ -840,6 +974,8 @@ class WaitingRoomTest {
             this.handedToHub = handedToHub;
             this.kicked = kicked;
             this.driver = driver;
+            this.restart = restart;
+            this.events = events;
         }
 
         /** Connects a racer to the first map's spawn, as the join handler does: prepared, then offered to the room. */

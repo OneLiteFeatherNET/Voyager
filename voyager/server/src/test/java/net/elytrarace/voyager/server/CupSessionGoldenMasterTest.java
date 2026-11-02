@@ -26,6 +26,7 @@ import net.elytrarace.voyager.platform.world.MapInstances;
 import net.elytrarace.voyager.platform.cup.MapTransition;
 import net.elytrarace.voyager.platform.cup.RaceRuns;
 import net.elytrarace.voyager.platform.stats.NoOpRaceRecorder;
+import net.elytrarace.voyager.platform.stats.NoPersonalBests;
 import net.elytrarace.voyager.server.inject.CupBeans;
 import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.platform.cup.CompetitorField;
@@ -268,7 +269,7 @@ class CupSessionGoldenMasterTest {
     @Test
     void lobbyWorldStart(Env env) throws IOException {
         writeWorld(env, tempDir, LOBBY, LOBBY_SPAWN, LOBBY_FLOOR);
-        harness = Harness.open(env, tempDir);
+        harness = Harness.open(env, tempDir, Harness.bootCatalog(), TIMINGS, 0, true);
         harness.useLobby(new LobbyDefinition(LOBBY, LOBBY_SPAWN));
         harness.connectToLobby(ADA);
 
@@ -364,8 +365,8 @@ class CupSessionGoldenMasterTest {
             return;
         }
         Path written = tempDir.resolve(scenario + ".received.txt");
-        Files.writeString(Path.of("/tmp/claude-1000/-mnt-projects-oss-onelitefeather-Voyager/1ea74273-57cf-4a93-943d-208e59f8d7ec/scratchpad/" + scenario + ".DIAG2.txt"), received, StandardCharsets.UTF_8);
-        Files.writeString(written, received, StandardCharsets.UTF_8);        List<String> want = List.of(expected.split("\n"));
+        Files.writeString(written, received, StandardCharsets.UTF_8);
+        List<String> want = List.of(expected.split("\n"));
         List<String> got = List.of(received.split("\n"));
         int line = 0;
         while (line < want.size() && line < got.size() && want.get(line).equals(got.get(line))) {
@@ -431,7 +432,8 @@ class CupSessionGoldenMasterTest {
         /** The racers the room handed to the hub, in order. */
         private final List<UUID> handedToHub = new ArrayList<>();
 
-        private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings, int comGrid) {
+        private Harness(Env env, MapInstances worlds, LoadedCatalog catalog, RaceTimings timings, int comGrid,
+                boolean lobbyWorld) {
             this.env = env;
             this.worlds = worlds;
             this.comGrid = comGrid;
@@ -446,7 +448,8 @@ class CupSessionGoldenMasterTest {
                     : new ComField(() -> field, comGrid, ComDifficulty.MEDIUM,
                             Clock.fixed(Instant.ofEpochMilli(COM_ROUND_MILLIS), ZoneOffset.UTC), worlds::forWorld);
             this.session = new CupSession(holder, worlds, transition, runs, flight, blocks, boosts, timings, STEP,
-                    () -> field, new NoOpRaceRecorder(), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), competitors);
+                    () -> field, new NoOpRaceRecorder(), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), competitors,
+                    new NoPersonalBests(), lobbyWorld);
             this.pipeline = new CupBeans().tickPipeline(session, boosts);
         }
 
@@ -461,10 +464,19 @@ class CupSessionGoldenMasterTest {
         /** Opens a cup whose grid holds {@code comGrid} racers, humans included; zero means no computer racers. */
         static Harness open(Env env, Path tempDir, LoadedCatalog catalog, RaceTimings timings, int comGrid)
                 throws IOException {
+            return open(env, tempDir, catalog, timings, comGrid, false);
+        }
+
+        /**
+         * Opens a cup whose racers wait in a lobby world when {@code lobbyWorld} is set, as the composition root sets the
+         * session when a lobby is configured.
+         */
+        static Harness open(Env env, Path tempDir, LoadedCatalog catalog, RaceTimings timings, int comGrid,
+                boolean lobbyWorld) throws IOException {
             writeWorld(env, tempDir, RIDGE, RIDGE_SPAWN, RIDGE_FLOOR);
             writeWorld(env, tempDir, DUNE, DUNE_SPAWN, DUNE_FLOOR);
             MapInstances instances = new MapInstances(env.process().instance(), tempDir.resolve("worlds"));
-            return new Harness(env, instances, catalog, timings, comGrid);
+            return new Harness(env, instances, catalog, timings, comGrid, lobbyWorld);
         }
 
         /** Connects a racer on the spawn of {@code map}, prepared as the join handler prepares one. */

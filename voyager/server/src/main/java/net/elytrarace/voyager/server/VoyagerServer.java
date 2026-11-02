@@ -26,10 +26,12 @@ import net.elytrarace.voyager.server.command.RaceCommand;
 import net.elytrarace.voyager.server.command.StatsCommand;
 import net.elytrarace.voyager.server.config.ConfigCheck;
 import net.elytrarace.voyager.server.config.PersistenceSettings;
+import net.elytrarace.voyager.server.config.RestartSettings;
 import net.elytrarace.voyager.server.config.ServerSettings;
 import net.elytrarace.voyager.server.inject.JoinArrival;
 import net.elytrarace.voyager.server.persistence.StatsBinding;
 import net.elytrarace.voyager.platform.cup.CupSession;
+import net.elytrarace.voyager.platform.handoff.CupRestart;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
 import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
 import net.elytrarace.voyager.platform.rotation.FileCupRotationStore;
@@ -54,7 +56,9 @@ import net.minestom.server.event.player.PlayerCustomClickEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
+import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.item.Material;
@@ -138,9 +142,10 @@ public final class VoyagerServer {
     private VoyagerServer() {
     }
 
-    /** Every key the configuration check reads: the server's settings and the database's. */
-    private static final List<String> CHECK_KEYS = Stream.concat(ServerSettings.KEYS.stream(),
-            PersistenceSettings.KEYS.stream()).toList();
+    /** Every key the configuration check reads: the server's settings, the database's and the forwarding secret's. */
+    private static final List<String> CHECK_KEYS = Stream.of(ServerSettings.KEYS.stream(),
+            PersistenceSettings.KEYS.stream(), ProxyForwardingSettings.KEYS.stream())
+            .flatMap(keys -> keys).toList();
 
     /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
     static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
@@ -174,8 +179,17 @@ public final class VoyagerServer {
         CupRotationSettings rotation = CupRotationSettings.from(properties);
         CupRotationStore store = rotation.stateFile().<CupRotationStore>map(FileCupRotationStore::new)
                 .orElse(CupRotationStore.NONE);
+        // The restart after each finished cup (ADR-0047). Off unless VOYAGER_RESTART_AFTER_CUP is true.
+        RestartSettings restartSettings = RestartSettings.from(properties);
+        CupRestart restart = restartSettings.afterCup()
+                ? CupRestart.after(store, rotation.stateFile().map(Object::toString).orElse("(no state file)"))
+                : CupRestart.disabled();
         LOGGER.info("Voyager (rebuild) — race model v{}, {}", RaceCore.MODEL_VERSION, settings.describe());
         ConfigCheck.comBootLine(settings).ifPresent(LOGGER::info);
+        if (restartSettings.afterCup()) {
+            LOGGER.info("Restart after each cup is on ({}): the service stops cleanly once a finished cup's racers "
+                    + "are with the hub", RestartSettings.PROPERTY);
+        }
         // The database settings are read once, here, and never refuse the start: each problem is one warning, and the server
         // runs with statistics off (owner decision Q1). Unset or off is one warning that no statistics are kept.
         PersistenceSettings persistence = PersistenceSettings.from(config);
@@ -219,11 +233,7 @@ public final class VoyagerServer {
         try {
             ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromLoader(config);
             auth = VelocityAuth.of(forwarding);
-            if (auth == null) {
-                LOGGER.warn("No Velocity secret is set ({} or -D{}): the server runs in offline mode and player UUIDs are "
-                        + "not forwarded from a proxy. LuckPerms cannot find a proxied player's grants in that case.",
-                        ProxyForwardingSettings.ENVIRONMENT_NAME, ProxyForwardingSettings.PROPERTY_NAME);
-            }
+            logForwarding(forwarding);
         } catch (IllegalArgumentException exception) {
             LOGGER.error("Voyager refused to start: {}", exception.getMessage());
             System.exit(1);
@@ -283,7 +293,7 @@ public final class VoyagerServer {
             // Every singleton is built now, so a malformed map file, a duplicate definition or a cup
             // naming a map nothing provides is a refusal here rather than an exception on whichever
             // tick first asked for it.
-            graph = openGraph(settings, persistence, plan, store);
+            graph = openGraph(settings, persistence, plan, store, restart);
         } catch (RuntimeException exception) {
             LOGGER.error("Voyager refused to start while building the object graph", exception);
             System.exit(1);
@@ -328,18 +338,18 @@ public final class VoyagerServer {
         if (settings.devMode()) {
             LOGGER.warn("Dev mode: short lobby and results screen, and /race start and /race skip are registered");
         }
-        scheduleTick(pipeline, waitingRoom, session, graph.get(StatsRequests.class));
+        // The one clean shutdown: the stdin line `stop`, /stop and the restart after a cup all end here. The stop runs
+        // on a platform thread, because the reader's own thread is the one the stop closes.
+        ServiceShutdown shutdown = new ServiceShutdown(() -> {
+            MinecraftServer.stopCleanly();
+            System.exit(0);
+        }, runnable -> Thread.ofPlatform().name("voyager-shutdown").start(runnable));
+        scheduleTick(pipeline, waitingRoom, session, graph.get(StatsRequests.class), restart, shutdown);
         // The statistics threads start before the port binds, so a race that finishes on the first tick is written. A
         // database that was down at boot logs its one warning here, and is retried in the background from now on.
         StatsBinding statistics = graph.get(StatsBinding.class);
         statistics.bootWarning().ifPresent(warning -> LOGGER.warn(warning));
         statistics.start();
-        // The one clean shutdown: the stdin line `stop` and /stop both end here. The stop runs on a platform thread,
-        // because the reader's own thread is the one the stop closes.
-        ServiceShutdown shutdown = new ServiceShutdown(() -> {
-            MinecraftServer.stopCleanly();
-            System.exit(0);
-        }, runnable -> Thread.ofPlatform().name("voyager-shutdown").start(runnable));
         MinecraftServer.getCommandManager().register(new StopCommand(graph.get(PermissionPolicy.class), shutdown));
         // Built now so the shutdown task can stop it; started only once the server listens, because a command
         // typed before then would reach a server that is not yet able to take one.
@@ -356,6 +366,16 @@ public final class VoyagerServer {
     }
 
     /**
+     * Logs the WARN lines of the forwarding settings: the offline line when no secret is set, or the line that recommends the
+     * secret file when the secret comes from the system property (ADR-0048). No line carries the secret's value.
+     *
+     * @param forwarding the settings the server starts with
+     */
+    static void logForwarding(ProxyForwardingSettings forwarding) {
+        forwarding.warnings().forEach(line -> LOGGER.warn(line));
+    }
+
+    /**
      * The validate-and-exit run, returning its exit code: 0 for a configuration with no error, 1 for one with
      * any. The report goes to {@code out}, one line per problem.
      *
@@ -368,35 +388,37 @@ public final class VoyagerServer {
      */
     static int configCheck(String[] args, ConfigLoader config,
             Supplier<InstanceManager> instances, PrintStream out) {
-        return configCheck(args, config.view(CHECK_KEYS), ConfigCheck.sourcesOf(config), instances, out);
+        return configCheck(args, config.view(CHECK_KEYS), ConfigCheck.sourcesOf(config), config.environment(), instances, out);
     }
 
     /** {@link #configCheck(String[], ConfigLoader, Supplier, PrintStream)} over a map of values, labelled as properties. */
     static int configCheck(String[] args, Map<String, String> properties,
             Supplier<InstanceManager> instances, PrintStream out) {
-        return configCheck(args, properties, ConfigCheck.PROPERTY_SOURCE, instances, out);
+        return configCheck(args, properties, ConfigCheck.PROPERTY_SOURCE, Map.of(), instances, out);
     }
 
     /**
-     * The check's settings: the server's and the database's. The database warnings are printed with the report, and only
-     * the server's settings can refuse it, so a database problem does not change the exit code.
+     * The check's settings: the server's, the database's and the forwarding secret's. The database warnings and the forwarding
+     * problems are printed with the report. Only the server's settings and an unusable forwarding source can refuse it, so a
+     * database problem does not change the exit code, and a secret from the system property is a warning only.
      */
     private static int configCheck(String[] args, Map<String, String> properties, Function<String, String> sources,
-            Supplier<InstanceManager> instances, PrintStream out) {
+            Map<String, String> environment, Supplier<InstanceManager> instances, PrintStream out) {
         List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties, sources);
-        List<ConfigProblem> persistence = ConfigCheck.persistenceProblems(properties, sources);
+        List<ConfigProblem> notes = new ArrayList<>(ConfigCheck.persistenceProblems(properties, sources));
+        notes.addAll(ConfigCheck.forwardingProblems(environment, properties, sources));
         if (!settingsProblems.isEmpty()) {
             List<ConfigProblem> all = new ArrayList<>(settingsProblems);
-            all.addAll(persistence);
+            all.addAll(notes);
             all.sort(ConfigProblem.ORDER);
             return ConfigCheck.report(all, out);
         }
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         CupRotationSettings rotation = CupRotationSettings.from(properties);
         if (rotation.configured()) {
-            return ConfigCheck.runRotation(settings, rotation, instances.get(), out, sources, persistence);
+            return ConfigCheck.runRotation(settings, rotation, instances.get(), out, sources, notes);
         }
-        return ConfigCheck.run(settings, instances.get(), out, sources, persistence);
+        return ConfigCheck.run(settings, instances.get(), out, sources, notes);
     }
 
     /** Initialises Minestom's registries, which the world loader needs, and returns the instance manager. */
@@ -445,12 +467,22 @@ public final class VoyagerServer {
      */
     static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence, RotationPlan plan,
             CupRotationStore store) {
+        return openGraph(settings, persistence, plan, store, CupRestart.disabled());
+    }
+
+    /**
+     * {@link #openGraph(ServerSettings, PersistenceSettings, RotationPlan, CupRotationStore)} with the restart after each
+     * finished cup the room asks for. A server without the setting passes {@link CupRestart#disabled()}.
+     */
+    static BeanScope openGraph(ServerSettings settings, PersistenceSettings persistence, RotationPlan plan,
+            CupRotationStore store, CupRestart restart) {
         try {
             return BeanScope.builder()
                     .bean(ServerSettings.class, settings)
                     .bean(PersistenceSettings.class, persistence)
                     .bean(RotationPlan.class, plan)
                     .bean(CupRotationStore.class, store)
+                    .bean(CupRestart.class, restart)
                     .shutdownHook(false)
                     .build();
         } catch (RuntimeException exception) {
@@ -538,6 +570,10 @@ public final class VoyagerServer {
             LOGGER.info("{} left", event.getPlayer().getUsername());
         });
 
+        // A held racer's own move and glide are refused by the cup until GO (CupSession).
+        events.addListener(PlayerMoveEvent.class, session::keepHeldPosition);
+        events.addListener(PlayerStartFlyingWithElytraEvent.class, session::refuseGlide);
+
         if (settings.devMode()) {
             LOGGER.info("Join with a 26.2 client; the cup starts once {} racer(s) are online, and /race shows where it stands",
                     settings.minimumRacers());
@@ -553,7 +589,7 @@ public final class VoyagerServer {
      * {@code /race} afterwards can still be asked about left standing.
      */
     private static void scheduleTick(TickPipeline pipeline, WaitingRoom waitingRoom, CupSession session,
-            StatsRequests statistics) {
+            StatsRequests statistics, CupRestart restart, ServiceShutdown shutdown) {
         AtomicBoolean broken = new AtomicBoolean();
         MinecraftServer.getSchedulerManager().scheduleTask(() -> {
             if (broken.get()) {
@@ -563,6 +599,10 @@ public final class VoyagerServer {
                 pipeline.run();
                 // After the cup's own tick, inside the same guard: the room reads the cup as this tick left it.
                 waitingRoom.tick();
+                // The restart after a finished cup (ADR-0047): it drains the handed-off racers, then asks for the stop.
+                if (restart.tick(MinecraftServer.getConnectionManager().getOnlinePlayers().size())) {
+                    shutdown.request();
+                }
                 // Last: the statistics replies a read finished since the last tick. They never touch the cup.
                 statistics.tick();
             } catch (RuntimeException exception) {

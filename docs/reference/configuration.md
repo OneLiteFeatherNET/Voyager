@@ -18,15 +18,21 @@ are at the end.
 | `VOYAGER_CUP` | `VOYAGER_CUP` | none | The name of the cup to play. Blank means none. A name that matches no cup refuses the start. With more than one cup file and no name, the start is refused as ambiguous. Set together with `VOYAGER_CUP_ROTATION`, it refuses the start. |
 | `VOYAGER_CUP_ROTATION` | `VOYAGER_CUP_ROTATION` | none | The cups the server plays in turn, comma-separated, in play order, such as `alpha_cup,legacy_cup`. Blanks and spaces around an entry are ignored. After each cup has finished and its results have lingered, its racers are handed to the hub and the next cup of the list is armed for the next round; the last cup is followed by the first. An aborted or restarted cup does not advance the rotation. An entry takes the same forms as `VOYAGER_CUP`, the flat id or the key. A cup whose world folders are missing is skipped with one warning; the start is refused only when no cup of the list can be played, and a definition error in any listed cup refuses it. Set together with `VOYAGER_CUP`, it refuses the start. |
 | `VOYAGER_CUP_ROTATION_STATE` | `VOYAGER_CUP_ROTATION_STATE` | none | A file that keeps the armed cup across a restart or redeploy, such as `/home/cloud/cloudnet/local/voyager-state/rotation`. It is written each time a cup is armed, through a temporary file that is then moved over it, and read at the start. A start that finds a cup of the list there begins with it; a name that is no longer in the list, or is skipped, starts at the first playable cup with a warning. Without it the position lives in the process only: a restart begins again at the first cup, and the server says so at the start. Its directory must exist, or the start is refused; the server user must be able to write to it. Without `VOYAGER_CUP_ROTATION` it is not used, and a warning says so. |
+| `VOYAGER_RESTART_AFTER_CUP` | `VOYAGER_RESTART_AFTER_CUP` | `false` | `true` ends the service's process after each finished cup, once its results have lingered and its racers have been handed to the hub, so that the node starts a fresh service (ADR-0047). The state is written before the stop, and the stop waits at most 5 s for the racers to leave. Any value other than `true` or `false`, in any case, refuses the start. With more than one cup in `VOYAGER_CUP_ROTATION`, `VOYAGER_CUP_ROTATION_STATE` must be set too, or the start is refused. An aborted cup does not restart the service. |
 | `voyager.dev` | `VOYAGER_DEV` | `false` | `true` turns on dev mode: a shorter lobby and results screen, and the operator subcommands. |
 | `VOYAGER_MIN_PLAYERS` | `VOYAGER_MIN_PLAYERS` | `2`, or `1` in dev mode | A whole number of at least 1. A value of 0 or text refuses the start. Blank means the default. |
 | `VOYAGER_MAX_PLAYERS` | `VOYAGER_MAX_PLAYERS` | `16` | A whole number not below `VOYAGER_MIN_PLAYERS`. It is a soft limit: it sets the join line and the full-lobby countdown, and refuses no one. |
 | `VOYAGER_LOBBY_WORLD` | `VOYAGER_LOBBY_WORLD` | none | The world folder waiting racers stand in. It must be set together with `VOYAGER_LOBBY_SPAWN`, and it must not be a world a map plays. |
 | `VOYAGER_LOBBY_SPAWN` | `VOYAGER_LOBBY_SPAWN` | none | The lobby spawn as `x,y,z` in block coordinates, three finite numbers. Set together with `VOYAGER_LOBBY_WORLD`. |
 | `voyager.config.check` | `VOYAGER_CONFIG_CHECK` | `false` | `true` runs the configuration check, prints every problem and exits. |
-| `voyager.velocity.secret` | `VOYAGER_VELOCITY_SECRET` | none | The Velocity forwarding secret. Unset means the server runs offline, with a warning. A set value that is blank refuses the start, and the message names the variable, never the value. The environment variable wins over the property (see below). |
+| `voyager.velocity.secret.file` | `VOYAGER_VELOCITY_SECRET_FILE` | none | The path of a file whose content is the Velocity forwarding secret, trimmed of surrounding whitespace and read once, at boot. The recommended source (ADR-0048). The environment variable wins over the property. A file that is missing, a directory, unreadable, not UTF-8 or empty refuses the start, and the message names the setting and the path, never the content. Blank refuses the start. |
+| `voyager.velocity.secret` | `VOYAGER_VELOCITY_SECRET` | none | The Velocity forwarding secret. Unset means the server runs offline, with a warning. A set value that is blank refuses the start, and the message names the variable, never the value. Read after the file keys (see below). A secret from this system property is a configuration WARNING and a server WARN, because the process list shows it to every local user. |
 
 The velocity secret is never printed, by the server or by the configuration check.
+
+The velocity secret's four sources, highest first: `VOYAGER_VELOCITY_SECRET_FILE`, `voyager.velocity.secret.file`, `VOYAGER_VELOCITY_SECRET`,
+`voyager.velocity.secret`. The first one that is set decides, and a set source that cannot be used refuses the start; the server never
+falls back to a lower source.
 
 ## Where a value can come from
 
@@ -44,12 +50,14 @@ Each source is applied in this order. A key set only in the environment is found
 
 ### The one exception: the velocity secret
 
-For `voyager.velocity.secret` the environment variable `VOYAGER_VELOCITY_SECRET` wins over the system property, when both are
-set and they differ. This is required by the forwarding specification (`openspec/specs/server/proxy-forwarding`). Every other key
-uses the order in the table above. The exception is written in one place, `ProxyForwardingSettings.from`, and covered by tests.
+For the velocity secret the environment variable wins over the system property, for each of the two keys: `VOYAGER_VELOCITY_SECRET`
+over `voyager.velocity.secret`, and `VOYAGER_VELOCITY_SECRET_FILE` over `voyager.velocity.secret.file`. The file keys come before the
+secret keys. This is required by the forwarding specification (`openspec/specs/server/proxy-forwarding`). Every other key uses the
+order in the table above. The exception is written in one place, `ProxyForwardingSettings.from`, and covered by tests.
 
 A secret taken from the environment or from a system property is used exactly as written: it is not trimmed and `${...}` is not
-expanded. A secret that a `application.yaml` file also sets is subject to the file rules above.
+expanded. A secret read from a file is trimmed of surrounding whitespace, and its content is never expanded. A secret that a
+`application.yaml` file also sets is subject to the file rules above.
 
 ## What else avaje-config reads
 

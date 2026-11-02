@@ -143,6 +143,14 @@ class RingAdapterTest {
     }
 
     @Test
+    void readsAnOvalWhoseAxisPointsTheOtherWayAsTheSameRingAsTheCanonicalAxis() {
+        String reversed = OVAL.replace("\"majorAxis\": { \"x\": 1.0, \"y\": 0.0, \"z\": 0.0 }",
+                "\"majorAxis\": { \"x\": -1.0, \"y\": 0.0, \"z\": 0.0 }");
+
+        assertThat(readOval(reversed, 4, 3)).isEqualTo(readOval(OVAL, 4, 3));
+    }
+
+    @Test
     void readsAVersionThreeFileOfCirclesWithEveryRingACircle() {
         Ring ring = RingAdapter.read(JsonParser.parseString(RING), 4, 3, FILE);
 

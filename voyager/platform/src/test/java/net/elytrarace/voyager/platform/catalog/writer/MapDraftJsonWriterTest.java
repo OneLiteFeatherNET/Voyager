@@ -122,6 +122,16 @@ class MapDraftJsonWriterTest {
     }
 
     @Test
+    void aDraftWithAnOvalWhoseAxisPointsTheOtherWayIsWrittenAsTheSameFile() {
+        Vec3 up = new Vec3(0.0, 1.0, 0.0);
+        Ring reversed = new Ring(0, new Vec3(10.0, 70.0, -20.0), up,
+                RingShape.of(6.0, 3.0, new Vec3(-1.0, 0.0, 0.0), up), 10, RingType.STANDARD);
+
+        assertThat(MapDraftJsonWriter.toJson(withRings(reversed)))
+                .isEqualTo(MapDraftJsonWriter.toJson(withRings(oval())));
+    }
+
+    @Test
     void aDraftOfCirclesIsWrittenInVersionTwoWithNoOvalField() {
         JsonObject json = parse(MapDraftJsonWriter.toJson(DraftFixtures.complete(ID)));
 

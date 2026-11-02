@@ -14,6 +14,7 @@ import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.stats.NoPersonalBests;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.ChunkLoader;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
@@ -23,12 +24,15 @@ import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.world.DimensionType;
 import net.minestom.testing.Env;
+import net.minestom.testing.TestConnection;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
 
 import java.io.IOException;
@@ -38,6 +42,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -89,17 +94,24 @@ final class PlacementFixture implements AutoCloseable {
     final Instance secondWorld;
     final MapInstances instances;
     final CupSession session;
+    final RaceRuns runs;
+
+    /** Each connected racer's connection, so a test can read the packets the server sent that racer. */
+    private final Map<Player, TestConnection> connections = new HashMap<>();
+
+    private int ticksPlayed;
 
     private final Path root;
 
-    private PlacementFixture(Env env, Path root, RaceTimings timings, RaceRecorder recorder, ChunkLoader loader)
-            throws IOException {
+    private PlacementFixture(Env env, Path root, RaceTimings timings, RaceRecorder recorder, ChunkLoader loader,
+            boolean lobbyWorld) throws IOException {
         this.env = env;
         this.root = root;
         writeWorld(env, FIRST_WORLD, FIRST_SPAWN);
         writeWorld(env, SECOND_WORLD, SECOND_SPAWN);
         this.instances = new MapInstances(env.process().instance(), root.resolve("worlds"));
         RaceRuns runs = new RaceRuns();
+        this.runs = runs;
         MapTransition transition = new MapTransition(instances, runs, loader);
         CatalogHolder holder = new CatalogHolder(new LoadedCatalog(
                 new CatalogSnapshot(Map.of(FIRST_MAP, FIRST_RUN, SECOND_MAP, SECOND_RUN), Map.of(CUP, CUP_DEFINITION)),
@@ -109,7 +121,10 @@ final class PlacementFixture implements AutoCloseable {
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(() -> online, boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
         this.session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, timings, STEP,
-                () -> online, recorder, CLOCK, CompetitorField.none());
+                () -> online, recorder, CLOCK, CompetitorField.none(), new NoPersonalBests(), lobbyWorld);
+        // The same two listeners the server registers, so a client's own packets reach a held racer as in production.
+        env.process().eventHandler().addListener(PlayerMoveEvent.class, session::keepHeldPosition);
+        env.process().eventHandler().addListener(PlayerStartFlyingWithElytraEvent.class, session::refuseGlide);
         this.lobby = env.createFlatInstance();
         this.firstWorld = instances.forWorld(FIRST_WORLD);
         this.secondWorld = instances.forWorld(SECOND_WORLD);
@@ -127,22 +142,63 @@ final class PlacementFixture implements AutoCloseable {
      * A loader that reports every chunk as loading holds every placement where it is.
      */
     static PlacementFixture open(Env env, Path root, RaceTimings timings, ChunkLoader loader) throws IOException {
-        PlacementFixture fixture = new PlacementFixture(env, root, timings, new NoRecorder(), loader);
+        return open(env, root, timings, loader, false);
+    }
+
+    /**
+     * Opens a cup whose racers wait in a lobby world, as a server with a lobby configured runs it: the first map's racers
+     * are moved onto it {@link RaceTimings#ARRIVAL_LEAD} before GO. The lobby is the fixture's own lobby instance.
+     */
+    static PlacementFixture openWithLobbyWorld(Env env, Path root, RaceTimings timings, ChunkLoader loader)
+            throws IOException {
+        return open(env, root, timings, loader, true);
+    }
+
+    private static PlacementFixture open(Env env, Path root, RaceTimings timings, ChunkLoader loader, boolean lobbyWorld)
+            throws IOException {
+        PlacementFixture fixture = new PlacementFixture(env, root, timings, new NoRecorder(), loader, lobbyWorld);
         fixture.session.start(false);
         return fixture;
     }
 
     /** Connects a racer into the lobby instance, away from both spawns, and returns them. */
     Player connectRacer() {
-        Player racer = env.createConnection().connect(lobby, new Pos(LOBBY_SPOT.x(), LOBBY_SPOT.y(), LOBBY_SPOT.z()));
+        TestConnection connection = env.createConnection();
+        Player racer = connection.connect(lobby, new Pos(LOBBY_SPOT.x(), LOBBY_SPOT.y(), LOBBY_SPOT.z()));
         online.add(racer);
+        connections.put(racer, connection);
         return racer;
+    }
+
+    /** The connection {@code racer} was connected through, for reading the packets the server sends them. */
+    TestConnection connectionOf(Player racer) {
+        return connections.get(racer);
+    }
+
+    /** Disconnects {@code racer} the way the server does: the cup forgets them and they leave the room. */
+    void disconnect(Player racer) {
+        online.remove(racer);
+        session.forget(racer.getUuid());
+        racer.remove(true);
     }
 
     /** Advances the cup by one tick, then the environment by one tick, so the placements' futures can complete. */
     void tick() {
         session.advancePhase();
         env.tick();
+        ticksPlayed++;
+    }
+
+    /** How many ticks the cup has been advanced since it was opened, so a test can count a phase from its start. */
+    int ticksPlayed() {
+        return ticksPlayed;
+    }
+
+    /** Advances the cup by {@code ticks} ticks. */
+    void tick(int ticks) {
+        for (int tick = 0; tick < ticks; tick++) {
+            tick();
+        }
     }
 
     /** Ticks until {@code done} holds, and fails with {@code what} if it does not within {@code budget} ticks. */

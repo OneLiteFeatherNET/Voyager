@@ -68,6 +68,8 @@ import net.elytrarace.voyager.platform.text.Palette;
 import net.kyori.adventure.text.format.TextColor;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.RelativeFlags;
+import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.world.DimensionType;
 
@@ -148,8 +150,20 @@ import java.util.function.Supplier;
  * <p>A racer is placed on the next map as soon as their own wait has started: when they finished the
  * previous map and their glide-out has ended ({@code finish-glide-out}), or when the previous map's
  * {@code GAME} phase ends. A racer placed on a map is held at its spawn, facing the first ring, until
- * GO; a racer who has glided out is held where the glide ended until placed. The chunks around a spawn
- * load in the background, so no tick waits for them ({@link PendingArrival}).
+ * GO; a racer who has glided out is held where the glide ended until placed. A held racer hovers in
+ * place with no flying speed, so their own client cannot move them or start a glide, and their flight
+ * is put back at GO ({@link Racers#freeze}). The chunks around a spawn load in the background, so no
+ * tick waits for them ({@link PendingArrival}).
+ *
+ * <p>With a lobby world configured, the first map's racers wait in the lobby world while its countdown runs, and are
+ * placed on the map {@link RaceTimings#ARRIVAL_LEAD} before GO. The chunks around the first spawn start loading at the
+ * start of the countdown, so the move is quick ({@link MapTransition#preload}).
+ *
+ * <p>GO waits for a racer who is still loading. When a lobby would end while a racer online is not yet placed on its map,
+ * GO is held there: the placed racers stay on their spawns, the boss bar says how many racers the room waits for, and GO
+ * fires as soon as every racer is placed, or after {@link RaceTimings#GO_HOLD_LIMIT} at the latest. A racer still loading
+ * when a held GO fires begins their run when they are placed, and is timed from that tick ({@link #clockOf}). A lobby of no
+ * length is never held: its GO is an operator's skip.
  */
 public final class CupSession implements RacePhaseListener {
 
@@ -264,8 +278,32 @@ public final class CupSession implements RacePhaseListener {
     /** Placements under way, by racer: the map each one is for, and the placement itself. */
     private final Map<UUID, Arrival> arrivals = new HashMap<>();
 
-    /** Where each racer is held in place: from the end of a glide-out until placed, and from placement until GO. */
+    /** The racers whose chunks on the first map have been started during its countdown, so that each is started once. */
+    private final Set<UUID> preloaded = new HashSet<>();
+
+    /**
+     * Where each racer is held in place: from the end of a glide-out until placed, and from placement until GO. Written
+     * only through {@link #hold} and {@link #release}, so that {@link #frozen} is in step with it.
+     */
     private final Map<UUID, Pos> holds = new HashMap<>();
+
+    /**
+     * The flight each held racer had before the hold took it, so that {@link #release} can put it back. A racer is in this
+     * map exactly when they are in {@link #holds}: the two are taken and given back together.
+     */
+    private final Map<UUID, Racers.Freeze> frozen = new HashMap<>();
+
+    /**
+     * The racers still unplaced when a GO that was held for them fired. Each is timed from their own placement, so a racer
+     * whose chunks arrived after the hold ran out does not carry the wait in their time.
+     */
+    private final Set<UUID> loadingAtGo = new HashSet<>();
+
+    /**
+     * The race tick each racer in {@link #loadingAtGo} was placed on the map being raced, from which their run's clock counts.
+     * A racer who was placed by GO, or after a GO that was not held, has no entry, and is timed from GO.
+     */
+    private final Map<UUID, Integer> placedAfterGo = new HashMap<>();
 
     /** Glide-outs under way, by racer. */
     private final Map<UUID, Glide> glides = new HashMap<>();
@@ -291,6 +329,9 @@ public final class CupSession implements RacePhaseListener {
 
     /** Where each ranked racer's stored best is read from. */
     private final PersonalBestReader bests;
+
+    /** Whether the racers of the first map wait in a lobby world. Set by the constructor and never changed. */
+    private final boolean lobbyWorld;
 
     /** The standing of the map that last ended, kept for the wait; null before a map has ended. */
     private @Nullable MapStanding settledStanding;
@@ -328,8 +369,25 @@ public final class CupSession implements RacePhaseListener {
             MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
             FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
             RaceRecorder recorder, Clock clock, CompetitorField competitors, PersonalBestReader bests) {
+        this(catalog, instances, transition, runs, flight, blocks, boosts, timings, step, players, recorder, clock,
+                competitors, bests, false);
+    }
+
+    /**
+     * Builds a session as the one above does, and says whether the racers wait in a lobby world.
+     *
+     * @param lobbyWorld whether a lobby world is configured. When it is, the racers of the first map wait in it until
+     *     {@link RaceTimings#ARRIVAL_LEAD} before GO, and their chunks are loaded from the start of the countdown. When it
+     *     is not, they stand on the first map from its first lobby tick, as they do between two maps
+     */
+    public CupSession(CatalogHolder catalog, MapInstances instances,
+            MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
+            FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
+            RaceRecorder recorder, Clock clock, CompetitorField competitors, PersonalBestReader bests,
+            boolean lobbyWorld) {
         this.catalog = catalog;
         this.bests = bests;
+        this.lobbyWorld = lobbyWorld;
         this.competitors = competitors;
         this.cup = catalog.current().cup();
         this.instances = instances;
@@ -429,7 +487,8 @@ public final class CupSession implements RacePhaseListener {
                 ? new RaceTimings(Duration.ZERO, timings.race(), timings.endBetweenMaps(),
                         timings.endAfterLastMap())
                 : timings;
-        XerusPhaseDriver next = new XerusPhaseDriver(cup, played, step, this::gamePhaseEndsNow, this);
+        XerusPhaseDriver next = new XerusPhaseDriver(cup, played, step, this::gamePhaseEndsNow, this,
+                this::racersStillLoadingAtGo);
         driver = next;
         next.start();
         LOGGER.info("Cup '{}' started: {} map(s), mode {}, lobby {}, race {}, results {} between maps "
@@ -471,10 +530,7 @@ public final class CupSession implements RacePhaseListener {
         if (current == null || !current.isRunning()) {
             return StartGate.Situation.WAITING;
         }
-        boolean firstLobby = current.state().phase() == RacePhase.LOBBY
-                && current.state().mapIndex() == 0
-                && !gameStarted;
-        if (!firstLobby) {
+        if (!firstLobby(current.state())) {
             return StartGate.Situation.RUNNING;
         }
         return current.remainingLobby().compareTo(commitWindow) > 0
@@ -775,8 +831,9 @@ public final class CupSession implements RacePhaseListener {
      * The start countdown, run out of the tail of the lobby, and the first tick of the lobby, which starts the wait.
      *
      * <p>The map is prepared on the first tick of its lobby, so the cup knows what it is playing; the placement of the
-     * racers follows from the wait ({@link #beginWaitingPlacements}), not from the digits. A racer is therefore on the
-     * spawn, facing the first ring, long before GO. The digits show the course the racer is about to fly. The {@code GAME}
+     * racers follows from the wait ({@link #beginWaitingPlacements}), not from the digits. Without a lobby world a racer
+     * is therefore on the spawn, facing the first ring, long before GO; with one, they are placed
+     * {@link RaceTimings#ARRIVAL_LEAD} before GO. The digits show the course the racer is about to fly. The {@code GAME}
      * phase still begins with GO on its first tick, and the three seconds come out of the lobby, which is time nobody was
      * playing in anyway.
      */
@@ -808,13 +865,22 @@ public final class CupSession implements RacePhaseListener {
         // GO releases the racers placed on this map: each one begins its run here, and is no longer held. A racer who is
         // not placed yet is placed now, and begins the run when the placement completes. GO does not move a racer who is
         // already placed.
+        placedAfterGo.clear();
+        loadingAtGo.clear();
+        XerusPhaseDriver current = driver;
+        boolean afterHold = current != null && current.goStartedAfterHold();
         List<Player> racers = List.copyOf(players.get());
         for (Player racer : racers) {
             UUID id = racer.getUuid();
             if (isPlacedOn(id, mapIndex)) {
-                holds.remove(id);
+                release(id);
                 runs.startFresh(id);
-            } else if (!arrivals.containsKey(id)) {
+                continue;
+            }
+            if (afterHold) {
+                loadingAtGo.add(id);
+            }
+            if (!arrivals.containsKey(id)) {
                 begin(racer, mapIndex);
             }
         }
@@ -897,12 +963,13 @@ public final class CupSession implements RacePhaseListener {
             Vec3 position = Vectors.toDomain(racer.getPosition());
             Vec3 previous = lastPositions.put(id, position);
             lastVelocities.put(id, previous == null ? Vec3.ZERO : position.minus(previous));
-            RaceRun advanced = runs.advance(id, map, clock, position, racer.isFlyingWithElytra(), racer.isOnGround());
+            RaceClock racerClock = clockOf(id, clock);
+            RaceRun advanced = runs.advance(id, map, racerClock, position, racer.isFlyingWithElytra(), racer.isOnGround());
             // The finishing tick and every tick after it are not flight time: flight time stops at the finish.
             if (advanced.gliding() && !advanced.finished()) {
                 tally.recordGlidingTick(id);
             }
-            announcer.report(racer, map, advanced, wasFinished, clock);
+            announcer.report(racer, map, advanced, wasFinished, racerClock);
             if (!wasFinished && advanced.finished()) {
                 // The finish: one burst at the last ring, and the glide-out that brakes the flight after it.
                 RaceFeedback.finish(racer, map.rings().getLast().center());
@@ -910,7 +977,7 @@ public final class CupSession implements RacePhaseListener {
             }
             if (advanced.justMissed() != null) {
                 // Ring numbers count from one; the ring's own index is zero-based.
-                hud.missedRing(racer, advanced.justMissed().index() + 1, clock.gameTick());
+                hud.missedRing(racer, advanced.justMissed().index() + 1, racerClock.gameTick());
             }
             RaceRun shown = sendBackIfLostOrLanded(racer, map, held.get(), advanced, position);
             // sendBackIfLostOrLanded hands back the run it was given unless it reset the racer, so a reset
@@ -918,12 +985,12 @@ public final class CupSession implements RacePhaseListener {
             if (shown == advanced) {
                 applyRingEffect(racer, map, advanced);
             }
-            hud.render(racer, HudStates.of(MapFigures.inFlight(shown, clock, map, preparedMapIndex + 1,
+            hud.render(racer, HudStates.of(MapFigures.inFlight(shown, racerClock, map, preparedMapIndex + 1,
                     cup.mapNames().size())));
             // After the advance, so the line is for the ring the racer is heading for now. The stretch
             // starts at the last ring passed, so the segment being flown stays drawn until the next ring
             // is passed. A racer who was sent back on this tick is shown the run they were sent back with.
-            lines.render(racer, map, shown.progress().passedCount(), clock.gameTick());
+            lines.render(racer, map, shown.progress().passedCount(), racerClock.gameTick());
         }
         // Competitors are advanced after the human loop: they are not in the players supplier, and nothing
         // above reads their runs. A competitor the cup holds no run for is not on this course, and is skipped.
@@ -1235,6 +1302,11 @@ public final class CupSession implements RacePhaseListener {
         }
         RaceState state = current.state();
         Optional<WaitBar> countdown = WaitBar.countingDown(state, timings, gameStarted, followsAnotherMap(state));
+        int loading = current.goHeld() ? racersStillLoading(state.mapIndex()) : 0;
+        if (loading > 0) {
+            // GO is held for the racers still loading, so the bar says what the room waits for, to every racer in it.
+            countdown = Optional.of(WaitBar.waiting(loading));
+        }
         MapStanding standing = racing ? standingOf(true) : settledStanding;
         Function<UUID, Component> names = racerNames();
         for (Player racer : players.get()) {
@@ -1288,6 +1360,38 @@ public final class CupSession implements RacePhaseListener {
     }
 
     /**
+     * Refuses the move a held racer's client sends, so the racer stays at the point they are held at. The head turn that
+     * comes in the same packet is kept, so a held racer can still look at the first ring.
+     *
+     * <p>A placement's own move is not refused: it is the server's move, and while it is under way the client's packets
+     * are not read at all ({@code PlayerPositionListener} discards them until the client confirms the teleport). The
+     * composition root registers this on the global event handler.
+     */
+    public void keepHeldPosition(PlayerMoveEvent event) {
+        UUID id = event.getPlayer().getUuid();
+        Pos at = holds.get(id);
+        if (at == null || isMovingNow(id)) {
+            return;
+        }
+        Pos asked = event.getNewPosition();
+        if (!asked.samePoint(at)) {
+            event.setNewPosition(at.withView(asked));
+        }
+    }
+
+    /**
+     * Refuses the glide a held racer's client asks for, on the tick the request is read. Minestom sets the elytra on for
+     * the request before this event and does not check it, so it is put off here, and no tick after the request sees it
+     * on. A racer who is not held is not affected. The composition root registers this on the global event handler.
+     */
+    public void refuseGlide(PlayerStartFlyingWithElytraEvent event) {
+        Player racer = event.getPlayer();
+        if (holds.containsKey(racer.getUuid())) {
+            Racers.keepFrozen(racer);
+        }
+    }
+
+    /**
      * The placement step of a tick, run after the phase step: completes the placements under way, starts the ones the wait
      * calls for, and holds each held racer where they are held. It runs in every phase, so placements carry on through the
      * end of a map and into the wait that follows.
@@ -1298,7 +1402,14 @@ public final class CupSession implements RacePhaseListener {
         beginWaitingPlacements(online);
         for (Map.Entry<UUID, Pos> hold : holds.entrySet()) {
             Player racer = online.get(hold.getKey());
-            if (racer != null && !isMovingNow(hold.getKey())) {
+            if (racer == null) {
+                continue;
+            }
+            if (isMovingNow(hold.getKey())) {
+                // The move to the spawn is the server's own, so the position is left to it.
+                // The glide and the hover are not.
+                Racers.keepFrozen(racer);
+            } else {
                 Racers.pin(racer, hold.getValue());
             }
         }
@@ -1337,7 +1448,7 @@ public final class CupSession implements RacePhaseListener {
             Racers.standDown(racer);
             LOGGER.debug("Racer {} glided out after the map '{}'", racer.getUsername(), glide.map().key().asString());
             if (followingMapIndex(glide.mapIndex()) != NO_MAP) {
-                holds.put(id, racer.getPosition());
+                hold(racer, racer.getPosition());
                 glidedOut.add(id);
             }
         }
@@ -1382,11 +1493,15 @@ public final class CupSession implements RacePhaseListener {
         placedOn.put(id, arrival.mapIndex());
         Racers.faceCourse(racer, arrival.map());
         if (racing && arrival.mapIndex() == preparedMapIndex) {
-            // Placed after GO, on the map being raced: no freeze, and the run starts now.
-            holds.remove(id);
+            // Placed after GO, on the map being raced: no hold, and the run starts now. A racer who was still loading
+            // when a held GO fired is timed from this tick, not from GO.
+            release(id);
             runs.startFresh(id);
+            if (loadingAtGo.contains(id)) {
+                placedAfterGo.put(id, driver.clock().gameTick());
+            }
         } else {
-            holds.put(id, ArrivalFacing.at(arrival.map()));
+            hold(racer, ArrivalFacing.at(arrival.map()));
         }
     }
 
@@ -1394,6 +1509,9 @@ public final class CupSession implements RacePhaseListener {
      * Starts the placement of each racer the current phase calls for: every racer during the lobby and the end of a map,
      * and, during a race, a racer who has glided out after a finish. A racer who is placed, arriving, gliding out or
      * failed in this wait is not started again.
+     *
+     * <p>With a lobby world, the first map's racers are not placed until {@link RaceTimings#ARRIVAL_LEAD} before GO. Until
+     * then their chunks are loading, which is the one thing the placement needs of the first map before the move.
      */
     private void beginWaitingPlacements(Map<UUID, Player> online) {
         XerusPhaseDriver current = driver;
@@ -1404,6 +1522,12 @@ public final class CupSession implements RacePhaseListener {
         int target = placementTarget(state);
         if (target == NO_MAP) {
             return;
+        }
+        if (lobbyWorld && firstLobby(state)) {
+            preloadRacers(online, target);
+            if (current.remainingLobby().compareTo(RaceTimings.ARRIVAL_LEAD) > 0) {
+                return;
+            }
         }
         boolean waiting = state.phase() != RacePhase.GAME;
         for (Player racer : online.values()) {
@@ -1424,8 +1548,54 @@ public final class CupSession implements RacePhaseListener {
         UUID id = racer.getUuid();
         MapDefinition map = mapAt(mapIndex);
         arrivals.put(id, new Arrival(mapIndex, map, transition.place(racer, map)));
-        holds.put(id, racer.getPosition());
+        hold(racer, racer.getPosition());
         glidedOut.remove(id);
+    }
+
+    /**
+     * Whether the cup is in the first lobby of its first map, before GO: the lobby the racers wait in, and the one the start
+     * commit window is counted in.
+     */
+    private boolean firstLobby(RaceState state) {
+        return state.phase() == RacePhase.LOBBY && state.mapIndex() == 0 && !gameStarted;
+    }
+
+    /**
+     * Starts the chunks of the map at {@code mapIndex} for each racer online who has not had them started yet, while they
+     * wait in the lobby world. A racer who joins during the countdown is preloaded on the tick they are seen.
+     */
+    private void preloadRacers(Map<UUID, Player> online, int mapIndex) {
+        MapDefinition map = mapAt(mapIndex);
+        for (Player racer : online.values()) {
+            if (preloaded.add(racer.getUuid())) {
+                transition.preload(racer, map);
+            }
+        }
+    }
+
+    /**
+     * Holds {@code racer} at {@code at}: their own flight is taken from them, and their position is kept, until
+     * {@link #release}. The flight is taken once; a racer held again keeps the flight they had before the first hold.
+     */
+    private void hold(Player racer, Pos at) {
+        frozen.computeIfAbsent(racer.getUuid(), id -> Racers.freeze(racer));
+        holds.put(racer.getUuid(), at);
+    }
+
+    /** Releases a held racer: their position is no longer kept, and the flight they had before the hold is put back. */
+    private void release(UUID id) {
+        holds.remove(id);
+        Racers.Freeze before = frozen.remove(id);
+        if (before != null) {
+            before.thaw();
+        }
+    }
+
+    /** Releases every held racer, with their flights, when the cup holds nobody any more. */
+    private void releaseEveryone() {
+        holds.clear();
+        frozen.values().forEach(Racers.Freeze::thaw);
+        frozen.clear();
     }
 
     private void startGlide(UUID id, MapDefinition map, int mapIndex) {
@@ -1458,6 +1628,43 @@ public final class CupSession implements RacePhaseListener {
     }
 
     /**
+     * Whether GO has to wait for a racer: the lobby that would end on this tick has a racer online who is still loading its
+     * map. The driver asks only on a tick that would begin the {@code GAME} phase, and holds GO while this is true, for at
+     * most {@link RaceTimings#GO_HOLD_LIMIT}.
+     */
+    private boolean racersStillLoadingAtGo() {
+        XerusPhaseDriver current = driver;
+        return current != null && racersStillLoading(current.state().mapIndex()) > 0;
+    }
+
+    /**
+     * How many racers online are still loading the map at {@code mapIndex}: the racers a GO waits for. A racer is loading
+     * until their placement has begun its move, which is when their chunks are there. A racer still gliding out of the
+     * previous map is not loading: their placement has not begun, and it begins when the glide-out ends. A racer who has
+     * disconnected is not online, so is not counted, and cannot hold GO.
+     */
+    private int racersStillLoading(int mapIndex) {
+        int loading = 0;
+        for (Player racer : players.get()) {
+            UUID id = racer.getUuid();
+            if (!isPlacedOn(id, mapIndex) && !glides.containsKey(id) && !isMovingNow(id)) {
+                loading++;
+            }
+        }
+        return loading;
+    }
+
+    /**
+     * The race clock a racer's run is advanced and reported on. It is the cup's clock for a racer placed by GO, and the cup's
+     * clock less the tick the racer was placed on for a racer who was still loading when a held GO fired, so that their run
+     * counts from their own start.
+     */
+    private RaceClock clockOf(UUID id, RaceClock cupClock) {
+        int startedOn = placedAfterGo.getOrDefault(id, 0);
+        return startedOn == 0 ? cupClock : new RaceClock(cupClock.gameTick() - startedOn, cupClock.step());
+    }
+
+    /**
      * Whether a racer is placed on a map other than the one being raced. Such a racer has left this map: the race does
      * not advance their run, draw their HUD or send them this map's line.
      */
@@ -1469,8 +1676,11 @@ public final class CupSession implements RacePhaseListener {
     /** Drops every placement, glide-out and hold, so that no racer is held by a cup that is no longer running. */
     private void clearPlacements() {
         placedOn.clear();
+        placedAfterGo.clear();
+        loadingAtGo.clear();
         arrivals.clear();
-        holds.clear();
+        preloaded.clear();
+        releaseEveryone();
         glides.clear();
         glidedOut.clear();
         failedPlacement.clear();
@@ -1481,8 +1691,11 @@ public final class CupSession implements RacePhaseListener {
 
     private void forgetPlacement(UUID playerId) {
         placedOn.remove(playerId);
+        placedAfterGo.remove(playerId);
+        loadingAtGo.remove(playerId);
         arrivals.remove(playerId);
-        holds.remove(playerId);
+        preloaded.remove(playerId);
+        release(playerId);
         glides.remove(playerId);
         glidedOut.remove(playerId);
         failedPlacement.remove(playerId);

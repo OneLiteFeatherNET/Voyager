@@ -140,19 +140,73 @@ public abstract class Racers {
     }
 
     /**
-     * Holds a racer at {@code at} until they are released: not gliding, and back at {@code at} with no velocity if they
-     * have moved more than a tenth of a block from it.
+     * Takes a held racer's own flight away: a flight with no speed, so that the client's input moves them by nothing,
+     * and a flight that carries no gravity, so that a racer who is in the air hangs where they are held.
+     *
+     * <p>Vanilla's creative flight moves the player by its flying speed alone, and the client applies no gravity to a
+     * player who flies. The head is not part of it: the view is the client's to turn, and the server accepts the turn.
+     * The flight the racer had is returned by {@link Freeze#thaw()} at GO, at an abort or disarm, and when the racer
+     * disconnects.
+     *
+     * @return the flight the racer had before, for {@link Freeze#thaw()} to put back
+     */
+    public static Freeze freeze(Player player) {
+        Freeze before = new Freeze(player, player.isAllowFlying(), player.isFlying(), player.getFlyingSpeed());
+        player.setFlyingSpeed(0.0f);
+        player.setAllowFlying(true);
+        player.setFlying(true);
+        return before;
+    }
+
+    /**
+     * The flight a racer had before a hold took it, and the means to put it back.
+     *
+     * @param racer the racer whose flight this is
+     * @param allowFlying whether the racer was allowed to fly
+     * @param flying whether the racer was flying
+     * @param flyingSpeed the flying speed the racer had
+     */
+    public record Freeze(Player racer, boolean allowFlying, boolean flying, float flyingSpeed) {
+
+        /**
+         * Puts the flight back as {@link #freeze} found it. The flight itself goes first, while the permission is still
+         * on, so the client is never told to fly without it; the speed goes last.
+         */
+        public void thaw() {
+            racer.setFlying(flying);
+            racer.setAllowFlying(allowFlying);
+            racer.setFlyingSpeed(flyingSpeed);
+        }
+    }
+
+    /**
+     * Keeps a held racer from gliding, and hovering, when their client has turned its flight off: a double tap of jump
+     * does that for a player who is allowed to fly. The flight is put back on the same tick the hold sees it.
+     *
+     * <p>Called every tick a racer is held, whether or not they are being moved to their spot.
+     */
+    public static void keepFrozen(Player player) {
+        player.setFlyingWithElytra(false);
+        if (!player.isFlying()) {
+            player.setFlying(true);
+        }
+    }
+
+    /**
+     * Holds a racer at {@code at} until they are released: not gliding, hovering, and back at {@code at} with no velocity
+     * if they have moved more than a tenth of a block from it. Their head is left where they are looking, so a held racer
+     * can turn to look at the first ring; the view is not taken from {@code at}.
      *
      * <p>Called every tick for a racer who has glided out and is waiting to be placed on the next map, and for a racer
-     * placed on a map who waits there for GO. A jump and a deployed elytra are turned off on the same tick, so the racer
-     * is not lifted off the spawn. The elytra stays in the racer's hand, as {@link #faceCourse} gave it.
+     * placed on a map who waits there for GO. A deployed elytra is turned off on the same tick, so the racer is not
+     * lifted off the spawn. The elytra stays in the racer's hand, as {@link #faceCourse} gave it.
      *
      * @param at where the racer is held
      */
     public static void pin(Player player, Pos at) {
-        player.setFlyingWithElytra(false);
+        keepFrozen(player);
         if (player.getPosition().distance(at) > PIN_TOLERANCE_BLOCKS) {
-            player.teleport(at);
+            player.teleport(at.withView(player.getPosition()));
             VelocityExit.send(player, Vec3.ZERO);
         }
     }

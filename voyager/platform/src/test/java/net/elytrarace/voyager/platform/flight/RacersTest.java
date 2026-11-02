@@ -151,6 +151,73 @@ class RacersTest {
                         text -> assertThat(text.key()).isEqualTo("voyager.race.go.jump"));
     }
 
+    /** A held racer's flight carries no speed, so the client cannot fly them anywhere, and the flight is on. */
+    @Test
+    void freezeGivesAFlightThatCarriesNoSpeed(Env env) {
+        Player racer = waitingRacer(env);
+
+        Racers.freeze(racer);
+
+        assertThat(racer.isFlying()).describedAs("flying while held").isTrue();
+        assertThat(racer.isAllowFlying()).describedAs("allowed to fly while held").isTrue();
+        assertThat(racer.getFlyingSpeed()).describedAs("flying speed while held").isZero();
+    }
+
+    /** A racer who had no flight gets none back when the hold ends: off, not allowed, at the default speed. */
+    @Test
+    void thawPutsBackTheFlightARacerHadBeforeTheHold(Env env) {
+        Player racer = waitingRacer(env);
+        Racers.prepare(racer);
+
+        Racers.freeze(racer).thaw();
+
+        assertThat(racer.isFlying()).isFalse();
+        assertThat(racer.isAllowFlying()).isFalse();
+        assertThat(racer.getFlyingSpeed()).isEqualTo(0.05f);
+    }
+
+    /** A racer who already had a flight keeps it, speed and all, when the hold ends. */
+    @Test
+    void thawKeepsTheFlightARacerAlreadyHad(Env env) {
+        Player racer = waitingRacer(env);
+        racer.setAllowFlying(true);
+        racer.setFlying(true);
+        racer.setFlyingSpeed(0.2f);
+
+        Racers.freeze(racer).thaw();
+
+        assertThat(racer.isFlying()).isTrue();
+        assertThat(racer.isAllowFlying()).isTrue();
+        assertThat(racer.getFlyingSpeed()).isEqualTo(0.2f);
+    }
+
+    /** A held racer who double-tapped their flight off is hovering again once the hold is kept. */
+    @Test
+    void keepFrozenPutsTheFlightBackWhenTheClientTurnedItOff(Env env) {
+        Player racer = waitingRacer(env);
+        Racers.freeze(racer);
+        racer.setFlying(false);
+
+        Racers.keepFrozen(racer);
+
+        assertThat(racer.isFlying()).isTrue();
+    }
+
+    /** A held racer who has drifted is returned to the hold, and keeps the way they are looking. */
+    @Test
+    void pinReturnsADriftingRacerToTheHoldAndKeepsTheirHead(Env env) {
+        Player racer = waitingRacer(env);
+        Racers.freeze(racer);
+        racer.teleport(new Pos(1.5, 60, 0.5, 45f, 0f)).join();
+
+        Racers.pin(racer, new Pos(0.5, 60, 0.5, 0f, 0f));
+
+        assertThat(racer.getPosition().distance(new Pos(0.5, 60, 0.5)))
+                .describedAs("distance from the hold after the pin")
+                .isLessThanOrEqualTo(0.1);
+        assertThat(racer.getPosition().yaw()).describedAs("the head is not turned back by the pin").isEqualTo(45f);
+    }
+
     private static Player waitingRacer(Env env) {
         Instance instance = env.createFlatInstance();
         instance.loadChunk(0, 0).join();

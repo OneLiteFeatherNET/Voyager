@@ -53,6 +53,38 @@ public record RaceTimings(Duration lobby, Duration race, Duration endBetweenMaps
     public static final RaceTimings DEFAULT = new RaceTimings(
             Duration.ofSeconds(20), Duration.ofSeconds(300), Duration.ofSeconds(8), Duration.ofSeconds(20));
 
+    /**
+     * The longest GO waits for racers who are still loading their map: five seconds, which is 100 ticks at 20 TPS.
+     *
+     * <p>When a lobby ends while at least one racer of the cup is still loading the map, GO is held and the lobby
+     * stands at its last tick, so every racer starts together. The hold ends as soon as no racer online is loading
+     * any more, or once this much time has been held, whichever comes first. A racer still loading then is placed when
+     * their chunks arrive and starts their own run from that tick, so a slow connection delays only that racer. A
+     * lobby of no length has no countdown and is never held.
+     *
+     * <p>Five seconds is long enough to absorb an ordinary chunk load and short enough that a stalled one is not
+     * felt by the racers who were ready. It is a constant and not a setting: a longer hold lets one slow racer hold
+     * the whole room, and a setting would make that trade-off the operator's to re-make per server.
+     */
+    public static final Duration GO_HOLD_LIMIT = Duration.ofSeconds(5);
+
+    /**
+     * How long before GO a racer leaves the lobby world for the first map of a cup: five seconds, which is 100 ticks at
+     * 20 TPS.
+     *
+     * <p>The racers of a cup's first map wait in the lobby world while the start countdown runs, so the lobby is what they
+     * see of the countdown. Their move onto the map begins this long before GO, and they are held on the spawn from then
+     * until GO. The chunks around the spawn are loaded from the start of the countdown, so the move itself is quick.
+     *
+     * <p>A lobby no longer than this has no room to wait in, and its racers are moved at once, as they are when no lobby
+     * world is configured. The move between maps is not affected: there is no lobby world between two maps, so a racer
+     * is moved to the next map as soon as their own wait has begun.
+     *
+     * <p>A constant and not a setting, like {@link #GO_HOLD_LIMIT}: it is the length of the lobby's last moment, and the
+     * owner chose it for the feel of the countdown, not per server.
+     */
+    public static final Duration ARRIVAL_LEAD = Duration.ofSeconds(5);
+
     public RaceTimings {
         if (lobby.isNegative() || race.isNegative() || endBetweenMaps.isNegative()
                 || endAfterLastMap.isNegative()) {

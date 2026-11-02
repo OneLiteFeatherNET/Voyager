@@ -10,6 +10,8 @@ import net.elytrarace.voyager.platform.config.ConfigLoader;
 import net.elytrarace.voyager.platform.catalog.CatalogReading;
 import net.elytrarace.voyager.platform.catalog.CatalogValidation;
 import net.elytrarace.voyager.platform.catalog.CupResolution;
+import net.elytrarace.voyager.platform.proxy.ProxyForwardingSettings;
+import net.elytrarace.voyager.platform.proxy.exception.ProxySecretException;
 import net.elytrarace.voyager.platform.rotation.RotationPlan;
 import net.elytrarace.voyager.platform.rotation.RotationValidation;
 import net.elytrarace.voyager.platform.world.MapInstances;
@@ -113,6 +115,7 @@ public final class ConfigCheck {
         lobbySettingProblems(problems, properties, sources);
         comSettingProblems(problems, properties, sources);
         problems.addAll(CupRotationSettings.problems(properties, sources));
+        problems.addAll(RestartSettings.problems(properties, sources));
         problems.sort(ConfigProblem.ORDER);
         return List.copyOf(problems);
     }
@@ -130,6 +133,28 @@ public final class ConfigCheck {
             Function<String, String> sources) {
         PersistenceSettings settings = PersistenceSettings.from(properties, sources);
         return settings.requested() ? settings.warnings() : List.of();
+    }
+
+    /**
+     * The forwarding secret, checked for the report: one ERROR under the setting that cannot be used, when a set source is refused
+     * (a missing or empty file, a blank value), and one WARNING under {@code voyager.velocity.secret} when the secret comes from the
+     * system property. A problem never carries the secret's value or the file's content.
+     *
+     * @param environment the environment variables, by name; {@code VOYAGER_VELOCITY_SECRET_FILE} and {@code VOYAGER_VELOCITY_SECRET}
+     * @param properties  the values by key, the forwarding keys among them
+     * @param sources     the label of the source of a key
+     * @return one problem at most; empty when the secret is set from a file or the environment
+     */
+    public static List<ConfigProblem> forwardingProblems(Map<String, String> environment, Map<String, String> properties,
+            Function<String, String> sources) {
+        try {
+            return ProxyForwardingSettings.from(environment, properties).propertyWarning()
+                    .map(message -> List.of(new ConfigProblem(ProxyForwardingSettings.PROPERTY_NAME,
+                            sources.apply(ProxyForwardingSettings.PROPERTY_NAME), message, Severity.WARNING)))
+                    .orElse(List.of());
+        } catch (ProxySecretException exception) {
+            return List.of(error(exception.setting(), sources.apply(exception.setting()), exception.getMessage()));
+        }
     }
 
     /**

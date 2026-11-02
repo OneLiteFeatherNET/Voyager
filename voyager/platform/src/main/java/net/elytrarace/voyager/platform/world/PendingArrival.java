@@ -96,11 +96,9 @@ public final class PendingArrival {
      * @return the placement, not yet placed
      */
     public static PendingArrival start(Player racer, String world, Instance target, Pos spawn, ChunkLoader loader) {
-        int viewDistance = racer.getInstance() == target
-                ? racer.effectiveViewDistance()
-                : Math.min(racer.getSettings().viewDistance(), target.viewDistance()) + 1;
         List<ChunkIndex> chunks = new ArrayList<>();
-        ChunkRange.chunksInRange(spawn, viewDistance, (chunkX, chunkZ) -> chunks.add(new ChunkIndex(chunkX, chunkZ)));
+        ChunkRange.chunksInRange(spawn, viewDistanceOf(racer, target),
+                (chunkX, chunkZ) -> chunks.add(new ChunkIndex(chunkX, chunkZ)));
         for (ChunkIndex chunk : chunks) {
             loader.start(target, chunk.x(), chunk.z());
         }
@@ -109,6 +107,33 @@ public final class PendingArrival {
         // on the spawn. A chunk still loading is left to the ticks that follow.
         arrival.loading();
         return arrival;
+    }
+
+    /**
+     * Starts the loads of every chunk a placement of {@code racer} on {@code spawn} needs, and moves nobody.
+     *
+     * <p>A racer who waits in another world has the chunks around the spawn loading from the start of their wait, so the
+     * placement begun later finds them there. The range is the one {@link #start} loads, so the preloaded chunks are exactly
+     * the ones the placement waits for.
+     *
+     * @param racer the racer the chunks are loaded for; it is not moved
+     * @param target the instance the racer will be placed in
+     * @param spawn where the racer will be placed
+     * @param loader starts each chunk's load
+     */
+    public static void preload(Player racer, Instance target, Pos spawn, ChunkLoader loader) {
+        ChunkRange.chunksInRange(spawn, viewDistanceOf(racer, target),
+                (chunkX, chunkZ) -> loader.start(target, chunkX, chunkZ));
+    }
+
+    /**
+     * The view distance a placement of {@code racer} into {@code target} loads its chunks at: the racer's own inside their
+     * instance, and into another instance their setting capped by the target's, plus one.
+     */
+    private static int viewDistanceOf(Player racer, Instance target) {
+        return racer.getInstance() == target
+                ? racer.effectiveViewDistance()
+                : Math.min(racer.getSettings().viewDistance(), target.viewDistance()) + 1;
     }
 
     /**

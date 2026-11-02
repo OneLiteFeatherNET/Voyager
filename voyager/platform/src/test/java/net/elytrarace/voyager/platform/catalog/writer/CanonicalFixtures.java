@@ -44,10 +44,15 @@ final class CanonicalFixtures {
      * with a semi-minor radius of 3 along x.
      */
     static MapDefinition courseWithAnOvalFirstRing() {
+        return courseWithAnOvalFirstRing(new Vec3(1.0, 0.0, 0.0));
+    }
+
+    /** The course of {@link #courseWithAnOvalFirstRing()} with the given major axis for its first ring. */
+    static MapDefinition courseWithAnOvalFirstRing(Vec3 majorAxis) {
         Vec3 normal = new Vec3(0.0, 0.0, 1.0);
         List<Ring> rings = List.of(
                 new Ring(0, new Vec3(10.5, 78.0, 6.0), normal,
-                        RingShape.of(6.0, 3.0, new Vec3(1.0, 0.0, 0.0), normal), 3, RingType.STANDARD),
+                        RingShape.of(6.0, 3.0, majorAxis, normal), 3, RingType.STANDARD),
                 new Ring(1, new Vec3(-22.0, 90.5, 40.0), new Vec3(0.6, 0, 0.8), 4.5, 7, RingType.BOOST));
         GuideLine guide = new GuideLine(List.of(new GuidePoint(50, new Vec3(0.5, 82.0, 20.0))), 2, 0.75,
                 GuideLineMode.WINDOW, GuideParticle.DUST, 0x3366FF);
