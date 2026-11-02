@@ -51,7 +51,7 @@ change the defaults were `run/data` and `run/worlds`, and a service needed two `
 | Value | How it reaches the service |
 |---|---|
 | Bind host and port | the system properties `service.bind.host` and `service.bind.port`, which the node sets for each service. The environment variables `SERVICE_BIND_HOST` and `SERVICE_BIND_PORT` also work |
-| Velocity forwarding secret | the environment variable `VOYAGER_VELOCITY_SECRET` in the task's environment, the same secret the Velocity proxy holds. The system property `voyager.velocity.secret` also works. Never write it into a file in the service directory |
+| Velocity forwarding secret | the recommended way is a file outside the service directory, named by `VOYAGER_VELOCITY_SECRET_FILE` in the task's environment (see "The Velocity secret file" below). The environment variable `VOYAGER_VELOCITY_SECRET` also works. The system property `voyager.velocity.secret` works but is warned about. The file must never sit in the service directory, because the node deletes that directory on each stop |
 | Racer counts, cup, cup rotation, restart and paths | the system properties `VOYAGER_CUP`, `VOYAGER_CUP_ROTATION`, `VOYAGER_CUP_ROTATION_STATE`, `VOYAGER_RESTART_AFTER_CUP`, `VOYAGER_MIN_PLAYERS`, `VOYAGER_DATA_PATH` and `VOYAGER_WORLDS_PATH`, and the lobby pair `VOYAGER_LOBBY_WORLD` and `VOYAGER_LOBBY_SPAWN`. Each of them also works as an environment variable of the same name |
 | The `stop` command | the node writes `end` and then `stop` to the service's standard input. `end` is ignored, `stop` shuts the service down cleanly |
 | The statistics switch | the environment variable `VOYAGER_PERSISTENCE`: `on` collects statistics, `off` keeps none. Unset means `off` |
@@ -59,6 +59,37 @@ change the defaults were `run/data` and `run/worlds`, and a service needed two `
 | The statistics tuning | the environment variables `VOYAGER_DB_POOL_SIZE` (default 10) and `VOYAGER_DB_QUEUE_CAPACITY` (default 256). Leave them unset unless you have a reason to change them |
 
 A blank secret refuses the start: the server does not fall back to offline mode with an empty secret.
+
+## The Velocity secret file
+
+Keep the forwarding secret out of the process list. A system property is on the command line of the JVM, which every local user
+can read, so the node should not pass the secret as `-Dvoyager.velocity.secret`. Two setups work:
+
+1. **A file on the node, outside the service directory and the template (recommended).** On the node, as the cloud user:
+
+   ```text
+   # the directory is not a template, and it is not the service directory, which is deleted on each stop
+   install -d -m 0700 /home/cloud/cloudnet/local/voyager-secrets
+   # write the secret into the file with an editor; the server trims surrounding whitespace
+   editor /home/cloud/cloudnet/local/voyager-secrets/velocity-secret
+   chmod 0400 /home/cloud/cloudnet/local/voyager-secrets/velocity-secret
+   ```
+
+   In the task's environment, set `VOYAGER_VELOCITY_SECRET_FILE=/home/cloud/cloudnet/local/voyager-secrets/velocity-secret`.
+   The path is absolute and the node user must be the one that runs the JVM. Use the same secret the Velocity proxy holds.
+
+2. **A file in the template, mode `0400`.** Possible, but the template is copied into every service directory, so the secret is
+   stored in the template and in each copy. Use it only if the first option cannot be used. Set `VOYAGER_VELOCITY_SECRET_FILE`
+   to the path of the copy.
+
+3. **The environment variable `VOYAGER_VELOCITY_SECRET`** in the task's environment. It stays out of the command line, so it is not in
+   the process list, but the value is stored in the task definition. Use it only when neither file option fits.
+
+After the change, the service's log shows no forwarding WARN line for the secret when the file is used. If it shows the property
+WARN, the system property is still set in the task's JVM options. Remove it. The configuration check
+(`voyager.config.check=true`) prints the same WARNING before the service starts, and an unreadable file as an ERROR.
+
+Changing the secret needs a restart of the service. The server reads the file once, at boot.
 
 ## Player statistics database
 
@@ -97,8 +128,8 @@ The server reads one loader (ADR-0036). When a key is set in more than one place
 | 4 | Environment variables | the velocity secret, and any key set in the task's environment |
 | 5 (highest) | System properties | what the node sets for each service today |
 
-The velocity secret is the one exception: the environment variable wins over the system property for that key only, as the
-forwarding specification requires. The full list of keys and names is in `docs/reference/configuration.md`.
+The velocity secret is the one exception: the secret files are read first, then the environment variable wins over the system
+property, for each pair of keys, as the forwarding specification requires. The full list of keys and names is in `docs/reference/configuration.md`.
 
 ## The JVM translation flag
 
