@@ -53,6 +53,9 @@ Standard output carries the report. A normal boot logs the same lines at error l
 
 - The settings: the data and worlds directories exist, the port is a number from 1 to 65535, and a
   named cup exists.
+- The restart after each cup, `VOYAGER_RESTART_AFTER_CUP`: a value other than `true` or `false`, in any case, is an error under this
+  key. `true` with more than one cup in `VOYAGER_CUP_ROTATION` and no `VOYAGER_CUP_ROTATION_STATE` is an error that names both keys,
+  because every restart would begin again at the first cup. An unset or `false` value reports nothing.
 - The minimum racer count, `VOYAGER_MIN_PLAYERS`: when set, it is a whole number of at least 1. It
   defaults to 2, or to 1 under `voyager.dev`, and an explicit value wins in both modes. An unset value
   is no problem. A value that is not a number, or is 0, is an error under the key `VOYAGER_MIN_PLAYERS`,
