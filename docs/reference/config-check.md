@@ -56,6 +56,10 @@ Standard output carries the report. A normal boot logs the same lines at error l
 - The restart after each cup, `VOYAGER_RESTART_AFTER_CUP`: a value other than `true` or `false`, in any case, is an error under this
   key. `true` with more than one cup in `VOYAGER_CUP_ROTATION` and no `VOYAGER_CUP_ROTATION_STATE` is an error that names both keys,
   because every restart would begin again at the first cup. An unset or `false` value reports nothing.
+- The Velocity forwarding secret: a file named by `VOYAGER_VELOCITY_SECRET_FILE` (or `voyager.velocity.secret.file`) that is
+  missing, a directory, unreadable, not UTF-8 or empty is an error under that key, and the run exits 1. The message names the
+  path, never the content. A secret taken from the system property `voyager.velocity.secret` is one WARNING under that key,
+  which recommends the file, and the run still exits 0 (ADR-0048). No secret, or a usable one, reports nothing here.
 - The minimum racer count, `VOYAGER_MIN_PLAYERS`: when set, it is a whole number of at least 1. It
   defaults to 2, or to 1 under `voyager.dev`, and an explicit value wins in both modes. An unset value
   is no problem. A value that is not a number, or is 0, is an error under the key `VOYAGER_MIN_PLAYERS`,

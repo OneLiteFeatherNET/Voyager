@@ -56,7 +56,9 @@ import net.minestom.server.event.player.PlayerCustomClickEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
+import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.InstanceManager;
 import net.minestom.server.item.Material;
@@ -140,9 +142,10 @@ public final class VoyagerServer {
     private VoyagerServer() {
     }
 
-    /** Every key the configuration check reads: the server's settings and the database's. */
-    private static final List<String> CHECK_KEYS = Stream.concat(ServerSettings.KEYS.stream(),
-            PersistenceSettings.KEYS.stream()).toList();
+    /** Every key the configuration check reads: the server's settings, the database's and the forwarding secret's. */
+    private static final List<String> CHECK_KEYS = Stream.of(ServerSettings.KEYS.stream(),
+            PersistenceSettings.KEYS.stream(), ProxyForwardingSettings.KEYS.stream())
+            .flatMap(keys -> keys).toList();
 
     /** The property Minestom's {@code ServerFlag} reads, once, when that class first loads. */
     static final String AUTOMATIC_TRANSLATION_PROPERTY = "minestom.automatic-component-translation";
@@ -230,11 +233,7 @@ public final class VoyagerServer {
         try {
             ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromLoader(config);
             auth = VelocityAuth.of(forwarding);
-            if (auth == null) {
-                LOGGER.warn("No Velocity secret is set ({} or -D{}): the server runs in offline mode and player UUIDs are "
-                        + "not forwarded from a proxy. LuckPerms cannot find a proxied player's grants in that case.",
-                        ProxyForwardingSettings.ENVIRONMENT_NAME, ProxyForwardingSettings.PROPERTY_NAME);
-            }
+            logForwarding(forwarding);
         } catch (IllegalArgumentException exception) {
             LOGGER.error("Voyager refused to start: {}", exception.getMessage());
             System.exit(1);
@@ -367,6 +366,16 @@ public final class VoyagerServer {
     }
 
     /**
+     * Logs the WARN lines of the forwarding settings: the offline line when no secret is set, or the line that recommends the
+     * secret file when the secret comes from the system property (ADR-0048). No line carries the secret's value.
+     *
+     * @param forwarding the settings the server starts with
+     */
+    static void logForwarding(ProxyForwardingSettings forwarding) {
+        forwarding.warnings().forEach(line -> LOGGER.warn(line));
+    }
+
+    /**
      * The validate-and-exit run, returning its exit code: 0 for a configuration with no error, 1 for one with
      * any. The report goes to {@code out}, one line per problem.
      *
@@ -379,35 +388,37 @@ public final class VoyagerServer {
      */
     static int configCheck(String[] args, ConfigLoader config,
             Supplier<InstanceManager> instances, PrintStream out) {
-        return configCheck(args, config.view(CHECK_KEYS), ConfigCheck.sourcesOf(config), instances, out);
+        return configCheck(args, config.view(CHECK_KEYS), ConfigCheck.sourcesOf(config), config.environment(), instances, out);
     }
 
     /** {@link #configCheck(String[], ConfigLoader, Supplier, PrintStream)} over a map of values, labelled as properties. */
     static int configCheck(String[] args, Map<String, String> properties,
             Supplier<InstanceManager> instances, PrintStream out) {
-        return configCheck(args, properties, ConfigCheck.PROPERTY_SOURCE, instances, out);
+        return configCheck(args, properties, ConfigCheck.PROPERTY_SOURCE, Map.of(), instances, out);
     }
 
     /**
-     * The check's settings: the server's and the database's. The database warnings are printed with the report, and only
-     * the server's settings can refuse it, so a database problem does not change the exit code.
+     * The check's settings: the server's, the database's and the forwarding secret's. The database warnings and the forwarding
+     * problems are printed with the report. Only the server's settings and an unusable forwarding source can refuse it, so a
+     * database problem does not change the exit code, and a secret from the system property is a warning only.
      */
     private static int configCheck(String[] args, Map<String, String> properties, Function<String, String> sources,
-            Supplier<InstanceManager> instances, PrintStream out) {
+            Map<String, String> environment, Supplier<InstanceManager> instances, PrintStream out) {
         List<ConfigProblem> settingsProblems = ConfigCheck.settingsProblems(args, properties, sources);
-        List<ConfigProblem> persistence = ConfigCheck.persistenceProblems(properties, sources);
+        List<ConfigProblem> notes = new ArrayList<>(ConfigCheck.persistenceProblems(properties, sources));
+        notes.addAll(ConfigCheck.forwardingProblems(environment, properties, sources));
         if (!settingsProblems.isEmpty()) {
             List<ConfigProblem> all = new ArrayList<>(settingsProblems);
-            all.addAll(persistence);
+            all.addAll(notes);
             all.sort(ConfigProblem.ORDER);
             return ConfigCheck.report(all, out);
         }
         ServerSettings settings = ConfigCheck.settingsOf(args, properties);
         CupRotationSettings rotation = CupRotationSettings.from(properties);
         if (rotation.configured()) {
-            return ConfigCheck.runRotation(settings, rotation, instances.get(), out, sources, persistence);
+            return ConfigCheck.runRotation(settings, rotation, instances.get(), out, sources, notes);
         }
-        return ConfigCheck.run(settings, instances.get(), out, sources, persistence);
+        return ConfigCheck.run(settings, instances.get(), out, sources, notes);
     }
 
     /** Initialises Minestom's registries, which the world loader needs, and returns the instance manager. */
@@ -558,6 +569,10 @@ public final class VoyagerServer {
             waitingRoom.left(event.getPlayer().getUuid());
             LOGGER.info("{} left", event.getPlayer().getUsername());
         });
+
+        // A held racer's own move and glide are refused by the cup until GO (CupSession).
+        events.addListener(PlayerMoveEvent.class, session::keepHeldPosition);
+        events.addListener(PlayerStartFlyingWithElytraEvent.class, session::refuseGlide);
 
         if (settings.devMode()) {
             LOGGER.info("Join with a 26.2 client; the cup starts once {} racer(s) are online, and /race shows where it stands",

@@ -25,9 +25,14 @@ are at the end.
 | `VOYAGER_LOBBY_WORLD` | `VOYAGER_LOBBY_WORLD` | none | The world folder waiting racers stand in. It must be set together with `VOYAGER_LOBBY_SPAWN`, and it must not be a world a map plays. |
 | `VOYAGER_LOBBY_SPAWN` | `VOYAGER_LOBBY_SPAWN` | none | The lobby spawn as `x,y,z` in block coordinates, three finite numbers. Set together with `VOYAGER_LOBBY_WORLD`. |
 | `voyager.config.check` | `VOYAGER_CONFIG_CHECK` | `false` | `true` runs the configuration check, prints every problem and exits. |
-| `voyager.velocity.secret` | `VOYAGER_VELOCITY_SECRET` | none | The Velocity forwarding secret. Unset means the server runs offline, with a warning. A set value that is blank refuses the start, and the message names the variable, never the value. The environment variable wins over the property (see below). |
+| `voyager.velocity.secret.file` | `VOYAGER_VELOCITY_SECRET_FILE` | none | The path of a file whose content is the Velocity forwarding secret, trimmed of surrounding whitespace and read once, at boot. The recommended source (ADR-0048). The environment variable wins over the property. A file that is missing, a directory, unreadable, not UTF-8 or empty refuses the start, and the message names the setting and the path, never the content. Blank refuses the start. |
+| `voyager.velocity.secret` | `VOYAGER_VELOCITY_SECRET` | none | The Velocity forwarding secret. Unset means the server runs offline, with a warning. A set value that is blank refuses the start, and the message names the variable, never the value. Read after the file keys (see below). A secret from this system property is a configuration WARNING and a server WARN, because the process list shows it to every local user. |
 
 The velocity secret is never printed, by the server or by the configuration check.
+
+The velocity secret's four sources, highest first: `VOYAGER_VELOCITY_SECRET_FILE`, `voyager.velocity.secret.file`, `VOYAGER_VELOCITY_SECRET`,
+`voyager.velocity.secret`. The first one that is set decides, and a set source that cannot be used refuses the start; the server never
+falls back to a lower source.
 
 ## Where a value can come from
 
@@ -45,12 +50,14 @@ Each source is applied in this order. A key set only in the environment is found
 
 ### The one exception: the velocity secret
 
-For `voyager.velocity.secret` the environment variable `VOYAGER_VELOCITY_SECRET` wins over the system property, when both are
-set and they differ. This is required by the forwarding specification (`openspec/specs/server/proxy-forwarding`). Every other key
-uses the order in the table above. The exception is written in one place, `ProxyForwardingSettings.from`, and covered by tests.
+For the velocity secret the environment variable wins over the system property, for each of the two keys: `VOYAGER_VELOCITY_SECRET`
+over `voyager.velocity.secret`, and `VOYAGER_VELOCITY_SECRET_FILE` over `voyager.velocity.secret.file`. The file keys come before the
+secret keys. This is required by the forwarding specification (`openspec/specs/server/proxy-forwarding`). Every other key uses the
+order in the table above. The exception is written in one place, `ProxyForwardingSettings.from`, and covered by tests.
 
 A secret taken from the environment or from a system property is used exactly as written: it is not trimmed and `${...}` is not
-expanded. A secret that a `application.yaml` file also sets is subject to the file rules above.
+expanded. A secret read from a file is trimmed of surrounding whitespace, and its content is never expanded. A secret that a
+`application.yaml` file also sets is subject to the file rules above.
 
 ## What else avaje-config reads
 

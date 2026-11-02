@@ -24,6 +24,8 @@ import net.elytrarace.voyager.race.flow.RaceTimings;
 import net.elytrarace.voyager.api.stats.RaceRecorder;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.InstanceManager;
@@ -120,6 +122,9 @@ final class PlacementFixture implements AutoCloseable {
                 new LivePlayerSampler(() -> online, boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
         this.session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, timings, STEP,
                 () -> online, recorder, CLOCK, CompetitorField.none(), new NoPersonalBests(), lobbyWorld);
+        // The same two listeners the server registers, so a client's own packets reach a held racer as in production.
+        env.process().eventHandler().addListener(PlayerMoveEvent.class, session::keepHeldPosition);
+        env.process().eventHandler().addListener(PlayerStartFlyingWithElytraEvent.class, session::refuseGlide);
         this.lobby = env.createFlatInstance();
         this.firstWorld = instances.forWorld(FIRST_WORLD);
         this.secondWorld = instances.forWorld(SECOND_WORLD);

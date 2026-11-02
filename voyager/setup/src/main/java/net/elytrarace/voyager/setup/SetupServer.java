@@ -120,11 +120,8 @@ public final class SetupServer {
         try {
             ProxyForwardingSettings forwarding = ProxyForwardingSettings.fromLoader(ConfigLoader.fromJvm());
             auth = VelocityAuth.of(forwarding);
-            if (auth == null) {
-                LOGGER.warn("No Velocity secret is set ({} or -D{}): the setup server runs in offline mode and player UUIDs "
-                        + "are not forwarded from a proxy.", ProxyForwardingSettings.ENVIRONMENT_NAME,
-                        ProxyForwardingSettings.PROPERTY_NAME);
-            }
+            // The same WARN lines as the game server (ADR-0048): the offline line, or the line that recommends the secret file.
+            forwarding.warnings().forEach(line -> LOGGER.warn(line));
         } catch (IllegalArgumentException exception) {
             LOGGER.error("Setup server refused to start: {}", exception.getMessage());
             System.exit(1);
