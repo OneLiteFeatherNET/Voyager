@@ -155,6 +155,10 @@ import java.util.function.Supplier;
  * is put back at GO ({@link Racers#freeze}). The chunks around a spawn load in the background, so no
  * tick waits for them ({@link PendingArrival}).
  *
+ * <p>With a lobby world configured, the first map's racers wait in the lobby world while its countdown runs, and are
+ * placed on the map {@link RaceTimings#ARRIVAL_LEAD} before GO. The chunks around the first spawn start loading at the
+ * start of the countdown, so the move is quick ({@link MapTransition#preload}).
+ *
  * <p>GO waits for a racer who is still loading. When a lobby would end while a racer online is not yet placed on its map,
  * GO is held there: the placed racers stay on their spawns, the boss bar says how many racers the room waits for, and GO
  * fires as soon as every racer is placed, or after {@link RaceTimings#GO_HOLD_LIMIT} at the latest. A racer still loading
@@ -274,6 +278,9 @@ public final class CupSession implements RacePhaseListener {
     /** Placements under way, by racer: the map each one is for, and the placement itself. */
     private final Map<UUID, Arrival> arrivals = new HashMap<>();
 
+    /** The racers whose chunks on the first map have been started during its countdown, so that each is started once. */
+    private final Set<UUID> preloaded = new HashSet<>();
+
     /**
      * Where each racer is held in place: from the end of a glide-out until placed, and from placement until GO. Written
      * only through {@link #hold} and {@link #release}, so that {@link #frozen} is in step with it.
@@ -323,6 +330,9 @@ public final class CupSession implements RacePhaseListener {
     /** Where each ranked racer's stored best is read from. */
     private final PersonalBestReader bests;
 
+    /** Whether the racers of the first map wait in a lobby world. Set by the constructor and never changed. */
+    private final boolean lobbyWorld;
+
     /** The standing of the map that last ended, kept for the wait; null before a map has ended. */
     private @Nullable MapStanding settledStanding;
 
@@ -359,8 +369,25 @@ public final class CupSession implements RacePhaseListener {
             MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
             FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
             RaceRecorder recorder, Clock clock, CompetitorField competitors, PersonalBestReader bests) {
+        this(catalog, instances, transition, runs, flight, blocks, boosts, timings, step, players, recorder, clock,
+                competitors, bests, false);
+    }
+
+    /**
+     * Builds a session as the one above does, and says whether the racers wait in a lobby world.
+     *
+     * @param lobbyWorld whether a lobby world is configured. When it is, the racers of the first map wait in it until
+     *     {@link RaceTimings#ARRIVAL_LEAD} before GO, and their chunks are loaded from the start of the countdown. When it
+     *     is not, they stand on the first map from its first lobby tick, as they do between two maps
+     */
+    public CupSession(CatalogHolder catalog, MapInstances instances,
+            MapTransition transition, RaceRuns runs, FlightTickDriver flight, CurrentMapBlocks blocks,
+            FireworkBoostTracker boosts, RaceTimings timings, Duration step, Supplier<Collection<Player>> players,
+            RaceRecorder recorder, Clock clock, CompetitorField competitors, PersonalBestReader bests,
+            boolean lobbyWorld) {
         this.catalog = catalog;
         this.bests = bests;
+        this.lobbyWorld = lobbyWorld;
         this.competitors = competitors;
         this.cup = catalog.current().cup();
         this.instances = instances;
@@ -503,10 +530,7 @@ public final class CupSession implements RacePhaseListener {
         if (current == null || !current.isRunning()) {
             return StartGate.Situation.WAITING;
         }
-        boolean firstLobby = current.state().phase() == RacePhase.LOBBY
-                && current.state().mapIndex() == 0
-                && !gameStarted;
-        if (!firstLobby) {
+        if (!firstLobby(current.state())) {
             return StartGate.Situation.RUNNING;
         }
         return current.remainingLobby().compareTo(commitWindow) > 0
@@ -807,8 +831,9 @@ public final class CupSession implements RacePhaseListener {
      * The start countdown, run out of the tail of the lobby, and the first tick of the lobby, which starts the wait.
      *
      * <p>The map is prepared on the first tick of its lobby, so the cup knows what it is playing; the placement of the
-     * racers follows from the wait ({@link #beginWaitingPlacements}), not from the digits. A racer is therefore on the
-     * spawn, facing the first ring, long before GO. The digits show the course the racer is about to fly. The {@code GAME}
+     * racers follows from the wait ({@link #beginWaitingPlacements}), not from the digits. Without a lobby world a racer
+     * is therefore on the spawn, facing the first ring, long before GO; with one, they are placed
+     * {@link RaceTimings#ARRIVAL_LEAD} before GO. The digits show the course the racer is about to fly. The {@code GAME}
      * phase still begins with GO on its first tick, and the three seconds come out of the lobby, which is time nobody was
      * playing in anyway.
      */
@@ -1484,6 +1509,9 @@ public final class CupSession implements RacePhaseListener {
      * Starts the placement of each racer the current phase calls for: every racer during the lobby and the end of a map,
      * and, during a race, a racer who has glided out after a finish. A racer who is placed, arriving, gliding out or
      * failed in this wait is not started again.
+     *
+     * <p>With a lobby world, the first map's racers are not placed until {@link RaceTimings#ARRIVAL_LEAD} before GO. Until
+     * then their chunks are loading, which is the one thing the placement needs of the first map before the move.
      */
     private void beginWaitingPlacements(Map<UUID, Player> online) {
         XerusPhaseDriver current = driver;
@@ -1494,6 +1522,12 @@ public final class CupSession implements RacePhaseListener {
         int target = placementTarget(state);
         if (target == NO_MAP) {
             return;
+        }
+        if (lobbyWorld && firstLobby(state)) {
+            preloadRacers(online, target);
+            if (current.remainingLobby().compareTo(RaceTimings.ARRIVAL_LEAD) > 0) {
+                return;
+            }
         }
         boolean waiting = state.phase() != RacePhase.GAME;
         for (Player racer : online.values()) {
@@ -1516,6 +1550,27 @@ public final class CupSession implements RacePhaseListener {
         arrivals.put(id, new Arrival(mapIndex, map, transition.place(racer, map)));
         hold(racer, racer.getPosition());
         glidedOut.remove(id);
+    }
+
+    /**
+     * Whether the cup is in the first lobby of its first map, before GO: the lobby the racers wait in, and the one the start
+     * commit window is counted in.
+     */
+    private boolean firstLobby(RaceState state) {
+        return state.phase() == RacePhase.LOBBY && state.mapIndex() == 0 && !gameStarted;
+    }
+
+    /**
+     * Starts the chunks of the map at {@code mapIndex} for each racer online who has not had them started yet, while they
+     * wait in the lobby world. A racer who joins during the countdown is preloaded on the tick they are seen.
+     */
+    private void preloadRacers(Map<UUID, Player> online, int mapIndex) {
+        MapDefinition map = mapAt(mapIndex);
+        for (Player racer : online.values()) {
+            if (preloaded.add(racer.getUuid())) {
+                transition.preload(racer, map);
+            }
+        }
     }
 
     /**
@@ -1624,6 +1679,7 @@ public final class CupSession implements RacePhaseListener {
         placedAfterGo.clear();
         loadingAtGo.clear();
         arrivals.clear();
+        preloaded.clear();
         releaseEveryone();
         glides.clear();
         glidedOut.clear();
@@ -1638,6 +1694,7 @@ public final class CupSession implements RacePhaseListener {
         placedAfterGo.remove(playerId);
         loadingAtGo.remove(playerId);
         arrivals.remove(playerId);
+        preloaded.remove(playerId);
         release(playerId);
         glides.remove(playerId);
         glidedOut.remove(playerId);

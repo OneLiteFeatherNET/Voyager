@@ -111,8 +111,9 @@ public final class CupBeans {
     CupSession cupSession(CatalogHolder catalog, MapInstances instances, MapTransition transition, RaceRuns runs,
             FlightTickDriver flight, CurrentMapBlocks blocks, FireworkBoostTracker boosts, RaceTimings timings,
             Supplier<Collection<Player>> players, RaceRecorder recorder, Clock clock, CompetitorField competitors,
-            PersonalBestReader bests) {
+            PersonalBestReader bests, @External ServerSettings settings) {
         return new CupSession(catalog, instances, transition, runs, flight, blocks, boosts, timings,
-                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock, competitors, bests);
+                Duration.ofMillis(MinecraftServer.TICK_MS), players, recorder, clock, competitors, bests,
+                settings.lobby().isPresent());
     }
 }

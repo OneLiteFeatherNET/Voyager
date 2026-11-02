@@ -14,6 +14,7 @@ import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.collision.MinestomCollisionSpace;
 import net.elytrarace.voyager.platform.flight.FireworkBoostTracker;
 import net.elytrarace.voyager.platform.flight.FlightTracker;
+import net.elytrarace.voyager.platform.stats.NoPersonalBests;
 import net.elytrarace.voyager.platform.tick.FlightTickDriver;
 import net.elytrarace.voyager.platform.world.ChunkLoader;
 import net.elytrarace.voyager.platform.world.CurrentMapBlocks;
@@ -102,8 +103,8 @@ final class PlacementFixture implements AutoCloseable {
 
     private final Path root;
 
-    private PlacementFixture(Env env, Path root, RaceTimings timings, RaceRecorder recorder, ChunkLoader loader)
-            throws IOException {
+    private PlacementFixture(Env env, Path root, RaceTimings timings, RaceRecorder recorder, ChunkLoader loader,
+            boolean lobbyWorld) throws IOException {
         this.env = env;
         this.root = root;
         writeWorld(env, FIRST_WORLD, FIRST_SPAWN);
@@ -120,7 +121,7 @@ final class PlacementFixture implements AutoCloseable {
         FlightTickDriver flight = new FlightTickDriver(
                 new LivePlayerSampler(() -> online, boosts), new FlightTracker(), new MinestomCollisionSpace(blocks));
         this.session = new CupSession(holder, instances, transition, runs, flight, blocks, boosts, timings, STEP,
-                () -> online, recorder, CLOCK, CompetitorField.none());
+                () -> online, recorder, CLOCK, CompetitorField.none(), new NoPersonalBests(), lobbyWorld);
         // The same two listeners the server registers, so a client's own packets reach a held racer as in production.
         env.process().eventHandler().addListener(PlayerMoveEvent.class, session::keepHeldPosition);
         env.process().eventHandler().addListener(PlayerStartFlyingWithElytraEvent.class, session::refuseGlide);
@@ -141,7 +142,21 @@ final class PlacementFixture implements AutoCloseable {
      * A loader that reports every chunk as loading holds every placement where it is.
      */
     static PlacementFixture open(Env env, Path root, RaceTimings timings, ChunkLoader loader) throws IOException {
-        PlacementFixture fixture = new PlacementFixture(env, root, timings, new NoRecorder(), loader);
+        return open(env, root, timings, loader, false);
+    }
+
+    /**
+     * Opens a cup whose racers wait in a lobby world, as a server with a lobby configured runs it: the first map's racers
+     * are moved onto it {@link RaceTimings#ARRIVAL_LEAD} before GO. The lobby is the fixture's own lobby instance.
+     */
+    static PlacementFixture openWithLobbyWorld(Env env, Path root, RaceTimings timings, ChunkLoader loader)
+            throws IOException {
+        return open(env, root, timings, loader, true);
+    }
+
+    private static PlacementFixture open(Env env, Path root, RaceTimings timings, ChunkLoader loader, boolean lobbyWorld)
+            throws IOException {
+        PlacementFixture fixture = new PlacementFixture(env, root, timings, new NoRecorder(), loader, lobbyWorld);
         fixture.session.start(false);
         return fixture;
     }
