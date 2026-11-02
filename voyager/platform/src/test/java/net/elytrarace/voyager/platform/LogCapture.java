@@ -51,8 +51,17 @@ public final class LogCapture implements AutoCloseable {
 
     /** The formatted message of every WARN event captured so far, in the order logged. */
     public List<String> warnings() {
+        return messagesAt(Level.WARN);
+    }
+
+    /** The formatted message of every ERROR event captured so far, in the order logged. */
+    public List<String> errors() {
+        return messagesAt(Level.ERROR);
+    }
+
+    private List<String> messagesAt(Level level) {
         return events.stream()
-                .filter(event -> event.getLevel() == Level.WARN)
+                .filter(event -> event.getLevel() == level)
                 .map(event -> event.getMessage().getFormattedMessage())
                 .toList();
     }

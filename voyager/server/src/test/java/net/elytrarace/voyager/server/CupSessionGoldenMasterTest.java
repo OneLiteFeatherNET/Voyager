@@ -37,6 +37,7 @@ import net.elytrarace.voyager.platform.lobby.LobbyHud;
 import net.elytrarace.voyager.platform.lobby.LobbySidebar;
 import net.elytrarace.voyager.platform.lobby.LobbyTransition;
 import net.elytrarace.voyager.platform.lobby.WaitingRoom;
+import net.elytrarace.voyager.platform.rotation.CupRotationDriver;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minestom.server.coordinate.ChunkRange;
 import net.minestom.server.coordinate.Pos;
@@ -481,7 +482,7 @@ class CupSessionGoldenMasterTest {
                     message -> {
                         throw new AssertionError("no refused handoff was expected, but got: " + message);
                     });
-            room = new WaitingRoom(session, holder, () -> field, 1, 16, lobby, hub, new LobbyHud(),
+            room = new WaitingRoom(session, CupRotationDriver.single(holder), () -> field, 1, 16, lobby, hub, new LobbyHud(),
                     new LobbySidebar(), null, () -> worlds.forWorld(RIDGE));
         }
 

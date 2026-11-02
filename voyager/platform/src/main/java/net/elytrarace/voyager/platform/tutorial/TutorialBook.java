@@ -1,7 +1,6 @@
 package net.elytrarace.voyager.platform.tutorial;
 
 import net.elytrarace.voyager.api.race.Author;
-import net.elytrarace.voyager.platform.catalog.CatalogHolder;
 import net.elytrarace.voyager.platform.catalog.LoadedCatalog;
 import net.elytrarace.voyager.platform.lobby.LobbyBoard;
 import net.elytrarace.voyager.platform.text.Messages;
@@ -23,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -43,15 +43,15 @@ import java.util.stream.Collectors;
 @NotNullByDefault
 public final class TutorialBook {
 
-    private final CatalogHolder catalog;
+    private final Supplier<LoadedCatalog> upcoming;
 
     /**
      * Holds the catalogue the cup page is read from. No page is built here: each one is built when a racer asks for it.
      *
-     * @param catalog the catalogue the cup the room waits for is read from; the sixth page is built from it each time it opens
+     * @param upcoming the catalogue of the cup the next round plays; the sixth page is built from it each time it opens
      */
-    public TutorialBook(CatalogHolder catalog) {
-        this.catalog = catalog;
+    public TutorialBook(Supplier<LoadedCatalog> upcoming) {
+        this.upcoming = upcoming;
     }
 
     /**
@@ -92,11 +92,11 @@ public final class TutorialBook {
     }
 
     /**
-     * The sixth page, for the cup the room is waiting for: its name, one line per map with its authors, and the cup's authors.
-     * It is built when it opens, not at boot, because the cup a room waits for can change with a reload.
+     * The sixth page, "Next cup", for the cup the next round plays: its name, one line per map with its authors, and the cup's
+     * authors. It is built when it opens, not at boot, because the armed cup changes between rounds.
      */
     private DialogTemplate cupPage(Locale locale) {
-        LoadedCatalog current = catalog.current();
+        LoadedCatalog current = upcoming.get();
         LobbyBoard board = LobbyBoard.of(current.cup(), current.snapshot());
         List<Component> lines = new ArrayList<>();
         for (int index = 0; index < board.maps().size(); index++) {

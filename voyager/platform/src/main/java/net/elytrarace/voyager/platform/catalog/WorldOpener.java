@@ -34,4 +34,10 @@ public interface WorldOpener {
      * world and needs a restart.
      */
     boolean regionDataChanged(String world);
+
+    /**
+     * Whether a racer is still standing in an open world. A world that is not open reports {@code false}.
+     * The rotation releases no world while this is {@code true}: the instance refuses to close with a player in it.
+     */
+    boolean hasPlayers(String world);
 }
