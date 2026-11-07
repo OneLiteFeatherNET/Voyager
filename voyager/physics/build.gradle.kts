@@ -11,7 +11,7 @@ dependencies {
     // main — which is no longer a promise: ApiPurityTest's onlyPlatformDependsOnGson makes a Gson
     // import in this module's main sources a build failure, and it analyses production classes
     // only, so this line stays legal. Same reasoning as the java.nio.file rule beside it.
-    testImplementation("com.google.code.gson:gson:2.14.0")
+    testImplementation("com.google.code.gson:gson:2.15.0")
 }
 
 // The artifact keeps the name it had before the module moved under voyager/: the project name is now the
