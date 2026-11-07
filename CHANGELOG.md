@@ -5,6 +5,42 @@
 
 * **deps:** update dependency org.junit:junit-bom to v6.1.3 ([#237](https://github.com/OneLiteFeatherNET/Voyager/issues/237)) ([5c6779d](https://github.com/OneLiteFeatherNET/Voyager/commit/5c6779d3a8465c30272b3d7281444be90b158056))
 
+## [1.19.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.18.0...v1.19.0) (2026-11-07)
+
+
+### Features
+
+* **race:** play the next cup of the rotation after each cup ([#377](https://github.com/OneLiteFeatherNET/Voyager/issues/377)) ([8461a4e](https://github.com/OneLiteFeatherNET/Voyager/commit/8461a4e28ac46f5fb35e9be36223736b7a6d0226))
+* **race:** restart the game service after each cup ([#389](https://github.com/OneLiteFeatherNET/Voyager/issues/389)) ([01d77a5](https://github.com/OneLiteFeatherNET/Voyager/commit/01d77a5e66081a2fee194db2fbf400f322849e9c))
+* **server:** read the Velocity secret from a file ([#395](https://github.com/OneLiteFeatherNET/Voyager/issues/395)) ([a9dc75d](https://github.com/OneLiteFeatherNET/Voyager/commit/a9dc75d8eb95299d024811ee5a8cbc11464f5373))
+* **setup:** allow one builder to edit a map at a time ([#373](https://github.com/OneLiteFeatherNET/Voyager/issues/373)) ([73048ea](https://github.com/OneLiteFeatherNET/Voyager/commit/73048ea15d4c7193c80359ee5e1abfbe1466c5ba))
+
+
+### Bug Fixes
+
+* **race:** hold GO for racers still loading their map ([#387](https://github.com/OneLiteFeatherNET/Voyager/issues/387)) ([d92f465](https://github.com/OneLiteFeatherNET/Voyager/commit/d92f465397cc58a9f8ee91bc61e51e947c9fd3c3))
+* **race:** keep held racers still until GO ([#391](https://github.com/OneLiteFeatherNET/Voyager/issues/391)) ([0528002](https://github.com/OneLiteFeatherNET/Voyager/commit/05280020d5a0b9cf03b3c2c167a50d68df915387))
+* **race:** keep racers in the lobby world until five seconds before GO ([#394](https://github.com/OneLiteFeatherNET/Voyager/issues/394)) ([88e7f1c](https://github.com/OneLiteFeatherNET/Voyager/commit/88e7f1cd39cf2434bc3ba33f6e50d7dfc845fc0f))
+* **race:** store the oval axis with one orientation ([#388](https://github.com/OneLiteFeatherNET/Voyager/issues/388)) ([4585754](https://github.com/OneLiteFeatherNET/Voyager/commit/4585754518b25128647d6c92b0fb354a2fd6b7a3))
+
+
+### Tests
+
+* **race:** stop the golden master writing a diagnostic file to /tmp ([#396](https://github.com/OneLiteFeatherNET/Voyager/issues/396)) ([4f1f4d0](https://github.com/OneLiteFeatherNET/Voyager/commit/4f1f4d092dfd349bfd52a24eff0d0a5b21f5342b))
+
+
+### Documentation
+
+* **openspec:** propose publish-map-to-game and test-fly-draft-map ([#390](https://github.com/OneLiteFeatherNET/Voyager/issues/390)) ([a9df9c0](https://github.com/OneLiteFeatherNET/Voyager/commit/a9df9c01688ee293a656fbeb655fd864793ea52e))
+* **openspec:** propose read-proxy-secret-from-file ([#392](https://github.com/OneLiteFeatherNET/Voyager/issues/392)) ([0fcd0aa](https://github.com/OneLiteFeatherNET/Voyager/commit/0fcd0aa79ed8dc9d0d71bbed9d8126d803ba65b8))
+* **openspec:** propose restart-service-after-cup ([#386](https://github.com/OneLiteFeatherNET/Voyager/issues/386)) ([cc6d184](https://github.com/OneLiteFeatherNET/Voyager/commit/cc6d1847dc4e49c2869fb9ffc357f646a7b875b9))
+* **setup:** document single-editor map claims and the unlock node ([#383](https://github.com/OneLiteFeatherNET/Voyager/issues/383)) ([ccb2180](https://github.com/OneLiteFeatherNET/Voyager/commit/ccb2180aa8acb5b843333065d7619c97ce357704))
+
+
+### Miscellaneous Chores
+
+* **deps:** update onelitefeathernet/workflows action to v2.9.1 ([#353](https://github.com/OneLiteFeatherNET/Voyager/issues/353)) ([26429f7](https://github.com/OneLiteFeatherNET/Voyager/commit/26429f7f4199398cd7265a9003a9dbf87fe4a032))
+
 ## [1.18.0](https://github.com/OneLiteFeatherNET/Voyager/compare/v1.17.1...v1.18.0) (2026-10-31)
 
 
