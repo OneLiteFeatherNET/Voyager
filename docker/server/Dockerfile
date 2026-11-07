@@ -1,9 +1,9 @@
-FROM eclipse-temurin:25.0.4_7-jdk AS build
+FROM eclipse-temurin:25.0.5_8-jdk AS build
 WORKDIR /build
 COPY . .
 RUN ./gradlew :legacy:server:shadowJar --no-daemon
 
-FROM eclipse-temurin:25.0.4_7-jre-alpine
+FROM eclipse-temurin:25.0.5_8-jre-alpine
 WORKDIR /app
 COPY --from=build /build/legacy/server/build/libs/*-all.jar app.jar
 EXPOSE 25565
