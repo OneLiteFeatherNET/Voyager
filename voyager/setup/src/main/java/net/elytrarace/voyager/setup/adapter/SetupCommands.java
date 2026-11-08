@@ -39,8 +39,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * {@code /map} — the builder's commands: {@code new}, {@code open}, {@code close}, {@code spawn} and {@code status}, and
- * the administrator's {@code unlock}.
+ * {@code /map} — the builder's commands: {@code new}, {@code open}, {@code close}, {@code spawn}, {@code status},
+ * {@code undo} and {@code redo}, and the administrator's {@code unlock}.
  *
  * <p>Each command is a thin Minestom wrapper: the decisions are in {@link DraftEditor}, {@link MapStatus} and the store,
  * and the refusals are reported in {@link SetupMessages}. A command that changes the map saves it before it replies.
@@ -89,6 +89,10 @@ public final class SetupCommands extends Command {
         ArgumentWord unlockId = ArgumentType.Word("id");
         addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_UNLOCK,
                 () -> unlock(sender, context.get(unlockId))), ArgumentType.Literal("unlock"), unlockId);
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE, () -> undo(sender)),
+                ArgumentType.Literal("undo"));
+        addSyntax((sender, context) -> gated(sender, PermissionNode.VOYAGER_SETUP_USE, () -> redo(sender)),
+                ArgumentType.Literal("redo"));
     }
 
     /**
@@ -206,6 +210,60 @@ public final class SetupCommands extends Command {
         sender.sendMessage(released.isPresent()
                 ? SetupMessages.mapUnlocked(id.value(), released.get().name())
                 : SetupMessages.mapUnheld(id.value()));
+    }
+
+    /**
+     * The builder's open map, when the builder still holds its claim. Only the claim holder may change a map, so a session
+     * whose claim is gone is treated as no map open.
+     */
+    private Optional<MapSession> heldMap(Player builder) {
+        return sessions.find(builder.getUuid()).filter(session -> sessions.holds(builder.getUuid(), session.id()));
+    }
+
+    private void undo(CommandSender sender) {
+        if (!(sender instanceof Player builder)) {
+            sender.sendMessage(SetupMessages.playerOnly());
+            return;
+        }
+        Optional<MapSession> session = heldMap(builder);
+        if (session.isEmpty()) {
+            builder.sendMessage(SetupMessages.noMapOpen());
+            return;
+        }
+        try {
+            if (!session.get().undo()) {
+                builder.sendMessage(SetupMessages.undoNone());
+                return;
+            }
+            builder.sendMessage(SetupMessages.undoDone(session.get().draft().rings().size()));
+        } catch (DraftChangedException exception) {
+            builder.sendMessage(SetupMessages.saveChanged(session.get().id().value()));
+        } catch (DraftWriteFailedException exception) {
+            builder.sendMessage(SetupMessages.saveFailed(session.get().id().value()));
+        }
+    }
+
+    private void redo(CommandSender sender) {
+        if (!(sender instanceof Player builder)) {
+            sender.sendMessage(SetupMessages.playerOnly());
+            return;
+        }
+        Optional<MapSession> session = heldMap(builder);
+        if (session.isEmpty()) {
+            builder.sendMessage(SetupMessages.noMapOpen());
+            return;
+        }
+        try {
+            if (!session.get().redo()) {
+                builder.sendMessage(SetupMessages.redoNone());
+                return;
+            }
+            builder.sendMessage(SetupMessages.redoDone(session.get().draft().rings().size()));
+        } catch (DraftChangedException exception) {
+            builder.sendMessage(SetupMessages.saveChanged(session.get().id().value()));
+        } catch (DraftWriteFailedException exception) {
+            builder.sendMessage(SetupMessages.saveFailed(session.get().id().value()));
+        }
     }
 
     private void spawn(CommandSender sender) {
