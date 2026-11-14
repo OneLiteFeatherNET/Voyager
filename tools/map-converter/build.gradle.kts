@@ -13,7 +13,7 @@ dependencies {
 
     // Pinned inline, same reasoning as tools/trace-recorder/build.gradle.kts: a catalog alias for a
     // coordinate that other modules also resolve gives Renovate two pins to reconcile.
-    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.google.code.gson:gson:2.15.0")
 }
 
 application {

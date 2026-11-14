@@ -37,7 +37,7 @@ dependencies {
     // keeping Gson off voyager-server's compile classpath means that rule cannot be broken there by
     // accident. Pinned inline for the same reason Minestom is above; 2.14.0 is the version
     // tools/trace-recorder and Paper 26.2 already agree on.
-    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.google.code.gson:gson:2.15.0")
 
     // Server configuration (ADR-0036). platform.config.ConfigLoader is the one type that builds an avaje-config Configuration,
     // and its public surface names no avaje type, so no other module compiles against it. implementation keeps it off the
