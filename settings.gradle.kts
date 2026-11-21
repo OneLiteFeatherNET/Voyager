@@ -115,7 +115,7 @@ dependencyResolutionManagement {
 
             // Guava and failureaccess: the LuckPerms loader needs them on the runtime class path and Minestom does not bring
             // them (spike 1.1, design.md risk R3). Pinned to the version Cygnus uses.
-            version("guava", "33.7.2-jre")
+            version("guava", "33.8.0-jre")
             library("guava", "com.google.guava", "guava").versionRef("guava")
 
             // CloudNet 4.0.0-RC17, the release the owner's network runs (ADR-0026). It was RC16 until 2026-10-11, the release Cygnus
