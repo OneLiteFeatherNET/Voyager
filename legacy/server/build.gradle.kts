@@ -32,7 +32,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core")
     testImplementation("org.mockito:mockito-junit-jupiter")
 
-    hotswapAgent("org.hotswapagent:hotswap-agent:2.0.3") { isTransitive = false }
+    hotswapAgent("org.hotswapagent:hotswap-agent:2.0.4") { isTransitive = false }
 }
 
 java {
