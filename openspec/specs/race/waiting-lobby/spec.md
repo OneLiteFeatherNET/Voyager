@@ -36,13 +36,13 @@ to 2 and to 1 when `voyager.dev` is set. An explicit value SHALL override the de
 - **THEN** the minimum racer count is 3
 
 ### Requirement: Waiting racers are told how many are online and how many are needed
-**MoSCoW:** Must. WHILE the minimum is not met, THE SYSTEM SHALL show every waiting racer, on the boss bar described in
-"The room shows the count and the countdown on a boss bar", the name of the cup they wait for, the number of racers online and the
-number needed to start. THE SYSTEM SHALL NOT use the action bar for this line.
+**MoSCoW:** Must. WHILE the minimum is not met, THE SYSTEM SHALL show every waiting racer, on the action bar described in
+"Lobby action bar while waiting" of `race/lobby-hud`, the number of racers still needed to start, and the number of racers
+online and the number needed. THE SYSTEM SHALL NOT show this line on a boss bar.
 
 #### Scenario: Count shown while waiting
 - **WHEN** one racer of a minimum of two is online and waiting for the cup "Grand Tour"
-- **THEN** the racer's boss bar states the cup "Grand Tour" and that one racer is online and that two are needed, and the action bar stays empty
+- **THEN** the racer's action bar reads that one more racer is needed to start, in the racer's language, and no boss bar is shown
 
 ### Requirement: The start countdown is the first map's lobby
 **MoSCoW:** Must. WHEN a cup starts from waiting, THE SYSTEM SHALL play the first map's lobby for the lobby length of
@@ -153,12 +153,13 @@ with the lobby skipped, whatever the number of online racers.
 - **THEN** the cup starts from its first map with no lobby wait
 
 ### Requirement: The lobby countdown reads whole seconds of wall-clock time
-**MoSCoW:** Should. THE SYSTEM SHALL display the remaining lobby time in seconds of wall-clock time, derived from the phase
-length as a duration, so that a 20 second lobby is never shown as 20 minutes or as ticks.
+**MoSCoW:** Should. THE SYSTEM SHALL display the remaining lobby time in whole seconds of wall-clock time, derived from the
+phase length as a duration, on the experience level of each waiting racer, so that a 20 second lobby is never shown as 20
+minutes or as ticks. The experience bar SHALL drain from full to empty over the lobby, as `race/lobby-hud` specifies.
 
 #### Scenario: Six seconds left
 - **WHEN** six seconds of the lobby remain
-- **THEN** the waiting display reads 6 and not a count of ticks
+- **THEN** the racer's experience level reads 6 and the bar is at 6/20 of its full length
 
 ### Requirement: Once a cup has started, its per-tick behaviour is unchanged
 **MoSCoW:** Must. ONCE a cup has started, THE SYSTEM SHALL play each tick as the cup-session-characterization capability
@@ -166,8 +167,9 @@ specifies, and the lobby gate SHALL NOT change the tick order of that capability
 
 #### Scenario: The golden scenarios still pass
 - **WHEN** the cup-session golden master scenarios run after this change
-- **THEN** every transcript equals its committed golden file byte for byte, except the yaw and pitch recorded for a racer at
-  the GO tick, which `race/arrival-facing` changes to face ring 0; no other line of any transcript differs
+- **THEN** every transcript equals its committed golden file byte for byte, except the two exceptions named here: the yaw and
+  pitch recorded for a racer at the GO tick, which `race/arrival-facing` changes, and the action bar lines recorded while the
+  lobby phase runs, which `race/lobby-hud` changes; no other line of any transcript differs
 
 ### Requirement: Waiting racers stand in the lobby world without flight equipment
 **MoSCoW:** Must. WHILE no cup is running, THE SYSTEM SHALL hold each online racer in the lobby world named by the
@@ -195,56 +197,19 @@ This applies whether a cup is running or not.
 - **WHEN** a racer joins while a map is racing and three racers are online with a maximum of sixteen
 - **THEN** every online racer receives the join line (4/16), and the joining racer is also told that the cup is running
 
-### Requirement: The room shows the count and the countdown on a boss bar
-**MoSCoW:** Must. WHILE a racer is in the lobby world, THE SYSTEM SHALL show that racer a boss bar stating the name of the cup
-they wait for, and the waiting count and the maximum, or the cup's name and the seconds left of the start countdown. Where no lobby
-world is configured, THE SYSTEM SHALL show the same bar to a waiting racer in the first map until the start is committed. THE SYSTEM
-SHALL update the boss bar when its text or its progress changes, and SHALL hide it when the racer leaves the lobby world, or, without
-a lobby, when the start is committed.
-
-#### Scenario: The boss bar shows the waiting count
-- **WHEN** one racer of a minimum of two is online and waiting for the cup "Grand Tour"
-- **THEN** the racer's boss bar reads "Grand Tour" and that one of two racers is online, and the bar stays until the racer leaves the lobby world
-
-#### Scenario: The boss bar shows the countdown
-- **WHEN** the minimum is met, ten seconds of the lobby remain, and the cup is "Grand Tour"
-- **THEN** the racer's boss bar reads "Grand Tour" and ten seconds to the start, and its progress is the fraction of the lobby that remains
-
-#### Scenario: The boss bar leaves with the racer
-- **WHEN** the first map is entered and a racer moves out of the lobby world
-- **THEN** the lobby boss bar is hidden for that racer, and the race boss bar is the only one shown
-
-#### Scenario: The fallback boss bar shows the count and the countdown in the first map
-- **WHEN** no lobby world is configured and a racer waits at the first map's spawn with one racer of a minimum of two online, for the cup "Grand Tour"
-- **THEN** the racer's boss bar reads "Grand Tour" and that one of two racers is online, and when the minimum is met the same bar reads the seconds to the start
-- **AND** the bar is hidden for that racer once the start is committed, so the race boss bar is the only one shown from then on
-
-### Requirement: Without a lobby the boss bar shows in the first map
-**MoSCoW:** Must. Where no lobby world is configured, THE SYSTEM SHALL show the same bar to a waiting racer in the first
-map until the start is committed.
-
-#### Scenario: No lobby configured
-- **WHEN** no lobby world is configured and one racer is waiting in the first map
-- **THEN** that racer sees the boss bar until the start is committed
-
-#### Scenario: The fallback boss bar shows the count and the countdown in the first map
-- **WHEN** no lobby world is configured and a racer waits at the first map's spawn with one racer of a minimum of two online
-- **THEN** the racer's boss bar reads that one of two racers is online, and when the minimum is met the same bar reads the seconds to the start
-- **AND** the bar is hidden for that racer once the start is committed, so the race boss bar is the only one shown from then on
-
 ### Requirement: A full lobby shortens the start countdown
 **MoSCoW:** Must. IF the online racer count reaches the maximum racer count while the first map's lobby is counting down
 AND more than the full-lobby countdown length of that lobby remains, THEN THE SYSTEM SHALL shorten the countdown to the
-full-lobby countdown length of 10 seconds. THE SYSTEM SHALL NOT lengthen a countdown, and SHALL NOT shorten a countdown
-after the start is committed.
+full-lobby countdown length of 10 seconds, and SHALL play the full-lobby sound of `race/lobby-feedback` once. THE SYSTEM
+SHALL NOT lengthen a countdown, and SHALL NOT shorten a countdown after the start is committed.
 
 #### Scenario: A full lobby shortens a long countdown
 - **WHEN** the sixteenth racer joins a server with a maximum of sixteen while fifteen seconds of the lobby remain
-- **THEN** the countdown is shortened to ten seconds from that tick, and the boss bar shows ten seconds
+- **THEN** the countdown is shortened to ten seconds from that tick, and the experience level of each waiting racer reads ten
 
 #### Scenario: A short countdown is left alone
 - **WHEN** the sixteenth racer joins while six seconds of the lobby remain
-- **THEN** the countdown still ends after six seconds
+- **THEN** the countdown still ends after six seconds, and no full-lobby sound plays
 
 #### Scenario: A commit is not shortened
 - **WHEN** the lobby is full with two seconds of the lobby remaining
