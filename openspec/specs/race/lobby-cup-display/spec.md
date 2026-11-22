@@ -29,17 +29,16 @@ the sidebar while a cup is racing.
 - **THEN** no racer has a lobby sidebar, and the race's own displays are the only ones shown
 
 ### Requirement: The sidebar holds a fixed number of map lines
-**MoSCoW:** Must. THE SYSTEM SHALL show at most ten map lines on the sidebar. IF the cup has more than ten maps, THEN THE SYSTEM
-SHALL show the first nine and one line that states how many maps follow. The sidebar's other lines (racers, status and footer)
-SHALL NOT push the sidebar past the fifteen lines that the client shows.
+**MoSCoW:** Must. THE SYSTEM SHALL show at most ten map lines on the sidebar. IF the cup has more than ten maps, THEN THE SYSTEM SHALL
+show the first nine maps and one line that states how many maps follow, so the ten lines include that line.
 
 #### Scenario: A cup with more maps than the sidebar holds
 - **WHEN** the cup "Long Tour" has fifteen maps
 - **THEN** the sidebar shows the first nine maps and the line "+6 more"
 
 #### Scenario: A cup with twelve maps or fewer
-- **WHEN** the cup has five maps
-- **THEN** the sidebar shows all five and no "more" line
+- **WHEN** the cup has ten maps
+- **THEN** the sidebar shows all ten and no "more" line
 
 ### Requirement: The lobby shows the cup that is currently loaded
 **MoSCoW:** Must. THE SYSTEM SHALL show the cup the catalogue holder currently holds, which is the cup a racer waits for. A
@@ -97,3 +96,20 @@ racer's language, and SHALL NOT share one sidebar object between racers.
 #### Scenario: Two racers in two languages
 - **WHEN** a `de_DE` racer and an `en_US` racer wait in the same room
 - **THEN** each sees the status line and the racers line in its own language, and the map names are the same for both
+
+### Requirement: The sidebar ends with its status line and has no footer
+**MoSCoW:** Must. THE SYSTEM SHALL NOT show a footer line on the sidebar. THE SYSTEM SHALL end the sidebar with its status line, and
+no blank line SHALL follow it. The blank line between the map lines and the status line stays. The sidebar title already names the
+cup, so no other line names the game.
+
+#### Scenario: The last line of the sidebar is the status
+- **WHEN** a racer waits for a cup with three maps
+- **THEN** the sidebar's last line is the status line, "waiting" or "starts in <n> s", and no line reads "Elytra Race" or "Elytra-Rennen"
+
+#### Scenario: No trailing blank line
+- **WHEN** the sidebar is shown for a cup of any number of maps
+- **THEN** no empty line follows the status line
+
+#### Scenario: The sidebar line count
+- **WHEN** the cup has twelve maps
+- **THEN** the sidebar has at most fourteen lines, being the racers line, a blank, ten map lines, a blank and the status line, and the title is not one of them
