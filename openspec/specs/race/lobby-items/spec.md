@@ -16,12 +16,17 @@ slot 1, and SHALL keep the racer's other slots as they are.
 - **THEN** the racer's slot 8 holds the leave item and slot 1 holds the tutorial book
 
 ### Requirement: The items are removed when the race starts
-**MoSCoW:** Must. WHEN the cup starts for a racer, THE SYSTEM SHALL remove the leave item and the tutorial book from that racer's
-inventory, before the racer enters the first map.
+**MoSCoW:** Must. WHEN the GO tick of the cup is reached, THE SYSTEM SHALL remove the leave item and the tutorial book from each
+racer's inventory on that tick, before the racer enters the first map. THE SYSTEM SHALL keep both items in the inventory on every
+earlier tick, including the ticks of the committed window that come before GO.
+
+#### Scenario: The items are still held in the committed window
+- **WHEN** the start is committed and the GO tick is still three seconds ahead
+- **THEN** the racer's slot 8 still holds the leave item and slot 1 still holds the tutorial book
 
 #### Scenario: The race starts
 - **WHEN** the GO tick of the first map is reached
-- **THEN** neither the leave item nor the tutorial book is in the racer's inventory
+- **THEN** neither the leave item nor the tutorial book is in the racer's inventory, and the removal happens on that tick
 
 ### Requirement: The leave item sends the racer to the hub
 **MoSCoW:** Must. WHEN a waiting racer right-clicks the leave item, THE SYSTEM SHALL send that racer to the network hub through the
