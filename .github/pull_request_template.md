@@ -1,20 +1,20 @@
-## Was wurde geändert?
+## What changed?
 
-<!-- Kurze Beschreibung der Änderung -->
+<!-- Short description of the change -->
 
-## Typ
+## Type
 
-- [ ] `feat:` — neues Feature
+- [ ] `feat:` — new feature
 - [ ] `fix:` — Bugfix
-- [ ] `refactor:` — Refactoring ohne Verhaltensänderung
-- [ ] `chore:` — Pflege/Tooling
-- [ ] `docs:` — nur Dokumentation
-- [ ] `test:` — nur Tests
-- [ ] `ci:` — CI/CD-Änderungen
+- [ ] `refactor:` — refactoring without behaviour change
+- [ ] `chore:` — maintenance/tooling
+- [ ] `docs:` — documentation only
+- [ ] `test:` — tests only
+- [ ] `ci:` — CI/CD changes
 
 ## Checklist
 
-- [ ] PR-Titel folgt Conventional Commits (`fix(scope): beschreibung`)
-- [ ] Tests vorhanden und grün
-- [ ] Kein neuer Code ohne Test
-- [ ] Breaking Change? → `feat!:` oder `BREAKING CHANGE:` im Commit-Footer
+- [ ] PR title follows Conventional Commits (`fix(scope): description`)
+- [ ] Tests present and green
+- [ ] No new code without a test
+- [ ] Breaking change? → `feat!:` or `BREAKING CHANGE:` in the commit footer
