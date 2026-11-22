@@ -22,7 +22,8 @@ each document SHALL be the raw URL of that file in the repository's `main` branc
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL make each schema's `required` list equal the fields its adapter refuses without, and SHALL allow the
-optional fields `index`, `world`, `schemaVersion`, `notes` and `$schema` wherever the format allows them.
+optional fields `index`, `world`, `schemaVersion`, `notes`, `displayName` and `$schema` wherever the format allows them.
+The `displayName` field is allowed on a cup and on a map.
 
 #### Scenario: Ring without index is valid
 - **WHEN** a ring object omits `index` and has every other required field
@@ -39,6 +40,10 @@ optional fields `index`, `world`, `schemaVersion`, `notes` and `$schema` whereve
 #### Scenario: Cup mode is an enumeration
 - **WHEN** a cup's `mode` is not `RACE` or `PRACTICE`
 - **THEN** the cup schema rejects it
+
+#### Scenario: Display name is allowed on a cup and on a map
+- **WHEN** a cup or a map has a string `displayName`
+- **THEN** its schema accepts the field
 
 ### Requirement: The schema describes the current version only
 **Priority:** MoSCoW Must
