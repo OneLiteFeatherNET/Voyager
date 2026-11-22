@@ -166,7 +166,8 @@ specifies, and the lobby gate SHALL NOT change the tick order of that capability
 
 #### Scenario: The golden scenarios still pass
 - **WHEN** the cup-session golden master scenarios run after this change
-- **THEN** every transcript equals its committed golden file byte for byte
+- **THEN** every transcript equals its committed golden file byte for byte, except the yaw and pitch recorded for a racer at
+  the GO tick, which `race/arrival-facing` changes to face ring 0; no other line of any transcript differs
 
 ### Requirement: Waiting racers stand in the lobby world without flight equipment
 **MoSCoW:** Must. WHILE no cup is running, THE SYSTEM SHALL hold each online racer in the lobby world named by the
