@@ -75,10 +75,6 @@ schemas.
 - **WHEN** a version 3 map file with a ring that has `radiusMinor` and `majorAxis` is checked against `map.schema.json`
 - **THEN** the schema accepts `schemaVersion` 3
 
-#### Scenario: Version 3 in an editor
-- **WHEN** a map file declaring `schemaVersion` 3 is checked against `map.schema.json`
-- **THEN** the schema reports `schemaVersion` as out of range
-
 #### Scenario: Version 2 file against its own schema
 - **WHEN** a version 2 map file with a `key` is checked against `map-v2.schema.json`
 - **THEN** the schema accepts it
