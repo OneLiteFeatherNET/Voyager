@@ -3,14 +3,17 @@ package net.elytrarace.voyager.setup.adapter;
 import net.elytrarace.voyager.api.mapsetup.DraftStore;
 import net.elytrarace.voyager.api.mapsetup.MapDraft;
 import net.elytrarace.voyager.api.mapsetup.MapId;
+import net.elytrarace.voyager.setup.mapsetup.DraftHistory;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 
 /**
- * One builder's open map: the last saved draft, and the world the builder stands in.
+ * One builder's open map: the drafts it has been through, the builder who holds it, and the world the builder stands in.
  *
- * <p>Every change goes through {@link #commit}, which saves first and only then keeps the new draft, so the draft in
- * memory is always the one on disk. Player events run on Minestom's main thread, so a session needs no lock.
+ * <p>Every change goes through {@link #commit}, {@link #undo} or {@link #redo}, which all share one save: the draft is
+ * saved first and only then kept, so the draft in memory is always the one on disk. The save is guarded: it is refused
+ * when the stored copy is no longer the draft this session holds. Player events run on Minestom's main thread, so a
+ * session needs no lock.
  */
 public final class MapSession {
 
@@ -18,7 +21,7 @@ public final class MapSession {
     private final DraftStore store;
     private final Instance instance;
     private final RingPreviews previews;
-    private MapDraft draft;
+    private DraftHistory history;
 
     /**
      * @param builder  the builder who holds the map; an unlock moves this player out of the world
@@ -29,7 +32,7 @@ public final class MapSession {
     public MapSession(Player builder, DraftStore store, MapDraft draft, Instance instance) {
         this.builder = builder;
         this.store = store;
-        this.draft = draft;
+        this.history = DraftHistory.start(draft);
         this.instance = instance;
         this.previews = new RingPreviews(instance);
         previews.show(draft.rings());
@@ -40,11 +43,11 @@ public final class MapSession {
     }
 
     public MapId id() {
-        return draft.id();
+        return draft().id();
     }
 
     public MapDraft draft() {
-        return draft;
+        return history.current();
     }
 
     public Instance instance() {
@@ -52,22 +55,63 @@ public final class MapSession {
     }
 
     /**
-     * Saves the next draft and keeps it. The save is refused when the stored copy is no longer the draft this session
-     * holds, so a change made on disk by anyone else is never replaced.
+     * Saves the next draft as an edit and keeps it. The edit clears the redo history.
      *
      * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException if the stored copy changed since this
-     *     session loaded or saved it; the draft kept by this session is then unchanged
+     *     session loaded or saved it; the draft and the history are then unchanged
      * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException if the save did not complete; the
-     *     draft kept by this session is then the previous one, which is the one on disk
+     *     draft and the history are then unchanged
      */
     public void commit(MapDraft next) {
-        store.saveIfUnchanged(draft, next);
-        draft = next;
-        previews.show(next.rings());
+        persist(history.record(next));
+    }
+
+    /**
+     * Saves the draft before the last edit and keeps it. Nothing is changed when there is no such draft.
+     *
+     * @return whether a draft was restored
+     * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException if the stored copy changed since this
+     *     session loaded or saved it; the draft and the history are then unchanged
+     * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException if the save did not complete; the
+     *     draft and the history are then unchanged
+     */
+    public boolean undo() {
+        if (!history.canUndo()) {
+            return false;
+        }
+        persist(history.undo());
+        return true;
+    }
+
+    /**
+     * Saves the draft that the last undo took back and keeps it. Nothing is changed when there is no such draft.
+     *
+     * @return whether a draft was re-applied
+     * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftChangedException if the stored copy changed since this
+     *     session loaded or saved it; the draft and the history are then unchanged
+     * @throws net.elytrarace.voyager.api.mapsetup.exception.DraftWriteFailedException if the save did not complete; the
+     *     draft and the history are then unchanged
+     */
+    public boolean redo() {
+        if (!history.canRedo()) {
+            return false;
+        }
+        persist(history.redo());
+        return true;
     }
 
     /** Removes the previews of this map from its world; the draft is already saved. */
     public void close() {
         previews.clear();
+    }
+
+    /**
+     * Saves the candidate's draft over the one this session holds, then keeps the candidate and shows its rings. The
+     * guard compares the stored copy with the draft held before the change.
+     */
+    private void persist(DraftHistory candidate) {
+        store.saveIfUnchanged(draft(), candidate.current());
+        history = candidate;
+        previews.show(history.current().rings());
     }
 }

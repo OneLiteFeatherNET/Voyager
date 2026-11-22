@@ -42,11 +42,26 @@ can load. It covers the first slice of `voyager-setup`: the commands `/map new`,
 Every change is saved before you see it. If a save fails, you are told that the change was not saved, and the draft
 stays as it was.
 
-There is no undo in this slice. A sneak plus left-click removes a ring for good; place it again if you removed it by
-mistake.
+If you removed a ring by mistake, run `/map undo` to bring it back. See [Undo and redo an edit](#undo-and-redo-an-edit).
 
 Right-clicking a block with the wand places a ring and does not place a block. Breaking and placing blocks in an open map
 is cancelled, because the setup server never saves a world.
+
+## Undo and redo an edit
+
+`/map undo` takes back the last change to the open map: a placed ring, a removed ring, or a spawn you set. `/map redo`
+puts back the change that the last undo took back. Each step is saved before the server replies, as every change is.
+
+- The reply of an undo or a redo tells you how many rings the map has now.
+- A new change after an undo ends the redo history. If you undo a ring and then place another one, `/map redo` has
+  nothing to put back.
+- The history keeps the 100 most recent changes of the open map. The oldest change is dropped first.
+- The history lives in memory. It is lost when you open another map, when you disconnect, and when the setup server
+  restarts.
+- The file on disk is always the last saved state. An undo saves the earlier draft before it shows it, and a failed save
+  changes nothing.
+- Undo covers the map only. A change to a cup is not undone, and a change to a block in the setup world is never
+  recorded, because the setup server cancels block edits.
 
 ## Check the map
 
