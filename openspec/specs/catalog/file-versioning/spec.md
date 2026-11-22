@@ -42,14 +42,14 @@ that file and name the file and the field.
 
 WHEN a map or cup file states a `schemaVersion` above the highest version this server reads, THE SYSTEM SHALL refuse
 that file, and the message SHALL name the file, the declared version and the highest supported version. The highest
-version this server reads is 2.
+version this server reads is 3.
 
 #### Scenario: Map written for a future format
-- **WHEN** a map file states `"schemaVersion": 3` and this server reads up to version 2
-- **THEN** the file is refused and the message names the file, `3` and `2`
+- **WHEN** a map file states `"schemaVersion": 4` and this server reads up to version 3
+- **THEN** the file is refused and the message names the file, `4` and `3`
 
 #### Scenario: Refusal loads nothing from the file
-- **WHEN** a map file with `schemaVersion` 3 is refused
+- **WHEN** a map file with `schemaVersion` 4 is refused
 - **THEN** no ring, guide point, world or key from that file reaches the catalogue
 
 ### Requirement: The rule applies to maps and cups alike
@@ -58,7 +58,7 @@ version this server reads is 2.
 THE SYSTEM SHALL apply the same schema version rule to map files and cup files, with the same messages.
 
 #### Scenario: Cup written for a future format
-- **WHEN** a cup file states `"schemaVersion": 2`
+- **WHEN** a cup file states `"schemaVersion": 4`
 - **THEN** the cup file is refused with the same message shape as a map file
 
 ### Requirement: Files written by the converter declare version 1
