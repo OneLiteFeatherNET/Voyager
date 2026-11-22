@@ -22,8 +22,10 @@ each document SHALL be the raw URL of that file in the repository's `main` branc
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL make each schema's `required` list equal the fields its adapter refuses without, and SHALL allow the
-optional fields `index`, `world`, `schemaVersion`, `notes`, `displayName` and `$schema` wherever the format allows them.
-The `displayName` field is allowed on a cup and on a map.
+optional fields `index`, `world`, `schemaVersion`, `notes`, `displayName`, `authors`, `radiusMinor`, `majorAxis` and `$schema`
+wherever the format allows them. On a map or cup in version 2 the required identifier is `key`, and on a version 1 file it is
+`name`. On a ring, `radiusMinor` and `majorAxis` SHALL be stated together, which the schema expresses as a dependency between
+them. The `displayName` field is allowed on a cup and on a map.
 
 #### Scenario: Ring without index is valid
 - **WHEN** a ring object omits `index` and has every other required field
@@ -41,18 +43,48 @@ The `displayName` field is allowed on a cup and on a map.
 - **WHEN** a cup's `mode` is not `RACE` or `PRACTICE`
 - **THEN** the cup schema rejects it
 
+#### Scenario: Version 2 cup without key is invalid
+- **WHEN** a version 2 cup omits `key`
+- **THEN** the cup schema rejects it and the error names `key`
+
 #### Scenario: Display name is allowed on a cup and on a map
 - **WHEN** a cup or a map has a string `displayName`
 - **THEN** its schema accepts the field
 
+#### Scenario: Oval ring with both fields is valid
+- **WHEN** a ring object states `radius`, `radiusMinor` and `majorAxis`
+- **THEN** the map schema accepts it
+
+#### Scenario: Oval ring without major axis is invalid
+- **WHEN** a ring object states `radiusMinor` and omits `majorAxis`
+- **THEN** the map schema rejects it and the error names `majorAxis`
+
 ### Requirement: The schema describes the current version only
 **Priority:** MoSCoW Must
 
-THE SYSTEM SHALL cap `schemaVersion` in each schema at 1, so a schema read by an editor reports a version 2 file as an
-error, and SHALL publish a new schema document under a new file name when a later version is introduced.
+THE SYSTEM SHALL cap `schemaVersion` in `map.schema.json` and `cup.schema.json` at 3, the current version, and SHALL publish
+the version 1 and version 2 schemas as `map-v1.schema.json`, `cup-v1.schema.json`, `map-v2.schema.json` and `cup-v2.schema.json`,
+so that an editor reads a file against the schema of its own version. A version 4 file is reported as an error by the current
+schemas.
 
 #### Scenario: Version 2 in an editor
-- **WHEN** a map file declaring `schemaVersion` 2 is checked against `map.schema.json`
+- **WHEN** a version 2 map file with a `key` is checked against `map.schema.json`
+- **THEN** the schema accepts `schemaVersion` 2, because the current schema describes every version up to 3
+
+#### Scenario: Version 3 oval file in an editor
+- **WHEN** a version 3 map file with a ring that has `radiusMinor` and `majorAxis` is checked against `map.schema.json`
+- **THEN** the schema accepts `schemaVersion` 3
+
+#### Scenario: Version 2 file against its own schema
+- **WHEN** a version 2 map file with a `key` is checked against `map-v2.schema.json`
+- **THEN** the schema accepts it
+
+#### Scenario: Version 1 file against its own schema
+- **WHEN** a map file declaring no `schemaVersion` and a flat `name` is checked against `map-v1.schema.json`
+- **THEN** the schema accepts it
+
+#### Scenario: Version 4 in an editor
+- **WHEN** a map file declaring `schemaVersion` 4 is checked against `map.schema.json`
 - **THEN** the schema reports `schemaVersion` as out of range
 
 ### Requirement: Shipped files reference their schema
@@ -109,10 +141,3 @@ the adapter refuses without.
 #### Scenario: Required fields are unchanged
 - **WHEN** a map's `boostConfig` omits `burnDurationTicks`
 - **THEN** `map.schema.json` reports the missing field
-
-### Requirement: The schema still describes the current version only
-**Priority:** MoSCoW Must. THE SYSTEM SHALL keep `schemaVersion` capped at 1 in `map.schema.json` after this change.
-
-#### Scenario: Version 2 remains an error in the schema
-- **WHEN** a map file declaring `schemaVersion` 2 is checked against `map.schema.json`
-- **THEN** the schema reports `schemaVersion` as out of range, as before this change

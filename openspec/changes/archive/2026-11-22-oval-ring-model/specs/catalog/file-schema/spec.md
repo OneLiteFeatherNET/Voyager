@@ -12,9 +12,10 @@ schema describes the current version now names version 3.
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL make each schema's `required` list equal the fields its adapter refuses without, and SHALL allow the
-optional fields `index`, `world`, `schemaVersion`, `notes`, `authors`, `radiusMinor`, `majorAxis` and `$schema` wherever the
-format allows them. On a map or cup in version 2 the required identifier is `key`, and on a version 1 file it is `name`. On
-a ring, `radiusMinor` and `majorAxis` SHALL be stated together, which the schema expresses as a dependency between them.
+optional fields `index`, `world`, `schemaVersion`, `notes`, `displayName`, `authors`, `radiusMinor`, `majorAxis` and `$schema`
+wherever the format allows them. On a map or cup in version 2 the required identifier is `key`, and on a version 1 file it is
+`name`. On a ring, `radiusMinor` and `majorAxis` SHALL be stated together, which the schema expresses as a dependency between
+them. The `displayName` field is allowed on a cup and on a map.
 
 #### Scenario: Ring without index is valid
 - **WHEN** a ring object omits `index` and has every other required field
@@ -35,6 +36,10 @@ a ring, `radiusMinor` and `majorAxis` SHALL be stated together, which the schema
 #### Scenario: Version 2 cup without key is invalid
 - **WHEN** a version 2 cup omits `key`
 - **THEN** the cup schema rejects it and the error names `key`
+
+#### Scenario: Display name is allowed on a cup and on a map
+- **WHEN** a cup or a map has a string `displayName`
+- **THEN** its schema accepts the field
 
 #### Scenario: Oval ring with both fields is valid
 - **WHEN** a ring object states `radius`, `radiusMinor` and `majorAxis`

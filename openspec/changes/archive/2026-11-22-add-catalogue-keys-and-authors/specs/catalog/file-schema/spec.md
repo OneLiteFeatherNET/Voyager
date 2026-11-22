@@ -11,8 +11,9 @@ kept for the files that still use a flat name.
 **Priority:** MoSCoW Must
 
 THE SYSTEM SHALL make each schema's `required` list equal the fields its adapter refuses without, and SHALL allow the
-optional fields `index`, `world`, `schemaVersion`, `notes`, `authors` and `$schema` wherever the format allows them. On a
-map or cup in version 2 the required identifier is `key`, and on a version 1 file it is `name`.
+optional fields `index`, `world`, `schemaVersion`, `notes`, `displayName`, `authors` and `$schema` wherever the format allows
+them. On a map or cup in version 2 the required identifier is `key`, and on a version 1 file it is `name`. The `displayName`
+field is allowed on a cup and on a map.
 
 #### Scenario: Ring without index is valid
 - **WHEN** a ring object omits `index` and has every other required field
@@ -33,6 +34,10 @@ map or cup in version 2 the required identifier is `key`, and on a version 1 fil
 #### Scenario: Version 2 cup without key is invalid
 - **WHEN** a version 2 cup omits `key`
 - **THEN** the cup schema rejects it and the error names `key`
+
+#### Scenario: Display name is allowed on a cup and on a map
+- **WHEN** a cup or a map has a string `displayName`
+- **THEN** its schema accepts the field
 
 ### Requirement: The schema describes the current version only
 **Priority:** MoSCoW Must
