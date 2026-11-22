@@ -105,3 +105,41 @@ SHALL run with statistics off, and SHALL NOT refuse to start. THE SYSTEM SHALL N
 #### Scenario: a pool size out of range
 - **WHEN** `VOYAGER_PERSISTENCE=on` and `VOYAGER_DB_POOL_SIZE` is 1
 - **THEN** one warning names `VOYAGER_DB_POOL_SIZE`, statistics are off, and the server starts
+
+### Requirement: The rotation keys are read through the loader and documented
+**MoSCoW:** Must. THE SYSTEM SHALL read `VOYAGER_CUP_ROTATION` and `VOYAGER_CUP_ROTATION_STATE` through the configuration loader, with
+the environment names `VOYAGER_CUP_ROTATION` and `VOYAGER_CUP_ROTATION_STATE`, and SHALL document both in
+`docs/reference/configuration.md` with their system property, environment name and default.
+
+#### Scenario: The rotation read from the environment
+- **WHEN** the environment variable `VOYAGER_CUP_ROTATION` is set and no system property sets it
+- **THEN** the server reads the rotation from the environment variable
+
+#### Scenario: The reference page lists both keys
+- **WHEN** an operator reads `docs/reference/configuration.md`
+- **THEN** each of the two keys lists its system property, its environment name, and its default: no rotation and no state file. The
+state file's example path is `/home/cloud/cloudnet/local/voyager-state/rotation`
+
+### Requirement: A state file whose parent directory is missing refuses the configuration check
+**MoSCoW:** Should. IF `VOYAGER_CUP_ROTATION_STATE` names a path whose parent directory does not exist, THEN THE SYSTEM SHALL report it as a
+configuration error in the configuration check, naming the key and the path, and the boot SHALL refuse with the same report.
+
+#### Scenario: The state directory does not exist
+- **WHEN** `VOYAGER_CUP_ROTATION_STATE=/var/lib/voyager-missing/rotation` and `/var/lib/voyager-missing` does not exist
+- **THEN** the configuration check reports one error that names `VOYAGER_CUP_ROTATION_STATE` and the path
+
+### Requirement: The restart key is read through the loader and checked
+**MoSCoW:** Must. THE SYSTEM SHALL read `VOYAGER_RESTART_AFTER_CUP` through the configuration loader, list it in the server's keys so
+the configuration check and the boot log see it, and SHALL NOT read it with `System.getProperty`.
+
+#### Scenario: The environment variable is honoured
+- **WHEN** `VOYAGER_RESTART_AFTER_CUP=true` is set as an environment variable and no system property is set
+- **THEN** the restart is on
+
+#### Scenario: The configuration check reports the key
+- **WHEN** the configuration check runs with `VOYAGER_RESTART_AFTER_CUP=yes`
+- **THEN** the report names `VOYAGER_RESTART_AFTER_CUP` as an error and the exit status is 1
+
+#### Scenario: The configuration check reports a rotation without a state file
+- **WHEN** the configuration check runs with the restart on, `VOYAGER_CUP_ROTATION=alpha_cup,legacy_cup`, and no state file
+- **THEN** the report names `VOYAGER_RESTART_AFTER_CUP` and `VOYAGER_CUP_ROTATION_STATE` and the exit status is 1
