@@ -40,7 +40,7 @@ from landing them.
 
 ### New Capabilities
 
-- `build/dependency-pinning`: the approval gate for sensitive dependencies, the agreement check between the BOM and the test pin,
+- `ci/dependency-pinning`: the approval gate for sensitive dependencies, the agreement check between the BOM and the test pin,
   and the boot smoke test that a pull request must pass.
 
 ### Modified Capabilities
