@@ -68,7 +68,12 @@ None.
 - The CloudNet bridge's own pins and the `minestom-extensions` fork's compatibility beyond the boot test.
 - Changes to the organisation's Renovate presets.
 - Changes to the legacy tree's pins (`settings.gradle.kts` catalog `minestom` alias for `legacy/`).
-- Making the smoke test a required check. The owner decides that in branch protection.
+- Making the smoke test a required check. The owner decides that in branch protection (see the open question below).
+
+## Follow-ups
+
+- Correct `openspec/config.yaml:8`, which names `2026.08.28-26.2` as the rebuild's Minestom version, in its own change. It lies
+  outside this change's directory, so this change does not touch it.
 
 ## Open questions for the owner
 

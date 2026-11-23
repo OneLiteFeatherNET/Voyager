@@ -36,4 +36,3 @@ The pull request contains no file under `openspec/`, and no task is ticked in it
 
 - [ ] 5.1 Open the pull request under `ci(deps): pin sensitive dependencies behind owner approval`. It contains no file under
   `openspec/`, and no task is ticked in it.
-- [ ] 5.2 Follow-up, owner-gated: correct `openspec/config.yaml:8` in its own change, since it lies outside this change (`docs`)
