@@ -122,7 +122,7 @@ dependencyResolutionManagement {
             // builds against; the extension's API calls are identical in both (javap, design.md Decision 6). Only
             // :voyager:cloudnet-bridge compiles against it. It is never bundled: the node provides the driver, and the bridge arrives
             // as a Minestom extension from extensions/. The bom pins the rest.
-            version("cloudnet", "4.0.0-RC17")
+            version("cloudnet", "4.0.0-RC18-SNAPSHOT")
             library("cloudnet.bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
             library("cloudnet.bridge.api", "eu.cloudnetservice.cloudnet", "bridge-api").withoutVersion()
             library("cloudnet.bridge.impl", "eu.cloudnetservice.cloudnet", "bridge-impl").withoutVersion()
