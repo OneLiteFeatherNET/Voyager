@@ -59,7 +59,7 @@ dependencies {
     testImplementation(libs.log4j2.core)
 
     // Reads the shipped map files as JSON text (ShippedGuideParticleTest). The same pin voyager-platform uses.
-    testImplementation("com.google.code.gson:gson:2.14.0")
+    testImplementation("com.google.code.gson:gson:2.15.0")
 }
 
 // The LuckPerms loader stays off the test class path, as in Cygnus: the boot tests must see LuckPerms absent, and the
